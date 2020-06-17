@@ -79,41 +79,41 @@ float		scr_conlines;		// lines of console to display
 
 //johnfitz -- new cvars
 // MH - reverted a bunch of these to CVAR_NONE for Quake default behaviours
-cvar_t		scr_menuscale = {"scr_menuscale", "1", CVAR_NONE};
-cvar_t		scr_sbarscale = {"scr_sbarscale", "1", CVAR_NONE};
-cvar_t		scr_sbaralpha = {"scr_sbaralpha", "1", CVAR_NONE}; // MH - revert Quake default
-cvar_t		scr_conwidth = {"scr_conwidth", "0", CVAR_NONE};
-cvar_t		scr_conscale = {"scr_conscale", "1", CVAR_NONE};
-cvar_t		scr_crosshairscale = {"scr_crosshairscale", "1", CVAR_NONE};
+cvar_t		scr_menuscale = { "scr_menuscale", "1", CVAR_NONE };
+cvar_t		scr_sbarscale = { "scr_sbarscale", "1", CVAR_NONE };
+cvar_t		scr_sbaralpha = { "scr_sbaralpha", "1", CVAR_NONE }; // MH - revert Quake default
+cvar_t		scr_conwidth = { "scr_conwidth", "0", CVAR_NONE };
+cvar_t		scr_conscale = { "scr_conscale", "1", CVAR_NONE };
+cvar_t		scr_crosshairscale = { "scr_crosshairscale", "1", CVAR_NONE };
 
 // MH - differernt behaviour in debug builds
 #ifdef _DEBUG
-cvar_t		scr_showfps = {"scr_showfps", "1", CVAR_NONE};
+cvar_t		scr_showfps = { "scr_showfps", "1", CVAR_NONE };
 #else
-cvar_t		scr_showfps = {"scr_showfps", "0", CVAR_NONE};
+cvar_t		scr_showfps = { "scr_showfps", "0", CVAR_NONE };
 #endif
 
-cvar_t		scr_clock = {"scr_clock", "0", CVAR_NONE};
+cvar_t		scr_clock = { "scr_clock", "0", CVAR_NONE };
 //johnfitz
 
-cvar_t		scr_viewsize = {"viewsize","100", CVAR_ARCHIVE};
-cvar_t		scr_fov = {"fov","90",CVAR_NONE};	// 10 - 170
-cvar_t		scr_fov_adapt = {"fov_adapt","1",CVAR_ARCHIVE};
-cvar_t		scr_conspeed = {"scr_conspeed","500",CVAR_ARCHIVE};
-cvar_t		scr_centertime = {"scr_centertime","2",CVAR_NONE};
-cvar_t		scr_showram = {"showram","1",CVAR_NONE};
-cvar_t		scr_showturtle = {"showturtle","0",CVAR_NONE};
-cvar_t		scr_showpause = {"showpause","1",CVAR_NONE};
-cvar_t		scr_printspeed = {"scr_printspeed","8",CVAR_NONE};
-cvar_t		gl_triplebuffer = {"gl_triplebuffer", "1", CVAR_ARCHIVE};
+cvar_t		scr_viewsize = { "viewsize", "100", CVAR_ARCHIVE };
+cvar_t		scr_fov = { "fov", "90", CVAR_NONE };	// 10 - 170
+cvar_t		scr_fov_adapt = { "fov_adapt", "1", CVAR_ARCHIVE };
+cvar_t		scr_conspeed = { "scr_conspeed", "500", CVAR_ARCHIVE };
+cvar_t		scr_centertime = { "scr_centertime", "2", CVAR_NONE };
+cvar_t		scr_showram = { "showram", "1", CVAR_NONE };
+cvar_t		scr_showturtle = { "showturtle", "0", CVAR_NONE };
+cvar_t		scr_showpause = { "showpause", "1", CVAR_NONE };
+cvar_t		scr_printspeed = { "scr_printspeed", "8", CVAR_NONE };
+cvar_t		gl_triplebuffer = { "gl_triplebuffer", "1", CVAR_ARCHIVE };
 
 extern	cvar_t	crosshair;
 
 qboolean	scr_initialized;		// ready to draw
 
-qpic_t		*scr_ram;
-qpic_t		*scr_net;
-qpic_t		*scr_turtle;
+qpic_t *scr_ram;
+qpic_t *scr_net;
+qpic_t *scr_turtle;
 
 int			clearconsole;
 int			clearnotify;
@@ -151,11 +151,11 @@ for a few moments
 */
 void SCR_CenterPrint (const char *str) //update centerprint data
 {
-	strncpy (scr_centerstring, str, sizeof(scr_centerstring)-1);
+	strncpy (scr_centerstring, str, sizeof (scr_centerstring) - 1);
 	scr_centertime_off = scr_centertime.value;
 	scr_centertime_start = cl.time;
 
-// count the number of lines for centering
+	// count the number of lines for centering
 	scr_center_lines = 1;
 	str = scr_centerstring;
 	while (*str)
@@ -168,7 +168,7 @@ void SCR_CenterPrint (const char *str) //update centerprint data
 
 void SCR_DrawCenterString (void) //actually do the drawing
 {
-	char	*start;
+	char *start;
 	int		l;
 	int		j;
 	int		x, y;
@@ -187,7 +187,7 @@ void SCR_DrawCenterString (void) //actually do the drawing
 
 #if 0
 	if (scr_center_lines <= 4)
-		y = 200*0.35;	//johnfitz -- 320x200 coordinate system
+		y = 200 * 0.35;	//johnfitz -- 320x200 coordinate system
 	else
 		y = 48;
 	if (crosshair.value)
@@ -208,12 +208,12 @@ void SCR_DrawCenterString (void) //actually do the drawing
 
 	do
 	{
-	// scan the width of the line
-		for (l=0 ; l<40 ; l++)
+		// scan the width of the line
+		for (l = 0; l < 40; l++)
 			if (start[l] == '\n' || !start[l])
 				break;
-		x = (320 - l*8)/2;	//johnfitz -- 320x200 coordinate system
-		for (j=0 ; j<l ; j++, x+=8)
+		x = (320 - l * 8) / 2;	//johnfitz -- 320x200 coordinate system
+		for (j = 0; j < l; j++, x += 8)
 		{
 			Draw_Character (x, y, start[j]);	//johnfitz -- stretch overlays
 			if (!remaining--)
@@ -268,7 +268,7 @@ float AdaptFovx (float fov_x, float width, float height)
 		return fov_x;
 	if ((x = height / width) == 0.75)
 		return fov_x;
-	a = atan(0.75 / x * tan(fov_x / 360 * M_PI));
+	a = atan (0.75 / x * tan (fov_x / 360 * M_PI));
 	a = a * 360 / M_PI;
 	return a;
 }
@@ -285,8 +285,8 @@ float CalcFovy (float fov_x, float width, float height)
 	if (fov_x < 1 || fov_x > 179)
 		Sys_Error ("Bad fov: %f", fov_x);
 
-	x = width / tan(fov_x / 360 * M_PI);
-	a = atan(height / x);
+	x = width / tan (fov_x / 360 * M_PI);
+	a = atan (height / x);
 	a = a * 360 / M_PI;
 	return a;
 }
@@ -309,7 +309,7 @@ static void SCR_CalcRefdef (void)
 	if (scr_viewsize.value > 120)
 		Cvar_SetQuick (&scr_viewsize, "120");
 
-// bound fov
+	// bound fov
 	if (scr_fov.value < 10)
 		Cvar_SetQuick (&scr_fov, "10");
 	if (scr_fov.value > 170)
@@ -317,7 +317,7 @@ static void SCR_CalcRefdef (void)
 
 	//johnfitz -- rewrote this section
 	size = scr_viewsize.value;
-	scale = CLAMP (1.0, scr_sbarscale.value, (float)glwidth / 320.0);
+	scale = CLAMP (1.0, scr_sbarscale.value, (float) glwidth / 320.0);
 
 	if (size >= 120 || cl.intermission || scr_sbaralpha.value < 1) //johnfitz -- scr_sbaralpha.value
 		sb_lines = 0;
@@ -326,17 +326,17 @@ static void SCR_CalcRefdef (void)
 	else
 		sb_lines = 48 * scale;
 
-	size = q_min(scr_viewsize.value, 100) / 100;
+	size = q_min (scr_viewsize.value, 100) / 100;
 	//johnfitz
 
 	//johnfitz -- rewrote this section
-	r_refdef.vrect.width = q_max(glwidth * size, 96); //no smaller than 96, for icons
-	r_refdef.vrect.height = q_min(glheight * size, glheight - sb_lines); //make room for sbar
-	r_refdef.vrect.x = (glwidth - r_refdef.vrect.width)/2;
-	r_refdef.vrect.y = (glheight - sb_lines - r_refdef.vrect.height)/2;
+	r_refdef.vrect.width = q_max (glwidth * size, 96); //no smaller than 96, for icons
+	r_refdef.vrect.height = q_min (glheight * size, glheight - sb_lines); //make room for sbar
+	r_refdef.vrect.x = (glwidth - r_refdef.vrect.width) / 2;
+	r_refdef.vrect.y = (glheight - sb_lines - r_refdef.vrect.height) / 2;
 	//johnfitz
 
-	r_refdef.fov_x = AdaptFovx(scr_fov.value, vid.width, vid.height);
+	r_refdef.fov_x = AdaptFovx (scr_fov.value, vid.width, vid.height);
 	r_refdef.fov_y = CalcFovy (r_refdef.fov_x, r_refdef.vrect.width, r_refdef.vrect.height);
 
 	scr_vrect = r_refdef.vrect;
@@ -352,7 +352,7 @@ Keybinding command
 */
 void SCR_SizeUp_f (void)
 {
-	Cvar_SetValueQuick (&scr_viewsize, scr_viewsize.value+10);
+	Cvar_SetValueQuick (&scr_viewsize, scr_viewsize.value + 10);
 }
 
 
@@ -365,7 +365,7 @@ Keybinding command
 */
 void SCR_SizeDown_f (void)
 {
-	Cvar_SetValueQuick (&scr_viewsize, scr_viewsize.value-10);
+	Cvar_SetValueQuick (&scr_viewsize, scr_viewsize.value - 10);
 }
 
 static void SCR_Callback_refdef (cvar_t *var)
@@ -379,7 +379,7 @@ SCR_Conwidth_f -- johnfitz -- called when scr_conwidth or scr_conscale changes
 */
 void SCR_Conwidth_f (cvar_t *var)
 {
-	vid.conwidth = (scr_conwidth.value > 0) ? (int)scr_conwidth.value : (scr_conscale.value > 0) ? (int)(vid.width/scr_conscale.value) : vid.width;
+	vid.conwidth = (scr_conwidth.value > 0) ? (int) scr_conwidth.value : (scr_conscale.value > 0) ? (int) (vid.width / scr_conscale.value) : vid.width;
 	vid.conwidth = CLAMP (320, vid.conwidth, vid.width);
 	vid.conwidth &= 0xFFFFFFF8;
 	vid.conheight = vid.conwidth * vid.height / vid.width;
@@ -433,9 +433,9 @@ void SCR_Init (void)
 	Cvar_RegisterVariable (&scr_printspeed);
 	Cvar_RegisterVariable (&gl_triplebuffer);
 
-	Cmd_AddCommand ("screenshot",SCR_ScreenShot_f);
-	Cmd_AddCommand ("sizeup",SCR_SizeUp_f);
-	Cmd_AddCommand ("sizedown",SCR_SizeDown_f);
+	Cmd_AddCommand ("screenshot", SCR_ScreenShot_f);
+	Cmd_AddCommand ("sizeup", SCR_SizeUp_f);
+	Cmd_AddCommand ("sizedown", SCR_SizeDown_f);
 
 	SCR_LoadPics (); //johnfitz
 
@@ -479,7 +479,7 @@ void SCR_DrawFPS (void)
 		char	st[16];
 		int	x, y;
 		sprintf (st, "%4.0f fps", lastfps);
-		x = 320 - (strlen(st)<<3);
+		x = 320 - (strlen (st) << 3);
 		y = 200 - 8;
 		if (scr_clock.value) y -= 8; //make room for clock
 		GL_SetCanvas (CANVAS_BOTTOMRIGHT);
@@ -501,16 +501,16 @@ void SCR_DrawClock (void)
 		int minutes, seconds;
 
 		minutes = cl.time / 60;
-		seconds = ((int)cl.time)%60;
+		seconds = ((int) cl.time) % 60;
 
-		sprintf (str,"%i:%i%i", minutes, seconds/10, seconds%10);
+		sprintf (str, "%i:%i%i", minutes, seconds / 10, seconds % 10);
 	}
 	else
 		return;
 
 	//draw it
 	GL_SetCanvas (CANVAS_BOTTOMRIGHT);
-	Draw_String (320 - (strlen(str)<<3), 200 - 8, str);
+	Draw_String (320 - (strlen (str) << 3), 200 - 8, str);
 }
 
 /*
@@ -521,7 +521,7 @@ SCR_DrawDevStats
 void SCR_DrawDevStats (void)
 {
 	char	str[40];
-	int		y = 25-9; //9=number of lines to print
+	int		y = 25 - 9; //9=number of lines to print
 	int		x = 0; //margin
 
 	if (!devstats.value)
@@ -529,34 +529,34 @@ void SCR_DrawDevStats (void)
 
 	GL_SetCanvas (CANVAS_BOTTOMLEFT);
 
-	Draw_Fill (x, y*8, 19*8, 9*8, 0, 0.5); //dark rectangle
+	Draw_Fill (x, y * 8, 19 * 8, 9 * 8, 0, 0.5); //dark rectangle
 
 	sprintf (str, "devstats |Curr Peak");
-	Draw_String (x, (y++)*8-x, str);
+	Draw_String (x, (y++) * 8 - x, str);
 
 	sprintf (str, "---------+---------");
-	Draw_String (x, (y++)*8-x, str);
+	Draw_String (x, (y++) * 8 - x, str);
 
 	sprintf (str, "Edicts   |%4i %4i", dev_stats.edicts, dev_peakstats.edicts);
-	Draw_String (x, (y++)*8-x, str);
+	Draw_String (x, (y++) * 8 - x, str);
 
 	sprintf (str, "Packet   |%4i %4i", dev_stats.packetsize, dev_peakstats.packetsize);
-	Draw_String (x, (y++)*8-x, str);
+	Draw_String (x, (y++) * 8 - x, str);
 
 	sprintf (str, "Visedicts|%4i %4i", dev_stats.visedicts, dev_peakstats.visedicts);
-	Draw_String (x, (y++)*8-x, str);
+	Draw_String (x, (y++) * 8 - x, str);
 
 	sprintf (str, "Efrags   |%4i %4i", dev_stats.efrags, dev_peakstats.efrags);
-	Draw_String (x, (y++)*8-x, str);
+	Draw_String (x, (y++) * 8 - x, str);
 
 	sprintf (str, "Dlights  |%4i %4i", dev_stats.dlights, dev_peakstats.dlights);
-	Draw_String (x, (y++)*8-x, str);
+	Draw_String (x, (y++) * 8 - x, str);
 
 	sprintf (str, "Beams    |%4i %4i", dev_stats.beams, dev_peakstats.beams);
-	Draw_String (x, (y++)*8-x, str);
+	Draw_String (x, (y++) * 8 - x, str);
 
 	sprintf (str, "Tempents |%4i %4i", dev_stats.tempents, dev_peakstats.tempents);
-	Draw_String (x, (y++)*8-x, str);
+	Draw_String (x, (y++) * 8 - x, str);
 }
 
 /*
@@ -574,7 +574,7 @@ void SCR_DrawRam (void)
 
 	GL_SetCanvas (CANVAS_DEFAULT); //johnfitz
 
-	Draw_Pic (scr_vrect.x+32, scr_vrect.y, scr_ram);
+	Draw_Pic (scr_vrect.x + 32, scr_vrect.y, scr_ram);
 }
 
 /*
@@ -618,7 +618,7 @@ void SCR_DrawNet (void)
 
 	GL_SetCanvas (CANVAS_DEFAULT); //johnfitz
 
-	Draw_Pic (scr_vrect.x+64, scr_vrect.y, scr_net);
+	Draw_Pic (scr_vrect.x + 64, scr_vrect.y, scr_net);
 }
 
 /*
@@ -628,7 +628,7 @@ DrawPause
 */
 void SCR_DrawPause (void)
 {
-	qpic_t	*pic;
+	qpic_t *pic;
 
 	if (!cl.paused)
 		return;
@@ -639,7 +639,7 @@ void SCR_DrawPause (void)
 	GL_SetCanvas (CANVAS_MENU); //johnfitz
 
 	pic = Draw_CachePic ("gfx/pause.lmp");
-	Draw_Pic ( (320 - pic->width)/2, (240 - 48 - pic->height)/2, pic); //johnfitz -- stretched menus
+	Draw_Pic ((320 - pic->width) / 2, (240 - 48 - pic->height) / 2, pic); //johnfitz -- stretched menus
 }
 
 /*
@@ -649,7 +649,7 @@ SCR_DrawLoading
 */
 void SCR_DrawLoading (void)
 {
-	qpic_t	*pic;
+	qpic_t *pic;
 
 	if (!scr_drawloading)
 		return;
@@ -657,7 +657,7 @@ void SCR_DrawLoading (void)
 	GL_SetCanvas (CANVAS_MENU); //johnfitz
 
 	pic = Draw_CachePic ("gfx/loading.lmp");
-	Draw_Pic ( (320 - pic->width)/2, (240 - 48 - pic->height)/2, pic); //johnfitz -- stretched menus
+	Draw_Pic ((320 - pic->width) / 2, (240 - 48 - pic->height) / 2, pic); //johnfitz -- stretched menus
 }
 
 /*
@@ -667,11 +667,14 @@ SCR_DrawCrosshair -- johnfitz
 */
 void SCR_DrawCrosshair (void)
 {
+	extern qpic_t *pic_crosshair;
+
 	if (!crosshair.value)
 		return;
 
 	GL_SetCanvas (CANVAS_CROSSHAIR);
-	Draw_Character (-4, -4, '+'); //0,0 is center of viewport
+//	Draw_Character (-4, -4, '+'); //0,0 is center of viewport
+	Draw_Pic ((-pic_crosshair->width) / 2, (-pic_crosshair->height) / 2, pic_crosshair); //johnfitz -- stretched menus
 }
 
 
@@ -775,23 +778,23 @@ SCR_ScreenShot_f -- johnfitz -- rewritten to use Image_WriteTGA
 */
 void SCR_ScreenShot_f (void)
 {
-	byte	*buffer;
+	byte *buffer;
 	char	ext[4];
 	char	imagename[16];  //johnfitz -- was [80]
 	char	checkname[MAX_OSPATH];
 	int	i, quality;
 	qboolean	ok;
 
-	Q_strncpy (ext, "png", sizeof(ext));
+	Q_strncpy (ext, "png", sizeof (ext));
 
 	if (Cmd_Argc () >= 2)
 	{
-		const char	*requested_ext = Cmd_Argv (1);
+		const char *requested_ext = Cmd_Argv (1);
 
 		if (!q_strcasecmp ("png", requested_ext)
-		    || !q_strcasecmp ("tga", requested_ext)
-		    || !q_strcasecmp ("jpg", requested_ext))
-			Q_strncpy (ext, requested_ext, sizeof(ext));
+			|| !q_strcasecmp ("tga", requested_ext)
+			|| !q_strcasecmp ("jpg", requested_ext))
+			Q_strncpy (ext, requested_ext, sizeof (ext));
 		else
 		{
 			SCR_ScreenShot_Usage ();
@@ -799,22 +802,22 @@ void SCR_ScreenShot_f (void)
 		}
 	}
 
-// read quality as the 3rd param (only used for JPG)
+	// read quality as the 3rd param (only used for JPG)
 	quality = 90;
 	if (Cmd_Argc () >= 3)
-		quality = Q_atoi (Cmd_Argv(2));
+		quality = Q_atoi (Cmd_Argv (2));
 	if (quality < 1 || quality > 100)
 	{
 		SCR_ScreenShot_Usage ();
 		return;
 	}
-	
-// find a file name to save it to
-	for (i=0; i<10000; i++)
+
+	// find a file name to save it to
+	for (i = 0; i < 10000; i++)
 	{
-		q_snprintf (imagename, sizeof(imagename), "spasm%04i.%s", i, ext);	// "fitz%04i.tga"
-		q_snprintf (checkname, sizeof(checkname), "%s/%s", com_gamedir, imagename);
-		if (Sys_FileTime(checkname) == -1)
+		q_snprintf (imagename, sizeof (imagename), "spasm%04i.%s", i, ext);	// "fitz%04i.tga"
+		q_snprintf (checkname, sizeof (checkname), "%s/%s", com_gamedir, imagename);
+		if (Sys_FileTime (checkname) == -1)
 			break;	// file doesn't exist
 	}
 	if (i == 10000)
@@ -823,8 +826,8 @@ void SCR_ScreenShot_f (void)
 		return;
 	}
 
-//get data
-	if (!(buffer = (byte *) malloc(glwidth*glheight*3)))
+	//get data
+	if (!(buffer = (byte *) malloc (glwidth * glheight * 3)))
 	{
 		Con_Printf ("SCR_ScreenShot_f: Couldn't allocate memory\n");
 		return;
@@ -833,12 +836,12 @@ void SCR_ScreenShot_f (void)
 	glPixelStorei (GL_PACK_ALIGNMENT, 1);/* for widths that aren't a multiple of 4 */
 	glReadPixels (glx, gly, glwidth, glheight, GL_RGB, GL_UNSIGNED_BYTE, buffer);
 
-// now write the file
-	if (!q_strncasecmp (ext, "png", sizeof(ext)))
+	// now write the file
+	if (!q_strncasecmp (ext, "png", sizeof (ext)))
 		ok = Image_WritePNG (imagename, buffer, glwidth, glheight, 24, false);
-	else if (!q_strncasecmp (ext, "tga", sizeof(ext)))
+	else if (!q_strncasecmp (ext, "tga", sizeof (ext)))
 		ok = Image_WriteTGA (imagename, buffer, glwidth, glheight, 24, false);
-	else if (!q_strncasecmp (ext, "jpg", sizeof(ext)))
+	else if (!q_strncasecmp (ext, "jpg", sizeof (ext)))
 		ok = Image_WriteJPG (imagename, buffer, glwidth, glheight, 24, quality, false);
 	else
 		ok = false;
@@ -870,7 +873,7 @@ void SCR_BeginLoadingPlaque (void)
 	if (cls.signon != SIGNONS)
 		return;
 
-// redraw with no console and the loading plaque
+	// redraw with no console and the loading plaque
 	Con_ClearNotify ();
 	scr_centertime_off = 0;
 	scr_con_current = 0;
@@ -897,12 +900,12 @@ void SCR_EndLoadingPlaque (void)
 
 //=============================================================================
 
-const char	*scr_notifystring;
+const char *scr_notifystring;
 qboolean	scr_drawdialog;
 
 void SCR_DrawNotifyString (void)
 {
-	const char	*start;
+	const char *start;
 	int		l;
 	int		j;
 	int		x, y;
@@ -915,12 +918,12 @@ void SCR_DrawNotifyString (void)
 
 	do
 	{
-	// scan the width of the line
-		for (l=0 ; l<40 ; l++)
+		// scan the width of the line
+		for (l = 0; l < 40; l++)
 			if (start[l] == '\n' || !start[l])
 				break;
-		x = (320 - l*8)/2; //johnfitz -- stretched overlays
-		for (j=0 ; j<l ; j++, x+=8)
+		x = (320 - l * 8) / 2; //johnfitz -- stretched overlays
+		for (j = 0; j < l; j++, x += 8)
 			Draw_Character (x, y, start[j]);
 
 		y += 8;
@@ -952,7 +955,7 @@ int SCR_ModalMessage (const char *text, float timeout) //johnfitz -- timeout
 
 	scr_notifystring = text;
 
-// draw a fresh screen
+	// draw a fresh screen
 	scr_drawdialog = true;
 	SCR_UpdateScreen ();
 	scr_drawdialog = false;
@@ -970,16 +973,16 @@ int SCR_ModalMessage (const char *text, float timeout) //johnfitz -- timeout
 		Sys_Sleep (16);
 		if (timeout) time2 = Sys_DoubleTime (); //johnfitz -- zero timeout means wait forever.
 	} while (lastchar != 'y' && lastchar != 'Y' &&
-		 lastchar != 'n' && lastchar != 'N' &&
-		 lastkey != K_ESCAPE &&
-		 lastkey != K_ABUTTON &&
-		 lastkey != K_BBUTTON &&
-		 time2 <= time1);
+		lastchar != 'n' && lastchar != 'N' &&
+		lastkey != K_ESCAPE &&
+		lastkey != K_ABUTTON &&
+		lastkey != K_BBUTTON &&
+		time2 <= time1);
 	Key_EndInputGrab ();
 
-//	SCR_UpdateScreen (); //johnfitz -- commented out
+	//	SCR_UpdateScreen (); //johnfitz -- commented out
 
-	//johnfitz -- timeout
+		//johnfitz -- timeout
 	if (time2 > time1)
 		return false;
 	//johnfitz
@@ -997,7 +1000,7 @@ int SCR_ModalMessage (const char *text, float timeout) //johnfitz -- timeout
 ==================
 SCR_TileClear
 johnfitz -- modified to use glwidth/glheight instead of vid.width/vid.height
-	    also fixed the dimentions of right and top panels
+		also fixed the dimentions of right and top panels
 ==================
 */
 void SCR_TileClear (void)
@@ -1006,28 +1009,28 @@ void SCR_TileClear (void)
 	{
 		// left
 		Draw_TileClear (0,
-						0,
-						r_refdef.vrect.x,
-						glheight - sb_lines);
+			0,
+			r_refdef.vrect.x,
+			glheight - sb_lines);
 		// right
 		Draw_TileClear (r_refdef.vrect.x + r_refdef.vrect.width,
-						0,
-						glwidth - r_refdef.vrect.x - r_refdef.vrect.width,
-						glheight - sb_lines);
+			0,
+			glwidth - r_refdef.vrect.x - r_refdef.vrect.width,
+			glheight - sb_lines);
 	}
 
 	if (r_refdef.vrect.y > 0)
 	{
 		// top
 		Draw_TileClear (r_refdef.vrect.x,
-						0,
-						r_refdef.vrect.width,
-						r_refdef.vrect.y);
+			0,
+			r_refdef.vrect.width,
+			r_refdef.vrect.y);
 		// bottom
 		Draw_TileClear (r_refdef.vrect.x,
-						r_refdef.vrect.y + r_refdef.vrect.height,
-						r_refdef.vrect.width,
-						glheight - r_refdef.vrect.y - r_refdef.vrect.height - sb_lines);
+			r_refdef.vrect.y + r_refdef.vrect.height,
+			r_refdef.vrect.width,
+			glheight - r_refdef.vrect.y - r_refdef.vrect.height - sb_lines);
 	}
 }
 
@@ -1066,9 +1069,9 @@ void SCR_UpdateScreen (void)
 	// determine size of refresh window
 	SCR_CalcRefdef ();
 
-//
-// do 3D refresh drawing, and then update the screen
-//
+	//
+	// do 3D refresh drawing, and then update the screen
+	//
 	SCR_SetUpToDrawConsole ();
 
 	V_RenderView ();

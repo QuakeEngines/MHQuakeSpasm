@@ -915,24 +915,24 @@ void R_DrawPolyBlend (void)
 	glDisable (GL_ALPHA_TEST);
 	glDisable (GL_TEXTURE_2D);
 	glDisable (GL_DEPTH_TEST);
+	glDepthMask (GL_FALSE);
 	glEnable (GL_BLEND);
 
 	glMatrixMode (GL_PROJECTION);
 	glLoadIdentity ();
-	glOrtho (0, 1, 1, 0, -99999, 99999);
 	glMatrixMode (GL_MODELVIEW);
 	glLoadIdentity ();
 
 	glColor4fv (v_blend);
 
-	glBegin (GL_QUADS);
-	glVertex2f (0, 0);
-	glVertex2f (1, 0);
-	glVertex2f (1, 1);
-	glVertex2f (0, 1);
+	glBegin (GL_TRIANGLES);
+	glVertex2f (-1.000000, -1.000000);
+	glVertex2f (-1.000000, 3.000000);
+	glVertex2f (3.000000, -1.000000);
 	glEnd ();
 
 	glDisable (GL_BLEND);
+	glDepthMask (GL_TRUE);
 	glEnable (GL_DEPTH_TEST);
 	glEnable (GL_TEXTURE_2D);
 	glEnable (GL_ALPHA_TEST);
