@@ -374,7 +374,25 @@ void Sys_Quit (void)
 
 double Sys_DoubleTime (void)
 {
+	// MH - use the higher-res SDL2 timer if available
+#if defined(USE_SDL2)
+	static Uint64 start;
+	static qboolean first = true;
+
+	if (first)
+	{
+		start = SDL_GetPerformanceCounter ();
+		first = false;
+		return 0;
+	}
+	else
+	{
+		Uint64 now = SDL_GetPerformanceCounter ();
+		return (double) (now - start) / SDL_GetPerformanceFrequency ();
+	}
+#else
 	return SDL_GetTicks() / 1000.0;
+#endif
 }
 
 const char *Sys_ConsoleInput (void)

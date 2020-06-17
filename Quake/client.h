@@ -66,7 +66,8 @@ typedef struct
 #define	MAX_DLIGHTS		64 //johnfitz -- was 32
 typedef struct
 {
-	vec3_t	origin;
+	vec3_t	origin;				// world space
+	vec3_t	transformed;		// inverse transform back to model space
 	float	radius;
 	float	die;				// stop lighting after this time
 	float	decay;				// drop this each second

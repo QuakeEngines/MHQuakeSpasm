@@ -668,9 +668,8 @@ void Draw_FadeScreen (void)
 	glEnable (GL_TEXTURE_2D);
 	glEnable (GL_ALPHA_TEST);
 	glDisable (GL_BLEND);
-
-	Sbar_Changed();
 }
+
 
 /*
 ================
@@ -707,7 +706,7 @@ void GL_SetCanvas (canvastype newcanvas)
 		s = CLAMP (1.0, scr_menuscale.value, s);
 		// ericw -- doubled width to 640 to accommodate long keybindings
 		glOrtho (0, 640, 200, 0, -99999, 99999);
-		glViewport (glx + (glwidth - 320*s) / 2, gly + (glheight - 200*s) / 2, 640*s, 200*s);
+		glViewport (glx + (glwidth - 320*s) / 2, gly + ((glheight - 200*s) / 3) * 2, 640*s, 200*s); // MH - adjust upwards
 		break;
 	case CANVAS_SBAR:
 		s = CLAMP (1.0, scr_sbarscale.value, (float)glwidth / 320.0);

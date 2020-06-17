@@ -536,6 +536,11 @@ void R_DrawBrushModel (entity_t *e)
 				(!cl_dlights[k].radius))
 				continue;
 
+			// MH - dlight transform
+			cl_dlights[k].transformed[0] = cl_dlights[k].origin[0] - e->origin[0];
+			cl_dlights[k].transformed[1] = cl_dlights[k].origin[1] - e->origin[1];
+			cl_dlights[k].transformed[2] = cl_dlights[k].origin[2] - e->origin[2];
+
 			R_MarkLights (&cl_dlights[k], k,
 				clmodel->nodes + clmodel->hulls[0].firstclipnode);
 		}
@@ -1067,7 +1072,7 @@ void R_AddDynamicLights (msurface_t *surf)
 			continue;		// not lit by this light
 
 		rad = cl_dlights[lnum].radius;
-		dist = DotProduct (cl_dlights[lnum].origin, surf->plane->normal) -
+		dist = DotProduct (cl_dlights[lnum].transformed, surf->plane->normal) -
 				surf->plane->dist;
 		rad -= fabs(dist);
 		minlight = cl_dlights[lnum].minlight;
@@ -1077,7 +1082,7 @@ void R_AddDynamicLights (msurface_t *surf)
 
 		for (i=0 ; i<3 ; i++)
 		{
-			impact[i] = cl_dlights[lnum].origin[i] -
+			impact[i] = cl_dlights[lnum].transformed[i] -
 					surf->plane->normal[i]*dist;
 		}
 

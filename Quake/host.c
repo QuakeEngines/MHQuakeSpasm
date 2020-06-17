@@ -563,11 +563,11 @@ Host_FilterTime
 Returns false if the time is too short to run a frame
 ===================
 */
-qboolean Host_FilterTime (float time)
+qboolean Host_FilterTime (void)
 {
 	float maxfps; //johnfitz
 
-	realtime += time;
+	realtime = Sys_DoubleTime ();
 
 	//johnfitz -- max fps cvar
 	maxfps = CLAMP (10.0, host_maxfps.value, 1000.0);
@@ -667,7 +667,7 @@ Host_Frame
 Runs all active servers
 ==================
 */
-void _Host_Frame (float time)
+void _Host_Frame (void)
 {
 	static double		time1 = 0;
 	static double		time2 = 0;
@@ -681,7 +681,7 @@ void _Host_Frame (float time)
 	rand ();
 
 // decide the simulation time
-	if (!Host_FilterTime (time))
+	if (!Host_FilterTime ())
 		return;			// don't run too fast, or packets will flood out
 
 // get new key events
@@ -765,7 +765,7 @@ void _Host_Frame (float time)
 
 }
 
-void Host_Frame (float time)
+void Host_Frame (void)
 {
 	double	time1, time2;
 	static double	timetotal;
@@ -774,12 +774,12 @@ void Host_Frame (float time)
 
 	if (!serverprofile.value)
 	{
-		_Host_Frame (time);
+		_Host_Frame ();
 		return;
 	}
 
 	time1 = Sys_DoubleTime ();
-	_Host_Frame (time);
+	_Host_Frame ();
 	time2 = Sys_DoubleTime ();
 
 	timetotal += time2 - time1;

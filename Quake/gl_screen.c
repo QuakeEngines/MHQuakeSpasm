@@ -124,8 +124,6 @@ qboolean	scr_disabled_for_loading;
 qboolean	scr_drawloading;
 float		scr_disabled_time;
 
-int	scr_tileclear_updates = 0; //johnfitz
-
 void SCR_ScreenShot_f (void);
 
 /*
@@ -187,12 +185,26 @@ void SCR_DrawCenterString (void) //actually do the drawing
 	scr_erase_center = 0;
 	start = scr_centerstring;
 
+#if 0
 	if (scr_center_lines <= 4)
 		y = 200*0.35;	//johnfitz -- 320x200 coordinate system
 	else
 		y = 48;
 	if (crosshair.value)
 		y -= 8;
+#else
+	// https://github.com/ESWAT/john-carmack-plan-archive/blob/master/by_year/johnc_plan_1996.txt#L3436
+	// "changed center print position for very long text messages" and "end of e4 text crash" in the same .plan entry.
+	// now, the first of these is 100% the old code, but the reason for it is, i'm 99% certain, due to the second.
+	// a starting y of 48 positions the center text directly under the banner, so that's exhibit 1.  exhibit 2 is
+	// the end of e4 text being 17 lines, so with the original "y = 200*0.35" code that would cause this exact value to 
+	// overflow the software vid.buffer for a 320x200 resolution.  Taken together, this constitutes evidence that 
+	// "y = 48" for >= 4 lines was intended to catch intermission text and position it under the banner in a non-crashing
+	// way, rather than as intended different behaviour for non-intermission centerprints.
+	if (cl.intermission)
+		y = 48;
+	else y = 100 - scr_center_lines * 4;
+#endif
 
 	do
 	{
@@ -291,11 +303,6 @@ static void SCR_CalcRefdef (void)
 {
 	float		size, scale; //johnfitz -- scale
 
-// force the status bar to redraw
-	Sbar_Changed ();
-
-	scr_tileclear_updates = 0; //johnfitz
-
 // bound viewsize
 	if (scr_viewsize.value < 30)
 		Cvar_SetQuick (&scr_viewsize, "30");
@@ -307,8 +314,6 @@ static void SCR_CalcRefdef (void)
 		Cvar_SetQuick (&scr_fov, "10");
 	if (scr_fov.value > 170)
 		Cvar_SetQuick (&scr_fov, "170");
-
-	vid.recalc_refdef = 0;
 
 	//johnfitz -- rewrote this section
 	size = scr_viewsize.value;
@@ -365,7 +370,6 @@ void SCR_SizeDown_f (void)
 
 static void SCR_Callback_refdef (cvar_t *var)
 {
-	vid.recalc_refdef = 1;
 }
 
 /*
@@ -375,7 +379,6 @@ SCR_Conwidth_f -- johnfitz -- called when scr_conwidth or scr_conscale changes
 */
 void SCR_Conwidth_f (cvar_t *var)
 {
-	vid.recalc_refdef = 1;
 	vid.conwidth = (scr_conwidth.value > 0) ? (int)scr_conwidth.value : (scr_conscale.value > 0) ? (int)(vid.width/scr_conscale.value) : vid.width;
 	vid.conwidth = CLAMP (320, vid.conwidth, vid.width);
 	vid.conwidth &= 0xFFFFFFF8;
@@ -481,7 +484,6 @@ void SCR_DrawFPS (void)
 		if (scr_clock.value) y -= 8; //make room for clock
 		GL_SetCanvas (CANVAS_BOTTOMRIGHT);
 		Draw_String (x, y, st);
-		scr_tileclear_updates = 0;
 	}
 }
 
@@ -509,8 +511,6 @@ void SCR_DrawClock (void)
 	//draw it
 	GL_SetCanvas (CANVAS_BOTTOMRIGHT);
 	Draw_String (320 - (strlen(str)<<3), 200 - 8, str);
-
-	scr_tileclear_updates = 0;
 }
 
 /*
@@ -640,8 +640,6 @@ void SCR_DrawPause (void)
 
 	pic = Draw_CachePic ("gfx/pause.lmp");
 	Draw_Pic ( (320 - pic->width)/2, (240 - 48 - pic->height)/2, pic); //johnfitz -- stretched menus
-
-	scr_tileclear_updates = 0; //johnfitz
 }
 
 /*
@@ -660,8 +658,6 @@ void SCR_DrawLoading (void)
 
 	pic = Draw_CachePic ("gfx/loading.lmp");
 	Draw_Pic ( (320 - pic->width)/2, (240 - 48 - pic->height)/2, pic); //johnfitz -- stretched menus
-
-	scr_tileclear_updates = 0; //johnfitz
 }
 
 /*
@@ -686,14 +682,21 @@ void SCR_DrawCrosshair (void)
 /*
 ==================
 SCR_SetUpToDrawConsole
+
+MH - rewritten for improved framerate independence
 ==================
 */
 void SCR_SetUpToDrawConsole (void)
 {
-	//johnfitz -- let's hack away the problem of slow console when host_timescale is <0
-	extern cvar_t host_timescale;
-	float timescale;
-	//johnfitz
+	static double con_oldtime = -1;
+	double con_frametime;
+
+	// check for first call
+	if (con_oldtime < 0) con_oldtime = realtime;
+
+	// get correct frametime
+	con_frametime = realtime - con_oldtime;
+	con_oldtime = realtime;
 
 	Con_CheckResize ();
 
@@ -709,32 +712,24 @@ void SCR_SetUpToDrawConsole (void)
 		scr_con_current = scr_conlines;
 	}
 	else if (key_dest == key_console)
-		scr_conlines = glheight/2; //half screen //johnfitz -- glheight instead of vid.height
+		scr_conlines = glheight / 2; //half screen //johnfitz -- glheight instead of vid.height
 	else
 		scr_conlines = 0; //none visible
-
-	timescale = (host_timescale.value > 0) ? host_timescale.value : 1; //johnfitz -- timescale
 
 	if (scr_conlines < scr_con_current)
 	{
 		// ericw -- (glheight/600.0) factor makes conspeed resolution independent, using 800x600 as a baseline
-		scr_con_current -= scr_conspeed.value*(glheight/600.0)*host_frametime/timescale; //johnfitz -- timescale
+		scr_con_current -= scr_conspeed.value * con_frametime * ((float) glheight / 200.0f);
 		if (scr_conlines > scr_con_current)
 			scr_con_current = scr_conlines;
 	}
 	else if (scr_conlines > scr_con_current)
 	{
 		// ericw -- (glheight/600.0)
-		scr_con_current += scr_conspeed.value*(glheight/600.0)*host_frametime/timescale; //johnfitz -- timescale
+		scr_con_current += scr_conspeed.value * con_frametime * ((float) glheight / 200.0f);
 		if (scr_conlines < scr_con_current)
 			scr_con_current = scr_conlines;
 	}
-
-	if (clearconsole++ < vid.numpages)
-		Sbar_Changed ();
-
-	if (!con_forcedup && scr_con_current)
-		scr_tileclear_updates = 0; //johnfitz
 }
 
 /*
@@ -881,7 +876,6 @@ void SCR_BeginLoadingPlaque (void)
 	scr_con_current = 0;
 
 	scr_drawloading = true;
-	Sbar_Changed ();
 	SCR_UpdateScreen ();
 	scr_drawloading = false;
 
@@ -1004,16 +998,10 @@ int SCR_ModalMessage (const char *text, float timeout) //johnfitz -- timeout
 SCR_TileClear
 johnfitz -- modified to use glwidth/glheight instead of vid.width/vid.height
 	    also fixed the dimentions of right and top panels
-	    also added scr_tileclear_updates
 ==================
 */
 void SCR_TileClear (void)
 {
-	//ericw -- added check for glsl gamma. TODO: remove this ugly optimization?
-	if (scr_tileclear_updates >= vid.numpages && !gl_clear.value && !(gl_glsl_gamma_able && vid_gamma.value != 1))
-		return;
-	scr_tileclear_updates++;
-
 	if (r_refdef.vrect.x > 0)
 	{
 		// left
@@ -1075,11 +1063,8 @@ void SCR_UpdateScreen (void)
 
 	GL_BeginRendering (&glx, &gly, &glwidth, &glheight);
 
-	//
 	// determine size of refresh window
-	//
-	if (vid.recalc_refdef)
-		SCR_CalcRefdef ();
+	SCR_CalcRefdef ();
 
 //
 // do 3D refresh drawing, and then update the screen

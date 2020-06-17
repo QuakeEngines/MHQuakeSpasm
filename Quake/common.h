@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define _Q_COMMON_H
 
 // comndef.h  -- general definitions
+#pragma warning(disable:4018)	// signed/unsigned mismatch
 
 #if defined(_WIN32)
 #ifdef _MSC_VER

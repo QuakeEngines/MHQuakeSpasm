@@ -138,7 +138,6 @@ static void TexMgr_TextureMode_f (cvar_t *var)
 				glmode_idx = i;
 				for (glt = active_gltextures; glt; glt = glt->next)
 					TexMgr_SetFilterModes (glt);
-				Sbar_Changed (); //sbar graphics need to be redrawn with new filter mode
 				//FIXME: warpimages need to be redrawn, too.
 			}
 			return;

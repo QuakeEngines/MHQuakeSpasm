@@ -1034,7 +1034,6 @@ void CL_ParseServerMessage (void)
 
 		case svc_serverinfo:
 			CL_ParseServerInfo ();
-			vid.recalc_refdef = true;	// leave intermission full screen
 			break;
 
 		case svc_setangle:
@@ -1182,13 +1181,11 @@ void CL_ParseServerMessage (void)
 		case svc_intermission:
 			cl.intermission = 1;
 			cl.completed_time = cl.time;
-			vid.recalc_refdef = true;	// go to full screen
 			break;
 
 		case svc_finale:
 			cl.intermission = 2;
 			cl.completed_time = cl.time;
-			vid.recalc_refdef = true;	// go to full screen
 			//johnfitz -- log centerprints to console
 			str = MSG_ReadString ();
 			SCR_CenterPrint (str);
@@ -1199,7 +1196,6 @@ void CL_ParseServerMessage (void)
 		case svc_cutscene:
 			cl.intermission = 3;
 			cl.completed_time = cl.time;
-			vid.recalc_refdef = true;	// go to full screen
 			//johnfitz -- log centerprints to console
 			str = MSG_ReadString ();
 			SCR_CenterPrint (str);

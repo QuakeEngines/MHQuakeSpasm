@@ -262,11 +262,4 @@ void R_UpdateWarpTextures (void)
 
 	// ericw -- workaround for osx 10.6 driver bug when using FSAA. R_Clear only clears the warpimage part of the screen.
 	GL_SetCanvas(CANVAS_DEFAULT);
-
-	//if warp render went down into sbar territory, we need to be sure to refresh it next frame
-	if (gl_warpimagesize + sb_lines > glheight)
-		Sbar_Changed ();
-
-	//if viewsize is less than 100, we need to redraw the frame around the viewport
-	scr_tileclear_updates = 0;
 }

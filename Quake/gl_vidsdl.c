@@ -750,9 +750,7 @@ static qboolean VID_SetMode (int width, int height, int refreshrate, int bpp, qb
 				depthbits,
 				fsaa_obtained);
 
-	vid.recalc_refdef = 1;
-
-// no pending changes
+	// no pending changes
 	vid_changed = false;
 
 	return true;
@@ -1793,8 +1791,6 @@ void	VID_Toggle (void)
 
 	if (toggleWorked)
 	{
-		Sbar_Changed ();	// Sbar seems to need refreshing
-
 		modestate = VID_GetFullscreen() ? MS_FULLSCREEN : MS_WINDOWED;
 
 		VID_SyncCvars();

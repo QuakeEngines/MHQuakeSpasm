@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
 				time = newtime - oldtime;
 			}
 
-			Host_Frame (time);
+			Host_Frame ();
 			oldtime = newtime;
 		}
 	}
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 		newtime = Sys_DoubleTime ();
 		time = newtime - oldtime;
 
-		Host_Frame (time);
+		Host_Frame ();
 
 		if (time < sys_throttle.value && !cls.timedemo)
 			SDL_Delay(1);

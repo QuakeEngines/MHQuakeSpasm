@@ -23,8 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-int		sb_updates;		// if >= vid.numpages, no update needed
-
 #define STAT_MINUS		10	// num frame for '-' stats digit
 
 qpic_t		*sb_nums[2][11];
@@ -76,10 +74,8 @@ Tab key down
 */
 void Sbar_ShowScores (void)
 {
-	if (sb_showscores)
-		return;
-	sb_showscores = true;
-	sb_updates = 0;
+	// MH - changed behaviour to a toggle
+	sb_showscores = !sb_showscores;
 }
 
 /*
@@ -91,8 +87,6 @@ Tab key up
 */
 void Sbar_DontShowScores (void)
 {
-	sb_showscores = false;
-	sb_updates = 0;
 }
 
 /*
@@ -102,7 +96,6 @@ Sbar_Changed
 */
 void Sbar_Changed (void)
 {
-	sb_updates = 0;	// update next frame
 }
 
 /*
@@ -588,9 +581,6 @@ void Sbar_DrawInventory (void)
 				flashon = (flashon%5) + 2;
 
 			Sbar_DrawPic (i*24, -16, sb_weapons[flashon][i]);
-
-			if (flashon > 1)
-				sb_updates = 0;		// force update to remove flash
 		}
 	}
 
@@ -645,9 +635,6 @@ void Sbar_DrawInventory (void)
 				}
 				else
 					Sbar_DrawPic (176 + (i*24), -16, hsb_weapons[flashon][i]);
-
-				if (flashon > 1)
-					sb_updates = 0;	// force update to remove flash
 			}
 		}
 	}
@@ -690,7 +677,6 @@ void Sbar_DrawInventory (void)
 			time = cl.item_gettime[17+i];
 			if (time && time > cl.time - 2 && flashon)
 			{	// flash frame
-				sb_updates = 0;
 			}
 			else
 			{
@@ -700,8 +686,6 @@ void Sbar_DrawInventory (void)
 					Sbar_DrawPic (192 + i*16, -16, sb_items[i]);
 				}
 			}
-			if (time && time > cl.time - 2)
-				sb_updates = 0;
 		}
 	}
 	//MED 01/04/97 added hipnotic items
@@ -715,14 +699,11 @@ void Sbar_DrawInventory (void)
 				time = cl.item_gettime[24+i];
 				if (time && time > cl.time - 2 && flashon )
 				{	// flash frame
-					sb_updates = 0;
 				}
 				else
 				{
 					Sbar_DrawPic (288 + i*16, -16, hsb_items[i]);
 				}
-				if (time && time > cl.time - 2)
-					sb_updates = 0;
 			}
 		}
 	}
@@ -737,14 +718,11 @@ void Sbar_DrawInventory (void)
 				time = cl.item_gettime[29+i];
 				if (time && time > cl.time - 2 && flashon)
 				{	// flash frame
-					sb_updates = 0;
 				}
 				else
 				{
 					Sbar_DrawPic (288 + i*16, -16, rsb_items[i]);
 				}
-				if (time && time > cl.time - 2)
-					sb_updates = 0;
 			}
 		}
 	}
@@ -758,12 +736,9 @@ void Sbar_DrawInventory (void)
 				time = cl.item_gettime[28+i];
 				if (time && time > cl.time - 2 && flashon)
 				{	// flash frame
-					sb_updates = 0;
 				}
 				else
 					Sbar_DrawPic (320-32 + i*8, -16, sb_sigil[i]);
-				if (time && time > cl.time - 2)
-					sb_updates = 0;
 			}
 		}
 	}
@@ -901,17 +876,17 @@ void Sbar_DrawFace (void)
 		return;
 	}
 
-	if (cl.stats[STAT_HEALTH] >= 100)
+	// MH - improved this check
+	if (cl.stats[STAT_HEALTH] < 0)
+		f = 0;
+	else if (cl.stats[STAT_HEALTH] >= 100)
 		f = 4;
 	else
 		f = cl.stats[STAT_HEALTH] / 20;
-	if (f < 0)	// in case we ever decide to draw when health <= 0
-		f = 0;
 
 	if (cl.time <= cl.faceanimtime)
 	{
 		anim = 1;
-		sb_updates = 0;		// make sure the anim gets drawn over
 	}
 	else
 		anim = 0;
@@ -932,12 +907,6 @@ void Sbar_Draw (void)
 
 	if (cl.intermission)
 		return; //johnfitz -- never draw sbar during intermission
-
-	if (sb_updates >= vid.numpages && !gl_clear.value && scr_sbaralpha.value >= 1 //johnfitz -- gl_clear, scr_sbaralpha
-        && !(gl_glsl_gamma_able && vid_gamma.value != 1))                         //ericw -- must draw sbar every frame if doing glsl gamma
-		return;
-
-	sb_updates++;
 
 	GL_SetCanvas (CANVAS_DEFAULT); //johnfitz
 
@@ -970,7 +939,6 @@ void Sbar_Draw (void)
 	{
 		Sbar_DrawPicAlpha (0, 0, sb_scorebar, scr_sbaralpha.value); //johnfitz -- scr_sbaralpha
 		Sbar_DrawScoreboard ();
-		sb_updates = 0;
 	}
 	else if (scr_viewsize.value < 120) //johnfitz -- check viewsize instead of sb_lines
 	{

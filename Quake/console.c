@@ -1100,8 +1100,6 @@ void Con_DrawNotify (void)
 			Draw_Character ((x+1)<<3, v, text[x]);
 
 		v += 8;
-
-		scr_tileclear_updates = 0; //johnfitz
 	}
 
 	if (key_dest == key_message)
@@ -1133,8 +1131,6 @@ void Con_DrawNotify (void)
 
 		Draw_Character (x<<3, v, 10 + ((int)(realtime*con_cursorspeed)&1));
 		v += 8;
-
-		scr_tileclear_updates = 0; //johnfitz
 	}
 }
 

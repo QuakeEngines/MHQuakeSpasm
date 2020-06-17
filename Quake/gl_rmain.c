@@ -775,8 +775,6 @@ void R_ShowBoundingBoxes (void)
 	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 	GL_PolygonOffset (OFFSET_NONE);
 	glEnable (GL_DEPTH_TEST);
-
-	Sbar_Changed (); //so we don't get dots collecting on the statusbar
 }
 
 /*
@@ -859,8 +857,6 @@ void R_ShowTris (void)
 	GL_PolygonOffset (OFFSET_NONE);
 	if (r_showtris.value == 1)
 		glEnable (GL_DEPTH_TEST);
-
-	Sbar_Changed (); //so we don't get dots collecting on the statusbar
 }
 
 /*
