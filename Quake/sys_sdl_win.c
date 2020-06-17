@@ -44,6 +44,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "SDL.h"
 #endif
 
+#pragma warning (disable: 4996)
 
 qboolean		isDedicated;
 qboolean	Win95, Win95old, WinNT, WinVista;

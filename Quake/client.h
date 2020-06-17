@@ -44,8 +44,8 @@ typedef struct
 
 typedef struct
 {
-	int		destcolor[3];
-	int		percent;		// 0-256
+	float	destcolor[3];
+	float	percent;		// 0-256
 } cshift_t;
 
 #define	CSHIFT_CONTENTS	0

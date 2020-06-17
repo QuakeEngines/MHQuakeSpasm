@@ -393,6 +393,8 @@ void CL_ParseServerInfo (void)
 
 	R_NewMap ();
 
+	V_NewMap ();
+
 	//johnfitz -- clear out string; we don't consider identical
 	//messages to be duplicates if the map has changed in between
 	con_lastcenterstring[0] = 0;
