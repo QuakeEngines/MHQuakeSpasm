@@ -662,13 +662,13 @@ static void S_UpdateAmbientSounds (void)
 		// don't adjust volume too fast
 		if (chan->master_vol < vol)
 		{
-			chan->master_vol += (int) (host_frametime * ambient_fade.value);
+			chan->master_vol += (int) ((cl.time - cl.oldtime) * ambient_fade.value);
 			if (chan->master_vol > vol)
 				chan->master_vol = vol;
 		}
 		else if (chan->master_vol > vol)
 		{
-			chan->master_vol -= (int) (host_frametime * ambient_fade.value);
+			chan->master_vol -= (int) ((cl.time - cl.oldtime) * ambient_fade.value);
 			if (chan->master_vol < vol)
 				chan->master_vol = vol;
 		}

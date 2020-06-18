@@ -312,7 +312,7 @@ extern 	kbutton_t 	in_speed;
 void CL_InitInput (void);
 void CL_SendCmd (void);
 void CL_SendMove (const usercmd_t *cmd);
-int  CL_ReadFromServer (void);
+int  CL_ReadFromServer (double frametime);
 void CL_BaseMove (usercmd_t *cmd);
 
 void CL_ParseTEnt (void);

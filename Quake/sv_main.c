@@ -404,18 +404,14 @@ void SV_CheckForNewClients (void)
 	struct qsocket_s *ret;
 	int				i;
 
-	//
 	// check for new connections
-	//
 	while (1)
 	{
 		ret = NET_CheckNewConnections ();
 		if (!ret)
 			break;
 
-		//
 		// init a new client structure
-		//
 		for (i = 0; i < svs.maxclients; i++)
 			if (!svs.clients[i].active)
 				break;
@@ -1462,9 +1458,8 @@ void SV_SpawnServer (const char *server)
 	sv.state = ss_active;
 
 	// run two frames to allow everything to settle
-	host_frametime = 0.1;
-	SV_Physics ();
-	SV_Physics ();
+	SV_Physics (0.1);
+	SV_Physics (0.1);
 
 	// create a baseline for more efficient communications
 	SV_CreateBaseline ();

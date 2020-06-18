@@ -147,7 +147,7 @@ void SV_UserFriction (void)
 
 	// apply friction
 	control = speed < sv_stopspeed.value ? sv_stopspeed.value : speed;
-	newspeed = speed - host_frametime * control * friction;
+	newspeed = speed - sv.frametime * control * friction;
 
 	if (newspeed < 0)
 		newspeed = 0;
@@ -174,7 +174,7 @@ void SV_Accelerate (float wishspeed, const vec3_t wishdir)
 	addspeed = wishspeed - currentspeed;
 	if (addspeed <= 0)
 		return;
-	accelspeed = sv_accelerate.value * host_frametime * wishspeed;
+	accelspeed = sv_accelerate.value * sv.frametime * wishspeed;
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
@@ -194,8 +194,8 @@ void SV_AirAccelerate (float wishspeed, vec3_t wishveloc)
 	addspeed = wishspd - currentspeed;
 	if (addspeed <= 0)
 		return;
-	//	accelspeed = sv_accelerate.value * host_frametime;
-	accelspeed = sv_accelerate.value * wishspeed * host_frametime;
+	//	accelspeed = sv_accelerate.value * sv.frametime;
+	accelspeed = sv_accelerate.value * wishspeed * sv.frametime;
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
@@ -210,7 +210,7 @@ void DropPunchAngle (void)
 
 	len = VectorNormalize (sv_player->v.punchangle);
 
-	len -= 10 * host_frametime;
+	len -= 10 * sv.frametime;
 	if (len < 0)
 		len = 0;
 	VectorScale (sv_player->v.punchangle, len, sv_player->v.punchangle);
@@ -255,7 +255,7 @@ void SV_WaterMove (void)
 	speed = VectorLength (velocity);
 	if (speed)
 	{
-		newspeed = speed - host_frametime * speed * sv_friction.value;
+		newspeed = speed - sv.frametime * speed * sv_friction.value;
 		if (newspeed < 0)
 			newspeed = 0;
 		VectorScale (velocity, newspeed / speed, velocity);
@@ -274,7 +274,7 @@ void SV_WaterMove (void)
 		return;
 
 	VectorNormalize (wishvel);
-	accelspeed = sv_accelerate.value * wishspeed * host_frametime;
+	accelspeed = sv_accelerate.value * wishspeed * sv.frametime;
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
@@ -595,9 +595,11 @@ nextmsg:
 SV_RunClients
 ==================
 */
-void SV_RunClients (void)
+void SV_RunClients (double frametime)
 {
-	int				i;
+	int i;
+
+	sv.frametime = frametime;
 
 	for (i = 0, host_client = svs.clients; i < svs.maxclients; i++, host_client++)
 	{

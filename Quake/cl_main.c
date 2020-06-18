@@ -63,6 +63,8 @@ entity_t *cl_visedicts[MAX_VISEDICTS];
 
 extern cvar_t	r_lerpmodels, r_lerpmove; // johnfitz
 
+extern	float scr_centertime_off;
+
 /*
 =====================
 CL_ClearState
@@ -89,6 +91,9 @@ void CL_ClearState (void)
 	cl_max_edicts = CLAMP (MIN_EDICTS, (int) max_edicts.value, MAX_EDICTS);
 	cl_entities = (entity_t *) Hunk_AllocName (cl_max_edicts * sizeof (entity_t), "cl_entities");
 	// johnfitz
+
+	// clear this here as well in case there isn't a server
+	scr_centertime_off = 0;
 }
 
 /*
@@ -591,7 +596,7 @@ CL_ReadFromServer
 Read all incoming data from the server
 ===============
 */
-int CL_ReadFromServer (void)
+int CL_ReadFromServer (double frametime)
 {
 	int			ret;
 	extern int	num_temp_entities; // johnfitz
@@ -603,7 +608,7 @@ int CL_ReadFromServer (void)
 
 
 	cl.oldtime = cl.time;
-	cl.time += host_frametime;
+	cl.time += frametime;
 
 	do
 	{

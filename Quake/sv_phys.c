@@ -127,7 +127,7 @@ qboolean SV_RunThink (edict_t *ent)
 	int		i; // johnfitz
 
 	thinktime = ent->v.nextthink;
-	if (thinktime <= 0 || thinktime > sv.time + host_frametime)
+	if (thinktime <= 0 || thinktime > sv.time + sv.frametime)
 		return true;
 
 	if (thinktime < sv.time)
@@ -395,7 +395,7 @@ void SV_AddGravity (edict_t *ent)
 	else
 		ent_gravity = 1.0;
 
-	ent->v.velocity[2] -= ent_gravity * sv_gravity.value * host_frametime;
+	ent->v.velocity[2] -= ent_gravity * sv_gravity.value * sv.frametime;
 }
 
 
@@ -584,14 +584,14 @@ void SV_Physics_Pusher (edict_t *ent)
 	oldltime = ent->v.ltime;
 
 	thinktime = ent->v.nextthink;
-	if (thinktime < ent->v.ltime + host_frametime)
+	if (thinktime < ent->v.ltime + sv.frametime)
 	{
 		movetime = thinktime - ent->v.ltime;
 		if (movetime < 0)
 			movetime = 0;
 	}
 	else
-		movetime = host_frametime;
+		movetime = sv.frametime;
 
 	if (movetime)
 	{
@@ -820,7 +820,7 @@ void SV_WalkMove (edict_t *ent)
 	VectorCopy (ent->v.origin, oldorg);
 	VectorCopy (ent->v.velocity, oldvel);
 
-	clip = SV_FlyMove (ent, host_frametime, &steptrace);
+	clip = SV_FlyMove (ent, sv.frametime, &steptrace);
 
 	if (!(clip & 2))
 		return;		// move didn't block on a step
@@ -848,7 +848,7 @@ void SV_WalkMove (edict_t *ent)
 	VectorCopy (vec3_origin, upmove);
 	VectorCopy (vec3_origin, downmove);
 	upmove[2] = STEPSIZE;
-	downmove[2] = -STEPSIZE + oldvel[2] * host_frametime;
+	downmove[2] = -STEPSIZE + oldvel[2] * sv.frametime;
 
 	// move up
 	SV_PushEntity (ent, upmove);	// FIXME: don't link?
@@ -857,7 +857,7 @@ void SV_WalkMove (edict_t *ent)
 	ent->v.velocity[0] = oldvel[0];
 	ent->v.velocity[1] = oldvel[1];
 	ent->v.velocity[2] = 0;
-	clip = SV_FlyMove (ent, host_frametime, &steptrace);
+	clip = SV_FlyMove (ent, sv.frametime, &steptrace);
 
 	// check for stuckness, possibly due to the limited precision of floats
 	// in the clipping hulls
@@ -947,13 +947,13 @@ void SV_Physics_Client (edict_t *ent, int num)
 	case MOVETYPE_FLY:
 		if (!SV_RunThink (ent))
 			return;
-		SV_FlyMove (ent, host_frametime, NULL);
+		SV_FlyMove (ent, sv.frametime, NULL);
 		break;
 
 	case MOVETYPE_NOCLIP:
 		if (!SV_RunThink (ent))
 			return;
-		VectorMA (ent->v.origin, host_frametime, ent->v.velocity, ent->v.origin);
+		VectorMA (ent->v.origin, sv.frametime, ent->v.velocity, ent->v.origin);
 		break;
 
 	default:
@@ -998,8 +998,8 @@ void SV_Physics_Noclip (edict_t *ent)
 	if (!SV_RunThink (ent))
 		return;
 
-	VectorMA (ent->v.angles, host_frametime, ent->v.avelocity, ent->v.angles);
-	VectorMA (ent->v.origin, host_frametime, ent->v.velocity, ent->v.origin);
+	VectorMA (ent->v.angles, sv.frametime, ent->v.avelocity, ent->v.angles);
+	VectorMA (ent->v.origin, sv.frametime, ent->v.velocity, ent->v.origin);
 
 	SV_LinkEdict (ent, false);
 }
@@ -1080,10 +1080,10 @@ void SV_Physics_Toss (edict_t *ent)
 		SV_AddGravity (ent);
 
 	// move angles
-	VectorMA (ent->v.angles, host_frametime, ent->v.avelocity, ent->v.angles);
+	VectorMA (ent->v.angles, sv.frametime, ent->v.avelocity, ent->v.angles);
 
 	// move origin
-	VectorScale (ent->v.velocity, host_frametime, move);
+	VectorScale (ent->v.velocity, sv.frametime, move);
 	trace = SV_PushEntity (ent, move);
 	if (trace.fraction == 1)
 		return;
@@ -1146,7 +1146,7 @@ void SV_Physics_Step (edict_t *ent)
 
 		SV_AddGravity (ent);
 		SV_CheckVelocity (ent);
-		SV_FlyMove (ent, host_frametime, NULL);
+		SV_FlyMove (ent, sv.frametime, NULL);
 		SV_LinkEdict (ent, true);
 
 		if ((int) ent->v.flags & FL_ONGROUND)	// just hit ground
@@ -1171,11 +1171,13 @@ SV_Physics
 
 ================
 */
-void SV_Physics (void)
+void SV_Physics (double frametime)
 {
 	int	i;
 	int	entity_cap; // For sv_freezenonclients 
 	edict_t *ent;
+
+	sv.frametime = frametime;
 
 	// let the progs know that a new frame has started
 	pr_global_struct->self = EDICT_TO_PROG (sv.edicts);
@@ -1185,9 +1187,7 @@ void SV_Physics (void)
 
 	// SV_CheckAllEnts ();
 
-	//
 	// treat each object in turn
-	//
 	ent = sv.edicts;
 
 	if (sv_freezenonclients.value)
@@ -1229,5 +1229,6 @@ void SV_Physics (void)
 		pr_global_struct->force_retouch--;
 
 	if (!sv_freezenonclients.value)
-		sv.time += host_frametime;
+		sv.time += sv.frametime;
 }
+

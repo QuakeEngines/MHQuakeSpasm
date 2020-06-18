@@ -152,7 +152,7 @@ for a few moments
 void SCR_CenterPrint (const char *str) // update centerprint data
 {
 	strncpy (scr_centerstring, str, sizeof (scr_centerstring) - 1);
-	scr_centertime_off = scr_centertime.value;
+	scr_centertime_off = cl.time + scr_centertime.value;
 	scr_centertime_start = cl.time;
 
 	// count the number of lines for centering
@@ -231,14 +231,13 @@ void SCR_DrawCenterString (void) // actually do the drawing
 	} while (1);
 }
 
+
 void SCR_CheckDrawCenterString (void)
 {
 	if (scr_center_lines > scr_erase_lines)
 		scr_erase_lines = scr_center_lines;
 
-	scr_centertime_off -= host_frametime;
-
-	if (scr_centertime_off <= 0 && !cl.intermission)
+	if ((cl.time > scr_centertime_off) && !cl.intermission)
 		return;
 	if (key_dest != key_game)
 		return;
@@ -559,67 +558,6 @@ void SCR_DrawDevStats (void)
 	Draw_String (x, (y++) * 8 - x, str);
 }
 
-/*
-==============
-SCR_DrawRam
-==============
-*/
-void SCR_DrawRam (void)
-{
-	if (!scr_showram.value)
-		return;
-
-	if (!r_cache_thrash)
-		return;
-
-	GL_SetCanvas (CANVAS_DEFAULT); // johnfitz
-
-	Draw_Pic (scr_vrect.x + 32, scr_vrect.y, scr_ram);
-}
-
-/*
-==============
-SCR_DrawTurtle
-==============
-*/
-void SCR_DrawTurtle (void)
-{
-	static int	count;
-
-	if (!scr_showturtle.value)
-		return;
-
-	if (host_frametime < 0.1)
-	{
-		count = 0;
-		return;
-	}
-
-	count++;
-	if (count < 3)
-		return;
-
-	GL_SetCanvas (CANVAS_DEFAULT); // johnfitz
-
-	Draw_Pic (scr_vrect.x, scr_vrect.y, scr_turtle);
-}
-
-/*
-==============
-SCR_DrawNet
-==============
-*/
-void SCR_DrawNet (void)
-{
-	if (realtime - cl.last_received_message < 0.3)
-		return;
-	if (cls.demoplayback)
-		return;
-
-	GL_SetCanvas (CANVAS_DEFAULT); // johnfitz
-
-	Draw_Pic (scr_vrect.x + 64, scr_vrect.y, scr_net);
-}
 
 /*
 ==============
@@ -1105,9 +1043,6 @@ void SCR_UpdateScreen (void)
 	else
 	{
 		SCR_DrawCrosshair (); // johnfitz
-		SCR_DrawRam ();
-		SCR_DrawNet ();
-		SCR_DrawTurtle ();
 		SCR_DrawPause ();
 		SCR_CheckDrawCenterString ();
 		Sbar_Draw ();

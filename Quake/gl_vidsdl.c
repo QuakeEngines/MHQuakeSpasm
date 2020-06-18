@@ -1322,18 +1322,11 @@ static void GL_Init (void)
 	}
 #endif
 
-	// johnfitz -- intel video workarounds from Baker
-	if (!strcmp (gl_vendor, "Intel"))
-	{
-		Con_Printf ("Intel Display Adapter detected, enabling gl_clear\n");
-		Cbuf_AddText ("gl_clear 1");
-	}
-	// johnfitz
-
 	GLAlias_CreateShaders ();
 	GLWorld_CreateShaders ();
 	GL_ClearBufferBindings ();
 }
+
 
 /*
 =================

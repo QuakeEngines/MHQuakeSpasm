@@ -617,13 +617,13 @@ void Host_GetConsoleCommands (void)
 Host_ServerFrame
 ==================
 */
-void Host_ServerFrame (void)
+void Host_ServerFrame (double frametime)
 {
 	int		i, active; // johnfitz
 	edict_t *ent; // johnfitz
 
 // run the world state
-	pr_global_struct->frametime = host_frametime;
+	pr_global_struct->frametime = frametime;
 
 	// set the time and clear the general datagram
 	SV_ClearDatagram ();
@@ -632,12 +632,12 @@ void Host_ServerFrame (void)
 	SV_CheckForNewClients ();
 
 	// read client messages
-	SV_RunClients ();
+	SV_RunClients (frametime);
 
 	// move things around and think
 	// always pause in single player if in console or menus
 	if (!sv.paused && (svs.maxclients > 1 || key_dest == key_game))
-		SV_Physics ();
+		SV_Physics (frametime);
 
 	// johnfitz -- devstats
 	if (cls.signon == SIGNONS)
@@ -710,7 +710,7 @@ void _Host_Frame (void)
 	Host_GetConsoleCommands ();
 
 	if (sv.active)
-		Host_ServerFrame ();
+		Host_ServerFrame (host_frametime);
 
 	// -------------------
 	//
@@ -725,7 +725,7 @@ void _Host_Frame (void)
 
 	// fetch results from server
 	if (cls.state == ca_connected)
-		CL_ReadFromServer ();
+		CL_ReadFromServer (host_frametime);
 
 	// update video
 	if (host_speeds.value)
