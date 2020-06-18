@@ -25,19 +25,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-//extern unsigned char d_15to8table[65536]; //johnfitz -- never used
+// extern unsigned char d_15to8table[65536]; // johnfitz -- never used
 
-cvar_t		scr_conalpha = { "scr_conalpha", "0.5", CVAR_ARCHIVE }; //johnfitz
+cvar_t		scr_conalpha = { "scr_conalpha", "0.5", CVAR_ARCHIVE }; // johnfitz
 
 qpic_t *draw_disc;
 qpic_t *draw_backtile;
 
-gltexture_t *char_texture; //johnfitz
-qpic_t *pic_ovr, *pic_ins; //johnfitz -- new cursor handling
-qpic_t *pic_nul; //johnfitz -- for missing gfx, don't crash
+gltexture_t *char_texture; // johnfitz
+qpic_t *pic_ovr, *pic_ins; // johnfitz -- new cursor handling
+qpic_t *pic_nul; // johnfitz -- for missing gfx, don't crash
 qpic_t *pic_crosshair; // MH - custom crosshair
 
-//johnfitz -- new pics
+// johnfitz -- new pics
 byte pic_ovr_data[8][8] =
 {
 	{ 255, 255, 255, 255, 255, 255, 255, 255 },
@@ -98,20 +98,20 @@ byte pic_crosshair_data[8][8] =
 	{ 255, 255, 255, 255, 2, 2, 255, 255 },
 	{ 255, 255, 255, 255, 255, 255, 255, 255 },
 };
-//johnfitz
+// johnfitz
 
 typedef struct {
 	gltexture_t *gltexture;
 	float		sl, tl, sh, th;
 } glpic_t;
 
-canvastype currentcanvas = CANVAS_NONE; //johnfitz -- for GL_SetCanvas
+canvastype currentcanvas = CANVAS_NONE; // johnfitz -- for GL_SetCanvas
 
-//==============================================================================
+// ==============================================================================
 //
 //  PIC CACHING
 //
-//==============================================================================
+// ==============================================================================
 
 typedef struct cachepic_s {
 	char		name[MAX_QPATH];
@@ -134,9 +134,9 @@ byte		menuplyr_pixels[4096];
 #define	BLOCK_HEIGHT	256
 
 int			scrap_allocated[MAX_SCRAPS][BLOCK_WIDTH];
-byte		scrap_texels[MAX_SCRAPS][BLOCK_WIDTH * BLOCK_HEIGHT]; //johnfitz -- removed *4 after BLOCK_HEIGHT
+byte		scrap_texels[MAX_SCRAPS][BLOCK_WIDTH * BLOCK_HEIGHT]; // johnfitz -- removed *4 after BLOCK_HEIGHT
 qboolean	scrap_dirty;
-gltexture_t *scrap_textures[MAX_SCRAPS]; //johnfitz
+gltexture_t *scrap_textures[MAX_SCRAPS]; // johnfitz
 
 
 /*
@@ -183,8 +183,8 @@ int Scrap_AllocBlock (int w, int h, int *x, int *y)
 		return texnum;
 	}
 
-	Sys_Error ("Scrap_AllocBlock: full"); //johnfitz -- correct function name
-	return 0; //johnfitz -- shut up compiler
+	Sys_Error ("Scrap_AllocBlock: full"); // johnfitz -- correct function name
+	return 0; // johnfitz -- shut up compiler
 }
 
 /*
@@ -216,10 +216,10 @@ qpic_t *Draw_PicFromWad (const char *name)
 {
 	qpic_t *p;
 	glpic_t	gl;
-	src_offset_t offset; //johnfitz
+	src_offset_t offset; // johnfitz
 
 	p = (qpic_t *) W_GetLumpName (name);
-	if (!p) return pic_nul; //johnfitz
+	if (!p) return pic_nul; // johnfitz
 
 	// load little ones into the scrap
 	if (p->width < 64 && p->height < 64)
@@ -236,8 +236,8 @@ qpic_t *Draw_PicFromWad (const char *name)
 			for (j = 0; j < p->width; j++, k++)
 				scrap_texels[texnum][(y + i) * BLOCK_WIDTH + x + j] = p->data[k];
 		}
-		gl.gltexture = scrap_textures[texnum]; //johnfitz -- changed to an array
-		//johnfitz -- no longer go from 0.01 to 0.99
+		gl.gltexture = scrap_textures[texnum]; // johnfitz -- changed to an array
+		// johnfitz -- no longer go from 0.01 to 0.99
 		gl.sl = x / (float) BLOCK_WIDTH;
 		gl.sh = (x + p->width) / (float) BLOCK_WIDTH;
 		gl.tl = y / (float) BLOCK_WIDTH;
@@ -245,17 +245,17 @@ qpic_t *Draw_PicFromWad (const char *name)
 	}
 	else
 	{
-		char texturename[64]; //johnfitz
-		q_snprintf (texturename, sizeof (texturename), "%s:%s", WADFILENAME, name); //johnfitz
+		char texturename[64]; // johnfitz
+		q_snprintf (texturename, sizeof (texturename), "%s:%s", WADFILENAME, name); // johnfitz
 
-		offset = (src_offset_t) p - (src_offset_t) wad_base + sizeof (int) * 2; //johnfitz
+		offset = (src_offset_t) p - (src_offset_t) wad_base + sizeof (int) * 2; // johnfitz
 
 		gl.gltexture = TexMgr_LoadImage (NULL, texturename, p->width, p->height, SRC_INDEXED, p->data, WADFILENAME,
-			offset, TEXPREF_ALPHA | TEXPREF_PAD | TEXPREF_NOPICMIP); //johnfitz -- TexMgr
+			offset, TEXPREF_ALPHA | TEXPREF_PAD | TEXPREF_NOPICMIP); // johnfitz -- TexMgr
 		gl.sl = 0;
-		gl.sh = (float) p->width / (float) TexMgr_PadConditional (p->width); //johnfitz
+		gl.sh = (float) p->width / (float) TexMgr_PadConditional (p->width); // johnfitz
 		gl.tl = 0;
-		gl.th = (float) p->height / (float) TexMgr_PadConditional (p->height); //johnfitz
+		gl.th = (float) p->height / (float) TexMgr_PadConditional (p->height); // johnfitz
 	}
 
 	memcpy (p->data, &gl, sizeof (glpic_t));
@@ -303,11 +303,11 @@ qpic_t *Draw_CachePic (const char *path)
 	pic->pic.height = dat->height;
 
 	gl.gltexture = TexMgr_LoadImage (NULL, path, dat->width, dat->height, SRC_INDEXED, dat->data, path,
-		sizeof (int) * 2, TEXPREF_ALPHA | TEXPREF_PAD | TEXPREF_NOPICMIP); //johnfitz -- TexMgr
+		sizeof (int) * 2, TEXPREF_ALPHA | TEXPREF_PAD | TEXPREF_NOPICMIP); // johnfitz -- TexMgr
 	gl.sl = 0;
-	gl.sh = (float) dat->width / (float) TexMgr_PadConditional (dat->width); //johnfitz
+	gl.sh = (float) dat->width / (float) TexMgr_PadConditional (dat->width); // johnfitz
 	gl.tl = 0;
-	gl.th = (float) dat->height / (float) TexMgr_PadConditional (dat->height); //johnfitz
+	gl.th = (float) dat->height / (float) TexMgr_PadConditional (dat->height); // johnfitz
 	memcpy (pic->pic.data, &gl, sizeof (glpic_t));
 
 	return &pic->pic;
@@ -338,11 +338,11 @@ qpic_t *Draw_MakePic (const char *name, int width, int height, byte *data)
 	return pic;
 }
 
-//==============================================================================
+// ==============================================================================
 //
 //  INIT
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 ===============
@@ -378,10 +378,10 @@ void Draw_NewGame (void)
 	memset (scrap_allocated, 0, sizeof (scrap_allocated));
 	memset (scrap_texels, 255, sizeof (scrap_texels));
 
-	Scrap_Upload (); //creates 2 empty gltextures
+	Scrap_Upload (); // creates 2 empty gltextures
 
 	// reload wad pics
-	W_LoadWadFile (); //johnfitz -- filename is now hard-coded for honesty
+	W_LoadWadFile (); // johnfitz -- filename is now hard-coded for honesty
 	Draw_LoadPics ();
 	SCR_LoadPics ();
 	Sbar_LoadPics ();
@@ -424,7 +424,7 @@ void Draw_Init (void)
 	memset (scrap_allocated, 0, sizeof (scrap_allocated));
 	memset (scrap_texels, 255, sizeof (scrap_texels));
 
-	Scrap_Upload (); //creates 2 empty textures
+	Scrap_Upload (); // creates 2 empty textures
 
 	// create internal pics
 	pic_ins = Draw_MakePic ("ins", 8, 9, &pic_ins_data[0][0]);
@@ -436,11 +436,12 @@ void Draw_Init (void)
 	Draw_LoadPics ();
 }
 
-//==============================================================================
+
+// ==============================================================================
 //
 //  2D DRAWING
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 ================
@@ -482,7 +483,7 @@ void Draw_Character (int x, int y, int num)
 	num &= 255;
 
 	if (num == 32)
-		return; //don't waste verts on spaces
+		return; // don't waste verts on spaces
 
 	GL_Bind (char_texture);
 	glBegin (GL_QUADS);
@@ -507,7 +508,7 @@ void Draw_String (int x, int y, const char *str)
 
 	while (*str)
 	{
-		if (*str != 32) //don't waste verts on spaces
+		if (*str != 32) // don't waste verts on spaces
 			Draw_CharacterQuad (x, y, *str);
 		str++;
 		x += 8;
@@ -580,7 +581,7 @@ void Draw_ConsoleBackground (void)
 
 	alpha = (con_forcedup) ? 1.0 : scr_conalpha.value;
 
-	GL_SetCanvas (CANVAS_CONSOLE); //in case this is called from weird places
+	GL_SetCanvas (CANVAS_CONSOLE); // in case this is called from weird places
 
 	if (alpha > 0.0)
 	{
@@ -640,14 +641,14 @@ Draw_Fill
 Fills a box of pixels with a single color
 =============
 */
-void Draw_Fill (int x, int y, int w, int h, int c, float alpha) //johnfitz -- added alpha
+void Draw_Fill (int x, int y, int w, int h, int c, float alpha) // johnfitz -- added alpha
 {
-	byte *pal = (byte *) d_8to24table; //johnfitz -- use d_8to24table instead of host_basepal
+	byte *pal = (byte *) d_8to24table; // johnfitz -- use d_8to24table instead of host_basepal
 
 	glDisable (GL_TEXTURE_2D);
-	glEnable (GL_BLEND); //johnfitz -- for alpha
-	glDisable (GL_ALPHA_TEST); //johnfitz -- for alpha
-	glColor4f (pal[c * 4] / 255.0, pal[c * 4 + 1] / 255.0, pal[c * 4 + 2] / 255.0, alpha); //johnfitz -- added alpha
+	glEnable (GL_BLEND); // johnfitz -- for alpha
+	glDisable (GL_ALPHA_TEST); // johnfitz -- for alpha
+	glColor4f (pal[c * 4] / 255.0, pal[c * 4 + 1] / 255.0, pal[c * 4 + 2] / 255.0, alpha); // johnfitz -- added alpha
 
 	glBegin (GL_QUADS);
 	glVertex2f (x, y);
@@ -657,8 +658,8 @@ void Draw_Fill (int x, int y, int w, int h, int c, float alpha) //johnfitz -- ad
 	glEnd ();
 
 	glColor3f (1, 1, 1);
-	glDisable (GL_BLEND); //johnfitz -- for alpha
-	glEnable (GL_ALPHA_TEST); //johnfitz -- for alpha
+	glDisable (GL_BLEND); // johnfitz -- for alpha
+	glEnable (GL_ALPHA_TEST); // johnfitz -- for alpha
 	glEnable (GL_TEXTURE_2D);
 }
 
@@ -744,22 +745,22 @@ void GL_SetCanvas (canvastype newcanvas)
 		glOrtho (0, 128, 0, 128, -99999, 99999);
 		glViewport (glx, gly + glheight - gl_warpimagesize, gl_warpimagesize, gl_warpimagesize);
 		break;
-	case CANVAS_CROSSHAIR: //0,0 is center of viewport
+	case CANVAS_CROSSHAIR: // 0,0 is center of viewport
 		s = CLAMP (1.0, scr_crosshairscale.value, 10.0);
 		glOrtho (scr_vrect.width / -2 / s, scr_vrect.width / 2 / s, scr_vrect.height / 2 / s, scr_vrect.height / -2 / s, -99999, 99999);
 		glViewport (scr_vrect.x, glheight - scr_vrect.y - scr_vrect.height, scr_vrect.width & ~1, scr_vrect.height & ~1);
 		break;
-	case CANVAS_BOTTOMLEFT: //used by devstats
-		s = (float) glwidth / vid.conwidth; //use console scale
+	case CANVAS_BOTTOMLEFT: // used by devstats
+		s = (float) glwidth / vid.conwidth; // use console scale
 		glOrtho (0, 320, 200, 0, -99999, 99999);
 		glViewport (glx, gly, 320 * s, 200 * s);
 		break;
-	case CANVAS_BOTTOMRIGHT: //used by fps/clock
-		s = (float) glwidth / vid.conwidth; //use console scale
+	case CANVAS_BOTTOMRIGHT: // used by fps/clock
+		s = (float) glwidth / vid.conwidth; // use console scale
 		glOrtho (0, 320, 200, 0, -99999, 99999);
 		glViewport (glx + glwidth - 320 * s, gly, 320 * s, 200 * s);
 		break;
-	case CANVAS_TOPRIGHT: //used by disc
+	case CANVAS_TOPRIGHT: // used by disc
 		s = 1;
 		glOrtho (0, 320, 200, 0, -99999, 99999);
 		glViewport (glx + glwidth - 320 * s, gly + glheight - 200 * s, 320 * s, 200 * s);

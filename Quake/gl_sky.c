@@ -20,7 +20,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-//gl_sky.c
+// gl_sky.c
 
 #include "quakedef.h"
 
@@ -30,12 +30,12 @@ float Fog_GetDensity (void);
 float *Fog_GetColor (void);
 
 extern	qmodel_t *loadmodel;
-extern	int	rs_skypolys; //for r_speeds readout
-extern	int rs_skypasses; //for r_speeds readout
+extern	int	rs_skypolys; // for r_speeds readout
+extern	int rs_skypasses; // for r_speeds readout
 float	skyflatcolor[3];
 float	skymins[2][6], skymaxs[2][6];
 
-char	skybox_name[1024]; //name of current skybox, or "" if no skybox
+char	skybox_name[1024]; // name of current skybox, or "" if no skybox
 
 gltexture_t *skybox_textures[6];
 gltexture_t *solidskytexture, *alphaskytexture;
@@ -46,7 +46,7 @@ cvar_t r_sky_quality = { "r_sky_quality", "12", CVAR_NONE };
 cvar_t r_skyalpha = { "r_skyalpha", "1", CVAR_NONE };
 cvar_t r_skyfog = { "r_skyfog", "0.5", CVAR_NONE };
 
-int		skytexorder[6] = { 0, 2, 1, 3, 4, 5 }; //for skybox
+int		skytexorder[6] = { 0, 2, 1, 3, 4, 5 }; // for skybox
 
 vec3_t	skyclip[6] = {
 	{ 1, 1, 0 },
@@ -79,11 +79,11 @@ int	vec_to_st[6][3] =
 
 float	skyfog; // ericw
 
-//==============================================================================
+// ==============================================================================
 //
 //  INIT
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 =============
@@ -97,8 +97,8 @@ void Sky_LoadTexture (texture_t *mt)
 	char		texturename[64];
 	int			i, j, p, r, g, b, count;
 	byte *src;
-	static byte	front_data[128 * 128]; //FIXME: Hunk_Alloc
-	static byte	back_data[128 * 128]; //FIXME: Hunk_Alloc
+	static byte	front_data[128 * 128]; // FIXME: Hunk_Alloc
+	static byte	back_data[128 * 128]; // FIXME: Hunk_Alloc
 	unsigned *rgba;
 
 	src = (byte *) mt + mt->offsets[0];
@@ -157,9 +157,9 @@ void Sky_LoadSkyBox (const char *name)
 	qboolean nonefound = true;
 
 	if (strcmp (skybox_name, name) == 0)
-		return; //no change
+		return; // no change
 
-	//purge old textures
+	// purge old textures
 	for (i = 0; i < 6; i++)
 	{
 		if (skybox_textures[i] && skybox_textures[i] != notexture)
@@ -167,14 +167,14 @@ void Sky_LoadSkyBox (const char *name)
 		skybox_textures[i] = NULL;
 	}
 
-	//turn off skybox if sky is set to ""
+	// turn off skybox if sky is set to ""
 	if (name[0] == 0)
 	{
 		skybox_name[0] = 0;
 		return;
 	}
 
-	//load textures
+	// load textures
 	for (i = 0; i < 6; i++)
 	{
 		mark = Hunk_LowMark ();
@@ -232,13 +232,13 @@ void Sky_NewMap (void)
 	//
 	data = cl.worldmodel->entities;
 	if (!data)
-		return; //FIXME: how could this possibly ever happen? -- if there's no
+		return; // FIXME: how could this possibly ever happen? -- if there's no
 	// worldspawn then the sever wouldn't send the loadmap message to the client
 
 	data = COM_Parse (data);
-	if (!data) //should never happen
+	if (!data) // should never happen
 		return; // error
-	if (com_token[0] != '{') //should never happen
+	if (com_token[0] != '{') // should never happen
 		return; // error
 	while (1)
 	{
@@ -264,10 +264,10 @@ void Sky_NewMap (void)
 		if (!strcmp ("skyfog", key))
 			skyfog = atof (value);
 
-#if 1 //also accept non-standard keys
-		else if (!strcmp ("skyname", key)) //half-life
+#if 1 // also accept non-standard keys
+		else if (!strcmp ("skyname", key)) // half-life
 			Sky_LoadSkyBox (value);
-		else if (!strcmp ("qlsky", key)) //quake lives
+		else if (!strcmp ("qlsky", key)) // quake lives
 			Sky_LoadSkyBox (value);
 #endif
 	}
@@ -326,11 +326,11 @@ void Sky_Init (void)
 		skybox_textures[i] = NULL;
 }
 
-//==============================================================================
+// ==============================================================================
 //
 //  PROCESS SKY SURFS
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 =================
@@ -515,11 +515,11 @@ void Sky_ProcessPoly (glpoly_t *p)
 	int			i;
 	vec3_t		verts[MAX_CLIP_VERTS];
 
-	//draw it
+	// draw it
 	DrawGLPoly (p);
 	rs_brushpasses++;
 
-	//update sky bounds
+	// update sky bounds
 	if (!r_fastsky.value)
 	{
 		for (i = 0; i < p->numverts; i++)
@@ -609,9 +609,9 @@ void Sky_ProcessEntities (void)
 				if (((s->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) ||
 					(!(s->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
 				{
-					//copy the polygon and translate manually, since Sky_ProcessPoly needs it to be in world space
+					// copy the polygon and translate manually, since Sky_ProcessPoly needs it to be in world space
 					mark = Hunk_LowMark ();
-					p = (glpoly_t *) Hunk_Alloc (sizeof (*s->polys)); //FIXME: don't allocate for each poly
+					p = (glpoly_t *) Hunk_Alloc (sizeof (*s->polys)); // FIXME: don't allocate for each poly
 					p->numverts = s->polys->numverts;
 					for (k = 0; k < p->numverts; k++)
 					{
@@ -638,11 +638,11 @@ void Sky_ProcessEntities (void)
 	}
 }
 
-//==============================================================================
+// ==============================================================================
 //
 //  RENDER SKYBOX
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 ==============
@@ -702,7 +702,7 @@ void Sky_DrawSkyBox (void)
 
 		GL_Bind (skybox_textures[skytexorder[i]]);
 
-#if 1 //FIXME: this is to avoid tjunctions until i can do it the right way
+#if 1 // FIXME: this is to avoid tjunctions until i can do it the right way
 		skymins[0][i] = -1;
 		skymins[1][i] = -1;
 		skymaxs[0][i] = 1;
@@ -743,11 +743,11 @@ void Sky_DrawSkyBox (void)
 	}
 }
 
-//==============================================================================
+// ==============================================================================
 //
 //  RENDER CLOUDS
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 ==============
@@ -918,7 +918,7 @@ void Sky_DrawFace (int axis)
 
 	di = q_max ((int) r_sky_quality.value, 1);
 	qi = 1.0 / di;
-	dj = (axis < 4) ? di * 2 : di; //subdivide vertically more than horizontally on skybox sides
+	dj = (axis < 4) ? di * 2 : di; // subdivide vertically more than horizontally on skybox sides
 	qj = 1.0 / dj;
 
 	for (i = 0; i < di; i++)
@@ -929,7 +929,7 @@ void Sky_DrawFace (int axis)
 				j * qj < skymins[1][axis] / 2 + 0.5 - qj || j * qj > skymaxs[1][axis] / 2 + 0.5)
 				continue;
 
-			//if (i&1 ^ j&1) continue; //checkerboard test
+			// if (i&1 ^ j&1) continue; // checkerboard test
 			VectorScale (vright, qi * i, temp);
 			VectorScale (vup, qj * j, temp2);
 			VectorAdd (temp, temp2, temp);
@@ -982,7 +982,7 @@ void Sky_DrawSky (void)
 {
 	int				i;
 
-	//in these special render modes, the sky faces are handled in the normal world/brush renderer
+	// in these special render modes, the sky faces are handled in the normal world/brush renderer
 	if (r_drawflat_cheatsafe || r_lightmap_cheatsafe)
 		return;
 

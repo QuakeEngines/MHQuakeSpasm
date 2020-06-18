@@ -32,7 +32,7 @@ extern	qboolean con_forcedup;	// because no entities to refresh
 extern qboolean con_initialized;
 extern byte *con_chars;
 
-extern char con_lastcenterstring[]; //johnfitz
+extern char con_lastcenterstring[]; // johnfitz
 
 void Con_DrawCharacter (int cx, int line, int num);
 
@@ -40,10 +40,10 @@ void Con_CheckResize (void);
 void Con_Init (void);
 void Con_DrawConsole (int lines, qboolean drawinput);
 void Con_Printf (const char *fmt, ...) FUNC_PRINTF (1, 2);
-void Con_DWarning (const char *fmt, ...) FUNC_PRINTF (1, 2); //ericw
-void Con_Warning (const char *fmt, ...) FUNC_PRINTF (1, 2); //johnfitz
+void Con_DWarning (const char *fmt, ...) FUNC_PRINTF (1, 2); // ericw
+void Con_Warning (const char *fmt, ...) FUNC_PRINTF (1, 2); // johnfitz
 void Con_DPrintf (const char *fmt, ...) FUNC_PRINTF (1, 2);
-void Con_DPrintf2 (const char *fmt, ...) FUNC_PRINTF (1, 2); //johnfitz
+void Con_DPrintf2 (const char *fmt, ...) FUNC_PRINTF (1, 2); // johnfitz
 void Con_SafePrintf (const char *fmt, ...) FUNC_PRINTF (1, 2);
 void Con_DrawNotify (void);
 void Con_ClearNotify (void);

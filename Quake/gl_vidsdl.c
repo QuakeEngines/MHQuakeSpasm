@@ -36,12 +36,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "SDL.h"
 #endif
 
-//ericw -- for putting the driver into multithreaded mode
+// ericw -- for putting the driver into multithreaded mode
 #ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
 #endif
 
-#define MAX_MODE_LIST	600 //johnfitz -- was 30
+#define MAX_MODE_LIST	600 // johnfitz -- was 30
 #define MAX_BPPS_LIST	5
 #define MAX_RATES_LIST	20
 #define WARP_WIDTH		320
@@ -80,72 +80,72 @@ static SDL_GLContext	gl_context;
 static SDL_Surface *draw_context;
 #endif
 
-static qboolean	vid_locked = false; //johnfitz
+static qboolean	vid_locked = false; // johnfitz
 static qboolean	vid_changed = false;
 
-static void VID_Menu_Init (void); //johnfitz
-static void VID_Menu_f (void); //johnfitz
+static void VID_Menu_Init (void); // johnfitz
+static void VID_Menu_f (void); // johnfitz
 static void VID_MenuDraw (void);
 static void VID_MenuKey (int key);
 
 static void ClearAllStates (void);
 static void GL_Init (void);
-static void GL_SetupState (void); //johnfitz
+static void GL_SetupState (void); // johnfitz
 
 viddef_t	vid;				// global video state
 modestate_t	modestate = MS_UNINIT;
 qboolean	scr_skipupdate;
 
 qboolean gl_mtexable = false;
-qboolean gl_texture_env_combine = false; //johnfitz
-qboolean gl_texture_env_add = false; //johnfitz
-qboolean gl_swap_control = false; //johnfitz
-qboolean gl_anisotropy_able = false; //johnfitz
-float gl_max_anisotropy; //johnfitz
-qboolean gl_texture_NPOT = false; //ericw
-qboolean gl_vbo_able = false; //ericw
-qboolean gl_glsl_able = false; //ericw
-GLint gl_max_texture_units = 0; //ericw
-qboolean gl_glsl_gamma_able = false; //ericw
-qboolean gl_glsl_alias_able = false; //ericw
+qboolean gl_texture_env_combine = false; // johnfitz
+qboolean gl_texture_env_add = false; // johnfitz
+qboolean gl_swap_control = false; // johnfitz
+qboolean gl_anisotropy_able = false; // johnfitz
+float gl_max_anisotropy; // johnfitz
+qboolean gl_texture_NPOT = false; // ericw
+qboolean gl_vbo_able = false; // ericw
+qboolean gl_glsl_able = false; // ericw
+GLint gl_max_texture_units = 0; // ericw
+qboolean gl_glsl_gamma_able = false; // ericw
+qboolean gl_glsl_alias_able = false; // ericw
 int gl_stencilbits;
 
-PFNGLMULTITEXCOORD2FARBPROC GL_MTexCoord2fFunc = NULL; //johnfitz
-PFNGLACTIVETEXTUREARBPROC GL_SelectTextureFunc = NULL; //johnfitz
-PFNGLCLIENTACTIVETEXTUREARBPROC GL_ClientActiveTextureFunc = NULL; //ericw
-PFNGLBINDBUFFERARBPROC GL_BindBufferFunc = NULL; //ericw
-PFNGLBUFFERDATAARBPROC GL_BufferDataFunc = NULL; //ericw
-PFNGLBUFFERSUBDATAARBPROC GL_BufferSubDataFunc = NULL; //ericw
-PFNGLDELETEBUFFERSARBPROC GL_DeleteBuffersFunc = NULL; //ericw
-PFNGLGENBUFFERSARBPROC GL_GenBuffersFunc = NULL; //ericw
+PFNGLMULTITEXCOORD2FARBPROC GL_MTexCoord2fFunc = NULL; // johnfitz
+PFNGLACTIVETEXTUREARBPROC GL_SelectTextureFunc = NULL; // johnfitz
+PFNGLCLIENTACTIVETEXTUREARBPROC GL_ClientActiveTextureFunc = NULL; // ericw
+PFNGLBINDBUFFERARBPROC GL_BindBufferFunc = NULL; // ericw
+PFNGLBUFFERDATAARBPROC GL_BufferDataFunc = NULL; // ericw
+PFNGLBUFFERSUBDATAARBPROC GL_BufferSubDataFunc = NULL; // ericw
+PFNGLDELETEBUFFERSARBPROC GL_DeleteBuffersFunc = NULL; // ericw
+PFNGLGENBUFFERSARBPROC GL_GenBuffersFunc = NULL; // ericw
 
-QS_PFNGLCREATESHADERPROC GL_CreateShaderFunc = NULL; //ericw
-QS_PFNGLDELETESHADERPROC GL_DeleteShaderFunc = NULL; //ericw
-QS_PFNGLDELETEPROGRAMPROC GL_DeleteProgramFunc = NULL; //ericw
-QS_PFNGLSHADERSOURCEPROC GL_ShaderSourceFunc = NULL; //ericw
-QS_PFNGLCOMPILESHADERPROC GL_CompileShaderFunc = NULL; //ericw
-QS_PFNGLGETSHADERIVPROC GL_GetShaderivFunc = NULL; //ericw
-QS_PFNGLGETSHADERINFOLOGPROC GL_GetShaderInfoLogFunc = NULL; //ericw
-QS_PFNGLGETPROGRAMIVPROC GL_GetProgramivFunc = NULL; //ericw
-QS_PFNGLGETPROGRAMINFOLOGPROC GL_GetProgramInfoLogFunc = NULL; //ericw
-QS_PFNGLCREATEPROGRAMPROC GL_CreateProgramFunc = NULL; //ericw
-QS_PFNGLATTACHSHADERPROC GL_AttachShaderFunc = NULL; //ericw
-QS_PFNGLLINKPROGRAMPROC GL_LinkProgramFunc = NULL; //ericw
-QS_PFNGLBINDATTRIBLOCATIONFUNC GL_BindAttribLocationFunc = NULL; //ericw
-QS_PFNGLUSEPROGRAMPROC GL_UseProgramFunc = NULL; //ericw
-QS_PFNGLGETATTRIBLOCATIONPROC GL_GetAttribLocationFunc = NULL; //ericw
-QS_PFNGLVERTEXATTRIBPOINTERPROC GL_VertexAttribPointerFunc = NULL; //ericw
-QS_PFNGLENABLEVERTEXATTRIBARRAYPROC GL_EnableVertexAttribArrayFunc = NULL; //ericw
-QS_PFNGLDISABLEVERTEXATTRIBARRAYPROC GL_DisableVertexAttribArrayFunc = NULL; //ericw
-QS_PFNGLGETUNIFORMLOCATIONPROC GL_GetUniformLocationFunc = NULL; //ericw
-QS_PFNGLUNIFORM1IPROC GL_Uniform1iFunc = NULL; //ericw
-QS_PFNGLUNIFORM1FPROC GL_Uniform1fFunc = NULL; //ericw
-QS_PFNGLUNIFORM3FPROC GL_Uniform3fFunc = NULL; //ericw
-QS_PFNGLUNIFORM4FPROC GL_Uniform4fFunc = NULL; //ericw
+QS_PFNGLCREATESHADERPROC GL_CreateShaderFunc = NULL; // ericw
+QS_PFNGLDELETESHADERPROC GL_DeleteShaderFunc = NULL; // ericw
+QS_PFNGLDELETEPROGRAMPROC GL_DeleteProgramFunc = NULL; // ericw
+QS_PFNGLSHADERSOURCEPROC GL_ShaderSourceFunc = NULL; // ericw
+QS_PFNGLCOMPILESHADERPROC GL_CompileShaderFunc = NULL; // ericw
+QS_PFNGLGETSHADERIVPROC GL_GetShaderivFunc = NULL; // ericw
+QS_PFNGLGETSHADERINFOLOGPROC GL_GetShaderInfoLogFunc = NULL; // ericw
+QS_PFNGLGETPROGRAMIVPROC GL_GetProgramivFunc = NULL; // ericw
+QS_PFNGLGETPROGRAMINFOLOGPROC GL_GetProgramInfoLogFunc = NULL; // ericw
+QS_PFNGLCREATEPROGRAMPROC GL_CreateProgramFunc = NULL; // ericw
+QS_PFNGLATTACHSHADERPROC GL_AttachShaderFunc = NULL; // ericw
+QS_PFNGLLINKPROGRAMPROC GL_LinkProgramFunc = NULL; // ericw
+QS_PFNGLBINDATTRIBLOCATIONFUNC GL_BindAttribLocationFunc = NULL; // ericw
+QS_PFNGLUSEPROGRAMPROC GL_UseProgramFunc = NULL; // ericw
+QS_PFNGLGETATTRIBLOCATIONPROC GL_GetAttribLocationFunc = NULL; // ericw
+QS_PFNGLVERTEXATTRIBPOINTERPROC GL_VertexAttribPointerFunc = NULL; // ericw
+QS_PFNGLENABLEVERTEXATTRIBARRAYPROC GL_EnableVertexAttribArrayFunc = NULL; // ericw
+QS_PFNGLDISABLEVERTEXATTRIBARRAYPROC GL_DisableVertexAttribArrayFunc = NULL; // ericw
+QS_PFNGLGETUNIFORMLOCATIONPROC GL_GetUniformLocationFunc = NULL; // ericw
+QS_PFNGLUNIFORM1IPROC GL_Uniform1iFunc = NULL; // ericw
+QS_PFNGLUNIFORM1FPROC GL_Uniform1fFunc = NULL; // ericw
+QS_PFNGLUNIFORM3FPROC GL_Uniform3fFunc = NULL; // ericw
+QS_PFNGLUNIFORM4FPROC GL_Uniform4fFunc = NULL; // ericw
 
-//====================================
+// ====================================
 
-//johnfitz -- new cvars
+// johnfitz -- new cvars
 static cvar_t	vid_fullscreen = { "vid_fullscreen", "0", CVAR_ARCHIVE };	// QuakeSpasm, was "1"
 static cvar_t	vid_width = { "vid_width", "800", CVAR_ARCHIVE };		// QuakeSpasm, was 640
 static cvar_t	vid_height = { "vid_height", "600", CVAR_ARCHIVE };	// QuakeSpasm, was 480
@@ -155,16 +155,14 @@ static cvar_t	vid_vsync = { "vid_vsync", "0", CVAR_ARCHIVE };
 static cvar_t	vid_fsaa = { "vid_fsaa", "0", CVAR_ARCHIVE }; // QuakeSpasm
 static cvar_t	vid_desktopfullscreen = { "vid_desktopfullscreen", "0", CVAR_ARCHIVE }; // QuakeSpasm
 static cvar_t	vid_borderless = { "vid_borderless", "0", CVAR_ARCHIVE }; // QuakeSpasm
-//johnfitz
+// johnfitz
 
-cvar_t		vid_gamma = { "gamma", "1", CVAR_ARCHIVE }; //johnfitz -- moved here from view.c
-cvar_t		vid_contrast = { "contrast", "1", CVAR_ARCHIVE }; //QuakeSpasm, MarkV
+cvar_t		vid_gamma = { "gamma", "1", CVAR_ARCHIVE }; // johnfitz -- moved here from view.c
+cvar_t		vid_contrast = { "contrast", "1", CVAR_ARCHIVE }; // QuakeSpasm, MarkV
 
-//==========================================================================
-//
+// ==========================================================================
 //  HARDWARE GAMMA -- johnfitz
-//
-//==========================================================================
+// ==========================================================================
 
 #define	USE_GAMMA_RAMPS			0
 
@@ -793,9 +791,7 @@ static void VID_Restart (void)
 	bpp = (int) vid_bpp.value;
 	fullscreen = vid_fullscreen.value ? true : false;
 
-	//
 	// validate new mode
-	//
 	if (!VID_ValidMode (width, height, refreshrate, bpp, fullscreen))
 	{
 		Con_Printf ("%dx%dx%d %dHz %s is not a valid mode\n",
@@ -817,9 +813,7 @@ static void VID_Restart (void)
 	GL_DeleteBModelVertexBuffer ();
 	GLMesh_DeleteVertexBuffers ();
 
-	//
 	// set new mode
-	//
 	VID_SetMode (width, height, refreshrate, bpp, fullscreen);
 
 	GL_Init ();
@@ -829,21 +823,19 @@ static void VID_Restart (void)
 	GL_SetupState ();
 	Fog_SetupState ();
 
-	//warpimages needs to be recalculated
+	// warpimages needs to be recalculated
 	TexMgr_RecalcWarpImageSize ();
 
-	//conwidth and conheight need to be recalculated
+	// conwidth and conheight need to be recalculated
 	vid.conwidth = (scr_conwidth.value > 0) ? (int) scr_conwidth.value : (scr_conscale.value > 0) ? (int) (vid.width / scr_conscale.value) : vid.width;
 	vid.conwidth = CLAMP (320, vid.conwidth, vid.width);
 	vid.conwidth &= 0xFFFFFFF8;
 	vid.conheight = vid.conwidth * vid.height / vid.width;
-	//
+
 	// keep cvars in line with actual mode
-	//
 	VID_SyncCvars ();
-	//
+
 	// update mouse grab
-	//
 	if (key_dest == key_console || key_dest == key_menu)
 	{
 		if (modestate == MS_WINDOWED)
@@ -864,9 +856,8 @@ static void VID_Test (void)
 
 	if (vid_locked || !vid_changed)
 		return;
-	//
+
 	// now try the switch
-	//
 	old_width = VID_GetCurrentWidth ();
 	old_height = VID_GetCurrentHeight ();
 	old_refreshrate = VID_GetCurrentRefreshRate ();
@@ -875,10 +866,10 @@ static void VID_Test (void)
 
 	VID_Restart ();
 
-	//pop up confirmation dialoge
+	// pop up confirmation dialoge
 	if (!SCR_ModalMessage ("Would you like to keep this\nvideo mode? (y/n)\n", 5.0f))
 	{
-		//revert cvars and mode
+		// revert cvars and mode
 		Cvar_SetValueQuick (&vid_width, old_width);
 		Cvar_SetValueQuick (&vid_height, old_height);
 		Cvar_SetValueQuick (&vid_refreshrate, old_refreshrate);
@@ -915,11 +906,9 @@ void VID_Lock (void)
 	vid_locked = true;
 }
 
-//==============================================================================
-//
+// ==============================================================================
 //	OPENGL STUFF
-//
-//==============================================================================
+// ==============================================================================
 
 /*
 ===============
@@ -933,14 +922,14 @@ static char *GL_MakeNiceExtensionsList (const char *in)
 
 	if (!in) return Z_Strdup ("(none)");
 
-	//each space will be replaced by 4 chars, so count the spaces before we malloc
+	// each space will be replaced by 4 chars, so count the spaces before we malloc
 	for (i = 0, count = 1; i < (int) strlen (in); i++)
 	{
 		if (in[i] == ' ')
 			count++;
 	}
 
-	out = (char *) Z_Malloc (strlen (in) + count * 3 + 1); //usually about 1-2k
+	out = (char *) Z_Malloc (strlen (in) + count * 3 + 1); // usually about 1-2k
 	out[0] = 0;
 
 	copy = (char *) Z_Strdup (in);
@@ -1002,7 +991,6 @@ static void GL_CheckExtensions (void)
 	int swap_control;
 
 	// ARB_vertex_buffer_object
-	//
 	if (COM_CheckParm ("-novbo"))
 		Con_Warning ("Vertex buffer objects disabled at command line\n");
 	else if (gl_version_major < 1 || (gl_version_major == 1 && gl_version_minor < 5))
@@ -1026,7 +1014,6 @@ static void GL_CheckExtensions (void)
 	}
 
 	// multitexture
-	//
 	if (COM_CheckParm ("-nomtex"))
 		Con_Warning ("Mutitexture disabled at command line\n");
 	else if (GL_ParseExtensionList (gl_extensions, "GL_ARB_multitexture"))
@@ -1053,7 +1040,6 @@ static void GL_CheckExtensions (void)
 	}
 
 	// texture_env_combine
-	//
 	if (COM_CheckParm ("-nocombine"))
 		Con_Warning ("texture_env_combine disabled at command line\n");
 	else if (GL_ParseExtensionList (gl_extensions, "GL_ARB_texture_env_combine"))
@@ -1072,7 +1058,6 @@ static void GL_CheckExtensions (void)
 	}
 
 	// texture_env_add
-	//
 	if (COM_CheckParm ("-noadd"))
 		Con_Warning ("texture_env_add disabled at command line\n");
 	else if (GL_ParseExtensionList (gl_extensions, "GL_ARB_texture_env_add"))
@@ -1091,7 +1076,6 @@ static void GL_CheckExtensions (void)
 	}
 
 	// swap control
-	//
 	if (!gl_swap_control)
 	{
 #if defined(USE_SDL2)
@@ -1128,7 +1112,6 @@ static void GL_CheckExtensions (void)
 	}
 
 	// anisotropic filtering
-	//
 	if (GL_ParseExtensionList (gl_extensions, "GL_EXT_texture_filter_anisotropic"))
 	{
 		float test1, test2;
@@ -1154,7 +1137,7 @@ static void GL_CheckExtensions (void)
 			Con_Warning ("anisotropic filtering locked by driver. Current driver setting is %f\n", test1);
 		}
 
-		//get max value either way, so the menu and stuff know it
+		// get max value either way, so the menu and stuff know it
 		glGetFloatv (GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &gl_max_anisotropy);
 		if (gl_max_anisotropy < 2)
 		{
@@ -1170,7 +1153,6 @@ static void GL_CheckExtensions (void)
 	}
 
 	// texture_non_power_of_two
-	//
 	if (COM_CheckParm ("-notexturenpot"))
 		Con_Warning ("texture_non_power_of_two disabled at command line\n");
 	else if (GL_ParseExtensionList (gl_extensions, "GL_ARB_texture_non_power_of_two"))
@@ -1184,7 +1166,6 @@ static void GL_CheckExtensions (void)
 	}
 
 	// GLSL
-	//
 	if (COM_CheckParm ("-noglsl"))
 		Con_Warning ("GLSL disabled at command line\n");
 	else if (gl_version_major >= 2)
@@ -1251,7 +1232,6 @@ static void GL_CheckExtensions (void)
 	}
 
 	// GLSL gamma
-	//
 	if (COM_CheckParm ("-noglslgamma"))
 		Con_Warning ("GLSL gamma disabled at command line\n");
 	else if (gl_glsl_able)
@@ -1264,7 +1244,6 @@ static void GL_CheckExtensions (void)
 	}
 
 	// GLSL alias model rendering
-	//
 	if (COM_CheckParm ("-noglslalias"))
 		Con_Warning ("GLSL alias model rendering disabled at command line\n");
 	else if (gl_glsl_able && gl_vbo_able && gl_max_texture_units >= 3)
@@ -1286,23 +1265,23 @@ does all the stuff from GL_Init that needs to be done every time a new GL render
 */
 static void GL_SetupState (void)
 {
-	glClearColor (0.15, 0.15, 0.15, 0); //johnfitz -- originally 1,0,0,0
-	glCullFace (GL_BACK); //johnfitz -- glquake used CCW with backwards culling -- let's do it right
-	glFrontFace (GL_CW); //johnfitz -- glquake used CCW with backwards culling -- let's do it right
+	glClearColor (0.15, 0.15, 0.15, 0); // johnfitz -- originally 1,0,0,0
+	glCullFace (GL_BACK); // johnfitz -- glquake used CCW with backwards culling -- let's do it right
+	glFrontFace (GL_CW); // johnfitz -- glquake used CCW with backwards culling -- let's do it right
 	glEnable (GL_TEXTURE_2D);
 	glEnable (GL_ALPHA_TEST);
 	glAlphaFunc (GL_GREATER, 0.666);
 	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 	glShadeModel (GL_FLAT);
-	glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST); //johnfitz
+	glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST); // johnfitz
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glDepthRange (0, 1); //johnfitz -- moved here becuase gl_ztrick is gone.
-	glDepthFunc (GL_LEQUAL); //johnfitz -- moved here becuase gl_ztrick is gone.
+	glDepthRange (0, 1); // johnfitz -- moved here becuase gl_ztrick is gone.
+	glDepthFunc (GL_LEQUAL); // johnfitz -- moved here becuase gl_ztrick is gone.
 }
 
 /*
@@ -1331,7 +1310,7 @@ static void GL_Init (void)
 		Z_Free (gl_extensions_nice);
 	gl_extensions_nice = GL_MakeNiceExtensionsList (gl_extensions);
 
-	GL_CheckExtensions (); //johnfitz
+	GL_CheckExtensions (); // johnfitz
 
 #ifdef __APPLE__
 	// ericw -- enable multi-threaded OpenGL, gives a decent FPS boost.
@@ -1343,13 +1322,13 @@ static void GL_Init (void)
 	}
 #endif
 
-	//johnfitz -- intel video workarounds from Baker
+	// johnfitz -- intel video workarounds from Baker
 	if (!strcmp (gl_vendor, "Intel"))
 	{
 		Con_Printf ("Intel Display Adapter detected, enabling gl_clear\n");
 		Cbuf_AddText ("gl_clear 1");
 	}
-	//johnfitz
+	// johnfitz
 
 	GLAlias_CreateShaders ();
 	GLWorld_CreateShaders ();
@@ -1390,7 +1369,7 @@ void	VID_Shutdown (void)
 {
 	if (vid_initialized)
 	{
-		VID_Gamma_Shutdown (); //johnfitz
+		VID_Gamma_Shutdown (); // johnfitz
 
 		SDL_QuitSubSystem (SDL_INIT_VIDEO);
 		draw_context = NULL;
@@ -1421,11 +1400,9 @@ static void ClearAllStates (void)
 }
 
 
-//==========================================================================
-//
+// ==========================================================================
 //  COMMANDS
-//
-//==========================================================================
+// ==========================================================================
 
 /*
 =================
@@ -1483,11 +1460,9 @@ static void VID_FSAA_f (cvar_t *var)
 		Con_Printf ("%s %d requires engine restart to take effect\n", var->name, (int) var->value);
 }
 
-//==========================================================================
-//
+// ==========================================================================
 //  INIT
-//
-//==========================================================================
+// ==========================================================================
 
 /*
 =================
@@ -1594,15 +1569,15 @@ void	VID_Init (void)
 		"vid_borderless" };
 #define num_readvars	( sizeof(read_vars)/sizeof(read_vars[0]) )
 
-	Cvar_RegisterVariable (&vid_fullscreen); //johnfitz
-	Cvar_RegisterVariable (&vid_width); //johnfitz
-	Cvar_RegisterVariable (&vid_height); //johnfitz
-	Cvar_RegisterVariable (&vid_refreshrate); //johnfitz
-	Cvar_RegisterVariable (&vid_bpp); //johnfitz
-	Cvar_RegisterVariable (&vid_vsync); //johnfitz
-	Cvar_RegisterVariable (&vid_fsaa); //QuakeSpasm
-	Cvar_RegisterVariable (&vid_desktopfullscreen); //QuakeSpasm
-	Cvar_RegisterVariable (&vid_borderless); //QuakeSpasm
+	Cvar_RegisterVariable (&vid_fullscreen); // johnfitz
+	Cvar_RegisterVariable (&vid_width); // johnfitz
+	Cvar_RegisterVariable (&vid_height); // johnfitz
+	Cvar_RegisterVariable (&vid_refreshrate); // johnfitz
+	Cvar_RegisterVariable (&vid_bpp); // johnfitz
+	Cvar_RegisterVariable (&vid_vsync); // johnfitz
+	Cvar_RegisterVariable (&vid_fsaa); // QuakeSpasm
+	Cvar_RegisterVariable (&vid_desktopfullscreen); // QuakeSpasm
+	Cvar_RegisterVariable (&vid_borderless); // QuakeSpasm
 	Cvar_SetCallback (&vid_fullscreen, VID_Changed_f);
 	Cvar_SetCallback (&vid_width, VID_Changed_f);
 	Cvar_SetCallback (&vid_height, VID_Changed_f);
@@ -1613,9 +1588,9 @@ void	VID_Init (void)
 	Cvar_SetCallback (&vid_desktopfullscreen, VID_Changed_f);
 	Cvar_SetCallback (&vid_borderless, VID_Changed_f);
 
-	Cmd_AddCommand ("vid_unlock", VID_Unlock); //johnfitz
-	Cmd_AddCommand ("vid_restart", VID_Restart); //johnfitz
-	Cmd_AddCommand ("vid_test", VID_Test); //johnfitz
+	Cmd_AddCommand ("vid_unlock", VID_Unlock); // johnfitz
+	Cmd_AddCommand ("vid_restart", VID_Restart); // johnfitz
+	Cmd_AddCommand ("vid_test", VID_Test); // johnfitz
 	Cmd_AddCommand ("vid_describecurrentmode", VID_DescribeCurrentMode_f);
 	Cmd_AddCommand ("vid_describemodes", VID_DescribeModes_f);
 
@@ -1741,19 +1716,19 @@ void	VID_Init (void)
 
 	GL_Init ();
 	GL_SetupState ();
-	Cmd_AddCommand ("gl_info", GL_Info_f); //johnfitz
+	Cmd_AddCommand ("gl_info", GL_Info_f); // johnfitz
 
-	//johnfitz -- removed code creating "glquake" subdirectory
+	// johnfitz -- removed code creating "glquake" subdirectory
 
-	vid_menucmdfn = VID_Menu_f; //johnfitz
+	vid_menucmdfn = VID_Menu_f; // johnfitz
 	vid_menudrawfn = VID_MenuDraw;
 	vid_menukeyfn = VID_MenuKey;
 
-	VID_Gamma_Init (); //johnfitz
-	VID_Menu_Init (); //johnfitz
+	VID_Gamma_Init (); // johnfitz
+	VID_Menu_Init (); // johnfitz
 
-	//QuakeSpasm: current vid settings should override config file settings.
-	//so we have to lock the vid mode from now until after all config files are read.
+	// QuakeSpasm: current vid settings should override config file settings.
+	// so we have to lock the vid mode from now until after all config files are read.
 	vid_locked = true;
 }
 
@@ -1762,7 +1737,6 @@ void	VID_Toggle (void)
 {
 	// disabling the fast path completely because SDL_SetWindowFullscreen was changing
 	// the window size on SDL2/WinXP and we weren't set up to handle it. --ericw
-	//
 	// TODO: Clear out the dead code, reinstate the fast path using SDL_SetWindowFullscreen
 	// inside VID_SetMode, check window size to fix WinXP issue. This will
 	// keep all the mode changing code in one place.
@@ -1781,7 +1755,6 @@ void	VID_Toggle (void)
 		// disabling the fast path because with SDL 1.2 it invalidates VBOs (using them
 		// causes a crash, sugesting that the fullscreen toggle created a new GL context,
 		// although texture objects remain valid for some reason).
-		//
 		// SDL2 does promise window resizes / fullscreen changes preserve the GL context,
 		// so we could use the fast path with SDL2. --ericw
 		vid_toggle_works = false;
@@ -1849,11 +1822,9 @@ void VID_SyncCvars (void)
 	vid_changed = false;
 }
 
-//==========================================================================
-//
+// ==========================================================================
 //  NEW VIDEO MENU -- johnfitz
-//
-//==========================================================================
+// ==========================================================================
 
 enum {
 	VID_OPT_MODE,
@@ -1872,7 +1843,7 @@ typedef struct {
 	int width, height;
 } vid_menu_mode;
 
-//TODO: replace these fixed-length arrays with hunk_allocated buffers
+// TODO: replace these fixed-length arrays with hunk_allocated buffers
 static vid_menu_mode vid_menu_modes[MAX_MODE_LIST];
 static int vid_menu_nummodes = 0;
 
@@ -1930,7 +1901,7 @@ static void VID_Menu_RebuildBppList (void)
 		if (vid_menu_numbpps >= MAX_BPPS_LIST)
 			break;
 
-		//bpp list is limited to bpps available with current width/height
+		// bpp list is limited to bpps available with current width/height
 		if (modelist[i].width != vid_width.value ||
 			modelist[i].height != vid_height.value)
 			continue;
@@ -1950,14 +1921,14 @@ static void VID_Menu_RebuildBppList (void)
 		}
 	}
 
-	//if there are no valid fullscreen bpps for this width/height, just pick one
+	// if there are no valid fullscreen bpps for this width/height, just pick one
 	if (vid_menu_numbpps == 0)
 	{
 		Cvar_SetValueQuick (&vid_bpp, (float) modelist[0].bpp);
 		return;
 	}
 
-	//if vid_bpp is not in the new list, change vid_bpp
+	// if vid_bpp is not in the new list, change vid_bpp
 	for (i = 0; i < vid_menu_numbpps; i++)
 		if (vid_menu_bpps[i] == (int) (vid_bpp.value))
 			break;
@@ -1981,7 +1952,7 @@ static void VID_Menu_RebuildRateList (void)
 
 	for (i = 0; i < nummodes; i++)
 	{
-		//rate list is limited to rates available with current width/height/bpp
+		// rate list is limited to rates available with current width/height/bpp
 		if (modelist[i].width != vid_width.value ||
 			modelist[i].height != vid_height.value ||
 			modelist[i].bpp != vid_bpp.value)
@@ -2002,14 +1973,14 @@ static void VID_Menu_RebuildRateList (void)
 		}
 	}
 
-	//if there are no valid fullscreen refreshrates for this width/height, just pick one
+	// if there are no valid fullscreen refreshrates for this width/height, just pick one
 	if (vid_menu_numrates == 0)
 	{
 		Cvar_SetValue ("vid_refreshrate", (float) modelist[0].refreshrate);
 		return;
 	}
 
-	//if vid_refreshrate is not in the new list, change vid_refreshrate
+	// if vid_refreshrate is not in the new list, change vid_refreshrate
 	for (i = 0; i < vid_menu_numrates; i++)
 		if (vid_menu_rates[i] == (int) (vid_refreshrate.value))
 			break;
@@ -2039,7 +2010,7 @@ static void VID_Menu_ChooseNextMode (int dir)
 				break;
 		}
 
-		if (i == vid_menu_nummodes) //can't find it in list, so it must be a custom windowed res
+		if (i == vid_menu_nummodes) // can't find it in list, so it must be a custom windowed res
 		{
 			i = 0;
 		}
@@ -2078,7 +2049,7 @@ static void VID_Menu_ChooseNextBpp (int dir)
 				break;
 		}
 
-		if (i == vid_menu_numbpps) //can't find it in list
+		if (i == vid_menu_numbpps) // can't find it in list
 		{
 			i = 0;
 		}
@@ -2112,7 +2083,7 @@ static void VID_Menu_ChooseNextRate (int dir)
 			break;
 	}
 
-	if (i == vid_menu_numrates) //can't find it in list
+	if (i == vid_menu_numrates) // can't find it in list
 	{
 		i = 0;
 	}
@@ -2128,6 +2099,7 @@ static void VID_Menu_ChooseNextRate (int dir)
 	Cvar_SetValue ("vid_refreshrate", (float) vid_menu_rates[i]);
 }
 
+
 /*
 ================
 VID_MenuKey
@@ -2139,7 +2111,7 @@ static void VID_MenuKey (int key)
 	{
 	case K_ESCAPE:
 	case K_BBUTTON:
-		VID_SyncCvars (); //sync cvars before leaving menu. FIXME: there are other ways to leave menu
+		VID_SyncCvars (); // sync cvars before leaving menu. FIXME: there are other ways to leave menu
 		S_LocalSound ("misc/menu1.wav");
 		M_Menu_Options_f ();
 		break;
@@ -2263,7 +2235,7 @@ static void VID_MenuDraw (void)
 	p = Draw_CachePic ("gfx/qplaque.lmp");
 	M_DrawTransPic (16, y, p);
 
-	//p = Draw_CachePic ("gfx/vidmodes.lmp");
+	// p = Draw_CachePic ("gfx/vidmodes.lmp");
 	p = Draw_CachePic ("gfx/p_option.lmp");
 	M_DrawPic ((320 - p->width) / 2, y, p);
 
@@ -2304,7 +2276,7 @@ static void VID_MenuDraw (void)
 				M_Print (184, y, "N/A");
 			break;
 		case VID_OPT_TEST:
-			y += 8; //separate the test and apply items
+			y += 8; // separate the test and apply items
 			M_Print (16, y, "      Test changes");
 			break;
 		case VID_OPT_APPLY:
@@ -2331,10 +2303,10 @@ static void VID_Menu_f (void)
 	m_state = m_video;
 	m_entersound = true;
 
-	//set all the cvars to match the current mode when entering the menu
+	// set all the cvars to match the current mode when entering the menu
 	VID_SyncCvars ();
 
-	//set up bpp and rate lists based on current cvars
+	// set up bpp and rate lists based on current cvars
 	VID_Menu_RebuildBppList ();
 	VID_Menu_RebuildRateList ();
 }

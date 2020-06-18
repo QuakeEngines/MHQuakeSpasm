@@ -208,9 +208,7 @@ void BuildTris (void)
 	int		besttris[1024];
 	int		type;
 
-	//
 	// build tristrips
-	//
 	numorder = 0;
 	numcommands = 0;
 	memset (used, 0, sizeof (used));
@@ -300,19 +298,19 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr)
 	int		i, j;
 	int *cmds;
 	trivertx_t *verts;
-	float	hscale, vscale; //johnfitz -- padded skins
-	int		count; //johnfitz -- precompute texcoords for padded skins
-	int *loadcmds; //johnfitz
+	float	hscale, vscale; // johnfitz -- padded skins
+	int		count; // johnfitz -- precompute texcoords for padded skins
+	int *loadcmds; // johnfitz
 
-	//johnfitz -- padded skins
+	// johnfitz -- padded skins
 	hscale = (float) hdr->skinwidth / (float) TexMgr_PadConditional (hdr->skinwidth);
 	vscale = (float) hdr->skinheight / (float) TexMgr_PadConditional (hdr->skinheight);
-	//johnfitz
+	// johnfitz
 
 	aliasmodel = m;
 	paliashdr = hdr;	// (aliashdr_t *)Mod_Extradata (m);
 
-//johnfitz -- generate meshes
+// johnfitz -- generate meshes
 	Con_DPrintf2 ("meshing %s...\n", m->name);
 	BuildTris ();
 
@@ -323,7 +321,7 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr)
 	cmds = (int *) Hunk_Alloc (numcommands * 4);
 	paliashdr->commands = (byte *) cmds - (byte *) paliashdr;
 
-	//johnfitz -- precompute texcoords for padded skins
+	// johnfitz -- precompute texcoords for padded skins
 	loadcmds = commands;
 	while (1)
 	{
@@ -341,7 +339,7 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr)
 			*(float *) cmds++ = vscale * (*(float *) loadcmds++);
 		} while (--count);
 	}
-	//johnfitz
+	// johnfitz
 
 	verts = (trivertx_t *) Hunk_Alloc (paliashdr->numposes * paliashdr->poseverts * sizeof (trivertx_t));
 	paliashdr->posedata = (byte *) verts - (byte *) paliashdr;
@@ -531,10 +529,10 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr)
 		meshst_t *st;
 		float hscale, vscale;
 
-		//johnfitz -- padded skins
+		// johnfitz -- padded skins
 		hscale = (float) hdr->skinwidth / (float) TexMgr_PadConditional (hdr->skinwidth);
 		vscale = (float) hdr->skinheight / (float) TexMgr_PadConditional (hdr->skinheight);
-		//johnfitz
+		// johnfitz
 
 		st = (meshst_t *) (vbodata + m->vbostofs);
 		for (f = 0; f < hdr->numverts_vbo; f++)

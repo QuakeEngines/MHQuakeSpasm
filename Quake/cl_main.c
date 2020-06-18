@@ -45,8 +45,8 @@ cvar_t	m_yaw = { "m_yaw", "0.022", CVAR_ARCHIVE };
 cvar_t	m_forward = { "m_forward", "1", CVAR_ARCHIVE };
 cvar_t	m_side = { "m_side", "0.8", CVAR_ARCHIVE };
 
-cvar_t	cl_maxpitch = { "cl_maxpitch", "90", CVAR_ARCHIVE }; //johnfitz -- variable pitch clamping
-cvar_t	cl_minpitch = { "cl_minpitch", "-90", CVAR_ARCHIVE }; //johnfitz -- variable pitch clamping
+cvar_t	cl_maxpitch = { "cl_maxpitch", "90", CVAR_ARCHIVE }; // johnfitz -- variable pitch clamping
+cvar_t	cl_minpitch = { "cl_minpitch", "-90", CVAR_ARCHIVE }; // johnfitz -- variable pitch clamping
 
 client_static_t	cls;
 client_state_t	cl;
@@ -55,13 +55,13 @@ entity_t		cl_static_entities[MAX_STATIC_ENTITIES];
 lightstyle_t	cl_lightstyle[MAX_LIGHTSTYLES];
 dlight_t		cl_dlights[MAX_DLIGHTS];
 
-entity_t *cl_entities; //johnfitz -- was a static array, now on hunk
-int				cl_max_edicts; //johnfitz -- only changes when new map loads
+entity_t *cl_entities; // johnfitz -- was a static array, now on hunk
+int				cl_max_edicts; // johnfitz -- only changes when new map loads
 
 int				cl_numvisedicts;
 entity_t *cl_visedicts[MAX_VISEDICTS];
 
-extern cvar_t	r_lerpmodels, r_lerpmove; //johnfitz
+extern cvar_t	r_lerpmodels, r_lerpmove; // johnfitz
 
 /*
 =====================
@@ -85,10 +85,10 @@ void CL_ClearState (void)
 	memset (cl_temp_entities, 0, sizeof (cl_temp_entities));
 	memset (cl_beams, 0, sizeof (cl_beams));
 
-	//johnfitz -- cl_entities is now dynamically allocated
+	// johnfitz -- cl_entities is now dynamically allocated
 	cl_max_edicts = CLAMP (MIN_EDICTS, (int) max_edicts.value, MAX_EDICTS);
 	cl_entities = (entity_t *) Hunk_AllocName (cl_max_edicts * sizeof (entity_t), "cl_entities");
-	//johnfitz
+	// johnfitz
 }
 
 /*
@@ -295,7 +295,7 @@ dlight_t *CL_AllocDlight (int key)
 			{
 				memset (dl, 0, sizeof (*dl));
 				dl->key = key;
-				dl->color[0] = dl->color[1] = dl->color[2] = 1; //johnfitz -- lit support via lordhavoc
+				dl->color[0] = dl->color[1] = dl->color[2] = 1; // johnfitz -- lit support via lordhavoc
 				return dl;
 			}
 		}
@@ -309,7 +309,7 @@ dlight_t *CL_AllocDlight (int key)
 		{
 			memset (dl, 0, sizeof (*dl));
 			dl->key = key;
-			dl->color[0] = dl->color[1] = dl->color[2] = 1; //johnfitz -- lit support via lordhavoc
+			dl->color[0] = dl->color[1] = dl->color[2] = 1; // johnfitz -- lit support via lordhavoc
 			return dl;
 		}
 	}
@@ -317,7 +317,7 @@ dlight_t *CL_AllocDlight (int key)
 	dl = &cl_dlights[0];
 	memset (dl, 0, sizeof (*dl));
 	dl->key = key;
-	dl->color[0] = dl->color[1] = dl->color[2] = 1; //johnfitz -- lit support via lordhavoc
+	dl->color[0] = dl->color[1] = dl->color[2] = 1; // johnfitz -- lit support via lordhavoc
 	return dl;
 }
 
@@ -390,10 +390,10 @@ float	CL_LerpPoint (void)
 		frac = 1;
 	}
 
-	//johnfitz -- better nolerp behavior
+	// johnfitz -- better nolerp behavior
 	if (cl_nolerp.value)
 		return 1;
-	//johnfitz
+	// johnfitz
 
 	return frac;
 }
@@ -449,7 +449,7 @@ void CL_RelinkEntities (void)
 
 			// ericw -- efrags are only used for static entities in GLQuake
 			// ent can't be static, so this is a no-op.
-			//if (ent->forcelink)
+			// if (ent->forcelink)
 			//	R_RemoveEfrags (ent);	// just became empty
 			continue;
 		}
@@ -458,7 +458,7 @@ void CL_RelinkEntities (void)
 		if (ent->msgtime != cl.mtime[0])
 		{
 			ent->model = NULL;
-			ent->lerpflags |= LERP_RESETMOVE | LERP_RESETANIM; //johnfitz -- next time this entity slot is reused, the lerp will need to be reset
+			ent->lerpflags |= LERP_RESETMOVE | LERP_RESETANIM; // johnfitz -- next time this entity slot is reused, the lerp will need to be reset
 			continue;
 		}
 
@@ -479,14 +479,14 @@ void CL_RelinkEntities (void)
 				if (delta[j] > 100 || delta[j] < -100)
 				{
 					f = 1;		// assume a teleportation, not a motion
-					ent->lerpflags |= LERP_RESETMOVE; //johnfitz -- don't lerp teleports
+					ent->lerpflags |= LERP_RESETMOVE; // johnfitz -- don't lerp teleports
 				}
 			}
 
-			//johnfitz -- don't cl_lerp entities that will be r_lerped
+			// johnfitz -- don't cl_lerp entities that will be r_lerped
 			if (r_lerpmove.value && (ent->lerpflags & LERP_MOVESTEP))
 				f = 1;
-			//johnfitz
+			// johnfitz
 
 		// interpolate the origin and angles
 			for (j = 0; j < 3; j++)
@@ -523,15 +523,15 @@ void CL_RelinkEntities (void)
 			dl->minlight = 32;
 			dl->die = cl.time + 0.1;
 
-			//johnfitz -- assume muzzle flash accompanied by muzzle flare, which looks bad when lerped
+			// johnfitz -- assume muzzle flash accompanied by muzzle flare, which looks bad when lerped
 			if (r_lerpmodels.value != 2)
 			{
 				if (ent == &cl_entities[cl.viewentity])
-					cl.viewent.lerpflags |= LERP_RESETANIM | LERP_RESETANIM2; //no lerping for two frames
+					cl.viewent.lerpflags |= LERP_RESETANIM | LERP_RESETANIM2; // no lerping for two frames
 				else
-					ent->lerpflags |= LERP_RESETANIM | LERP_RESETANIM2; //no lerping for two frames
+					ent->lerpflags |= LERP_RESETANIM | LERP_RESETANIM2; // no lerping for two frames
 			}
-			//johnfitz
+			// johnfitz
 		}
 		if (ent->effects & EF_BRIGHTLIGHT)
 		{
@@ -594,12 +594,12 @@ Read all incoming data from the server
 int CL_ReadFromServer (void)
 {
 	int			ret;
-	extern int	num_temp_entities; //johnfitz
-	int			num_beams = 0; //johnfitz
-	int			num_dlights = 0; //johnfitz
-	beam_t *b; //johnfitz
-	dlight_t *l; //johnfitz
-	int			i; //johnfitz
+	extern int	num_temp_entities; // johnfitz
+	int			num_beams = 0; // johnfitz
+	int			num_dlights = 0; // johnfitz
+	beam_t *b; // johnfitz
+	dlight_t *l; // johnfitz
+	int			i; // johnfitz
 
 
 	cl.oldtime = cl.time;
@@ -623,21 +623,21 @@ int CL_ReadFromServer (void)
 	CL_RelinkEntities ();
 	CL_UpdateTEnts ();
 
-	//johnfitz -- devstats
+	// johnfitz -- devstats
 
-		//visedicts
+		// visedicts
 	if (cl_numvisedicts > 256 && dev_peakstats.visedicts <= 256)
 		Con_DWarning ("%i visedicts exceeds standard limit of 256 (max = %d).\n", cl_numvisedicts, MAX_VISEDICTS);
 	dev_stats.visedicts = cl_numvisedicts;
 	dev_peakstats.visedicts = q_max (cl_numvisedicts, dev_peakstats.visedicts);
 
-	//temp entities
+	// temp entities
 	if (num_temp_entities > 64 && dev_peakstats.tempents <= 64)
 		Con_DWarning ("%i tempentities exceeds standard limit of 64 (max = %d).\n", num_temp_entities, MAX_TEMP_ENTITIES);
 	dev_stats.tempents = num_temp_entities;
 	dev_peakstats.tempents = q_max (num_temp_entities, dev_peakstats.tempents);
 
-	//beams
+	// beams
 	for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++)
 		if (b->model && b->endtime >= cl.time)
 			num_beams++;
@@ -646,7 +646,7 @@ int CL_ReadFromServer (void)
 	dev_stats.beams = num_beams;
 	dev_peakstats.beams = q_max (num_beams, dev_peakstats.beams);
 
-	//dlights
+	// dlights
 	for (i = 0, l = cl_dlights; i < MAX_DLIGHTS; i++, l++)
 		if (l->die >= cl.time && l->radius)
 			num_dlights++;
@@ -655,7 +655,7 @@ int CL_ReadFromServer (void)
 	dev_stats.dlights = num_dlights;
 	dev_peakstats.dlights = q_max (num_dlights, dev_peakstats.dlights);
 
-	//johnfitz
+	// johnfitz
 
 	//
 	// bring the links up to date
@@ -744,7 +744,7 @@ void CL_Viewpos_f (void)
 	if (cls.state != ca_connected)
 		return;
 #if 0
-	//camera position
+	// camera position
 	Con_Printf ("Viewpos: (%i %i %i) %i %i %i\n",
 		(int) r_refdef.vieworg[0],
 		(int) r_refdef.vieworg[1],
@@ -753,7 +753,7 @@ void CL_Viewpos_f (void)
 		(int) r_refdef.viewangles[YAW],
 		(int) r_refdef.viewangles[ROLL]);
 #else
-	//player position
+	// player position
 	Con_Printf ("Viewpos: (%i %i %i) %i %i %i\n",
 		(int) cl_entities[cl.viewentity].origin[0],
 		(int) cl_entities[cl.viewentity].origin[1],
@@ -801,8 +801,8 @@ void CL_Init (void)
 
 	Cvar_RegisterVariable (&cfg_unbindall);
 
-	Cvar_RegisterVariable (&cl_maxpitch); //johnfitz -- variable pitch clamping
-	Cvar_RegisterVariable (&cl_minpitch); //johnfitz -- variable pitch clamping
+	Cvar_RegisterVariable (&cl_maxpitch); // johnfitz -- variable pitch clamping
+	Cvar_RegisterVariable (&cl_minpitch); // johnfitz -- variable pitch clamping
 
 	Cmd_AddCommand ("entities", CL_PrintEntities_f);
 	Cmd_AddCommand ("disconnect", CL_Disconnect_f);
@@ -811,7 +811,7 @@ void CL_Init (void)
 	Cmd_AddCommand ("playdemo", CL_PlayDemo_f);
 	Cmd_AddCommand ("timedemo", CL_TimeDemo_f);
 
-	Cmd_AddCommand ("tracepos", CL_Tracepos_f); //johnfitz
-	Cmd_AddCommand ("viewpos", CL_Viewpos_f); //johnfitz
+	Cmd_AddCommand ("tracepos", CL_Tracepos_f); // johnfitz
+	Cmd_AddCommand ("viewpos", CL_Viewpos_f); // johnfitz
 }
 

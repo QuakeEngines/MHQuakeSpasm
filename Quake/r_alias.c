@@ -20,14 +20,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-//r_alias.c -- alias model rendering
+// r_alias.c -- alias model rendering
 
 #include "quakedef.h"
 
-extern cvar_t r_drawflat, gl_overbright_models, gl_fullbrights, r_lerpmodels, r_lerpmove; //johnfitz
+extern cvar_t r_drawflat, gl_overbright_models, gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
 
-//up to 16 color translated skins
-gltexture_t *playertextures[MAX_SCOREBOARD]; //johnfitz -- changed to an array of pointers
+// up to 16 color translated skins
+gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz -- changed to an array of pointers
 
 #define NUMVERTEXNORMALS	162
 
@@ -35,7 +35,7 @@ float	r_avertexnormals[NUMVERTEXNORMALS][3] = {
 #include "anorms.h"
 };
 
-extern vec3_t	lightcolor; //johnfitz -- replaces "float shadelight" for lit support
+extern vec3_t	lightcolor; // johnfitz -- replaces "float shadelight" for lit support
 
 // precalculated dot products for quantized angles
 #define SHADEDOT_QUANT 16
@@ -48,13 +48,13 @@ extern	vec3_t			lightspot;
 float *shadedots = r_avertexnormal_dots[0];
 vec3_t	shadevector;
 
-float	entalpha; //johnfitz
+float	entalpha; // johnfitz
 
-qboolean	overbright; //johnfitz
+qboolean	overbright; // johnfitz
 
-qboolean shading = true; //johnfitz -- if false, disable vertex shading for various reasons (fullbright, r_lightmap, showtris, etc)
+qboolean shading = true; // johnfitz -- if false, disable vertex shading for various reasons (fullbright, r_lightmap, showtris, etc)
 
-//johnfitz -- struct for passing lerp information to drawing functions
+// johnfitz -- struct for passing lerp information to drawing functions
 typedef struct {
 	short pose1;
 	short pose2;
@@ -62,7 +62,7 @@ typedef struct {
 	vec3_t origin;
 	vec3_t angles;
 } lerpdata_t;
-//johnfitz
+// johnfitz
 
 static GLuint r_alias_program;
 
@@ -326,7 +326,7 @@ void GL_DrawAliasFrame (aliashdr_t *paliashdr, lerpdata_t lerpdata)
 
 	commands = (int *) ((byte *) paliashdr + paliashdr->commands);
 
-	vertcolor[3] = entalpha; //never changes, so there's no need to put this inside the loop
+	vertcolor[3] = entalpha; // never changes, so there's no need to put this inside the loop
 
 	while (1)
 	{
@@ -428,7 +428,7 @@ void R_SetupAliasFrame (aliashdr_t *paliashdr, int frame, lerpdata_t *lerpdata)
 	else
 		e->lerptime = 0.1;
 
-	if (e->lerpflags & LERP_RESETANIM) //kill any lerp in progress
+	if (e->lerpflags & LERP_RESETANIM) // kill any lerp in progress
 	{
 		e->lerpstart = 0;
 		e->previouspose = posenum;
@@ -437,7 +437,7 @@ void R_SetupAliasFrame (aliashdr_t *paliashdr, int frame, lerpdata_t *lerpdata)
 	}
 	else if (e->currentpose != posenum) // pose changed, start new lerp
 	{
-		if (e->lerpflags & LERP_RESETANIM2) //defer lerping one more time
+		if (e->lerpflags & LERP_RESETANIM2) // defer lerping one more time
 		{
 			e->lerpstart = 0;
 			e->previouspose = posenum;
@@ -452,7 +452,7 @@ void R_SetupAliasFrame (aliashdr_t *paliashdr, int frame, lerpdata_t *lerpdata)
 		}
 	}
 
-	//set up values
+	// set up values
 	if (r_lerpmodels.value && !(e->model->flags & MOD_NOLERP && r_lerpmodels.value != 2))
 	{
 		if (e->lerpflags & LERP_FINISH && numposes == 1)
@@ -462,7 +462,7 @@ void R_SetupAliasFrame (aliashdr_t *paliashdr, int frame, lerpdata_t *lerpdata)
 		lerpdata->pose1 = e->previouspose;
 		lerpdata->pose2 = e->currentpose;
 	}
-	else //don't lerp
+	else // don't lerp
 	{
 		lerpdata->blend = 1;
 		lerpdata->pose1 = posenum;
@@ -500,7 +500,7 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 		VectorCopy (e->angles, e->currentangles);
 	}
 
-	//set up values
+	// set up values
 	if (r_lerpmove.value && e != &cl.viewent && e->lerpflags & LERP_MOVESTEP)
 	{
 		if (e->lerpflags & LERP_FINISH)
@@ -508,13 +508,13 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 		else
 			blend = CLAMP (0, (cl.time - e->movelerpstart) / 0.1, 1);
 
-		//translation
+		// translation
 		VectorSubtract (e->currentorigin, e->previousorigin, d);
 		lerpdata->origin[0] = e->previousorigin[0] + d[0] * blend;
 		lerpdata->origin[1] = e->previousorigin[1] + d[1] * blend;
 		lerpdata->origin[2] = e->previousorigin[2] + d[2] * blend;
 
-		//rotation
+		// rotation
 		VectorSubtract (e->currentangles, e->previousangles, d);
 		for (i = 0; i < 3; i++)
 		{
@@ -525,7 +525,7 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 		lerpdata->angles[1] = e->previousangles[1] + d[1] * blend;
 		lerpdata->angles[2] = e->previousangles[2] + d[2] * blend;
 	}
-	else //don't lerp
+	else // don't lerp
 	{
 		VectorCopy (e->origin, lerpdata->origin);
 		VectorCopy (e->angles, lerpdata->angles);
@@ -547,7 +547,7 @@ void R_SetupAliasLighting (entity_t *e)
 
 	R_LightPoint (e->origin);
 
-	//add dlights
+	// add dlights
 	for (i = 0; i < MAX_DLIGHTS; i++)
 	{
 		if (cl_dlights[i].die >= cl.time)
@@ -591,7 +591,7 @@ void R_SetupAliasLighting (entity_t *e)
 			VectorScale (lightcolor, add, lightcolor);
 	}
 
-	//hack up the brightness when fullbrights but no overbrights (256)
+	// hack up the brightness when fullbrights but no overbrights (256)
 	if (gl_fullbrights.value && !gl_overbright_models.value)
 		if (e->model->flags & MOD_FBRIGHTHACK)
 		{
@@ -602,14 +602,14 @@ void R_SetupAliasLighting (entity_t *e)
 
 	quantizedangle = ((int) (e->angles[1] * (SHADEDOT_QUANT / 360.0))) & (SHADEDOT_QUANT - 1);
 
-	//ericw -- shadevector is passed to the shader to compute shadedots inside the
-	//shader, see GLAlias_CreateShaders()
+	// ericw -- shadevector is passed to the shader to compute shadedots inside the
+	// shader, see GLAlias_CreateShaders()
 	radiansangle = (quantizedangle / 16.0) * 2.0 * 3.14159;
 	shadevector[0] = cos (-radiansangle);
 	shadevector[1] = sin (-radiansangle);
 	shadevector[2] = 1;
 	VectorNormalize (shadevector);
-	//ericw --
+	// ericw --
 
 	shadedots = r_avertexnormal_dots[quantizedangle];
 	VectorScale (lightcolor, 1.0f / 200.0f, lightcolor);
@@ -662,7 +662,7 @@ void R_DrawAliasModel (entity_t *e)
 	//
 	// set up for alpha blending
 	//
-	if (r_drawflat_cheatsafe || r_lightmap_cheatsafe) //no alpha in drawflat or lightmap mode
+	if (r_drawflat_cheatsafe || r_lightmap_cheatsafe) // no alpha in drawflat or lightmap mode
 		entalpha = 1;
 	else
 		entalpha = ENTALPHA_DECODE (e->alpha);
@@ -670,7 +670,7 @@ void R_DrawAliasModel (entity_t *e)
 		goto cleanup;
 	if (entalpha < 1)
 	{
-		if (!gl_texture_env_combine) overbright = false; //overbright can't be done in a single pass without combiners
+		if (!gl_texture_env_combine) overbright = false; // overbright can't be done in a single pass without combiners
 		glDepthMask (GL_FALSE);
 		glEnable (GL_BLEND);
 	}
@@ -714,7 +714,7 @@ void R_DrawAliasModel (entity_t *e)
 		glDisable (GL_TEXTURE_2D);
 		GL_DrawAliasFrame (paliashdr, lerpdata);
 		glEnable (GL_TEXTURE_2D);
-		srand ((int) (cl.time * 1000)); //restore randomness
+		srand ((int) (cl.time * 1000)); // restore randomness
 	}
 	else if (r_fullbright_cheatsafe)
 	{
@@ -754,7 +754,7 @@ void R_DrawAliasModel (entity_t *e)
 	}
 	else if (overbright)
 	{
-		if (gl_texture_env_combine && gl_mtexable && gl_texture_env_add && fb) //case 1: everything in one pass
+		if (gl_texture_env_combine && gl_mtexable && gl_texture_env_add && fb) // case 1: everything in one pass
 		{
 			GL_Bind (tx);
 			glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
@@ -771,7 +771,7 @@ void R_DrawAliasModel (entity_t *e)
 			GL_DisableMultitexture ();
 			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 		}
-		else if (gl_texture_env_combine) //case 2: overbright in one pass, then fullbright pass
+		else if (gl_texture_env_combine) // case 2: overbright in one pass, then fullbright pass
 		{
 			// first pass
 			GL_Bind (tx);
@@ -802,7 +802,7 @@ void R_DrawAliasModel (entity_t *e)
 				glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 			}
 		}
-		else //case 3: overbright in two passes, then fullbright pass
+		else // case 3: overbright in two passes, then fullbright pass
 		{
 			// first pass
 			GL_Bind (tx);
@@ -841,7 +841,7 @@ void R_DrawAliasModel (entity_t *e)
 	}
 	else
 	{
-		if (gl_mtexable && gl_texture_env_add && fb) //case 4: fullbright mask using multitexture
+		if (gl_mtexable && gl_texture_env_add && fb) // case 4: fullbright mask using multitexture
 		{
 			GL_DisableMultitexture (); // selects TEXTURE0
 			GL_Bind (tx);
@@ -855,7 +855,7 @@ void R_DrawAliasModel (entity_t *e)
 			GL_DisableMultitexture ();
 			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 		}
-		else //case 5: fullbright mask without multitexture
+		else // case 5: fullbright mask without multitexture
 		{
 			// first pass
 			GL_Bind (tx);
@@ -892,12 +892,12 @@ cleanup:
 	glPopMatrix ();
 }
 
-//johnfitz -- values for shadow matrix
-#define SHADOW_SKEW_X -0.7 //skew along x axis. -0.7 to mimic glquake shadows
-#define SHADOW_SKEW_Y 0 //skew along y axis. 0 to mimic glquake shadows
-#define SHADOW_VSCALE 0 //0=completely flat
-#define SHADOW_HEIGHT 0.1 //how far above the floor to render the shadow
-//johnfitz
+// johnfitz -- values for shadow matrix
+#define SHADOW_SKEW_X -0.7 // skew along x axis. -0.7 to mimic glquake shadows
+#define SHADOW_SKEW_Y 0 // skew along y axis. 0 to mimic glquake shadows
+#define SHADOW_VSCALE 0 // 0=completely flat
+#define SHADOW_HEIGHT 0.1 // how far above the floor to render the shadow
+// johnfitz
 
 /*
 =============
@@ -955,7 +955,7 @@ void GL_DrawAliasShadow (entity_t *e)
 	glDisable (GL_BLEND);
 	glDepthMask (GL_TRUE);
 
-	//clean up
+	// clean up
 	glPopMatrix ();
 }
 

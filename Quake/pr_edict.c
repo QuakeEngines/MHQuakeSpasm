@@ -34,7 +34,7 @@ static	int		pr_numknownstrings;
 static	ddef_t *pr_fielddefs;
 static	ddef_t *pr_globaldefs;
 
-qboolean	pr_alpha_supported; //johnfitz
+qboolean	pr_alpha_supported; // johnfitz
 
 dstatement_t *pr_statements;
 globalvars_t *pr_global_struct;
@@ -124,7 +124,7 @@ edict_t *ED_Alloc (void)
 		}
 	}
 
-	if (i == sv.max_edicts) //johnfitz -- use sv.max_edicts instead of MAX_EDICTS
+	if (i == sv.max_edicts) // johnfitz -- use sv.max_edicts instead of MAX_EDICTS
 		Host_Error ("ED_Alloc: no free edicts (max_edicts is %i)", sv.max_edicts);
 
 	sv.num_edicts++;
@@ -157,12 +157,12 @@ void ED_Free (edict_t *ed)
 	VectorCopy (vec3_origin, ed->v.angles);
 	ed->v.nextthink = -1;
 	ed->v.solid = 0;
-	ed->alpha = ENTALPHA_DEFAULT; //johnfitz -- reset alpha for next entity
+	ed->alpha = ENTALPHA_DEFAULT; // johnfitz -- reset alpha for next entity
 
 	ed->freetime = sv.time;
 }
 
-//===========================================================================
+// ===========================================================================
 
 /*
 ============
@@ -476,7 +476,7 @@ void ED_Print (edict_t *ed)
 		return;
 	}
 
-	Con_SafePrintf ("\nEDICT %i:\n", NUM_FOR_EDICT (ed)); //johnfitz -- was Con_Printf
+	Con_SafePrintf ("\nEDICT %i:\n", NUM_FOR_EDICT (ed)); // johnfitz -- was Con_Printf
 	for (i = 1; i < progs->numfielddefs; i++)
 	{
 		d = &pr_fielddefs[i];
@@ -498,11 +498,11 @@ void ED_Print (edict_t *ed)
 		if (j == type_size[type])
 			continue;
 
-		Con_SafePrintf ("%s", name); //johnfitz -- was Con_Printf
+		Con_SafePrintf ("%s", name); // johnfitz -- was Con_Printf
 		while (l++ < 15)
-			Con_SafePrintf (" "); //johnfitz -- was Con_Printf
+			Con_SafePrintf (" "); // johnfitz -- was Con_Printf
 
-		Con_SafePrintf ("%s\n", PR_ValueString (d->type, (eval_t *) v)); //johnfitz -- was Con_Printf
+		Con_SafePrintf ("%s\n", PR_ValueString (d->type, (eval_t *) v)); // johnfitz -- was Con_Printf
 	}
 }
 
@@ -553,10 +553,10 @@ void ED_Write (FILE *f, edict_t *ed)
 		fprintf (f, "\"%s\"\n", PR_UglyValueString (d->type, (eval_t *) v));
 	}
 
-	//johnfitz -- save entity alpha manually when progs.dat doesn't know about alpha
+	// johnfitz -- save entity alpha manually when progs.dat doesn't know about alpha
 	if (!pr_alpha_supported && ed->alpha != ENTALPHA_DEFAULT)
 		fprintf (f, "\"alpha\" \"%f\"\n", ENTALPHA_TOSAVE (ed->alpha));
-	//johnfitz
+	// johnfitz
 
 	fprintf (f, "}\n");
 }
@@ -728,7 +728,7 @@ const char *ED_ParseGlobals (const char *data)
 	return data;
 }
 
-//============================================================================
+// ============================================================================
 
 
 /*
@@ -826,7 +826,7 @@ static qboolean ED_ParseEpair (void *base, ddef_t *key, const char *s)
 		def = ED_FindField (s);
 		if (!def)
 		{
-			//johnfitz -- HACK -- suppress error becuase fog/sky fields might not be mentioned in defs.qc
+			// johnfitz -- HACK -- suppress error becuase fog/sky fields might not be mentioned in defs.qc
 			if (strncmp (s, "sky", 3) && strcmp (s, "fog"))
 				Con_DPrintf ("Can't find field %s\n", s);
 			return false;
@@ -921,17 +921,17 @@ const char *ED_ParseEdict (const char *data, edict_t *ent)
 		if (keyname[0] == '_')
 			continue;
 
-		//johnfitz -- hack to support .alpha even when progs.dat doesn't know about it
+		// johnfitz -- hack to support .alpha even when progs.dat doesn't know about it
 		if (!strcmp (keyname, "alpha"))
 			ent->alpha = ENTALPHA_ENCODE (atof (com_token));
-		//johnfitz
+		// johnfitz
 
 		key = ED_FindField (keyname);
 		if (!key)
 		{
-			//johnfitz -- HACK -- suppress error becuase fog/sky/alpha fields might not be mentioned in defs.qc
+			// johnfitz -- HACK -- suppress error becuase fog/sky/alpha fields might not be mentioned in defs.qc
 			if (strncmp (keyname, "sky", 3) && strcmp (keyname, "fog") && strcmp (keyname, "alpha"))
-				Con_DPrintf ("\"%s\" is not a field\n", keyname); //johnfitz -- was Con_Printf
+				Con_DPrintf ("\"%s\" is not a field\n", keyname); // johnfitz -- was Con_Printf
 			continue;
 		}
 
@@ -1016,7 +1016,7 @@ void ED_LoadFromFile (const char *data)
 		//
 		if (!ent->v.classname)
 		{
-			Con_SafePrintf ("No classname for:\n"); //johnfitz -- was Con_Printf
+			Con_SafePrintf ("No classname for:\n"); // johnfitz -- was Con_Printf
 			ED_Print (ent);
 			ED_Free (ent);
 			continue;
@@ -1027,7 +1027,7 @@ void ED_LoadFromFile (const char *data)
 
 		if (!func)
 		{
-			Con_SafePrintf ("No spawn function for:\n"); //johnfitz -- was Con_Printf
+			Con_SafePrintf ("No spawn function for:\n"); // johnfitz -- was Con_Printf
 			ED_Print (ent);
 			ED_Free (ent);
 			continue;
@@ -1120,7 +1120,7 @@ void PR_LoadProgs (void)
 		pr_globaldefs[i].s_name = LittleLong (pr_globaldefs[i].s_name);
 	}
 
-	pr_alpha_supported = false; //johnfitz
+	pr_alpha_supported = false; // johnfitz
 
 	for (i = 0; i < progs->numfielddefs; i++)
 	{
@@ -1130,10 +1130,10 @@ void PR_LoadProgs (void)
 		pr_fielddefs[i].ofs = LittleShort (pr_fielddefs[i].ofs);
 		pr_fielddefs[i].s_name = LittleLong (pr_fielddefs[i].s_name);
 
-		//johnfitz -- detect alpha support in progs.dat
+		// johnfitz -- detect alpha support in progs.dat
 		if (!strcmp (pr_strings + pr_fielddefs[i].s_name, "alpha"))
 			pr_alpha_supported = true;
-		//johnfitz
+		// johnfitz
 	}
 
 	for (i = 0; i < progs->numglobals; i++)
@@ -1192,7 +1192,7 @@ int NUM_FOR_EDICT (edict_t *e)
 	return b;
 }
 
-//===========================================================================
+// ===========================================================================
 
 
 #define	PR_STRING_ALLOCSLOTS	256
@@ -1243,7 +1243,7 @@ int PR_SetEngineString (const char *s)
 			return -1 - i;
 	}
 	// new unknown engine string
-	//Con_DPrintf ("PR_SetEngineString: new engine string %p\n", s);
+	// Con_DPrintf ("PR_SetEngineString: new engine string %p\n", s);
 #if 0
 	for (i = 0; i < pr_numknownstrings; i++)
 	{

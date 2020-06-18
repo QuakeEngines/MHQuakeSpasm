@@ -111,7 +111,7 @@ override an explicit setting on the original command line.
 
 */
 
-//============================================================================
+// ============================================================================
 
 
 // ClearLink is used for new headnodes
@@ -190,7 +190,7 @@ int q_strncasecmp (const char *s1, const char *s2, size_t n)
 	return (int) (c1 - c2);
 }
 
-//spike -- grabbed this from fte, because its useful to me
+// spike -- grabbed this from fte, because its useful to me
 char *q_strcasestr (const char *haystack, const char *needle)
 {
 	int c1, c2, c2f;
@@ -218,16 +218,16 @@ char *q_strcasestr (const char *haystack, const char *needle)
 				if (c2 >= 'a' && c2 <= 'z')
 					c2 -= ('a' - 'A');
 				if (!c2)
-					return (char *) haystack;	//end of needle means we found a complete match
-				if (!c1)	//end of haystack means we can't possibly find needle in it any more
+					return (char *) haystack;	// end of needle means we found a complete match
+				if (!c1)	// end of haystack means we can't possibly find needle in it any more
 					return NULL;
-				if (c1 != c2)	//mismatch means no match starting at haystack[0]
+				if (c1 != c2)	// mismatch means no match starting at haystack[0]
 					break;
 			}
 		}
 		haystack++;
 	}
-	return NULL;	//didn't find it
+	return NULL;	// didn't find it
 }
 
 char *q_strlwr (char *str)
@@ -702,20 +702,20 @@ void MSG_WriteString (sizebuf_t *sb, const char *s)
 		SZ_Write (sb, s, Q_strlen (s) + 1);
 }
 
-//johnfitz -- original behavior, 13.3 fixed point coords, max range +-4096
+// johnfitz -- original behavior, 13.3 fixed point coords, max range +-4096
 void MSG_WriteCoord16 (sizebuf_t *sb, float f)
 {
 	MSG_WriteShort (sb, Q_rint (f * 8));
 }
 
-//johnfitz -- 16.8 fixed point coords, max range +-32768
+// johnfitz -- 16.8 fixed point coords, max range +-32768
 void MSG_WriteCoord24 (sizebuf_t *sb, float f)
 {
 	MSG_WriteShort (sb, f);
 	MSG_WriteByte (sb, (int) (f * 255) % 255);
 }
 
-//johnfitz -- 32-bit float coords
+// johnfitz -- 32-bit float coords
 void MSG_WriteCoord32f (sizebuf_t *sb, float f)
 {
 	MSG_WriteFloat (sb, f);
@@ -738,17 +738,17 @@ void MSG_WriteAngle (sizebuf_t *sb, float f, unsigned int flags)
 		MSG_WriteFloat (sb, f);
 	else if (flags & PRFL_SHORTANGLE)
 		MSG_WriteShort (sb, Q_rint (f * 65536.0 / 360.0) & 65535);
-	else MSG_WriteByte (sb, Q_rint (f * 256.0 / 360.0) & 255); //johnfitz -- use Q_rint instead of (int)	}
+	else MSG_WriteByte (sb, Q_rint (f * 256.0 / 360.0) & 255); // johnfitz -- use Q_rint instead of (int)	}
 }
 
-//johnfitz -- for PROTOCOL_FITZQUAKE
+// johnfitz -- for PROTOCOL_FITZQUAKE
 void MSG_WriteAngle16 (sizebuf_t *sb, float f, unsigned int flags)
 {
 	if (flags & PRFL_FLOATANGLE)
 		MSG_WriteFloat (sb, f);
 	else MSG_WriteShort (sb, Q_rint (f * 65536.0 / 360.0) & 65535);
 }
-//johnfitz
+// johnfitz
 
 //
 // reading functions
@@ -873,19 +873,19 @@ const char *MSG_ReadString (void)
 	return string;
 }
 
-//johnfitz -- original behavior, 13.3 fixed point coords, max range +-4096
+// johnfitz -- original behavior, 13.3 fixed point coords, max range +-4096
 float MSG_ReadCoord16 (void)
 {
 	return MSG_ReadShort () * (1.0 / 8);
 }
 
-//johnfitz -- 16.8 fixed point coords, max range +-32768
+// johnfitz -- 16.8 fixed point coords, max range +-32768
 float MSG_ReadCoord24 (void)
 {
 	return MSG_ReadShort () + MSG_ReadByte () * (1.0 / 255);
 }
 
-//johnfitz -- 32-bit float coords
+// johnfitz -- 32-bit float coords
 float MSG_ReadCoord32f (void)
 {
 	return MSG_ReadFloat ();
@@ -911,16 +911,16 @@ float MSG_ReadAngle (unsigned int flags)
 	else return MSG_ReadChar () * (360.0 / 256);
 }
 
-//johnfitz -- for PROTOCOL_FITZQUAKE
+// johnfitz -- for PROTOCOL_FITZQUAKE
 float MSG_ReadAngle16 (unsigned int flags)
 {
 	if (flags & PRFL_FLOATANGLE)
 		return MSG_ReadFloat ();	// make sure
 	else return MSG_ReadShort () * (360.0 / 65536);
 }
-//johnfitz
+// johnfitz
 
-//===========================================================================
+// ===========================================================================
 
 void SZ_Alloc (sizebuf_t *buf, int startsize)
 {
@@ -988,7 +988,7 @@ void SZ_Print (sizebuf_t *buf, const char *data)
 }
 
 
-//============================================================================
+// ============================================================================
 
 /*
 ============
@@ -1343,7 +1343,7 @@ void COM_InitArgv (int argc, char **argv)
 	}
 
 	if (n > 0 && com_cmdline[n - 1] == ' ')
-		com_cmdline[n - 1] = 0; //johnfitz -- kill the trailing space
+		com_cmdline[n - 1] = 0; // johnfitz -- kill the trailing space
 
 	Con_Printf ("Command line: %s\n", com_cmdline);
 
@@ -1363,7 +1363,7 @@ void COM_InitArgv (int argc, char **argv)
 		standard_quake = false;
 	}
 
-	if (COM_CheckParm ("-hipnotic") || COM_CheckParm ("-quoth")) //johnfitz -- "-quoth" support
+	if (COM_CheckParm ("-hipnotic") || COM_CheckParm ("-quoth")) // johnfitz -- "-quoth" support
 	{
 		hipnotic = true;
 		standard_quake = false;
@@ -1430,7 +1430,7 @@ PDP_ORDER: 34 12 78 56
 	if (COM_CheckParm ("-fitz"))
 		fitzmode = true;
 #ifdef _DEBUG
-	Cmd_AddCommand ("fitztest", FitzTest_f); //johnfitz
+	Cmd_AddCommand ("fitztest", FitzTest_f); // johnfitz
 #endif
 }
 
@@ -1536,7 +1536,7 @@ void COM_WriteFile (const char *filename, const void *data, int len)
 	int		handle;
 	char	name[MAX_OSPATH];
 
-	Sys_mkdir (com_gamedir); //johnfitz -- if we've switched to a nonexistant gamedir, create it now so we don't crash
+	Sys_mkdir (com_gamedir); // johnfitz -- if we've switched to a nonexistant gamedir, create it now so we don't crash
 
 	q_snprintf (name, sizeof (name), "%s/%s", com_gamedir, filename);
 
@@ -2005,7 +2005,7 @@ static pack_t *COM_LoadPackFile (const char *packfile)
 	pack->numfiles = numpackfiles;
 	pack->files = newfiles;
 
-	//Sys_Printf ("Added packfile %s (%i files)\n", packfile, numpackfiles);
+	// Sys_Printf ("Added packfile %s (%i files)\n", packfile, numpackfiles);
 	return pack;
 }
 
@@ -2081,9 +2081,9 @@ _add_path:
 	}
 }
 
-//==============================================================================
-//johnfitz -- dynamic gamedir stuff -- modified by QuakeSpasm team.
-//==============================================================================
+// ==============================================================================
+// johnfitz -- dynamic gamedir stuff -- modified by QuakeSpasm team.
+// ==============================================================================
 void ExtraMaps_NewGame (void);
 static void COM_Game_f (void)
 {
@@ -2093,7 +2093,7 @@ static void COM_Game_f (void)
 		const char *p2 = Cmd_Argv (2);
 		searchpath_t *search;
 
-		if (!registered.value) //disable shareware quake
+		if (!registered.value) // disable shareware quake
 		{
 			Con_Printf ("You must have the registered version to use modified games\n");
 			return;
@@ -2119,10 +2119,10 @@ static void COM_Game_f (void)
 			}
 		}
 
-		if (!q_strcasecmp (p, COM_SkipPath (com_gamedir))) //no change
+		if (!q_strcasecmp (p, COM_SkipPath (com_gamedir))) // no change
 		{
 			if (com_searchpaths->path_id > 1)
-			{ //current game not id1
+			{ // current game not id1
 				if (*p2 && com_searchpaths->path_id == 2)
 				{
 					// rely on QuakeSpasm extension treating '-game missionpack'
@@ -2145,14 +2145,14 @@ _same:
 
 		com_modified = true;
 
-		//Kill the server
+		// Kill the server
 		CL_Disconnect ();
 		Host_ShutdownServer (true);
 
-		//Write config file
+		// Write config file
 		Host_WriteConfiguration ();
 
-		//Kill the extra game if it is loaded
+		// Kill the extra game if it is loaded
 		while (com_searchpaths != com_base_searchpaths)
 		{
 			if (com_searchpaths->pack)
@@ -2169,7 +2169,7 @@ _same:
 		rogue = false;
 		standard_quake = true;
 
-		if (q_strcasecmp (p, GAMENAME)) //game is not id1
+		if (q_strcasecmp (p, GAMENAME)) // game is not id1
 		{
 			if (*p2)
 			{
@@ -2179,7 +2179,7 @@ _same:
 					hipnotic = true;
 				else if (!strcmp (p2, "-rogue"))
 					rogue = true;
-				if (q_strcasecmp (p, &p2[1])) //don't load twice
+				if (q_strcasecmp (p, &p2[1])) // don't load twice
 					COM_AddGameDirectory (com_basedir, p);
 			}
 			else
@@ -2206,7 +2206,7 @@ _same:
 				GAMENAME);
 		}
 
-		//clear out and reload appropriate data
+		// clear out and reload appropriate data
 		Cache_Flush ();
 		Mod_ResetAll ();
 		if (!isDedicated)
@@ -2224,7 +2224,7 @@ _same:
 		Cbuf_AddText ("exec quake.rc\n");
 		Cbuf_AddText ("vid_unlock\n");
 	}
-	else //Diplay the current gamedir
+	else // Diplay the current gamedir
 		Con_Printf ("\"game\" is \"%s\"\n", COM_SkipPath (com_gamedir));
 }
 
@@ -2233,14 +2233,14 @@ _same:
 COM_InitFilesystem
 =================
 */
-void COM_InitFilesystem (void) //johnfitz -- modified based on topaz's tutorial
+void COM_InitFilesystem (void) // johnfitz -- modified based on topaz's tutorial
 {
 	int i, j;
 
 	Cvar_RegisterVariable (&registered);
 	Cvar_RegisterVariable (&cmdline);
 	Cmd_AddCommand ("path", COM_Path_f);
-	Cmd_AddCommand ("game", COM_Game_f); //johnfitz
+	Cmd_AddCommand ("game", COM_Game_f); // johnfitz
 
 	i = COM_CheckParm ("-basedir");
 	if (i && i < com_argc - 1)

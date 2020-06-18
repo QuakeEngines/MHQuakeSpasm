@@ -280,7 +280,7 @@ void Z_Print (memzone_t *zone)
 }
 
 
-//============================================================================
+// ============================================================================
 
 #define	HUNK_SENTINAL	0x1df001ed
 
@@ -619,14 +619,14 @@ void Cache_Move (cache_system_t *c)
 		Q_memcpy (new_cs + 1, c + 1, c->size - sizeof (cache_system_t));
 		new_cs->user = c->user;
 		Q_memcpy (new_cs->name, c->name, sizeof (new_cs->name));
-		Cache_Free (c->user, false); //johnfitz -- added second argument
+		Cache_Free (c->user, false); // johnfitz -- added second argument
 		new_cs->user->data = (void *) (new_cs + 1);
 	}
 	else
 	{
 		//		Con_Printf ("cache_move failed\n");
 
-		Cache_Free (c->user, true); // tough luck... //johnfitz -- added second argument
+		Cache_Free (c->user, true); // tough luck... // johnfitz -- added second argument
 	}
 }
 
@@ -672,7 +672,7 @@ void Cache_FreeHigh (int new_high_hunk)
 		if ((byte *) c + c->size <= hunk_base + hunk_size - new_high_hunk)
 			return;		// there is space to grow the hunk
 		if (c == prev)
-			Cache_Free (c->user, true);	// didn't move out of the way //johnfitz -- added second argument
+			Cache_Free (c->user, true);	// didn't move out of the way // johnfitz -- added second argument
 		else
 		{
 			Cache_Move (c);	// try to move it
@@ -793,7 +793,7 @@ Throw everything out, so new data will be demand cached
 void Cache_Flush (void)
 {
 	while (cache_head.next != &cache_head)
-		Cache_Free (cache_head.next->user, true); // reclaim the space //johnfitz -- added second argument
+		Cache_Free (cache_head.next->user, true); // reclaim the space // johnfitz -- added second argument
 }
 
 /*
@@ -844,7 +844,7 @@ Cache_Free
 Frees the memory and removes it from the LRU list
 ==============
 */
-void Cache_Free (cache_user_t *c, qboolean freetextures) //johnfitz -- added second argument
+void Cache_Free (cache_user_t *c, qboolean freetextures) // johnfitz -- added second argument
 {
 	cache_system_t *cs;
 
@@ -861,9 +861,9 @@ void Cache_Free (cache_user_t *c, qboolean freetextures) //johnfitz -- added sec
 
 	Cache_UnlinkLRU (cs);
 
-	//johnfitz -- if a model becomes uncached, free the gltextures.  This only works
-	//becuase the cache_user_t is the last component of the qmodel_t struct.  Should
-	//fail harmlessly if *c is actually part of an sfx_t struct.  I FEEL DIRTY
+	// johnfitz -- if a model becomes uncached, free the gltextures.  This only works
+	// becuase the cache_user_t is the last component of the qmodel_t struct.  Should
+	// fail harmlessly if *c is actually part of an sfx_t struct.  I FEEL DIRTY
 	if (freetextures)
 		TexMgr_FreeTexturesForOwner ((qmodel_t *) (c + 1) - 1);
 }
@@ -925,13 +925,13 @@ void *Cache_Alloc (cache_user_t *c, int size, const char *name)
 		if (cache_head.lru_prev == &cache_head)
 			Sys_Error ("Cache_Alloc: out of memory"); // not enough memory at all
 
-		Cache_Free (cache_head.lru_prev->user, true); //johnfitz -- added second argument
+		Cache_Free (cache_head.lru_prev->user, true); // johnfitz -- added second argument
 	}
 
 	return Cache_Check (c);
 }
 
-//============================================================================
+// ============================================================================
 
 
 static void Memory_InitZone (memzone_t *zone, int size)
@@ -980,6 +980,6 @@ void Memory_Init (void *buf, int size)
 	mainzone = (memzone_t *) Hunk_AllocName (zonesize, "zone");
 	Memory_InitZone (mainzone, zonesize);
 
-	Cmd_AddCommand ("hunk_print", Hunk_Print_f); //johnfitz
+	Cmd_AddCommand ("hunk_print", Hunk_Print_f); // johnfitz
 }
 

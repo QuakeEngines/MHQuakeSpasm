@@ -51,9 +51,9 @@ void Host_Quit_f (void)
 	Sys_Quit ();
 }
 
-//==============================================================================
-//johnfitz -- extramaps management
-//==============================================================================
+// ==============================================================================
+// johnfitz -- extramaps management
+// ==============================================================================
 
 /*
 ==================
@@ -76,12 +76,12 @@ void FileList_Add (const char *name, filelist_item_t **list)
 
 	// insert each entry in alphabetical order
 	if (*list == NULL ||
-		q_strcasecmp (item->name, (*list)->name) < 0) //insert at front
+		q_strcasecmp (item->name, (*list)->name) < 0) // insert at front
 	{
 		item->next = *list;
 		*list = item;
 	}
-	else //insert later
+	else // insert later
 	{
 		prev = *list;
 		cursor = (*list)->next;
@@ -136,7 +136,7 @@ void ExtraMaps_Init (void)
 
 	for (search = com_searchpaths; search; search = search->next)
 	{
-		if (*search->filename) //directory
+		if (*search->filename) // directory
 		{
 #ifdef _WIN32
 			q_snprintf (filestring, sizeof (filestring), "%s/maps/*.bsp", search->filename);
@@ -164,10 +164,10 @@ void ExtraMaps_Init (void)
 			closedir (dir_p);
 #endif
 		}
-		else //pakfile
+		else // pakfile
 		{
 			if (!strstr (search->pack->filename, ignorepakdir))
-			{ //don't list standard id maps
+			{ // don't list standard id maps
 				for (i = 0, pak = search->pack; i < pak->numfiles; i++)
 				{
 					if (!strcmp (COM_FileGetExtension (pak->files[i].name), "bsp"))
@@ -214,9 +214,9 @@ void Host_Maps_f (void)
 		Con_SafePrintf ("no maps found\n");
 }
 
-//==============================================================================
-//johnfitz -- modlist management
-//==============================================================================
+// ==============================================================================
+// johnfitz -- modlist management
+// ==============================================================================
 
 filelist_item_t *modlist;
 
@@ -284,9 +284,9 @@ void Modlist_Init (void)
 }
 #endif
 
-//==============================================================================
-//ericw -- demo list management
-//==============================================================================
+// ==============================================================================
+// ericw -- demo list management
+// ==============================================================================
 
 filelist_item_t *demolist;
 
@@ -324,7 +324,7 @@ void DemoList_Init (void)
 
 	for (search = com_searchpaths; search; search = search->next)
 	{
-		if (*search->filename) //directory
+		if (*search->filename) // directory
 		{
 #ifdef _WIN32
 			q_snprintf (filestring, sizeof (filestring), "%s/*.dem", search->filename);
@@ -352,10 +352,10 @@ void DemoList_Init (void)
 			closedir (dir_p);
 #endif
 		}
-		else //pakfile
+		else // pakfile
 		{
 			if (!strstr (search->pack->filename, ignorepakdir))
-			{ //don't list standard id demos
+			{ // don't list standard id demos
 				for (i = 0, pak = search->pack; i < pak->numfiles; i++)
 				{
 					if (!strcmp (COM_FileGetExtension (pak->files[i].name), "dem"))
@@ -391,7 +391,7 @@ void Host_Mods_f (void)
 		Con_SafePrintf ("no mods found\n");
 }
 
-//==============================================================================
+// ==============================================================================
 
 /*
 =============
@@ -488,7 +488,7 @@ void Host_God_f (void)
 	if (pr_global_struct->deathmatch)
 		return;
 
-	//johnfitz -- allow user to explicitly set god mode to on or off
+	// johnfitz -- allow user to explicitly set god mode to on or off
 	switch (Cmd_Argc ())
 	{
 	case 1:
@@ -514,7 +514,7 @@ void Host_God_f (void)
 		Con_Printf ("god [value] : toggle god mode. values: 0 = off, 1 = on\n");
 		break;
 	}
-	//johnfitz
+	// johnfitz
 }
 
 /*
@@ -533,7 +533,7 @@ void Host_Notarget_f (void)
 	if (pr_global_struct->deathmatch)
 		return;
 
-	//johnfitz -- allow user to explicitly set notarget to on or off
+	// johnfitz -- allow user to explicitly set notarget to on or off
 	switch (Cmd_Argc ())
 	{
 	case 1:
@@ -559,7 +559,7 @@ void Host_Notarget_f (void)
 		Con_Printf ("notarget [value] : toggle notarget mode. values: 0 = off, 1 = on\n");
 		break;
 	}
-	//johnfitz
+	// johnfitz
 }
 
 qboolean noclip_anglehack;
@@ -580,7 +580,7 @@ void Host_Noclip_f (void)
 	if (pr_global_struct->deathmatch)
 		return;
 
-	//johnfitz -- allow user to explicitly set noclip to on or off
+	// johnfitz -- allow user to explicitly set noclip to on or off
 	switch (Cmd_Argc ())
 	{
 	case 1:
@@ -615,7 +615,7 @@ void Host_Noclip_f (void)
 		Con_Printf ("noclip [value] : toggle noclip mode. values: 0 = off, 1 = on\n");
 		break;
 	}
-	//johnfitz
+	// johnfitz
 }
 
 /*
@@ -659,7 +659,7 @@ void Host_SetPos_f (void)
 		SV_ClientPrintf ("noclip ON\n");
 	}
 
-	//make sure they're not going to whizz away from it
+	// make sure they're not going to whizz away from it
 	sv_player->v.velocity[0] = 0;
 	sv_player->v.velocity[1] = 0;
 	sv_player->v.velocity[2] = 0;
@@ -697,7 +697,7 @@ void Host_Fly_f (void)
 	if (pr_global_struct->deathmatch)
 		return;
 
-	//johnfitz -- allow user to explicitly set noclip to on or off
+	// johnfitz -- allow user to explicitly set noclip to on or off
 	switch (Cmd_Argc ())
 	{
 	case 1:
@@ -728,7 +728,7 @@ void Host_Fly_f (void)
 		Con_Printf ("fly [value] : toggle fly mode. values: 0 = off, 1 = on\n");
 		break;
 	}
-	//johnfitz
+	// johnfitz
 }
 
 
@@ -786,7 +786,7 @@ void Host_Map_f (void)
 	int		i;
 	char	name[MAX_QPATH], *p;
 
-	if (Cmd_Argc () < 2)	//no map name given
+	if (Cmd_Argc () < 2)	// no map name given
 	{
 		if (cls.state == ca_dedicated)
 		{
@@ -901,11 +901,11 @@ void Host_Changelevel_f (void)
 		return;
 	}
 
-	//johnfitz -- check for client having map before anything else
+	// johnfitz -- check for client having map before anything else
 	q_snprintf (level, sizeof (level), "maps/%s.bsp", Cmd_Argv (1));
 	if (!COM_FileExists (level, NULL))
 		Host_Error ("cannot find map %s", level);
-	//johnfitz
+	// johnfitz
 
 	if (cls.state != ca_dedicated)
 		IN_Activate ();	// -- S.A.
@@ -1004,7 +1004,7 @@ void Host_SavegameComment (char *text)
 
 	for (i = 0; i < SAVEGAME_COMMENT_LENGTH; i++)
 		text[i] = ' ';
-	memcpy (text, cl.levelname, q_min (strlen (cl.levelname), 22)); //johnfitz -- only copy 22 chars.
+	memcpy (text, cl.levelname, q_min (strlen (cl.levelname), 22)); // johnfitz -- only copy 22 chars.
 	sprintf (kills, "kills:%3i/%3i", cl.stats[STAT_MONSTERS], cl.stats[STAT_TOTALMONSTERS]);
 	memcpy (text + 22, kills, strlen (kills));
 	// convert space to _ to make stdio happy
@@ -1266,7 +1266,7 @@ void Host_Loadgame_f (void)
 	}
 }
 
-//============================================================================
+// ============================================================================
 
 /*
 ======================
@@ -1551,7 +1551,7 @@ Host_Pause_f
 */
 void Host_Pause_f (void)
 {
-	//ericw -- demo pause support (inspired by MarkV)
+	// ericw -- demo pause support (inspired by MarkV)
 	if (cls.demoplayback)
 	{
 		cls.demopaused = !cls.demopaused;
@@ -1585,7 +1585,7 @@ void Host_Pause_f (void)
 	}
 }
 
-//===========================================================================
+// ===========================================================================
 
 
 /*
@@ -1749,7 +1749,7 @@ void Host_Begin_f (void)
 	host_client->spawned = true;
 }
 
-//===========================================================================
+// ===========================================================================
 
 
 /*
@@ -2009,7 +2009,7 @@ void Host_Give_f (void)
 		}
 		break;
 
-		//johnfitz -- give armour
+		// johnfitz -- give armour
 	case 'a':
 		if (v > 150)
 		{
@@ -2036,10 +2036,10 @@ void Host_Give_f (void)
 				IT_ARMOR1;
 		}
 		break;
-		//johnfitz
+		// johnfitz
 	}
 
-	//johnfitz -- update currentammo to match new ammo (so statusbar updates correctly)
+	// johnfitz -- update currentammo to match new ammo (so statusbar updates correctly)
 	switch ((int) (sv_player->v.weapon))
 	{
 	case IT_SHOTGUN:
@@ -2062,18 +2062,18 @@ void Host_Give_f (void)
 	case HIT_MJOLNIR:
 		sv_player->v.currentammo = sv_player->v.ammo_cells;
 		break;
-	case RIT_LAVA_NAILGUN: //same as IT_AXE
+	case RIT_LAVA_NAILGUN: // same as IT_AXE
 		if (rogue)
 			sv_player->v.currentammo = sv_player->v.ammo_nails;
 		break;
-	case RIT_PLASMA_GUN: //same as HIT_PROXIMITY_GUN
+	case RIT_PLASMA_GUN: // same as HIT_PROXIMITY_GUN
 		if (rogue)
 			sv_player->v.currentammo = sv_player->v.ammo_cells;
 		if (hipnotic)
 			sv_player->v.currentammo = sv_player->v.ammo_rockets;
 		break;
 	}
-	//johnfitz
+	// johnfitz
 }
 
 edict_t *FindViewthing (void)
@@ -2283,7 +2283,7 @@ void Host_Stopdemo_f (void)
 	CL_Disconnect ();
 }
 
-//=============================================================================
+// =============================================================================
 
 /*
 ==================
@@ -2292,11 +2292,11 @@ Host_InitCommands
 */
 void Host_InitCommands (void)
 {
-	Cmd_AddCommand ("maps", Host_Maps_f); //johnfitz
-	Cmd_AddCommand ("mods", Host_Mods_f); //johnfitz
+	Cmd_AddCommand ("maps", Host_Maps_f); // johnfitz
+	Cmd_AddCommand ("mods", Host_Mods_f); // johnfitz
 	Cmd_AddCommand ("games", Host_Mods_f); // as an alias to "mods" -- S.A. / QuakeSpasm
-	Cmd_AddCommand ("mapname", Host_Mapname_f); //johnfitz
-	Cmd_AddCommand ("randmap", Host_Randmap_f); //ericw
+	Cmd_AddCommand ("mapname", Host_Mapname_f); // johnfitz
+	Cmd_AddCommand ("randmap", Host_Randmap_f); // ericw
 
 	Cmd_AddCommand ("status", Host_Status_f);
 	Cmd_AddCommand ("quit", Host_Quit_f);
@@ -2310,7 +2310,7 @@ void Host_InitCommands (void)
 	Cmd_AddCommand ("reconnect", Host_Reconnect_f);
 	Cmd_AddCommand ("name", Host_Name_f);
 	Cmd_AddCommand ("noclip", Host_Noclip_f);
-	Cmd_AddCommand ("setpos", Host_SetPos_f); //QuakeSpasm
+	Cmd_AddCommand ("setpos", Host_SetPos_f); // QuakeSpasm
 
 	Cmd_AddCommand ("say", Host_Say_f);
 	Cmd_AddCommand ("say_team", Host_Say_Team_f);

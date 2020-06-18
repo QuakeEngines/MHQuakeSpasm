@@ -63,7 +63,7 @@ void *SZ_GetSpace (sizebuf_t *buf, int length);
 void SZ_Write (sizebuf_t *buf, const void *data, int length);
 void SZ_Print (sizebuf_t *buf, const char *data);	// strcats onto the sizebuf
 
-//============================================================================
+// ============================================================================
 
 typedef struct link_s {
 	struct link_s *prev, *next;
@@ -80,7 +80,7 @@ void InsertLinkAfter (link_t *l, link_t *after);
 // FIXME: remove this mess!
 #define	STRUCT_FROM_LINK(l,t,m) ((t *)((byte *)l - (intptr_t)&(((t *)0)->m)))
 
-//============================================================================
+// ============================================================================
 
 extern	qboolean		host_bigendian;
 
@@ -91,7 +91,7 @@ extern	int	(*LittleLong) (int l);
 extern	float	(*BigFloat) (float l);
 extern	float	(*LittleFloat) (float l);
 
-//============================================================================
+// ============================================================================
 
 void MSG_WriteChar (sizebuf_t *sb, int c);
 void MSG_WriteByte (sizebuf_t *sb, int c);
@@ -101,7 +101,7 @@ void MSG_WriteFloat (sizebuf_t *sb, float f);
 void MSG_WriteString (sizebuf_t *sb, const char *s);
 void MSG_WriteCoord (sizebuf_t *sb, float f, unsigned int flags);
 void MSG_WriteAngle (sizebuf_t *sb, float f, unsigned int flags);
-void MSG_WriteAngle16 (sizebuf_t *sb, float f, unsigned int flags); //johnfitz
+void MSG_WriteAngle16 (sizebuf_t *sb, float f, unsigned int flags); // johnfitz
 
 extern	int			msg_readcount;
 extern	qboolean	msg_badread;		// set if a read goes beyond end of message
@@ -116,9 +116,9 @@ const char *MSG_ReadString (void);
 
 float MSG_ReadCoord (unsigned int flags);
 float MSG_ReadAngle (unsigned int flags);
-float MSG_ReadAngle16 (unsigned int flags); //johnfitz
+float MSG_ReadAngle16 (unsigned int flags); // johnfitz
 
-//============================================================================
+// ============================================================================
 
 void Q_memset (void *dest, int fill, size_t count);
 void Q_memcpy (void *dest, const void *src, size_t count);
@@ -151,7 +151,7 @@ extern char *q_strupr (char *str);
 extern int q_snprintf (char *str, size_t size, const char *format, ...) FUNC_PRINTF (3, 4);
 extern int q_vsnprintf (char *str, size_t size, const char *format, va_list args) FUNC_PRINTF (3, 0);
 
-//============================================================================
+// ============================================================================
 
 extern	char		com_token[1024];
 extern	qboolean	com_eof;
@@ -190,7 +190,7 @@ char *va (const char *format, ...) FUNC_PRINTF (1, 2);
 // does a varargs printf into a temp buffer
 
 
-//============================================================================
+// ============================================================================
 
 // QUAKEFS
 typedef struct {

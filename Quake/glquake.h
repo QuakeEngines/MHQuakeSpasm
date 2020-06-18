@@ -97,7 +97,7 @@ typedef struct particle_s {
 } particle_t;
 
 
-//====================================================
+// ====================================================
 
 extern	qboolean	r_cache_thrash;		// compatability
 extern	vec3_t		modelorg, r_entorigin;
@@ -106,17 +106,13 @@ extern	int		r_visframecount;	// ??? what difs?
 extern	int		r_framecount;
 extern	mplane_t	frustum[4];
 
-//
 // view origin
-//
 extern	vec3_t	vup;
 extern	vec3_t	vpn;
 extern	vec3_t	vright;
 extern	vec3_t	r_origin;
 
-//
 // screen size info
-//
 extern	refdef_t	r_refdef;
 extern	mleaf_t *r_viewleaf, *r_oldviewleaf;
 extern	int		d_lightstylevalue[256];	// 8.8 fraction of base light value
@@ -150,7 +146,7 @@ extern	cvar_t	gl_nocolors;
 extern	cvar_t	gl_playermip;
 
 extern	cvar_t	gl_subdivide_size;
-extern	float	load_subdivide_size; //johnfitz -- remember what subdivide_size value was when this map was loaded
+extern	float	load_subdivide_size; // johnfitz -- remember what subdivide_size value was when this map was loaded
 
 extern int		gl_stencilbits;
 
@@ -160,24 +156,24 @@ extern	qboolean	gl_mtexable;
 extern PFNGLMULTITEXCOORD2FARBPROC  GL_MTexCoord2fFunc;
 extern PFNGLACTIVETEXTUREARBPROC    GL_SelectTextureFunc;
 extern PFNGLCLIENTACTIVETEXTUREARBPROC	GL_ClientActiveTextureFunc;
-extern GLint		gl_max_texture_units; //ericw
+extern GLint		gl_max_texture_units; // ericw
 
-//johnfitz -- anisotropic filtering
+// johnfitz -- anisotropic filtering
 #define	GL_TEXTURE_MAX_ANISOTROPY_EXT		0x84FE
 #define	GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT	0x84FF
 extern	float		gl_max_anisotropy;
 extern	qboolean	gl_anisotropy_able;
 
-//ericw -- VBO
+// ericw -- VBO
 extern PFNGLBINDBUFFERARBPROC  GL_BindBufferFunc;
 extern PFNGLBUFFERDATAARBPROC  GL_BufferDataFunc;
 extern PFNGLBUFFERSUBDATAARBPROC  GL_BufferSubDataFunc;
 extern PFNGLDELETEBUFFERSARBPROC  GL_DeleteBuffersFunc;
 extern PFNGLGENBUFFERSARBPROC  GL_GenBuffersFunc;
 extern	qboolean	gl_vbo_able;
-//ericw
+// ericw
 
-//ericw -- GLSL
+// ericw -- GLSL
 
 // SDL 1.2 has a bug where it doesn't provide these typedefs on OS X!
 typedef GLuint (APIENTRYP QS_PFNGLCREATESHADERPROC) (GLenum type);
@@ -232,10 +228,10 @@ extern	qboolean	gl_glsl_gamma_able;
 extern	qboolean	gl_glsl_alias_able;
 // ericw --
 
-//ericw -- NPOT texture support
+// ericw -- NPOT texture support
 extern	qboolean	gl_texture_NPOT;
 
-//johnfitz -- polygon offset
+// johnfitz -- polygon offset
 #define OFFSET_BMODEL 1
 #define OFFSET_NONE 0
 #define OFFSET_DECAL -1
@@ -243,8 +239,8 @@ extern	qboolean	gl_texture_NPOT;
 #define OFFSET_SHOWTRIS -3
 void GL_PolygonOffset (int);
 
-//johnfitz -- GL_EXT_texture_env_combine
-//the values for GL_ARB_ are identical
+// johnfitz -- GL_EXT_texture_env_combine
+// the values for GL_ARB_ are identical
 #define GL_COMBINE_EXT		0x8570
 #define GL_COMBINE_RGB_EXT	0x8571
 #define GL_COMBINE_ALPHA_EXT	0x8572
@@ -259,12 +255,12 @@ void GL_PolygonOffset (int);
 extern qboolean gl_texture_env_combine;
 extern qboolean gl_texture_env_add; // for GL_EXT_texture_env_add
 
-//johnfitz -- rendering statistics
+// johnfitz -- rendering statistics
 extern int rs_brushpolys, rs_aliaspolys, rs_skypolys, rs_particles, rs_fogpolys;
 extern int rs_dynamiclightmaps, rs_brushpasses, rs_aliaspasses, rs_skypasses;
 extern float rs_megatexels;
 
-//johnfitz -- track developer statistics that vary every frame
+// johnfitz -- track developer statistics that vary every frame
 extern cvar_t devstats;
 typedef struct {
 	int		packetsize;
@@ -277,25 +273,26 @@ typedef struct {
 } devstats_t;
 extern devstats_t dev_stats, dev_peakstats;
 
-//ohnfitz -- reduce overflow warning spam
+// ohnfitz -- reduce overflow warning spam
 typedef struct {
 	double	packetsize;
 	double	efrags;
 	double	beams;
 	double	varstring;
 } overflowtimes_t;
-extern overflowtimes_t dev_overflows; //this stores the last time overflow messages were displayed, not the last time overflows occured
+extern overflowtimes_t dev_overflows; // this stores the last time overflow messages were displayed, not the last time overflows occured
 #define CONSOLE_RESPAM_TIME 3 // seconds between repeated warning messages
 
-//johnfitz -- moved here from r_brush.c
+// johnfitz -- moved here from r_brush.c
 extern int gl_lightmap_format, lightmap_bytes;
 
-#define LMBLOCK_WIDTH	256	//FIXME: make dynamic. if we have a decent card there's no real reason not to use 4k or 16k (assuming there's no lightstyles/dynamics that need uploading...)
-#define LMBLOCK_HEIGHT	256 //Alternatively, use texture arrays, which would avoid the need to switch textures as often.
+#define LMBLOCK_WIDTH	256	// FIXME: make dynamic. if we have a decent card there's no real reason not to use 4k or 16k (assuming there's no lightstyles/dynamics that need uploading...)
+#define LMBLOCK_HEIGHT	256 // Alternatively, use texture arrays, which would avoid the need to switch textures as often.
 
 typedef struct glRect_s {
 	unsigned short l, t, w, h;
 } glRect_t;
+
 struct lightmap_s {
 	gltexture_t *texture;
 	glpoly_t *polys;
@@ -304,23 +301,24 @@ struct lightmap_s {
 
 	// the lightmap texture data needs to be kept in
 	// main memory so texsubimage can update properly
-	byte *data;//[4*LMBLOCK_WIDTH*LMBLOCK_HEIGHT];
+	byte *data; // [4*LMBLOCK_WIDTH*LMBLOCK_HEIGHT];
 };
+
 extern struct lightmap_s *lightmap;
-extern int lightmap_count;	//allocated lightmaps
+extern int lightmap_count;	// allocated lightmaps
 
-extern int gl_warpimagesize; //johnfitz -- for water warp
+extern int gl_warpimagesize; // johnfitz -- for water warp
 
-extern qboolean r_drawflat_cheatsafe, r_fullbright_cheatsafe, r_lightmap_cheatsafe, r_drawworld_cheatsafe; //johnfitz
+extern qboolean r_drawflat_cheatsafe, r_fullbright_cheatsafe, r_lightmap_cheatsafe, r_drawworld_cheatsafe; // johnfitz
 
 typedef struct glsl_attrib_binding_s {
 	const char *name;
 	GLuint attrib;
 } glsl_attrib_binding_t;
 
-extern float	map_wateralpha, map_lavaalpha, map_telealpha, map_slimealpha; //ericw
+extern float	map_wateralpha, map_lavaalpha, map_telealpha, map_slimealpha; // ericw
 
-//johnfitz -- fog functions called from outside gl_fog.c
+// johnfitz -- fog functions called from outside gl_fog.c
 void Fog_ParseServerMessage (void);
 float *Fog_GetColor (void);
 float Fog_GetDensity (void);
@@ -350,7 +348,7 @@ void CL_RunParticles (void);
 void R_ClearParticles (void);
 
 void R_TranslatePlayerSkin (int playernum);
-void R_TranslateNewPlayerSkin (int playernum); //johnfitz -- this handles cases when the actual texture changes
+void R_TranslateNewPlayerSkin (int playernum); // johnfitz -- this handles cases when the actual texture changes
 void R_UpdateWarpTextures (void);
 
 void R_DrawWorld (void);
@@ -370,9 +368,9 @@ void R_RebuildAllLightmaps (void);
 
 int R_LightPoint (vec3_t p);
 
-void GL_SubdivideSurface (msurface_t *fa);
+void GL_SubdivideSurface (msurface_t *surf);
 void R_BuildLightMap (msurface_t *surf, byte *dest, int stride);
-void R_RenderDynamicLightmaps (msurface_t *fa);
+void R_RenderDynamicLightmaps (msurface_t *surf);
 void R_UploadLightmaps (void);
 
 void R_DrawWorld_ShowTris (void);
@@ -413,7 +411,7 @@ void GLSLGamma_GammaCorrect (void);
 
 void R_ScaleView_DeleteTexture (void);
 
-float GL_WaterAlphaForSurface (msurface_t *fa);
+float GL_WaterAlphaForSurface (msurface_t *surf);
 
 #endif	/* __GLQUAKE_H */
 

@@ -1,7 +1,7 @@
 #ifndef _QUAKE_RESOURCE_H
 #define _QUAKE_RESOURCE_H
 
-//{{NO_DEPENDENCIES}}
+// {{NO_DEPENDENCIES}}
 // Microsoft Developer Studio generated include file.
 // Used by winquake.rc
 //

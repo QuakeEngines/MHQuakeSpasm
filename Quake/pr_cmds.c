@@ -122,7 +122,7 @@ static void PF_objerror (void)
 	ED_Print (ed);
 	ED_Free (ed);
 
-	//Host_Error ("Program error"); //johnfitz -- by design, this should not be fatal
+	// Host_Error ("Program error"); // johnfitz -- by design, this should not be fatal
 }
 
 
@@ -290,19 +290,19 @@ static void PF_setmodel (void)
 		PR_RunError ("no precache: %s", m);
 	}
 	e->v.model = PR_SetEngineString (*check);
-	e->v.modelindex = i; //SV_ModelIndex (m);
+	e->v.modelindex = i; // SV_ModelIndex (m);
 
 	mod = sv.models[(int) e->v.modelindex];  // Mod_ForName (m, true);
 
 	if (mod)
-		//johnfitz -- correct physics cullboxes for bmodels
+		// johnfitz -- correct physics cullboxes for bmodels
 	{
 		if (mod->type == mod_brush)
 			SetMinMaxSize (e, mod->clipmins, mod->clipmaxs, true);
 		else
 			SetMinMaxSize (e, mod->mins, mod->maxs, true);
 	}
-	//johnfitz
+	// johnfitz
 	else
 		SetMinMaxSize (e, vec3_origin, vec3_origin, true);
 }
@@ -555,7 +555,7 @@ static void PF_ambientsound (void)
 	float *pos;
 	float		vol, attenuation;
 	int		i, soundnum;
-	int		large = false; //johnfitz -- PROTOCOL_FITZQUAKE
+	int		large = false; // johnfitz -- PROTOCOL_FITZQUAKE
 
 	pos = G_VECTOR (OFS_PARM0);
 	samp = G_STRING (OFS_PARM1);
@@ -575,34 +575,34 @@ static void PF_ambientsound (void)
 		return;
 	}
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
+	// johnfitz -- PROTOCOL_FITZQUAKE
 	if (soundnum > 255)
 	{
 		if (sv.protocol == PROTOCOL_NETQUAKE)
-			return; //don't send any info protocol can't support
+			return; // don't send any info protocol can't support
 		else
 			large = true;
 	}
-	//johnfitz
+	// johnfitz
 
 // add an svc_spawnambient command to the level signon packet
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
+	// johnfitz -- PROTOCOL_FITZQUAKE
 	if (large)
 		MSG_WriteByte (&sv.signon, svc_spawnstaticsound2);
 	else
 		MSG_WriteByte (&sv.signon, svc_spawnstaticsound);
-	//johnfitz
+	// johnfitz
 
 	for (i = 0; i < 3; i++)
 		MSG_WriteCoord (&sv.signon, pos[i], sv.protocolflags);
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
+	// johnfitz -- PROTOCOL_FITZQUAKE
 	if (large)
 		MSG_WriteShort (&sv.signon, soundnum);
 	else
 		MSG_WriteByte (&sv.signon, soundnum);
-	//johnfitz
+	// johnfitz
 
 	MSG_WriteByte (&sv.signon, vol * 255);
 	MSG_WriteByte (&sv.signon, attenuation * 64);
@@ -735,9 +735,9 @@ static void PF_checkpos (void)
 }
 #endif
 
-//============================================================================
+// ============================================================================
 
-static byte *checkpvs;	//ericw -- changed to malloc
+static byte *checkpvs;	// ericw -- changed to malloc
 static int	checkpvs_capacity;
 
 static int PF_newcheckclient (int check)
@@ -856,7 +856,7 @@ static void PF_checkclient (void)
 	RETURN_EDICT (ent);
 }
 
-//============================================================================
+// ============================================================================
 
 
 /*
@@ -1550,31 +1550,31 @@ static void PF_WriteEntity (void)
 	MSG_WriteShort (WriteDest (), G_EDICTNUM (OFS_PARM1));
 }
 
-//=============================================================================
+// =============================================================================
 
 static void PF_makestatic (void)
 {
 	edict_t *ent;
 	int		i;
-	int	bits = 0; //johnfitz -- PROTOCOL_FITZQUAKE
+	int	bits = 0; // johnfitz -- PROTOCOL_FITZQUAKE
 
 	ent = G_EDICT (OFS_PARM0);
 
-	//johnfitz -- don't send invisible static entities
+	// johnfitz -- don't send invisible static entities
 	if (ent->alpha == ENTALPHA_ZERO)
 	{
 		ED_Free (ent);
 		return;
 	}
-	//johnfitz
+	// johnfitz
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
+	// johnfitz -- PROTOCOL_FITZQUAKE
 	if (sv.protocol == PROTOCOL_NETQUAKE)
 	{
 		if (SV_ModelIndex (PR_GetString (ent->v.model)) & 0xFF00 || (int) (ent->v.frame) & 0xFF00)
 		{
 			ED_Free (ent);
-			return; //can't display the correct model & frame, so don't show it at all
+			return; // can't display the correct model & frame, so don't show it at all
 		}
 	}
 	else
@@ -1604,7 +1604,7 @@ static void PF_makestatic (void)
 		MSG_WriteShort (&sv.signon, ent->v.frame);
 	else
 		MSG_WriteByte (&sv.signon, ent->v.frame);
-	//johnfitz
+	// johnfitz
 
 	MSG_WriteByte (&sv.signon, ent->v.colormap);
 	MSG_WriteByte (&sv.signon, ent->v.skin);
@@ -1614,16 +1614,16 @@ static void PF_makestatic (void)
 		MSG_WriteAngle (&sv.signon, ent->v.angles[i], sv.protocolflags);
 	}
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
+	// johnfitz -- PROTOCOL_FITZQUAKE
 	if (bits & B_ALPHA)
 		MSG_WriteByte (&sv.signon, ent->alpha);
-	//johnfitz
+	// johnfitz
 
 // throw the entity away now
 	ED_Free (ent);
 }
 
-//=============================================================================
+// =============================================================================
 
 /*
 ==============

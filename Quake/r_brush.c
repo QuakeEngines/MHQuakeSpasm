@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern cvar_t gl_fullbrights, r_drawflat, gl_overbright, r_oldwater; //johnfitz
+extern cvar_t gl_fullbrights, r_drawflat, gl_overbright, r_oldwater; // johnfitz
 extern cvar_t gl_zfix; // QuakeSpasm z-fighting fix
 
 int		gl_lightmap_format;
@@ -36,7 +36,7 @@ int					lightmap_count;
 int					last_lightmap_allocated;
 int					allocated[LMBLOCK_WIDTH];
 
-unsigned	blocklights[LMBLOCK_WIDTH * LMBLOCK_HEIGHT * 3]; //johnfitz -- was 18*18, added lit support (*3) and loosened surface extents maximum (LMBLOCK_WIDTH*LMBLOCK_HEIGHT)
+unsigned	blocklights[LMBLOCK_WIDTH * LMBLOCK_HEIGHT * 3]; // johnfitz -- was 18*18, added lit support (*3) and loosened surface extents maximum (LMBLOCK_WIDTH*LMBLOCK_HEIGHT)
 
 
 /*
@@ -120,378 +120,6 @@ void DrawGLTriangleFan (glpoly_t *p)
 =============================================================
 */
 
-#if 0
-/*
-================
-R_DrawSequentialPoly -- johnfitz -- rewritten
-================
-*/
-void R_DrawSequentialPoly (msurface_t *s)
-{
-	glpoly_t *p;
-	texture_t *t;
-	float *v;
-	float		entalpha;
-	int			i;
-
-	t = R_TextureAnimation (s->texinfo->texture, currententity->frame);
-	entalpha = ENTALPHA_DECODE (currententity->alpha);
-
-	// drawflat
-	if (r_drawflat_cheatsafe)
-	{
-		if ((s->flags & SURF_DRAWTURB) && r_oldwater.value)
-		{
-			for (p = s->polys->next; p; p = p->next)
-			{
-				srand ((unsigned int) (uintptr_t) p);
-				glColor3f (rand () % 256 / 255.0, rand () % 256 / 255.0, rand () % 256 / 255.0);
-				DrawGLPoly (p);
-				rs_brushpasses++;
-			}
-			return;
-		}
-
-		srand ((unsigned int) (uintptr_t) s->polys);
-		glColor3f (rand () % 256 / 255.0, rand () % 256 / 255.0, rand () % 256 / 255.0);
-		DrawGLPoly (s->polys);
-		rs_brushpasses++;
-		return;
-	}
-
-	// fullbright
-	if ((r_fullbright_cheatsafe) && !(s->flags & SURF_DRAWTILED))
-	{
-		if (entalpha < 1)
-		{
-			glDepthMask (GL_FALSE);
-			glEnable (GL_BLEND);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			glColor4f (1, 1, 1, entalpha);
-		}
-
-		if (s->flags & SURF_DRAWFENCE)
-			glEnable (GL_ALPHA_TEST); // Flip on alpha test
-
-		GL_Bind (t->gltexture);
-		DrawGLPoly (s->polys);
-		rs_brushpasses++;
-
-		if (s->flags & SURF_DRAWFENCE)
-			glDisable (GL_ALPHA_TEST); // Flip alpha test back off
-
-		if (entalpha < 1)
-		{
-			glDepthMask (GL_TRUE);
-			glDisable (GL_BLEND);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-			glColor3f (1, 1, 1);
-		}
-		goto fullbrights;
-	}
-
-	// r_lightmap
-	if (r_lightmap_cheatsafe)
-	{
-		if (s->flags & SURF_DRAWTILED)
-		{
-			glDisable (GL_TEXTURE_2D);
-			DrawGLPoly (s->polys);
-			glEnable (GL_TEXTURE_2D);
-			rs_brushpasses++;
-			return;
-		}
-
-		R_RenderDynamicLightmaps (s);
-		GL_Bind (lightmap_textures[s->lightmaptexturenum]);
-		if (!gl_overbright.value)
-		{
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			glColor3f (0.5, 0.5, 0.5);
-		}
-		glBegin (GL_POLYGON);
-		v = s->polys->verts[0];
-		for (i = 0; i < s->polys->numverts; i++, v += VERTEXSIZE)
-		{
-			glTexCoord2f (v[5], v[6]);
-			glVertex3fv (v);
-		}
-		glEnd ();
-		if (!gl_overbright.value)
-		{
-			glColor3f (1, 1, 1);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		}
-		rs_brushpasses++;
-		return;
-	}
-
-	// sky poly -- skip it, already handled in gl_sky.c
-	if (s->flags & SURF_DRAWSKY)
-		return;
-
-	// water poly
-	if (s->flags & SURF_DRAWTURB)
-	{
-		if (currententity->alpha == ENTALPHA_DEFAULT)
-			entalpha = CLAMP (0.0, GL_WaterAlphaForSurface (s), 1.0);
-
-		if (entalpha < 1)
-		{
-			glDepthMask (GL_FALSE);
-			glEnable (GL_BLEND);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			glColor4f (1, 1, 1, entalpha);
-		}
-		if (r_oldwater.value)
-		{
-			GL_Bind (s->texinfo->texture->gltexture);
-			for (p = s->polys->next; p; p = p->next)
-			{
-				DrawWaterPoly (p);
-				rs_brushpasses++;
-			}
-			rs_brushpasses++;
-		}
-		else
-		{
-			GL_Bind (s->texinfo->texture->warpimage);
-			s->texinfo->texture->update_warp = true; // FIXME: one frame too late!
-			DrawGLPoly (s->polys);
-			rs_brushpasses++;
-		}
-		if (entalpha < 1)
-		{
-			glDepthMask (GL_TRUE);
-			glDisable (GL_BLEND);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-			glColor3f (1, 1, 1);
-		}
-		return;
-	}
-
-	// missing texture
-	if (s->flags & SURF_NOTEXTURE)
-	{
-		if (entalpha < 1)
-		{
-			glDepthMask (GL_FALSE);
-			glEnable (GL_BLEND);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			glColor4f (1, 1, 1, entalpha);
-		}
-		GL_Bind (t->gltexture);
-		DrawGLPoly (s->polys);
-		rs_brushpasses++;
-		if (entalpha < 1)
-		{
-			glDepthMask (GL_TRUE);
-			glDisable (GL_BLEND);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-			glColor3f (1, 1, 1);
-		}
-		return;
-	}
-
-	// lightmapped poly
-	if (entalpha < 1)
-	{
-		glDepthMask (GL_FALSE);
-		glEnable (GL_BLEND);
-		glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		glColor4f (1, 1, 1, entalpha);
-	}
-	else
-		glColor3f (1, 1, 1);
-
-	if (s->flags & SURF_DRAWFENCE)
-		glEnable (GL_ALPHA_TEST); // Flip on alpha test
-
-	if (gl_overbright.value)
-	{
-		if (gl_texture_env_combine && gl_mtexable) //case 1: texture and lightmap in one pass, overbright using texture combiners
-		{
-			GL_DisableMultitexture (); // selects TEXTURE0
-			GL_Bind (t->gltexture);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			GL_EnableMultitexture (); // selects TEXTURE1
-			GL_Bind (lightmap_textures[s->lightmaptexturenum]);
-			R_RenderDynamicLightmaps (s);
-			glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
-			glTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);
-			glTexEnvi (GL_TEXTURE_ENV, GL_SOURCE0_RGB_EXT, GL_PREVIOUS_EXT);
-			glTexEnvi (GL_TEXTURE_ENV, GL_SOURCE1_RGB_EXT, GL_TEXTURE);
-			glTexEnvf (GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 2.0f);
-			glBegin (GL_POLYGON);
-			v = s->polys->verts[0];
-			for (i = 0; i < s->polys->numverts; i++, v += VERTEXSIZE)
-			{
-				GL_MTexCoord2fFunc (GL_TEXTURE0_ARB, v[3], v[4]);
-				GL_MTexCoord2fFunc (GL_TEXTURE1_ARB, v[5], v[6]);
-				glVertex3fv (v);
-			}
-			glEnd ();
-			glTexEnvf (GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 1.0f);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			GL_DisableMultitexture ();
-			rs_brushpasses++;
-		}
-		else if (entalpha < 1 || (s->flags & SURF_DRAWFENCE)) //case 2: can't do multipass if entity has alpha, so just draw the texture
-		{
-			GL_Bind (t->gltexture);
-			DrawGLPoly (s->polys);
-			rs_brushpasses++;
-		}
-		else //case 3: texture in one pass, lightmap in second pass using 2x modulation blend func, fog in third pass
-		{
-			//first pass -- texture with no fog
-			Fog_DisableGFog ();
-			GL_Bind (t->gltexture);
-			DrawGLPoly (s->polys);
-			Fog_EnableGFog ();
-			rs_brushpasses++;
-
-			//second pass -- lightmap with black fog, modulate blended
-			R_RenderDynamicLightmaps (s);
-			GL_Bind (lightmap_textures[s->lightmaptexturenum]);
-			glDepthMask (GL_FALSE);
-			glEnable (GL_BLEND);
-			glBlendFunc (GL_DST_COLOR, GL_SRC_COLOR); //2x modulate
-			Fog_StartAdditive ();
-			glBegin (GL_POLYGON);
-			v = s->polys->verts[0];
-			for (i = 0; i < s->polys->numverts; i++, v += VERTEXSIZE)
-			{
-				glTexCoord2f (v[5], v[6]);
-				glVertex3fv (v);
-			}
-			glEnd ();
-			Fog_StopAdditive ();
-			rs_brushpasses++;
-
-			//third pass -- black geo with normal fog, additive blended
-			if (Fog_GetDensity () > 0)
-			{
-				glBlendFunc (GL_ONE, GL_ONE); //add
-				glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-				glColor3f (0, 0, 0);
-				DrawGLPoly (s->polys);
-				glColor3f (1, 1, 1);
-				glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-				rs_brushpasses++;
-			}
-
-			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			glDisable (GL_BLEND);
-			glDepthMask (GL_TRUE);
-		}
-	}
-	else
-	{
-		if (gl_mtexable) //case 4: texture and lightmap in one pass, regular modulation
-		{
-			GL_DisableMultitexture (); // selects TEXTURE0
-			GL_Bind (t->gltexture);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			GL_EnableMultitexture (); // selects TEXTURE1
-			GL_Bind (lightmap_textures[s->lightmaptexturenum]);
-			R_RenderDynamicLightmaps (s);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			glBegin (GL_POLYGON);
-			v = s->polys->verts[0];
-			for (i = 0; i < s->polys->numverts; i++, v += VERTEXSIZE)
-			{
-				GL_MTexCoord2fFunc (GL_TEXTURE0_ARB, v[3], v[4]);
-				GL_MTexCoord2fFunc (GL_TEXTURE1_ARB, v[5], v[6]);
-				glVertex3fv (v);
-			}
-			glEnd ();
-			GL_DisableMultitexture ();
-			rs_brushpasses++;
-		}
-		else if (entalpha < 1 || (s->flags & SURF_DRAWFENCE)) //case 5: can't do multipass if entity has alpha, so just draw the texture
-		{
-			GL_Bind (t->gltexture);
-			DrawGLPoly (s->polys);
-			rs_brushpasses++;
-		}
-		else //case 6: texture in one pass, lightmap in a second pass, fog in third pass
-		{
-			//first pass -- texture with no fog
-			Fog_DisableGFog ();
-			GL_Bind (t->gltexture);
-			DrawGLPoly (s->polys);
-			Fog_EnableGFog ();
-			rs_brushpasses++;
-
-			//second pass -- lightmap with black fog, modulate blended
-			R_RenderDynamicLightmaps (s);
-			GL_Bind (lightmap_textures[s->lightmaptexturenum]);
-			glDepthMask (GL_FALSE);
-			glEnable (GL_BLEND);
-			glBlendFunc (GL_ZERO, GL_SRC_COLOR); //modulate
-			Fog_StartAdditive ();
-			glBegin (GL_POLYGON);
-			v = s->polys->verts[0];
-			for (i = 0; i < s->polys->numverts; i++, v += VERTEXSIZE)
-			{
-				glTexCoord2f (v[5], v[6]);
-				glVertex3fv (v);
-			}
-			glEnd ();
-			Fog_StopAdditive ();
-			rs_brushpasses++;
-
-			//third pass -- black geo with normal fog, additive blended
-			if (Fog_GetDensity () > 0)
-			{
-				glBlendFunc (GL_ONE, GL_ONE); //add
-				glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-				glColor3f (0, 0, 0);
-				DrawGLPoly (s->polys);
-				glColor3f (1, 1, 1);
-				glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-				rs_brushpasses++;
-			}
-
-			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			glDisable (GL_BLEND);
-			glDepthMask (GL_TRUE);
-
-		}
-	}
-	if (entalpha < 1)
-	{
-		glDepthMask (GL_TRUE);
-		glDisable (GL_BLEND);
-		glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		glColor3f (1, 1, 1);
-	}
-
-	if (s->flags & SURF_DRAWFENCE)
-		glDisable (GL_ALPHA_TEST); // Flip alpha test back off
-
-fullbrights:
-	if (gl_fullbrights.value && t->fullbright)
-	{
-		glDepthMask (GL_FALSE);
-		glEnable (GL_BLEND);
-		glBlendFunc (GL_ONE, GL_ONE);
-		glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		glColor3f (entalpha, entalpha, entalpha);
-		GL_Bind (t->fullbright);
-		Fog_StartAdditive ();
-		DrawGLPoly (s->polys);
-		Fog_StopAdditive ();
-		glColor3f (1, 1, 1);
-		glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glDisable (GL_BLEND);
-		glDepthMask (GL_TRUE);
-		rs_brushpasses++;
-	}
-}
-#endif
 /*
 =================
 R_DrawBrushModel
@@ -657,58 +285,66 @@ R_RenderDynamicLightmaps
 called during rendering
 ================
 */
-void R_RenderDynamicLightmaps (msurface_t *fa)
+void R_RenderDynamicLightmaps (msurface_t *surf)
 {
 	byte *base;
 	int			maps;
 	glRect_t *theRect;
 	int smax, tmax;
 
-	if (fa->flags & SURF_DRAWTILED) //johnfitz -- not a lightmapped surface
+	if (surf->flags & SURF_DRAWTILED) // johnfitz -- not a lightmapped surface
 		return;
 
 	// add to lightmap chain
-	fa->polys->chain = lightmap[fa->lightmaptexturenum].polys;
-	lightmap[fa->lightmaptexturenum].polys = fa->polys;
+	surf->polys->chain = lightmap[surf->lightmaptexturenum].polys;
+	lightmap[surf->lightmaptexturenum].polys = surf->polys;
 
 	// check for lightmap modification
-	for (maps = 0; maps < MAXLIGHTMAPS && fa->styles[maps] != 255; maps++)
-		if (d_lightstylevalue[fa->styles[maps]] != fa->cached_light[maps])
+	for (maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
+		if (d_lightstylevalue[surf->styles[maps]] != surf->cached_light[maps])
 			goto dynamic;
 
-	if (fa->dlightframe == r_framecount	// dynamic this frame
-		|| fa->cached_dlight)			// dynamic previously
+	if (surf->dlightframe == r_framecount	// dynamic this frame
+		|| surf->cached_dlight)			// dynamic previously
 	{
 dynamic:
 		if (r_dynamic.value)
 		{
-			struct lightmap_s *lm = &lightmap[fa->lightmaptexturenum];
+			struct lightmap_s *lm = &lightmap[surf->lightmaptexturenum];
 			lm->modified = true;
 			theRect = &lm->rectchange;
-			if (fa->light_t < theRect->t)
+
+			if (surf->light_t < theRect->t)
 			{
 				if (theRect->h)
-					theRect->h += theRect->t - fa->light_t;
-				theRect->t = fa->light_t;
+					theRect->h += theRect->t - surf->light_t;
+				theRect->t = surf->light_t;
 			}
-			if (fa->light_s < theRect->l)
+
+			if (surf->light_s < theRect->l)
 			{
 				if (theRect->w)
-					theRect->w += theRect->l - fa->light_s;
-				theRect->l = fa->light_s;
+					theRect->w += theRect->l - surf->light_s;
+				theRect->l = surf->light_s;
 			}
-			smax = (fa->extents[0] >> 4) + 1;
-			tmax = (fa->extents[1] >> 4) + 1;
-			if ((theRect->w + theRect->l) < (fa->light_s + smax))
-				theRect->w = (fa->light_s - theRect->l) + smax;
-			if ((theRect->h + theRect->t) < (fa->light_t + tmax))
-				theRect->h = (fa->light_t - theRect->t) + tmax;
+
+			smax = (surf->extents[0] >> 4) + 1;
+			tmax = (surf->extents[1] >> 4) + 1;
+
+			if ((theRect->w + theRect->l) < (surf->light_s + smax))
+				theRect->w = (surf->light_s - theRect->l) + smax;
+
+			if ((theRect->h + theRect->t) < (surf->light_t + tmax))
+				theRect->h = (surf->light_t - theRect->t) + tmax;
+
 			base = lm->data;
-			base += fa->light_t * LMBLOCK_WIDTH * lightmap_bytes + fa->light_s * lightmap_bytes;
-			R_BuildLightMap (fa, base, LMBLOCK_WIDTH * lightmap_bytes);
+			base += surf->light_t * LMBLOCK_WIDTH * lightmap_bytes + surf->light_s * lightmap_bytes;
+
+			R_BuildLightMap (surf, base, LMBLOCK_WIDTH * lightmap_bytes);
 		}
 	}
 }
+
 
 /*
 ========================
@@ -736,9 +372,10 @@ int AllocBlock (int w, int h, int *x, int *y)
 			/* FIXME: we leave 'gaps' in malloc()ed data,  CRC_Block() later accesses
 			 * that uninitialized data and valgrind complains for it.  use calloc() ? */
 			lightmap[texnum].data = (byte *) malloc (4 * LMBLOCK_WIDTH * LMBLOCK_HEIGHT);
-			//as we're only tracking one texture, we don't need multiple copies of allocated any more.
+			// as we're only tracking one texture, we don't need multiple copies of allocated any more.
 			memset (allocated, 0, sizeof (allocated));
 		}
+
 		best = LMBLOCK_HEIGHT;
 
 		for (i = 0; i < LMBLOCK_WIDTH - w; i++)
@@ -752,8 +389,10 @@ int AllocBlock (int w, int h, int *x, int *y)
 				if (allocated[i + j] > best2)
 					best2 = allocated[i + j];
 			}
+
 			if (j == w)
-			{	// this is a valid spot
+			{
+				// this is a valid spot
 				*x = i;
 				*y = best = best2;
 			}
@@ -770,7 +409,7 @@ int AllocBlock (int w, int h, int *x, int *y)
 	}
 
 	Sys_Error ("AllocBlock: full");
-	return 0; //johnfitz -- shut up compiler
+	return 0; // johnfitz -- shut up compiler
 }
 
 
@@ -793,17 +432,20 @@ void GL_CreateSurfaceLightmap (msurface_t *surf)
 	tmax = (surf->extents[1] >> 4) + 1;
 
 	surf->lightmaptexturenum = AllocBlock (smax, tmax, &surf->light_s, &surf->light_t);
+
 	base = lightmap[surf->lightmaptexturenum].data;
 	base += (surf->light_t * LMBLOCK_WIDTH + surf->light_s) * lightmap_bytes;
+
 	R_BuildLightMap (surf, base, LMBLOCK_WIDTH * lightmap_bytes);
 }
+
 
 /*
 ================
 BuildSurfaceDisplayList -- called at level load time
 ================
 */
-void BuildSurfaceDisplayList (msurface_t *fa)
+void BuildSurfaceDisplayList (msurface_t *surf)
 {
 	int			i, lindex, lnumverts;
 	medge_t *pedges, *r_pedge;
@@ -813,19 +455,17 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 
 	// reconstruct the polygon
 	pedges = currentmodel->edges;
-	lnumverts = fa->numedges;
+	lnumverts = surf->numedges;
 
-	//
 	// draw texture
-	//
 	poly = (glpoly_t *) Hunk_Alloc (sizeof (glpoly_t) + (lnumverts - 4) * VERTEXSIZE * sizeof (float));
-	poly->next = fa->polys;
-	fa->polys = poly;
+	poly->next = surf->polys;
+	surf->polys = poly;
 	poly->numverts = lnumverts;
 
 	for (i = 0; i < lnumverts; i++)
 	{
-		lindex = currentmodel->surfedges[fa->firstedge + i];
+		lindex = currentmodel->surfedges[surf->firstedge + i];
 
 		if (lindex > 0)
 		{
@@ -837,11 +477,11 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 			r_pedge = &pedges[-lindex];
 			vec = r_pcurrentvertbase[r_pedge->v[1]].position;
 		}
-		s = DotProduct (vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
-		s /= fa->texinfo->texture->width;
+		s = DotProduct (vec, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3];
+		s /= surf->texinfo->texture->width;
 
-		t = DotProduct (vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
-		t /= fa->texinfo->texture->height;
+		t = DotProduct (vec, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3];
+		t /= surf->texinfo->texture->height;
 
 		VectorCopy (vec, poly->verts[i]);
 		poly->verts[i][3] = s;
@@ -850,23 +490,23 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 		//
 		// lightmap texture coordinates
 		//
-		s = DotProduct (vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
-		s -= fa->texturemins[0];
-		s += fa->light_s * 16;
+		s = DotProduct (vec, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3];
+		s -= surf->texturemins[0];
+		s += surf->light_s * 16;
 		s += 8;
-		s /= LMBLOCK_WIDTH * 16; //fa->texinfo->texture->width;
+		s /= LMBLOCK_WIDTH * 16; // surf->texinfo->texture->width;
 
-		t = DotProduct (vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
-		t -= fa->texturemins[1];
-		t += fa->light_t * 16;
+		t = DotProduct (vec, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3];
+		t -= surf->texturemins[1];
+		t += surf->light_t * 16;
 		t += 8;
-		t /= LMBLOCK_HEIGHT * 16; //fa->texinfo->texture->height;
+		t /= LMBLOCK_HEIGHT * 16; // surf->texinfo->texture->height;
 
 		poly->verts[i][5] = s;
 		poly->verts[i][6] = t;
 	}
 
-	//johnfitz -- removed gl_keeptjunctions code
+	// johnfitz -- removed gl_keeptjunctions code
 
 	poly->numverts = lnumverts;
 }
@@ -888,7 +528,7 @@ void GL_BuildLightmaps (void)
 
 	r_framecount = 1; // no dlightcache
 
-	//Spike -- wipe out all the lightmap data (johnfitz -- the gltexture objects were already freed by Mod_ClearAll)
+	// Spike -- wipe out all the lightmap data (johnfitz -- the gltexture objects were already freed by Mod_ClearAll)
 	for (i = 0; i < lightmap_count; i++)
 		free (lightmap[i].data);
 	free (lightmap);
@@ -896,7 +536,7 @@ void GL_BuildLightmaps (void)
 	last_lightmap_allocated = 0;
 	lightmap_count = 0;
 
-	gl_lightmap_format = GL_RGBA;//FIXME: hardcoded for now!
+	gl_lightmap_format = GL_RGBA;// FIXME: hardcoded for now!
 
 	switch (gl_lightmap_format)
 	{
@@ -921,18 +561,16 @@ void GL_BuildLightmaps (void)
 		currentmodel = m;
 		for (i = 0; i < m->numsurfaces; i++)
 		{
-			//johnfitz -- rewritten to use SURF_DRAWTILED instead of the sky/water flags
+			// johnfitz -- rewritten to use SURF_DRAWTILED instead of the sky/water flags
 			if (m->surfaces[i].flags & SURF_DRAWTILED)
 				continue;
 			GL_CreateSurfaceLightmap (m->surfaces + i);
 			BuildSurfaceDisplayList (m->surfaces + i);
-			//johnfitz
+			// johnfitz
 		}
 	}
 
-	//
 	// upload all lightmaps that were filled
-	//
 	for (i = 0; i < lightmap_count; i++)
 	{
 		lm = &lightmap[i];
@@ -942,21 +580,22 @@ void GL_BuildLightmaps (void)
 		lm->rectchange.w = 0;
 		lm->rectchange.h = 0;
 
-		//johnfitz -- use texture manager
+		// johnfitz -- use texture manager
 		sprintf (name, "lightmap%07i", i);
 		lm->texture = TexMgr_LoadImage (cl.worldmodel, name, LMBLOCK_WIDTH, LMBLOCK_HEIGHT,
 			SRC_LIGHTMAP, lm->data, "", (src_offset_t) lm->data, TEXPREF_LINEAR | TEXPREF_NOPICMIP);
-		//johnfitz
+		// johnfitz
 	}
 
-	//johnfitz -- warn about exceeding old limits
-	//GLQuake limit was 64 textures of 128x128. Estimate how many 128x128 textures we would need
-	//given that we are using lightmap_count of LMBLOCK_WIDTH x LMBLOCK_HEIGHT
+	// johnfitz -- warn about exceeding old limits
+	// GLQuake limit was 64 textures of 128x128. Estimate how many 128x128 textures we would need
+	// given that we are using lightmap_count of LMBLOCK_WIDTH x LMBLOCK_HEIGHT
 	i = lightmap_count * ((LMBLOCK_WIDTH / 128) * (LMBLOCK_HEIGHT / 128));
 	if (i > 64)
 		Con_DWarning ("%i lightmaps exceeds standard limit of 64.\n", i);
-	//johnfitz
+	// johnfitz
 }
+
 
 /*
 =============================================================
@@ -978,6 +617,7 @@ void GL_DeleteBModelVertexBuffer (void)
 
 	GL_ClearBufferBindings ();
 }
+
 
 /*
 ==================
@@ -1044,6 +684,7 @@ void GL_BuildBModelVertexBuffer (void)
 	GL_ClearBufferBindings ();
 }
 
+
 /*
 ===============
 R_AddDynamicLights
@@ -1059,10 +700,10 @@ void R_AddDynamicLights (msurface_t *surf)
 	int			i;
 	int			smax, tmax;
 	mtexinfo_t *tex;
-	//johnfitz -- lit support via lordhavoc
+	// johnfitz -- lit support via lordhavoc
 	float		cred, cgreen, cblue, brightness;
 	unsigned *bl;
-	//johnfitz
+	// johnfitz
 
 	smax = (surf->extents[0] >> 4) + 1;
 	tmax = (surf->extents[1] >> 4) + 1;
@@ -1094,12 +735,13 @@ void R_AddDynamicLights (msurface_t *surf)
 		local[0] -= surf->texturemins[0];
 		local[1] -= surf->texturemins[1];
 
-		//johnfitz -- lit support via lordhavoc
+		// johnfitz -- lit support via lordhavoc
 		bl = blocklights;
 		cred = cl_dlights[lnum].color[0] * 256.0f;
 		cgreen = cl_dlights[lnum].color[1] * 256.0f;
 		cblue = cl_dlights[lnum].color[2] * 256.0f;
-		//johnfitz
+		// johnfitz
+
 		for (t = 0; t < tmax; t++)
 		{
 			td = local[1] - t * 16;
@@ -1115,7 +757,7 @@ void R_AddDynamicLights (msurface_t *surf)
 				else
 					dist = td + (sd >> 1);
 				if (dist < minlight)
-					//johnfitz -- lit support via lordhavoc
+					// johnfitz -- lit support via lordhavoc
 				{
 					brightness = rad - dist;
 					bl[0] += (int) (brightness * cred);
@@ -1123,7 +765,7 @@ void R_AddDynamicLights (msurface_t *surf)
 					bl[2] += (int) (brightness * cblue);
 				}
 				bl += 3;
-				//johnfitz
+				// johnfitz
 			}
 		}
 	}
@@ -1157,25 +799,25 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 	if (cl.worldmodel->lightdata)
 	{
 		// clear to no light
-		memset (&blocklights[0], 0, size * 3 * sizeof (unsigned int)); //johnfitz -- lit support via lordhavoc
+		memset (&blocklights[0], 0, size * 3 * sizeof (unsigned int)); // johnfitz -- lit support via lordhavoc
 
-	// add all the lightmaps
+		// add all the lightmaps
 		if (lightmap)
 		{
-			for (maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255;
-				maps++)
+			for (maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
 			{
 				scale = d_lightstylevalue[surf->styles[maps]];
 				surf->cached_light[maps] = scale;	// 8.8 fraction
-				//johnfitz -- lit support via lordhavoc
+				// johnfitz -- lit support via lordhavoc
 				bl = blocklights;
+
 				for (i = 0; i < size; i++)
 				{
 					*bl++ += *lightmap++ * scale;
 					*bl++ += *lightmap++ * scale;
 					*bl++ += *lightmap++ * scale;
 				}
-				//johnfitz
+				// johnfitz
 			}
 		}
 
@@ -1186,7 +828,7 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 	else
 	{
 		// set to full bright if no light data
-		memset (&blocklights[0], 255, size * 3 * sizeof (unsigned int)); //johnfitz -- lit support via lordhavoc
+		memset (&blocklights[0], 255, size * 3 * sizeof (unsigned int)); // johnfitz -- lit support via lordhavoc
 	}
 
 	// bound, invert, and shift
@@ -1212,13 +854,16 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 					g = *bl++ >> 7;
 					b = *bl++ >> 7;
 				}
+
 				*dest++ = (r > 255) ? 255 : r;
 				*dest++ = (g > 255) ? 255 : g;
 				*dest++ = (b > 255) ? 255 : b;
 				*dest++ = 255;
 			}
 		}
+
 		break;
+
 	case GL_BGRA:
 		stride -= smax * 4;
 		bl = blocklights;
@@ -1238,13 +883,16 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 					g = *bl++ >> 7;
 					b = *bl++ >> 7;
 				}
+
 				*dest++ = (b > 255) ? 255 : b;
 				*dest++ = (g > 255) ? 255 : g;
 				*dest++ = (r > 255) ? 255 : r;
 				*dest++ = 255;
 			}
 		}
+
 		break;
+
 	default:
 		Sys_Error ("R_BuildLightMap: bad lightmap format");
 	}
@@ -1268,6 +916,7 @@ static void R_UploadLightmap (int lmap)
 
 	glTexSubImage2D (GL_TEXTURE_2D, 0, 0, lm->rectchange.t, LMBLOCK_WIDTH, lm->rectchange.h, gl_lightmap_format,
 		GL_UNSIGNED_BYTE, lm->data + lm->rectchange.t * LMBLOCK_WIDTH * lightmap_bytes);
+
 	lm->rectchange.l = LMBLOCK_WIDTH;
 	lm->rectchange.t = LMBLOCK_HEIGHT;
 	lm->rectchange.h = 0;
@@ -1275,6 +924,7 @@ static void R_UploadLightmap (int lmap)
 
 	rs_dynamiclightmaps++;
 }
+
 
 void R_UploadLightmaps (void)
 {
@@ -1290,6 +940,7 @@ void R_UploadLightmaps (void)
 	}
 }
 
+
 /*
 ================
 R_RebuildAllLightmaps -- johnfitz -- called when gl_overbright gets toggled
@@ -1299,33 +950,36 @@ void R_RebuildAllLightmaps (void)
 {
 	int			i, j;
 	qmodel_t *mod;
-	msurface_t *fa;
+	msurface_t *surf;
 	byte *base;
 
 	if (!cl.worldmodel) // is this the correct test?
 		return;
 
-	//for each surface in each model, rebuild lightmap with new scale
+	// for each surface in each model, rebuild lightmap with new scale
 	for (i = 1; i < MAX_MODELS; i++)
 	{
 		if (!(mod = cl.model_precache[i]))
 			continue;
-		fa = &mod->surfaces[mod->firstmodelsurface];
-		for (j = 0; j < mod->nummodelsurfaces; j++, fa++)
+
+		surf = &mod->surfaces[mod->firstmodelsurface];
+
+		for (j = 0; j < mod->nummodelsurfaces; j++, surf++)
 		{
-			if (fa->flags & SURF_DRAWTILED)
+			if (surf->flags & SURF_DRAWTILED)
 				continue;
-			base = lightmap[fa->lightmaptexturenum].data;
-			base += fa->light_t * LMBLOCK_WIDTH * lightmap_bytes + fa->light_s * lightmap_bytes;
-			R_BuildLightMap (fa, base, LMBLOCK_WIDTH * lightmap_bytes);
+
+			base = lightmap[surf->lightmaptexturenum].data;
+			base += surf->light_t * LMBLOCK_WIDTH * lightmap_bytes + surf->light_s * lightmap_bytes;
+
+			R_BuildLightMap (surf, base, LMBLOCK_WIDTH * lightmap_bytes);
 		}
 	}
 
-	//for each lightmap, upload it
+	// for each lightmap, upload it
 	for (i = 0; i < lightmap_count; i++)
 	{
 		GL_Bind (lightmap[i].texture);
-		glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, LMBLOCK_WIDTH, LMBLOCK_HEIGHT, gl_lightmap_format,
-			GL_UNSIGNED_BYTE, lightmap[i].data);
+		glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, LMBLOCK_WIDTH, LMBLOCK_HEIGHT, gl_lightmap_format, GL_UNSIGNED_BYTE, lightmap[i].data);
 	}
 }

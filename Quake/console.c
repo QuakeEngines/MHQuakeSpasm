@@ -36,10 +36,10 @@ int 		con_linewidth;
 
 float		con_cursorspeed = 4;
 
-#define		CON_TEXTSIZE (1024 * 1024) //ericw -- was 65536. johnfitz -- new default size
-#define		CON_MINSIZE  16384 //johnfitz -- old default, now the minimum size
+#define		CON_TEXTSIZE (1024 * 1024) // ericw -- was 65536. johnfitz -- new default size
+#define		CON_MINSIZE  16384 // johnfitz -- old default, now the minimum size
 
-int		con_buffersize; //johnfitz -- user can now override default
+int		con_buffersize; // johnfitz -- user can now override default
 
 qboolean 	con_forcedup;		// because no entities to refresh
 
@@ -49,10 +49,10 @@ int		con_current;		// where next message will be printed
 int		con_x;				// offset in current line for next print
 char *con_text = NULL;
 
-cvar_t		con_notifytime = { "con_notifytime", "3", CVAR_NONE };	//seconds
-cvar_t		con_logcenterprint = { "con_logcenterprint", "1", CVAR_NONE }; //johnfitz
+cvar_t		con_notifytime = { "con_notifytime", "3", CVAR_NONE };	// seconds
+cvar_t		con_logcenterprint = { "con_logcenterprint", "1", CVAR_NONE }; // johnfitz
 
-char		con_lastcenterstring[1024]; //johnfitz
+char		con_lastcenterstring[1024]; // johnfitz
 
 #define	NUM_CON_TIMES 4
 float		con_times[NUM_CON_TIMES];	// realtime time the line was generated
@@ -101,7 +101,7 @@ const char *Con_Quakebar (int len)
 Con_ToggleConsole_f
 ================
 */
-extern int history_line; //johnfitz
+extern int history_line; // johnfitz
 
 void Con_ToggleConsole_f (void)
 {
@@ -109,8 +109,8 @@ void Con_ToggleConsole_f (void)
 	{
 		key_lines[edit_line][1] = 0;	// clear any typing
 		key_linepos = 1;
-		con_backscroll = 0; //johnfitz -- toggleconsole should return you to the bottom of the scrollback
-		history_line = edit_line; //johnfitz -- it should also return you to the bottom of the command history
+		con_backscroll = 0; // johnfitz -- toggleconsole should return you to the bottom of the scrollback
+		history_line = edit_line; // johnfitz -- it should also return you to the bottom of the command history
 
 		if (cls.state == ca_connected)
 		{
@@ -140,8 +140,8 @@ Con_Clear_f
 static void Con_Clear_f (void)
 {
 	if (con_text)
-		Q_memset (con_text, ' ', con_buffersize); //johnfitz -- con_buffersize replaces CON_TEXTSIZE
-	con_backscroll = 0; //johnfitz -- if console is empty, being scrolled up is confusing
+		Q_memset (con_text, ' ', con_buffersize); // johnfitz -- con_buffersize replaces CON_TEXTSIZE
+	con_backscroll = 0; // johnfitz -- if console is empty, being scrolled up is confusing
 }
 
 /*
@@ -251,10 +251,10 @@ If the line width has changed, reformat the buffer.
 void Con_CheckResize (void)
 {
 	int	i, j, width, oldwidth, oldtotallines, numlines, numchars;
-	char *tbuf; //johnfitz -- tbuf no longer a static array
-	int mark; //johnfitz
+	char *tbuf; // johnfitz -- tbuf no longer a static array
+	int mark; // johnfitz
 
-	width = (vid.conwidth >> 3) - 2; //johnfitz -- use vid.conwidth instead of vid.width
+	width = (vid.conwidth >> 3) - 2; // johnfitz -- use vid.conwidth instead of vid.width
 
 	if (width == con_linewidth)
 		return;
@@ -262,7 +262,7 @@ void Con_CheckResize (void)
 	oldwidth = con_linewidth;
 	con_linewidth = width;
 	oldtotallines = con_totallines;
-	con_totallines = con_buffersize / con_linewidth; //johnfitz -- con_buffersize replaces CON_TEXTSIZE
+	con_totallines = con_buffersize / con_linewidth; // johnfitz -- con_buffersize replaces CON_TEXTSIZE
 	numlines = oldtotallines;
 
 	if (con_totallines < numlines)
@@ -273,11 +273,11 @@ void Con_CheckResize (void)
 	if (con_linewidth < numchars)
 		numchars = con_linewidth;
 
-	mark = Hunk_LowMark (); //johnfitz
-	tbuf = (char *) Hunk_Alloc (con_buffersize); //johnfitz
+	mark = Hunk_LowMark (); // johnfitz
+	tbuf = (char *) Hunk_Alloc (con_buffersize); // johnfitz
 
-	Q_memcpy (tbuf, con_text, con_buffersize);//johnfitz -- con_buffersize replaces CON_TEXTSIZE
-	Q_memset (con_text, ' ', con_buffersize);//johnfitz -- con_buffersize replaces CON_TEXTSIZE
+	Q_memcpy (tbuf, con_text, con_buffersize);// johnfitz -- con_buffersize replaces CON_TEXTSIZE
+	Q_memset (con_text, ' ', con_buffersize);// johnfitz -- con_buffersize replaces CON_TEXTSIZE
 
 	for (i = 0; i < numlines; i++)
 	{
@@ -288,7 +288,7 @@ void Con_CheckResize (void)
 		}
 	}
 
-	Hunk_FreeToLowMark (mark); //johnfitz
+	Hunk_FreeToLowMark (mark); // johnfitz
 
 	Con_ClearNotify ();
 
@@ -306,35 +306,35 @@ void Con_Init (void)
 {
 	int i;
 
-	//johnfitz -- user settable console buffer size
+	// johnfitz -- user settable console buffer size
 	i = COM_CheckParm ("-consize");
 	if (i && i < com_argc - 1)
 		con_buffersize = q_max (CON_MINSIZE, Q_atoi (com_argv[i + 1]) * 1024);
 	else
 		con_buffersize = CON_TEXTSIZE;
-	//johnfitz
+	// johnfitz
 
-	con_text = (char *) Hunk_AllocName (con_buffersize, "context");//johnfitz -- con_buffersize replaces CON_TEXTSIZE
-	Q_memset (con_text, ' ', con_buffersize);//johnfitz -- con_buffersize replaces CON_TEXTSIZE
+	con_text = (char *) Hunk_AllocName (con_buffersize, "context");// johnfitz -- con_buffersize replaces CON_TEXTSIZE
+	Q_memset (con_text, ' ', con_buffersize);// johnfitz -- con_buffersize replaces CON_TEXTSIZE
 	con_linewidth = -1;
 
-	//johnfitz -- no need to run Con_CheckResize here
+	// johnfitz -- no need to run Con_CheckResize here
 	con_linewidth = 38;
-	con_totallines = con_buffersize / con_linewidth;//johnfitz -- con_buffersize replaces CON_TEXTSIZE
+	con_totallines = con_buffersize / con_linewidth;// johnfitz -- con_buffersize replaces CON_TEXTSIZE
 	con_backscroll = 0;
 	con_current = con_totallines - 1;
-	//johnfitz
+	// johnfitz
 
 	Con_Printf ("Console initialized.\n");
 
 	Cvar_RegisterVariable (&con_notifytime);
-	Cvar_RegisterVariable (&con_logcenterprint); //johnfitz
+	Cvar_RegisterVariable (&con_logcenterprint); // johnfitz
 
 	Cmd_AddCommand ("toggleconsole", Con_ToggleConsole_f);
 	Cmd_AddCommand ("messagemode", Con_MessageMode_f);
 	Cmd_AddCommand ("messagemode2", Con_MessageMode2_f);
 	Cmd_AddCommand ("clear", Con_Clear_f);
-	Cmd_AddCommand ("condump", Con_Dump_f); //johnfitz
+	Cmd_AddCommand ("condump", Con_Dump_f); // johnfitz
 	con_initialized = true;
 }
 
@@ -346,12 +346,12 @@ Con_Linefeed
 */
 static void Con_Linefeed (void)
 {
-	//johnfitz -- improved scrolling
+	// johnfitz -- improved scrolling
 	if (con_backscroll)
 		con_backscroll++;
 	if (con_backscroll > con_totallines - (glheight >> 3) - 1)
 		con_backscroll = con_totallines - (glheight >> 3) - 1;
-	//johnfitz
+	// johnfitz
 
 	con_x = 0;
 	con_current++;
@@ -375,7 +375,7 @@ static void Con_Print (const char *txt)
 	int		mask;
 	qboolean	boundary;
 
-	//con_backscroll = 0; //johnfitz -- better console scrolling
+	// con_backscroll = 0; // johnfitz -- better console scrolling
 
 	if (txt[0] == 1)
 	{
@@ -581,7 +581,7 @@ void Con_DPrintf (const char *fmt, ...)
 	q_vsnprintf (msg, sizeof (msg), fmt, argptr);
 	va_end (argptr);
 
-	Con_SafePrintf ("%s", msg); //johnfitz -- was Con_Printf
+	Con_SafePrintf ("%s", msg); // johnfitz -- was Con_Printf
 }
 
 /*
@@ -638,9 +638,9 @@ void Con_CenterPrintf (int linewidth, const char *fmt, ...) FUNC_PRINTF (2, 3);
 void Con_CenterPrintf (int linewidth, const char *fmt, ...)
 {
 	va_list	argptr;
-	char	msg[MAXPRINTMSG]; //the original message
-	char	line[MAXPRINTMSG]; //one line from the message
-	char	spaces[21]; //buffer for spaces
+	char	msg[MAXPRINTMSG]; // the original message
+	char	line[MAXPRINTMSG]; // one line from the message
+	char	spaces[21]; // buffer for spaces
 	char *src, *dst;
 	int		len, s;
 
@@ -679,10 +679,10 @@ Con_LogCenterPrint -- johnfitz -- echo centerprint message to the console
 void Con_LogCenterPrint (const char *str)
 {
 	if (!strcmp (str, con_lastcenterstring))
-		return; //ignore duplicates
+		return; // ignore duplicates
 
 	if (cl.gametype == GAME_DEATHMATCH && con_logcenterprint.value != 2)
-		return; //don't log in deathmatch
+		return; // don't log in deathmatch
 
 	strcpy (con_lastcenterstring, str);
 
@@ -703,8 +703,8 @@ void Con_LogCenterPrint (const char *str)
 ==============================================================================
 */
 
-//johnfitz -- tab completion stuff
-//unique defs
+// johnfitz -- tab completion stuff
+// unique defs
 char key_tabpartial[MAXCMDLINE];
 typedef struct tab_s {
 	const char *name;
@@ -714,7 +714,7 @@ typedef struct tab_s {
 } tab_t;
 tab_t *tablist;
 
-//defs from elsewhere
+// defs from elsewhere
 extern qboolean	keydown[256];
 typedef struct cmd_function_s {
 	struct cmd_function_s *next;
@@ -772,13 +772,13 @@ void AddToTabList (const char *name, const char *type)
 	t->name = name;
 	t->type = type;
 
-	if (!tablist) //create list
+	if (!tablist) // create list
 	{
 		tablist = t;
 		t->next = t;
 		t->prev = t;
 	}
-	else if (strcmp (name, tablist->name) < 0) //insert at front
+	else if (strcmp (name, tablist->name) < 0) // insert at front
 	{
 		t->next = tablist;
 		t->prev = tablist->prev;
@@ -786,7 +786,7 @@ void AddToTabList (const char *name, const char *type)
 		t->prev->next = t;
 		tablist = t;
 	}
-	else //insert later
+	else // insert later
 	{
 		insert = tablist;
 		do
@@ -927,13 +927,13 @@ void Con_TabComplete (void)
 		return;
 
 	// get partial string (space -> cursor)
-	if (!key_tabpartial[0]) //first time through, find new insert point. (Otherwise, use previous.)
+	if (!key_tabpartial[0]) // first time through, find new insert point. (Otherwise, use previous.)
 	{
-		//work back from cursor until you find a space, quote, semicolon, or prompt
-		c = key_lines[edit_line] + key_linepos - 1; //start one space left of cursor
+		// work back from cursor until you find a space, quote, semicolon, or prompt
+		c = key_lines[edit_line] + key_linepos - 1; // start one space left of cursor
 		while (*c != ' ' && *c != '\"' && *c != ';' && c != key_lines[edit_line])
 			c--;
-		c++; //start 1 char after the separator we just found
+		c++; // start 1 char after the separator we just found
 	}
 	for (i = 0; c + i < key_lines[edit_line] + key_linepos; i++)
 		partial[i] = c[i];
@@ -957,7 +957,7 @@ void Con_TabComplete (void)
 			q_strlcpy (partial, matched_map, MAXCMDLINE);
 			*c = '\0';
 			q_strlcat (key_lines[edit_line], partial, MAXCMDLINE);
-			key_linepos = c - key_lines[edit_line] + Q_strlen (matched_map); //set new cursor position
+			key_linepos = c - key_lines[edit_line] + Q_strlen (matched_map); // set new cursor position
 			if (key_linepos >= MAXCMDLINE)
 				key_linepos = MAXCMDLINE - 1;
 			// if only one match, append a space
@@ -973,17 +973,17 @@ void Con_TabComplete (void)
 		}
 	}
 
-	//if partial is empty, return
+	// if partial is empty, return
 	if (partial[0] == 0)
 		return;
 
-	//trim trailing space becuase it screws up string comparisons
+	// trim trailing space becuase it screws up string comparisons
 	if (i > 0 && partial[i - 1] == ' ')
 		partial[i - 1] = 0;
 
 	// find a match
 	mark = Hunk_LowMark ();
-	if (!key_tabpartial[0]) //first time through
+	if (!key_tabpartial[0]) // first time through
 	{
 		q_strlcpy (key_tabpartial, partial, MAXCMDLINE);
 		BuildTabList (key_tabpartial);
@@ -1015,7 +1015,7 @@ void Con_TabComplete (void)
 		if (!tablist)
 			return;
 
-		//find current match -- can't save a pointer because the list will be rebuilt each time
+		// find current match -- can't save a pointer because the list will be rebuilt each time
 		t = tablist;
 		match = keydown[K_SHIFT] ? t->prev->name : t->name;
 		do
@@ -1028,14 +1028,14 @@ void Con_TabComplete (void)
 			t = t->next;
 		} while (t != tablist);
 	}
-	Hunk_FreeToLowMark (mark); //it's okay to free it here because match is a pointer to persistent data
+	Hunk_FreeToLowMark (mark); // it's okay to free it here because match is a pointer to persistent data
 
 // insert new match into edit line
-	q_strlcpy (partial, match, MAXCMDLINE); //first copy match string
-	q_strlcat (partial, key_lines[edit_line] + key_linepos, MAXCMDLINE); //then add chars after cursor
-	*c = '\0';	//now copy all of this into edit line
+	q_strlcpy (partial, match, MAXCMDLINE); // first copy match string
+	q_strlcat (partial, key_lines[edit_line] + key_linepos, MAXCMDLINE); // then add chars after cursor
+	*c = '\0';	// now copy all of this into edit line
 	q_strlcat (key_lines[edit_line], partial, MAXCMDLINE);
-	key_linepos = c - key_lines[edit_line] + Q_strlen (match); //set new cursor position
+	key_linepos = c - key_lines[edit_line] + Q_strlen (match); // set new cursor position
 	if (key_linepos >= MAXCMDLINE)
 		key_linepos = MAXCMDLINE - 1;
 
@@ -1075,8 +1075,8 @@ void Con_DrawNotify (void)
 	const char *text;
 	float	time;
 
-	GL_SetCanvas (CANVAS_CONSOLE); //johnfitz
-	v = vid.conheight; //johnfitz
+	GL_SetCanvas (CANVAS_CONSOLE); // johnfitz
+	v = vid.conheight; // johnfitz
 
 	for (i = con_current - NUM_CON_TIMES + 1; i <= con_current; i++)
 	{
@@ -1137,7 +1137,7 @@ Con_DrawInput -- johnfitz -- modified to allow insert editing
 The input line scrolls horizontally if typing goes beyond the right edge
 ================
 */
-extern	qpic_t *pic_ovr, *pic_ins; //johnfitz -- new cursor handling
+extern	qpic_t *pic_ovr, *pic_ins; // johnfitz -- new cursor handling
 
 void Con_DrawInput (void)
 {
@@ -1190,7 +1190,7 @@ void Con_DrawConsole (int lines, qboolean drawinput)
 	// draw the buffer text
 	rows = (con_vislines + 7) / 8;
 	y = vid.conheight - rows * 8;
-	rows -= 2; //for input and version lines
+	rows -= 2; // for input and version lines
 	sb = (con_backscroll) ? 2 : 0;
 
 	for (i = con_current - rows + 1; i <= con_current - sb; i++, y += 8)
@@ -1217,7 +1217,7 @@ void Con_DrawConsole (int lines, qboolean drawinput)
 	if (drawinput)
 		Con_DrawInput ();
 
-	//draw version number in bottom right
+	// draw version number in bottom right
 	y += 8;
 	q_snprintf (ver, sizeof (ver), "QuakeSpasm " QUAKESPASM_VER_STRING);
 	for (x = 0; x < (int) strlen (ver); x++)
@@ -1236,10 +1236,10 @@ void Con_NotifyBox (const char *text)
 	int		lastkey, lastchar;
 
 	// during startup for sound / cd warnings
-	Con_Printf ("\n\n%s", Con_Quakebar (40)); //johnfitz
+	Con_Printf ("\n\n%s", Con_Quakebar (40)); // johnfitz
 	Con_Printf ("%s", text);
 	Con_Printf ("Press a key.\n");
-	Con_Printf ("%s", Con_Quakebar (40)); //johnfitz
+	Con_Printf ("%s", Con_Quakebar (40)); // johnfitz
 
 	IN_Deactivate (modestate == MS_WINDOWED);
 	key_dest = key_console;

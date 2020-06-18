@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-//r_sprite.c -- sprite model rendering
+// r_sprite.c -- sprite model rendering
 
 #include "quakedef.h"
 
@@ -87,21 +87,21 @@ void R_DrawSpriteModel (entity_t *e)
 	float *s_up, *s_right;
 	float			angle, sr, cr;
 
-	//TODO: frustum cull it?
+	// TODO: frustum cull it?
 
 	frame = R_GetSpriteFrame (e);
 	psprite = (msprite_t *) currententity->model->cache.data;
 
 	switch (psprite->type)
 	{
-	case SPR_VP_PARALLEL_UPRIGHT: //faces view plane, up is towards the heavens
+	case SPR_VP_PARALLEL_UPRIGHT: // faces view plane, up is towards the heavens
 		v_up[0] = 0;
 		v_up[1] = 0;
 		v_up[2] = 1;
 		s_up = v_up;
 		s_right = vright;
 		break;
-	case SPR_FACING_UPRIGHT: //faces camera origin, up is towards the heavens
+	case SPR_FACING_UPRIGHT: // faces camera origin, up is towards the heavens
 		VectorSubtract (currententity->origin, r_origin, v_forward);
 		v_forward[2] = 0;
 		VectorNormalizeFast (v_forward);
@@ -114,16 +114,16 @@ void R_DrawSpriteModel (entity_t *e)
 		s_up = v_up;
 		s_right = v_right;
 		break;
-	case SPR_VP_PARALLEL: //faces view plane, up is towards the top of the screen
+	case SPR_VP_PARALLEL: // faces view plane, up is towards the top of the screen
 		s_up = vup;
 		s_right = vright;
 		break;
-	case SPR_ORIENTED: //pitch yaw roll are independent of camera
+	case SPR_ORIENTED: // pitch yaw roll are independent of camera
 		AngleVectors (currententity->angles, v_forward, v_right, v_up);
 		s_up = v_up;
 		s_right = v_right;
 		break;
-	case SPR_VP_PARALLEL_ORIENTED: //faces view plane, but obeys roll value
+	case SPR_VP_PARALLEL_ORIENTED: // faces view plane, but obeys roll value
 		angle = currententity->angles[ROLL] * M_PI_DIV_180;
 		sr = sin (angle);
 		cr = cos (angle);
@@ -140,7 +140,7 @@ void R_DrawSpriteModel (entity_t *e)
 		return;
 	}
 
-	//johnfitz: offset decals
+	// johnfitz: offset decals
 	if (psprite->type == SPR_ORIENTED)
 		GL_PolygonOffset (OFFSET_DECAL);
 
@@ -151,7 +151,7 @@ void R_DrawSpriteModel (entity_t *e)
 	GL_Bind (frame->gltexture);
 
 	glEnable (GL_ALPHA_TEST);
-	glBegin (GL_TRIANGLE_FAN); //was GL_QUADS, but changed to support r_showtris
+	glBegin (GL_TRIANGLE_FAN); // was GL_QUADS, but changed to support r_showtris
 
 	glTexCoord2f (0, frame->tmax);
 	VectorMA (e->origin, frame->down, s_up, point);
@@ -176,7 +176,7 @@ void R_DrawSpriteModel (entity_t *e)
 	glEnd ();
 	glDisable (GL_ALPHA_TEST);
 
-	//johnfitz: offset decals
+	// johnfitz: offset decals
 	if (psprite->type == SPR_ORIENTED)
 		GL_PolygonOffset (OFFSET_NONE);
 }

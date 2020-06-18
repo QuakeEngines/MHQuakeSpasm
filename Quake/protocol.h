@@ -25,8 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // protocol.h -- communications protocols
 
-#define	PROTOCOL_NETQUAKE	15 //johnfitz -- standard quake protocol
-#define PROTOCOL_FITZQUAKE	666 //johnfitz -- added new protocol for fitzquake 0.85
+#define	PROTOCOL_NETQUAKE	15 // johnfitz -- standard quake protocol
+#define PROTOCOL_FITZQUAKE	666 // johnfitz -- added new protocol for fitzquake 0.85
 #define PROTOCOL_RMQ		999
 
 // PROTOCOL_RMQ protocol flags
@@ -45,7 +45,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	U_ORIGIN2		(1<<2)
 #define	U_ORIGIN3		(1<<3)
 #define	U_ANGLE2		(1<<4)
-#define	U_STEP			(1<<5)	//johnfitz -- was U_NOLERP, renamed since it's only used for MOVETYPE_STEP
+#define	U_STEP			(1<<5)	// johnfitz -- was U_NOLERP, renamed since it's only used for MOVETYPE_STEP
 #define	U_FRAME			(1<<6)
 #define U_SIGNAL		(1<<7)	// just differentiates from other updates
 
@@ -57,7 +57,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	U_SKIN			(1<<12)
 #define	U_EFFECTS		(1<<13)
 #define	U_LONGENTITY	(1<<14)
-//johnfitz -- PROTOCOL_FITZQUAKE -- new bits
+// johnfitz -- PROTOCOL_FITZQUAKE -- new bits
 #define U_EXTEND1		(1<<15)
 #define U_ALPHA			(1<<16) // 1 byte, uses ENTALPHA_ENCODE, not sent if equal to baseline
 #define U_FRAME2		(1<<17) // 1 byte, this is .frame & 0xFF00 (second byte)
@@ -67,11 +67,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define U_UNUSED21		(1<<21)
 #define U_UNUSED22		(1<<22)
 #define U_EXTEND2		(1<<23) // another byte to follow, future expansion
-//johnfitz
+// johnfitz
 
-//johnfitz -- PROTOCOL_NEHAHRA transparency
+// johnfitz -- PROTOCOL_NEHAHRA transparency
 #define U_TRANS			(1<<15)
-//johnfitz
+// johnfitz
 
 #define	SU_VIEWHEIGHT	(1<<0)
 #define	SU_IDEALPITCH	(1<<1)
@@ -81,14 +81,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	SU_VELOCITY1	(1<<5)
 #define	SU_VELOCITY2	(1<<6)
 #define	SU_VELOCITY3	(1<<7)
-#define	SU_UNUSED8		(1<<8)  //AVAILABLE BIT
+#define	SU_UNUSED8		(1<<8)  // AVAILABLE BIT
 #define	SU_ITEMS		(1<<9)
 #define	SU_ONGROUND		(1<<10)	// no data follows, the bit is it
 #define	SU_INWATER		(1<<11)	// no data follows, the bit is it
 #define	SU_WEAPONFRAME	(1<<12)
 #define	SU_ARMOR		(1<<13)
 #define	SU_WEAPON		(1<<14)
-//johnfitz -- PROTOCOL_FITZQUAKE -- new bits
+// johnfitz -- PROTOCOL_FITZQUAKE -- new bits
 #define SU_EXTEND1		(1<<15) // another byte to follow
 #define SU_WEAPON2		(1<<16) // 1 byte, this is .weaponmodel & 0xFF00 (second byte)
 #define SU_ARMOR2		(1<<17) // 1 byte, this is .armorvalue & 0xFF00 (second byte)
@@ -106,7 +106,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define SU_UNUSED29		(1<<29)
 #define SU_UNUSED30		(1<<30)
 #define SU_EXTEND3		(1<<31) // another byte to follow, future expansion
-//johnfitz
+// johnfitz
 
 // a sound with no channel is a local only sound
 #define	SND_VOLUME		(1<<0)	// a byte
@@ -116,25 +116,25 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define DEFAULT_SOUND_PACKET_VOLUME		255
 #define DEFAULT_SOUND_PACKET_ATTENUATION	1.0
 
-//johnfitz -- PROTOCOL_FITZQUAKE -- new bits
+// johnfitz -- PROTOCOL_FITZQUAKE -- new bits
 #define	SND_LARGEENTITY	(1<<3)	// a short + byte (instead of just a short)
 #define	SND_LARGESOUND	(1<<4)	// a short soundindex (instead of a byte)
-//johnfitz
+// johnfitz
 
-//johnfitz -- PROTOCOL_FITZQUAKE -- flags for entity baseline messages
+// johnfitz -- PROTOCOL_FITZQUAKE -- flags for entity baseline messages
 #define B_LARGEMODEL	(1<<0)	// modelindex is short instead of byte
 #define B_LARGEFRAME	(1<<1)	// frame is short instead of byte
 #define B_ALPHA			(1<<2)	// 1 byte, uses ENTALPHA_ENCODE, not sent if ENTALPHA_DEFAULT
-//johnfitz
+// johnfitz
 
-//johnfitz -- PROTOCOL_FITZQUAKE -- alpha encoding
-#define ENTALPHA_DEFAULT	0	//entity's alpha is "default" (i.e. water obeys r_wateralpha) -- must be zero so zeroed out memory works
-#define ENTALPHA_ZERO		1	//entity is invisible (lowest possible alpha)
-#define ENTALPHA_ONE		255 //entity is fully opaque (highest possible alpha)
-#define ENTALPHA_ENCODE(a)	(((a)==0)?ENTALPHA_DEFAULT:Q_rint(CLAMP(1,(a)*254.0f+1,255))) //server convert to byte to send to client
-#define ENTALPHA_DECODE(a)	(((a)==ENTALPHA_DEFAULT)?1.0f:((float)(a)-1)/(254)) //client convert to float for rendering
-#define ENTALPHA_TOSAVE(a)	(((a)==ENTALPHA_DEFAULT)?0.0f:(((a)==ENTALPHA_ZERO)?-1.0f:((float)(a)-1)/(254))) //server convert to float for savegame
-//johnfitz
+// johnfitz -- PROTOCOL_FITZQUAKE -- alpha encoding
+#define ENTALPHA_DEFAULT	0	// entity's alpha is "default" (i.e. water obeys r_wateralpha) -- must be zero so zeroed out memory works
+#define ENTALPHA_ZERO		1	// entity is invisible (lowest possible alpha)
+#define ENTALPHA_ONE		255 // entity is fully opaque (highest possible alpha)
+#define ENTALPHA_ENCODE(a)	(((a)==0)?ENTALPHA_DEFAULT:Q_rint(CLAMP(1,(a)*254.0f+1,255))) // server convert to byte to send to client
+#define ENTALPHA_DECODE(a)	(((a)==ENTALPHA_DEFAULT)?1.0f:((float)(a)-1)/(254)) // client convert to float for rendering
+#define ENTALPHA_TOSAVE(a)	(((a)==ENTALPHA_DEFAULT)?0.0f:(((a)==ENTALPHA_ZERO)?-1.0f:((float)(a)-1)/(254))) // server convert to float for savegame
+// johnfitz
 
 // defaults for clientinfo messages
 #define	DEFAULT_VIEWHEIGHT	22
@@ -144,10 +144,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	GAME_COOP			0
 #define	GAME_DEATHMATCH		1
 
-//==================
+// ==================
 // note that there are some defs.qc that mirror to these numbers
 // also related to svc_strings[] in cl_parse
-//==================
+// ==================
 
 //
 // server to client
@@ -177,7 +177,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	svc_particle			18	// [vec3] <variable>
 #define	svc_damage				19
 #define	svc_spawnstatic			20
-//#define svc_spawnbinary		21
+// #define svc_spawnbinary		21
 #define	svc_spawnbaseline		22
 #define	svc_temp_entity			23
 #define	svc_setpause			24	// [byte] on / off
@@ -192,14 +192,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define svc_sellscreen			33
 #define svc_cutscene			34
 
-//johnfitz -- PROTOCOL_FITZQUAKE -- new server messages
+// johnfitz -- PROTOCOL_FITZQUAKE -- new server messages
 #define	svc_skybox				37	// [string] name
 #define svc_bf					40
 #define svc_fog					41	// [byte] density [byte] red [byte] green [byte] blue [float] time
 #define svc_spawnbaseline2		42  // support for large modelindex, large framenum, alpha, using flags
 #define svc_spawnstatic2		43	// support for large modelindex, large framenum, alpha, using flags
 #define	svc_spawnstaticsound2	44	// [coord3] [short] samp [byte] vol [byte] aten
-//johnfitz
+// johnfitz
 
 //
 // client to server
@@ -234,11 +234,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 typedef struct {
 	vec3_t		origin;
 	vec3_t		angles;
-	unsigned short 	modelindex;	//johnfitz -- was int
-	unsigned short 	frame;		//johnfitz -- was int
-	unsigned char 	colormap;	//johnfitz -- was int
-	unsigned char 	skin;		//johnfitz -- was int
-	unsigned char	alpha;		//johnfitz -- added
+	unsigned short 	modelindex;	// johnfitz -- was int
+	unsigned short 	frame;		// johnfitz -- was int
+	unsigned char 	colormap;	// johnfitz -- was int
+	unsigned char 	skin;		// johnfitz -- was int
+	unsigned char	alpha;		// johnfitz -- added
 	int		effects;
 } entity_state_t;
 

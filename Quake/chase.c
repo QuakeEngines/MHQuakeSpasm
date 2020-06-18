@@ -65,13 +65,13 @@ Chase_UpdateForClient -- johnfitz -- orient client based on camera. called after
 */
 void Chase_UpdateForClient (void)
 {
-	//place camera
+	// place camera
 
-	//assign client angles to camera
+	// assign client angles to camera
 
-	//see where camera points
+	// see where camera points
 
-	//adjust client angles to point at the same place
+	// adjust client angles to point at the same place
 }
 
 /*
@@ -94,7 +94,7 @@ void Chase_UpdateForDrawing (void)
 		ideal[i] = cl.viewent.origin[i]
 		- forward[i] * chase_back.value
 		+ right[i] * chase_right.value;
-	//+ up[i]*chase_up.value;
+	// + up[i]*chase_up.value;
 	ideal[2] = cl.viewent.origin[2] + chase_up.value;
 
 	// make sure camera is not in or behind a wall

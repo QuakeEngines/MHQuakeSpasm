@@ -39,7 +39,7 @@ void SCR_CenterPrint (const char *str);
 void SCR_BeginLoadingPlaque (void);
 void SCR_EndLoadingPlaque (void);
 
-int SCR_ModalMessage (const char *text, float timeout); //johnfitz -- added timeout
+int SCR_ModalMessage (const char *text, float timeout); // johnfitz -- added timeout
 
 extern	float		scr_con_current;
 extern	float		scr_conlines;		// lines of console to display
@@ -52,11 +52,11 @@ extern	qboolean	scr_skipupdate;
 
 extern	cvar_t		scr_viewsize;
 
-extern	cvar_t		scr_sbaralpha; //johnfitz
+extern	cvar_t		scr_sbaralpha; // johnfitz
 
 void SCR_UpdateWholeScreen (void);
 
-//johnfitz -- stuff for 2d drawing control
+// johnfitz -- stuff for 2d drawing control
 typedef enum {
 	CANVAS_NONE,
 	CANVAS_DEFAULT,
@@ -76,7 +76,7 @@ extern	cvar_t		scr_conwidth;
 extern	cvar_t		scr_conscale;
 extern	cvar_t		scr_scale;
 extern	cvar_t		scr_crosshairscale;
-//johnfitz
+// johnfitz
 
 #endif	/* _QUAKE_SCREEN_H */
 

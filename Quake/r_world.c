@@ -24,17 +24,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern cvar_t gl_fullbrights, r_drawflat, gl_overbright, r_oldwater, r_oldskyleaf, r_showtris; //johnfitz
+extern cvar_t gl_fullbrights, r_drawflat, gl_overbright, r_oldwater, r_oldskyleaf, r_showtris; // johnfitz
 
 byte *SV_FatPVS (vec3_t org, qmodel_t *worldmodel);
 
-int vis_changed; //if true, force pvs to be refreshed
+int vis_changed; // if true, force pvs to be refreshed
 
-//==============================================================================
+// ==============================================================================
 //
 // SETUP CHAINS
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 ================
@@ -139,10 +139,10 @@ void R_MarkSurfaces (void)
 	// rebuild chains
 
 #if 1
-	//iterate through surfaces one node at a time to rebuild chains
-	//need to do it this way if we want to work with tyrann's skip removal tool
-	//becuase his tool doesn't actually remove the surfaces from the bsp surfaces lump
-	//nor does it remove references to them in each leaf's marksurfaces list
+	// iterate through surfaces one node at a time to rebuild chains
+	// need to do it this way if we want to work with tyrann's skip removal tool
+	// becuase his tool doesn't actually remove the surfaces from the bsp surfaces lump
+	// nor does it remove references to them in each leaf's marksurfaces list
 	for (i = 0, node = cl.worldmodel->nodes; i < cl.worldmodel->numnodes; i++, node++)
 		for (j = 0, surf = &cl.worldmodel->surfaces[node->firstsurface]; j < node->numsurfaces; j++, surf++)
 			if (surf->visframe == r_visframecount)
@@ -150,7 +150,7 @@ void R_MarkSurfaces (void)
 				R_ChainSurface (surf, chain_world);
 			}
 #else
-	//the old way
+	// the old way
 	surf = &cl.worldmodel->surfaces[cl.worldmodel->firstmodelsurface];
 	for (i = 0; i < cl.worldmodel->nummodelsurfaces; i++, surf++)
 	{
@@ -223,7 +223,7 @@ void R_CullSurfaces (void)
 			else
 			{
 				s->culled = false;
-				rs_brushpolys++; //count wpolys here
+				rs_brushpolys++; // count wpolys here
 				if (s->texinfo->texture->warpimage)
 					s->texinfo->texture->update_warp = true;
 			}
@@ -263,11 +263,11 @@ void R_BuildLightmapChains (qmodel_t *model, texchain_t chain)
 	}
 }
 
-//==============================================================================
+// ==============================================================================
 //
 // DRAW CHAINS
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 =============
@@ -387,11 +387,11 @@ void R_DrawTextureChains_Drawflat (qmodel_t *model, texchain_t chain)
 }
 
 
-//==============================================================================
+// ==============================================================================
 //
 // VBO SUPPORT
 //
-//==============================================================================
+// ==============================================================================
 
 static unsigned int R_NumTriangleIndicesForSurf (msurface_t *s)
 {
@@ -496,7 +496,7 @@ void R_DrawTextureChains_NoTexture (qmodel_t *model, texchain_t chain)
 		for (s = t->texturechains[chain]; s; s = s->texturechain)
 			if (!s->culled)
 			{
-				if (!bound) //only bind once we are sure we need this texture
+				if (!bound) // only bind once we are sure we need this texture
 				{
 					GL_Bind (t->gltexture);
 					bound = true;
@@ -531,7 +531,7 @@ void R_DrawTextureChains_TextureOnly (qmodel_t *model, entity_t *ent, texchain_t
 		for (s = t->texturechains[chain]; s; s = s->texturechain)
 			if (!s->culled)
 			{
-				if (!bound) //only bind once we are sure we need this texture
+				if (!bound) // only bind once we are sure we need this texture
 				{
 					GL_Bind ((R_TextureAnimation (t, ent != NULL ? ent->frame : 0))->gltexture);
 
@@ -595,7 +595,7 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 			for (s = t->texturechains[chain]; s; s = s->texturechain)
 				if (!s->culled)
 				{
-					if (!bound) //only bind once we are sure we need this texture
+					if (!bound) // only bind once we are sure we need this texture
 					{
 						entalpha = GL_WaterAlphaForEntitySurface (ent, s);
 						R_BeginTransparentDrawing (entalpha);
@@ -623,7 +623,7 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 			for (s = t->texturechains[chain]; s; s = s->texturechain)
 				if (!s->culled)
 				{
-					if (!bound) //only bind once we are sure we need this texture
+					if (!bound) // only bind once we are sure we need this texture
 					{
 						entalpha = GL_WaterAlphaForEntitySurface (ent, s);
 						R_BeginTransparentDrawing (entalpha);
@@ -888,7 +888,7 @@ void R_DrawTextureChains_GLSL (qmodel_t *model, entity_t *ent, texchain_t chain)
 		{
 			if (!s->culled)
 			{
-				if (!bound) //only bind once we are sure we need this texture
+				if (!bound) // only bind once we are sure we need this texture
 				{
 					GL_SelectTexture (GL_TEXTURE0);
 					GL_Bind ((R_TextureAnimation (t, ent != NULL ? ent->frame : 0))->gltexture);

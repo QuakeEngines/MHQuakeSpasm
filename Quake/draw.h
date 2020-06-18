@@ -32,17 +32,17 @@ void Draw_Init (void);
 void Draw_Character (int x, int y, int num);
 void Draw_DebugChar (char num);
 void Draw_Pic (int x, int y, qpic_t *pic);
-void Draw_TransPicTranslate (int x, int y, qpic_t *pic, int top, int bottom); //johnfitz -- more parameters
-void Draw_ConsoleBackground (void); //johnfitz -- removed parameter int lines
+void Draw_TransPicTranslate (int x, int y, qpic_t *pic, int top, int bottom); // johnfitz -- more parameters
+void Draw_ConsoleBackground (void); // johnfitz -- removed parameter int lines
 void Draw_TileClear (int x, int y, int w, int h);
-void Draw_Fill (int x, int y, int w, int h, int c, float alpha); //johnfitz -- added alpha
+void Draw_Fill (int x, int y, int w, int h, int c, float alpha); // johnfitz -- added alpha
 void Draw_FadeScreen (void);
 void Draw_String (int x, int y, const char *str);
 qpic_t *Draw_PicFromWad (const char *name);
 qpic_t *Draw_CachePic (const char *path);
 void Draw_NewGame (void);
 
-void GL_SetCanvas (canvastype newcanvas); //johnfitz
+void GL_SetCanvas (canvastype newcanvas); // johnfitz
 
 #endif	/* _QUAKE_DRAW_H */
 

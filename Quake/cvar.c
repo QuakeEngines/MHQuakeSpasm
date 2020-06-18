@@ -26,13 +26,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 static cvar_t *cvar_vars;
 static char	cvar_null_string[] = "";
 
-//==============================================================================
+// ==============================================================================
 //
 //  USER COMMANDS
 //
-//==============================================================================
+// ==============================================================================
 
-void Cvar_Reset (const char *name); //johnfitz
+void Cvar_Reset (const char *name); // johnfitz
 
 /*
 ============
@@ -138,14 +138,14 @@ void Cvar_Cycle_f (void)
 		return;
 	}
 
-	//loop through the args until you find one that matches the current cvar value.
-	//yes, this will get stuck on a list that contains the same value twice.
-	//it's not worth dealing with, and i'm not even sure it can be dealt with.
+	// loop through the args until you find one that matches the current cvar value.
+	// yes, this will get stuck on a list that contains the same value twice.
+	// it's not worth dealing with, and i'm not even sure it can be dealt with.
 	for (i = 2; i < Cmd_Argc (); i++)
 	{
-		//zero is assumed to be a string, even though it could actually be zero.  The worst case
-		//is that the first time you call this command, it won't match on zero when it should, but after that,
-		//it will be comparing strings that all had the same source (the user) so it will work.
+		// zero is assumed to be a string, even though it could actually be zero.  The worst case
+		// is that the first time you call this command, it won't match on zero when it should, but after that,
+		// it will be comparing strings that all had the same source (the user) so it will work.
 		if (Q_atof (Cmd_Argv (i)) == 0)
 		{
 			if (!strcmp (Cmd_Argv (i), Cvar_VariableString (Cmd_Argv (1))))
@@ -211,11 +211,11 @@ void Cvar_ResetCfg_f (void)
 		if (var->flags & CVAR_ARCHIVE) Cvar_Reset (var->name);
 }
 
-//==============================================================================
+// ==============================================================================
 //
 //  INIT
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 ============
@@ -234,11 +234,11 @@ void Cvar_Init (void)
 	Cmd_AddCommand ("resetcfg", Cvar_ResetCfg_f);
 }
 
-//==============================================================================
+// ==============================================================================
 //
 //  CVAR FUNCTIONS
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 ============
@@ -411,10 +411,10 @@ void Cvar_SetQuick (cvar_t *var, const char *value)
 
 	var->value = Q_atof (var->string);
 
-	//johnfitz -- save initial value for "reset" command
+	// johnfitz -- save initial value for "reset" command
 	if (!var->default_string)
 		var->default_string = Z_Strdup (var->string);
-	//johnfitz -- during initialization, update default too
+	// johnfitz -- during initialization, update default too
 	else if (!host_initialized)
 	{
 		//	Sys_Printf("changing default of %s: %s -> %s\n",
@@ -422,7 +422,7 @@ void Cvar_SetQuick (cvar_t *var, const char *value)
 		Z_Free ((void *) var->default_string);
 		var->default_string = Z_Strdup (var->string);
 	}
-	//johnfitz
+	// johnfitz
 
 	if (var->callback)
 		var->callback (var);
@@ -533,7 +533,7 @@ void Cvar_RegisterVariable (cvar_t *variable)
 {
 	char	value[512];
 	qboolean	set_rom;
-	cvar_t *cursor, *prev; //johnfitz -- sorted list insert
+	cvar_t *cursor, *prev; // johnfitz -- sorted list insert
 
 // first check to see if it has already been defined
 	if (Cvar_FindVar (variable->name))
@@ -550,14 +550,14 @@ void Cvar_RegisterVariable (cvar_t *variable)
 	}
 
 	// link the variable in
-		//johnfitz -- insert each entry in alphabetical order
+		// johnfitz -- insert each entry in alphabetical order
 	if (cvar_vars == NULL ||
 		strcmp (variable->name, cvar_vars->name) < 0) // insert at front
 	{
 		variable->next = cvar_vars;
 		cvar_vars = variable;
 	}
-	else //insert later
+	else // insert later
 	{
 		prev = cvar_vars;
 		cursor = cvar_vars->next;
@@ -569,7 +569,7 @@ void Cvar_RegisterVariable (cvar_t *variable)
 		variable->next = prev->next;
 		prev->next = variable;
 	}
-	//johnfitz
+	// johnfitz
 	variable->flags |= CVAR_REGISTERED;
 
 	// copy the value off, because future sets will Z_Free it

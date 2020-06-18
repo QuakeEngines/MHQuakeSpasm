@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 mnode_t *r_pefragtopnode;
 
 
-//===========================================================================
+// ===========================================================================
 
 /*
 ===============================================================================
@@ -152,7 +152,7 @@ R_CheckEfrags -- johnfitz -- check for excessive efrag count
 void R_CheckEfrags (void)
 {
 	if (cls.signon < 2)
-		return; //don't spam when still parsing signon packet full of static ents
+		return; // don't spam when still parsing signon packet full of static ents
 
 	if (cl.num_efrags > 640 && dev_peakstats.efrags <= 640)
 		Con_DWarning ("%i efrags exceeds standard limit of 640.\n", cl.num_efrags);
@@ -190,7 +190,7 @@ void R_AddEfrags (entity_t *ent)
 
 	ent->topnode = r_pefragtopnode;
 
-	R_CheckEfrags (); //johnfitz
+	R_CheckEfrags (); // johnfitz
 }
 
 

@@ -29,8 +29,8 @@ vec3_t vec3_origin = { 0, 0, 0 };
 /*-----------------------------------------------------------------*/
 
 
-//#define DEG2RAD( a ) ( a * M_PI ) / 180.0F
-#define DEG2RAD( a ) ( (a) * M_PI_DIV_180 ) //johnfitz
+// #define DEG2RAD( a ) ( a * M_PI ) / 180.0F
+#define DEG2RAD( a ) ( (a) * M_PI_DIV_180 ) // johnfitz
 
 void ProjectPointOnPlane (vec3_t dst, const vec3_t p, const vec3_t normal)
 {
@@ -86,7 +86,7 @@ void PerpendicularVector (vec3_t dst, const vec3_t src)
 	VectorNormalize (dst);
 }
 
-//johnfitz -- removed RotatePointAroundVector() becuase it's no longer used and my compiler fucked it up anyway
+// johnfitz -- removed RotatePointAroundVector() becuase it's no longer used and my compiler fucked it up anyway
 
 /*-----------------------------------------------------------------*/
 
@@ -210,8 +210,8 @@ int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, mplane_t *p)
 	return sides;
 }
 
-//johnfitz -- the opposite of AngleVectors.  this takes forward and generates pitch yaw roll
-//TODO: take right and up vectors to properly set yaw and roll
+// johnfitz -- the opposite of AngleVectors.  this takes forward and generates pitch yaw roll
+// TODO: take right and up vectors to properly set yaw and roll
 void VectorAngles (const vec3_t forward, vec3_t angles)
 {
 	vec3_t temp;

@@ -47,7 +47,7 @@ cvar_t	v_kicktime = { "v_kicktime", "0.5", CVAR_NONE };
 cvar_t	v_kickroll = { "v_kickroll", "0.6", CVAR_NONE };
 cvar_t	v_kickpitch = { "v_kickpitch", "0.6", CVAR_NONE };
 cvar_t	v_kickyaw = { "v_kickyaw", "0.1", CVAR_NONE };
-cvar_t	v_gunkick = { "v_gunkick", "1", CVAR_NONE }; //johnfitz
+cvar_t	v_gunkick = { "v_gunkick", "1", CVAR_NONE }; // johnfitz
 
 cvar_t	v_iyaw_cycle = { "v_iyaw_cycle", "2", CVAR_NONE };
 cvar_t	v_iroll_cycle = { "v_iroll_cycle", "0.5", CVAR_NONE };
@@ -75,7 +75,7 @@ extern	int			in_forward, in_forward2, in_back;
 float   v_oldz, v_stepz;
 float   v_steptime;
 
-vec3_t	v_punchangles[2]; //johnfitz -- copied from cl.punchangle.  0 is current, 1 is previous value. never the same unless map just loaded
+vec3_t	v_punchangles[2]; // johnfitz -- copied from cl.punchangle.  0 is current, 1 is previous value. never the same unless map just loaded
 
 /*
 ===============
@@ -160,7 +160,7 @@ float V_CalcBob (void)
 }
 
 
-//=============================================================================
+// =============================================================================
 
 
 cvar_t	v_centermove = { "v_centermove", "0.15", CVAR_NONE };
@@ -208,7 +208,7 @@ void V_DriftPitch (void)
 	float		delta, move;
 
 	if (noclip_anglehack || !cl.onground || cls.demoplayback)
-		//FIXME: noclip_anglehack is set on the server, so in a nonlocal game this won't work.
+		// FIXME: noclip_anglehack is set on the server, so in a nonlocal game this won't work.
 	{
 		cl.driftmove = 0;
 		cl.pitchvel = 0;
@@ -242,7 +242,7 @@ void V_DriftPitch (void)
 	move = host_frametime * cl.pitchvel;
 	cl.pitchvel += host_frametime * v_centerspeed.value;
 
-	//Con_Printf ("move: %f (%f)\n", move, host_frametime);
+	// Con_Printf ("move: %f (%f)\n", move, host_frametime);
 
 	if (delta > 0)
 	{
@@ -279,7 +279,7 @@ cshift_t	cshift_lava = { { 255, 80, 0 }, 150 };
 
 float		v_blend[4];		// rgba 0.0 - 1.0
 
-//johnfitz -- deleted BuildGammaTable(), V_CheckGamma(), gammatable[], and ramps[][]
+// johnfitz -- deleted BuildGammaTable(), V_CheckGamma(), gammatable[], and ramps[][]
 
 /*
 ===============
@@ -397,7 +397,7 @@ void V_SetContentsColor (int contents)
 	{
 	case CONTENTS_EMPTY:
 	case CONTENTS_SOLID:
-	case CONTENTS_SKY: //johnfitz -- no blend in sky
+	case CONTENTS_SKY: // johnfitz -- no blend in sky
 		cl.cshifts[CSHIFT_CONTENTS] = cshift_empty;
 		break;
 	case CONTENTS_LAVA:
@@ -476,10 +476,10 @@ void V_CalcBlend (void)
 		if (!gl_cshiftpercent.value)
 			continue;
 
-		//johnfitz -- only apply leaf contents color shifts during intermission
+		// johnfitz -- only apply leaf contents color shifts during intermission
 		if (cl.intermission && j != CSHIFT_CONTENTS)
 			continue;
-		//johnfitz
+		// johnfitz
 
 		a2 = ((cl.cshifts[j].percent * gl_cshiftpercent.value) / 100.0) / 255.0;
 		// QuakeSpasm -- also scale by the specific gl_cshiftpercent_* cvar
@@ -732,8 +732,8 @@ void V_CalcRefdef (void)
 	vec3_t		angles;
 	float		bob;
 	static float oldz = 0;
-	static vec3_t punch = { 0, 0, 0 }; //johnfitz -- v_gunkick
-	float delta; //johnfitz -- v_gunkick
+	static vec3_t punch = { 0, 0, 0 }; // johnfitz -- v_gunkick
+	float delta; // johnfitz -- v_gunkick
 
 	V_DriftPitch ();
 
@@ -772,7 +772,7 @@ void V_CalcRefdef (void)
 
 	AngleVectors (angles, forward, right, up);
 
-	if (cl.maxclients <= 1) //johnfitz -- moved cheat-protection here from V_RenderView
+	if (cl.maxclients <= 1) // johnfitz -- moved cheat-protection here from V_RenderView
 		for (i = 0; i < 3; i++)
 			r_refdef.vieworg[i] += scr_ofsx.value * forward[i] + scr_ofsy.value * right[i] + scr_ofsz.value * up[i];
 
@@ -790,8 +790,8 @@ void V_CalcRefdef (void)
 		view->origin[i] += forward[i] * bob * 0.4;
 	view->origin[2] += bob;
 
-	//johnfitz -- removed all gun position fudging code (was used to keep gun from getting covered by sbar)
-	//MarkV -- restored this with r_viewmodel_quake cvar
+	// johnfitz -- removed all gun position fudging code (was used to keep gun from getting covered by sbar)
+	// MarkV -- restored this with r_viewmodel_quake cvar
 	if (r_viewmodel_quake.value)
 	{
 		// MH - just using 2
@@ -802,15 +802,15 @@ void V_CalcRefdef (void)
 	view->frame = cl.stats[STAT_WEAPONFRAME];
 	view->colormap = vid.colormap;
 
-	//johnfitz -- v_gunkick
-	if (v_gunkick.value == 1) //original quake kick
+	// johnfitz -- v_gunkick
+	if (v_gunkick.value == 1) // original quake kick
 		VectorAdd (r_refdef.viewangles, cl.punchangle, r_refdef.viewangles);
-	if (v_gunkick.value == 2) //lerped kick
+	if (v_gunkick.value == 2) // lerped kick
 	{
 		for (i = 0; i < 3; i++)
 			if (punch[i] != v_punchangles[0][i])
 			{
-				//speed determined by how far we need to lerp in 1/10th of a second
+				// speed determined by how far we need to lerp in 1/10th of a second
 				delta = (v_punchangles[0][i] - v_punchangles[1][i]) * host_frametime * 10;
 
 				if (delta > 0)
@@ -821,7 +821,7 @@ void V_CalcRefdef (void)
 
 		VectorAdd (r_refdef.viewangles, punch, r_refdef.viewangles);
 	}
-	//johnfitz
+	// johnfitz
 
 	// smooth out stair step ups
 	if (cl.onground && ent->origin[2] - v_stepz > 0)
@@ -841,6 +841,7 @@ void V_CalcRefdef (void)
 			v_stepz = v_oldz = ent->origin[2] - 12;
 		}
 
+		r_refdef.vieworg[2] += v_stepz - ent->origin[2];
 		view->origin[2] += v_stepz - ent->origin[2];
 	}
 	else
@@ -850,7 +851,7 @@ void V_CalcRefdef (void)
 	}
 
 	if (chase_active.value)
-		Chase_UpdateForDrawing (); //johnfitz
+		Chase_UpdateForDrawing (); // johnfitz
 }
 
 /*
@@ -873,7 +874,7 @@ void V_RenderView (void)
 	else if (!cl.paused /* && (cl.maxclients > 1 || key_dest == key_game) */)
 		V_CalcRefdef ();
 
-	//johnfitz -- removed lcd code
+	// johnfitz -- removed lcd code
 
 	R_RenderView ();
 }
@@ -928,9 +929,9 @@ void V_Init (void)
 	Cvar_RegisterVariable (&v_kickroll);
 	Cvar_RegisterVariable (&v_kickpitch);
 	Cvar_RegisterVariable (&v_kickyaw);
-	Cvar_RegisterVariable (&v_gunkick); //johnfitz
+	Cvar_RegisterVariable (&v_gunkick); // johnfitz
 
-	Cvar_RegisterVariable (&r_viewmodel_quake); //MarkV
+	Cvar_RegisterVariable (&r_viewmodel_quake); // MarkV
 }
 
 

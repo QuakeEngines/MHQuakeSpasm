@@ -33,7 +33,7 @@ typedef struct {
 	qboolean	changelevel_issued;	// cleared when at SV_SpawnServer
 } server_static_t;
 
-//=============================================================================
+// =============================================================================
 
 typedef enum { ss_loading, ss_active } server_state_t;
 
@@ -69,9 +69,9 @@ typedef struct {
 	byte		reliable_datagram_buf[MAX_DATAGRAM];
 
 	sizebuf_t	signon;
-	byte		signon_buf[MAX_MSGLEN - 2]; //johnfitz -- was 8192, now uses MAX_MSGLEN
+	byte		signon_buf[MAX_MSGLEN - 2]; // johnfitz -- was 8192, now uses MAX_MSGLEN
 
-	unsigned	protocol; //johnfitz
+	unsigned	protocol; // johnfitz
 	unsigned	protocolflags;
 } server_t;
 
@@ -111,7 +111,7 @@ typedef struct client_s {
 } client_t;
 
 
-//=============================================================================
+// =============================================================================
 
 // edict->movetype values
 #define	MOVETYPE_NONE			0		// never moves
@@ -145,7 +145,7 @@ typedef struct client_s {
 // edict->flags
 #define	FL_FLY					1
 #define	FL_SWIM					2
-//#define	FL_GLIMPSE				4
+// #define	FL_GLIMPSE				4
 #define	FL_CONVEYOR				4
 #define	FL_CLIENT				8
 #define	FL_INWATER				16
@@ -170,7 +170,7 @@ typedef struct client_s {
 #define	SPAWNFLAG_NOT_HARD			1024
 #define	SPAWNFLAG_NOT_DEATHMATCH	2048
 
-//============================================================================
+// ============================================================================
 
 extern	cvar_t	teamplay;
 extern	cvar_t	skill;
@@ -186,7 +186,7 @@ extern	client_t *host_client;
 
 extern	edict_t *sv_player;
 
-//===========================================================
+// ===========================================================
 
 void SV_Init (void);
 

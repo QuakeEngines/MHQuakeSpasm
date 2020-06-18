@@ -59,9 +59,9 @@ byte *host_colormap;
 
 cvar_t	host_framerate = { "host_framerate", "0", CVAR_NONE };	// set for slow motion
 cvar_t	host_speeds = { "host_speeds", "0", CVAR_NONE };			// set for running times
-cvar_t	host_maxfps = { "host_maxfps", "72", CVAR_ARCHIVE }; //johnfitz
-cvar_t	host_timescale = { "host_timescale", "0", CVAR_NONE }; //johnfitz
-cvar_t	max_edicts = { "max_edicts", "8192", CVAR_NONE }; //johnfitz //ericw -- changed from 2048 to 8192, removed CVAR_ARCHIVE
+cvar_t	host_maxfps = { "host_maxfps", "72", CVAR_ARCHIVE }; // johnfitz
+cvar_t	host_timescale = { "host_timescale", "0", CVAR_NONE }; // johnfitz
+cvar_t	max_edicts = { "max_edicts", "8192", CVAR_NONE }; // johnfitz // ericw -- changed from 2048 to 8192, removed CVAR_ARCHIVE
 
 cvar_t	sys_ticrate = { "sys_ticrate", "0.05", CVAR_NONE }; // dedicated server
 cvar_t	serverprofile = { "serverprofile", "0", CVAR_NONE };
@@ -81,10 +81,10 @@ cvar_t	developer = { "developer", "0", CVAR_NONE };
 
 cvar_t	temp1 = { "temp1", "0", CVAR_NONE };
 
-cvar_t devstats = { "devstats", "0", CVAR_NONE }; //johnfitz -- track developer statistics that vary every frame
+cvar_t devstats = { "devstats", "0", CVAR_NONE }; // johnfitz -- track developer statistics that vary every frame
 
 devstats_t dev_stats, dev_peakstats;
-overflowtimes_t dev_overflows; //this stores the last time overflow messages were displayed, not the last time overflows occured
+overflowtimes_t dev_overflows; // this stores the last time overflow messages were displayed, not the last time overflows occured
 
 /*
 ================
@@ -93,7 +93,7 @@ Max_Edicts_f -- johnfitz
 */
 static void Max_Edicts_f (cvar_t *var)
 {
-	//TODO: clamp it here?
+	// TODO: clamp it here?
 	if (cls.state == ca_connected || sv.active)
 		Con_Printf ("Changes to max_edicts will not take effect until the next time a map is loaded.\n");
 }
@@ -170,7 +170,7 @@ void Host_Error (const char *error, ...)
 
 	CL_Disconnect ();
 	cls.demonum = -1;
-	cl.intermission = 0; //johnfitz -- for errors during intermissions (changelevel with no map found, etc.)
+	cl.intermission = 0; // johnfitz -- for errors during intermissions (changelevel with no map found, etc.)
 
 	inerror = false;
 
@@ -255,13 +255,13 @@ void Host_InitLocal (void)
 
 	Cvar_RegisterVariable (&host_framerate);
 	Cvar_RegisterVariable (&host_speeds);
-	Cvar_RegisterVariable (&host_maxfps); //johnfitz
+	Cvar_RegisterVariable (&host_maxfps); // johnfitz
 	Cvar_SetCallback (&host_maxfps, Max_Fps_f);
-	Cvar_RegisterVariable (&host_timescale); //johnfitz
+	Cvar_RegisterVariable (&host_timescale); // johnfitz
 
-	Cvar_RegisterVariable (&max_edicts); //johnfitz
+	Cvar_RegisterVariable (&max_edicts); // johnfitz
 	Cvar_SetCallback (&max_edicts, Max_Edicts_f);
-	Cvar_RegisterVariable (&devstats); //johnfitz
+	Cvar_RegisterVariable (&devstats); // johnfitz
 
 	Cvar_RegisterVariable (&sys_ticrate);
 	Cvar_RegisterVariable (&sys_throttle);
@@ -311,15 +311,15 @@ void Host_WriteConfiguration (void)
 			return;
 		}
 
-		//VID_SyncCvars (); //johnfitz -- write actual current mode to config file, in case cvars were messed with
+		// VID_SyncCvars (); // johnfitz -- write actual current mode to config file, in case cvars were messed with
 
 		Key_WriteBindings (f);
 		Cvar_WriteVariables (f);
 
-		//johnfitz -- extra commands to preserve state
+		// johnfitz -- extra commands to preserve state
 		fprintf (f, "vid_restart\n");
 		if (in_mlook.state & 1) fprintf (f, "+mlook\n");
-		//johnfitz
+		// johnfitz
 
 		fclose (f);
 	}
@@ -549,11 +549,11 @@ void Host_ClearMemory (void)
 }
 
 
-//==============================================================================
+// ==============================================================================
 //
 // Host Frame
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 ===================
@@ -564,27 +564,27 @@ Returns false if the time is too short to run a frame
 */
 qboolean Host_FilterTime (void)
 {
-	float maxfps; //johnfitz
+	float maxfps; // johnfitz
 
 	realtime = Sys_DoubleTime ();
 
-	//johnfitz -- max fps cvar
+	// johnfitz -- max fps cvar
 	maxfps = CLAMP (10.0, host_maxfps.value, 1000.0);
 	if (!cls.timedemo && realtime - oldrealtime < 1.0 / maxfps)
 		return false; // framerate is too high
-	//johnfitz
+	// johnfitz
 
 	host_frametime = realtime - oldrealtime;
 	oldrealtime = realtime;
 
-	//johnfitz -- host_timescale is more intuitive than host_framerate
+	// johnfitz -- host_timescale is more intuitive than host_framerate
 	if (host_timescale.value > 0)
 		host_frametime *= host_timescale.value;
-	//johnfitz
+	// johnfitz
 	else if (host_framerate.value > 0)
 		host_frametime = host_framerate.value;
 	else // don't allow really long or short frames
-		host_frametime = CLAMP (0.001, host_frametime, 0.1); //johnfitz -- use CLAMP
+		host_frametime = CLAMP (0.001, host_frametime, 0.1); // johnfitz -- use CLAMP
 
 	return true;
 }
@@ -619,8 +619,8 @@ Host_ServerFrame
 */
 void Host_ServerFrame (void)
 {
-	int		i, active; //johnfitz
-	edict_t *ent; //johnfitz
+	int		i, active; // johnfitz
+	edict_t *ent; // johnfitz
 
 // run the world state
 	pr_global_struct->frametime = host_frametime;
@@ -639,7 +639,7 @@ void Host_ServerFrame (void)
 	if (!sv.paused && (svs.maxclients > 1 || key_dest == key_game))
 		SV_Physics ();
 
-	//johnfitz -- devstats
+	// johnfitz -- devstats
 	if (cls.signon == SIGNONS)
 	{
 		for (i = 0, active = 0; i < sv.num_edicts; i++)
@@ -653,7 +653,7 @@ void Host_ServerFrame (void)
 		dev_stats.edicts = active;
 		dev_peakstats.edicts = q_max (active, dev_peakstats.edicts);
 	}
-	//johnfitz
+	// johnfitz
 
 	// send all messages to the clients
 	SV_SendClientMessages ();
@@ -700,11 +700,11 @@ void _Host_Frame (void)
 	if (sv.active)
 		CL_SendCmd ();
 
-	//-------------------
+	// -------------------
 	//
 	// server operations
 	//
-	//-------------------
+	// -------------------
 
 	// check for commands typed to the host
 	Host_GetConsoleCommands ();
@@ -712,11 +712,11 @@ void _Host_Frame (void)
 	if (sv.active)
 		Host_ServerFrame ();
 
-	//-------------------
+	// -------------------
 	//
 	// client operations
 	//
-	//-------------------
+	// -------------------
 
 	// if running the server remotely, send intentions now after
 	// the incoming messages have been read
@@ -733,7 +733,7 @@ void _Host_Frame (void)
 
 	SCR_UpdateScreen ();
 
-	CL_RunParticles (); //johnfitz -- seperated from rendering
+	CL_RunParticles (); // johnfitz -- seperated from rendering
 
 	if (host_speeds.value)
 		time2 = Sys_DoubleTime ();
@@ -824,11 +824,11 @@ void Host_Init (void)
 	Cbuf_Init ();
 	Cmd_Init ();
 	LOG_Init (host_parms);
-	Cvar_Init (); //johnfitz
+	Cvar_Init (); // johnfitz
 	COM_Init ();
 	COM_InitFilesystem ();
 	Host_InitLocal ();
-	W_LoadWadFile (); //johnfitz -- filename is now hard-coded for honesty
+	W_LoadWadFile (); // johnfitz -- filename is now hard-coded for honesty
 	if (cls.state != ca_dedicated)
 	{
 		Key_Init ();
@@ -851,12 +851,12 @@ void Host_Init (void)
 		V_Init ();
 		Chase_Init ();
 		M_Init ();
-		ExtraMaps_Init (); //johnfitz
-		Modlist_Init (); //johnfitz
-		DemoList_Init (); //ericw
+		ExtraMaps_Init (); // johnfitz
+		Modlist_Init (); // johnfitz
+		DemoList_Init (); // ericw
 		VID_Init ();
 		IN_Init ();
-		TexMgr_Init (); //johnfitz
+		TexMgr_Init (); // johnfitz
 		Draw_Init ();
 		SCR_Init ();
 		R_Init ();

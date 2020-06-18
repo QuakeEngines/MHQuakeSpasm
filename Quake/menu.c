@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "bgmusic.h"
 
-void (*vid_menucmdfn)(void); //johnfitz
+void (*vid_menucmdfn)(void); // johnfitz
 void (*vid_menudrawfn)(void);
 void (*vid_menukeyfn)(int key);
 
@@ -129,17 +129,17 @@ void M_PrintWhite (int cx, int cy, const char *str)
 
 void M_DrawTransPic (int x, int y, qpic_t *pic)
 {
-	Draw_Pic (x, y, pic); //johnfitz -- simplified becuase centering is handled elsewhere
+	Draw_Pic (x, y, pic); // johnfitz -- simplified becuase centering is handled elsewhere
 }
 
 void M_DrawPic (int x, int y, qpic_t *pic)
 {
-	Draw_Pic (x, y, pic); //johnfitz -- simplified becuase centering is handled elsewhere
+	Draw_Pic (x, y, pic); // johnfitz -- simplified becuase centering is handled elsewhere
 }
 
-void M_DrawTransPicTranslate (int x, int y, qpic_t *pic, int top, int bottom) //johnfitz -- more parameters
+void M_DrawTransPicTranslate (int x, int y, qpic_t *pic, int top, int bottom) // johnfitz -- more parameters
 {
-	Draw_TransPicTranslate (x, y, pic, top, bottom); //johnfitz -- simplified becuase centering is handled elsewhere
+	Draw_TransPicTranslate (x, y, pic, top, bottom); // johnfitz -- simplified becuase centering is handled elsewhere
 }
 
 void M_DrawTextBox (int x, int y, int width, int lines)
@@ -197,7 +197,7 @@ void M_DrawTextBox (int x, int y, int width, int lines)
 	M_DrawTransPic (cx, cy + 8, p);
 }
 
-//=============================================================================
+// =============================================================================
 
 int m_save_demonum;
 
@@ -234,7 +234,7 @@ void M_ToggleMenu_f (void)
 }
 
 
-//=============================================================================
+// =============================================================================
 /* MAIN MENU */
 
 int	m_main_cursor;
@@ -329,7 +329,7 @@ void M_Main_Key (int key)
 	}
 }
 
-//=============================================================================
+// =============================================================================
 /* SINGLE PLAYER MENU */
 
 int	m_singleplayer_cursor;
@@ -398,8 +398,8 @@ void M_SinglePlayer_Key (int key)
 			if (sv.active)
 				Cbuf_AddText ("disconnect\n");
 			Cbuf_AddText ("maxplayers 1\n");
-			Cbuf_AddText ("deathmatch 0\n"); //johnfitz
-			Cbuf_AddText ("coop 0\n"); //johnfitz
+			Cbuf_AddText ("deathmatch 0\n"); // johnfitz
+			Cbuf_AddText ("coop 0\n"); // johnfitz
 			Cbuf_AddText ("map start\n");
 			break;
 
@@ -414,7 +414,7 @@ void M_SinglePlayer_Key (int key)
 	}
 }
 
-//=============================================================================
+// =============================================================================
 /* LOAD/SAVE MENU */
 
 int		load_cursor;		// 0 < load_cursor < MAX_SAVEGAMES
@@ -595,7 +595,7 @@ void M_Save_Key (int k)
 	}
 }
 
-//=============================================================================
+// =============================================================================
 /* MULTIPLAYER MENU */
 
 int	m_multiplayer_cursor;
@@ -675,7 +675,7 @@ void M_MultiPlayer_Key (int key)
 	}
 }
 
-//=============================================================================
+// =============================================================================
 /* SETUP MENU */
 
 int		setup_cursor = 4;
@@ -860,7 +860,7 @@ qboolean M_Setup_TextEntry (void)
 	return (setup_cursor == 0 || setup_cursor == 1);
 }
 
-//=============================================================================
+// =============================================================================
 /* NET MENU */
 
 int	m_net_cursor;
@@ -968,7 +968,7 @@ again:
 		goto again;
 }
 
-//=============================================================================
+// =============================================================================
 /* OPTIONS MENU */
 
 enum {
@@ -989,12 +989,13 @@ enum {
 	OPT_ALWAYSMLOOK,
 	OPT_LOOKSPRING,
 	OPT_LOOKSTRAFE,
-	//#ifdef _WIN32
+	// #ifdef _WIN32
 	//	OPT_USEMOUSE,
-	//#endif
+	// #endif
 	OPT_VIDEO,	// This is the last before OPTIONS_ITEMS
 	OPTIONS_ITEMS
 };
+
 
 enum {
 	ALWAYSRUN_OFF = 0,
@@ -1328,7 +1329,7 @@ void M_Options_Key (int k)
 	}
 }
 
-//=============================================================================
+// =============================================================================
 /* KEYS MENU */
 
 const char *bindnames[][2] =
@@ -1530,12 +1531,12 @@ void M_Keys_Key (int k)
 	}
 }
 
-//=============================================================================
+// =============================================================================
 /* VIDEO MENU */
 
 void M_Menu_Video_f (void)
 {
-	(*vid_menucmdfn) (); //johnfitz
+	(*vid_menucmdfn) (); // johnfitz
 }
 
 
@@ -1550,7 +1551,7 @@ void M_Video_Key (int key)
 	(*vid_menukeyfn) (key);
 }
 
-//=============================================================================
+// =============================================================================
 /* HELP MENU */
 
 int		help_page;
@@ -1600,7 +1601,7 @@ void M_Help_Key (int key)
 
 }
 
-//=============================================================================
+// =============================================================================
 /* QUIT MENU */
 
 int		msgNumber;
@@ -1679,7 +1680,7 @@ qboolean M_Quit_TextEntry (void)
 }
 
 
-void M_Quit_Draw (void) //johnfitz -- modified for new quit message
+void M_Quit_Draw (void) // johnfitz -- modified for new quit message
 {
 	char	msg1[40];
 	char	msg2[] = "by Ozkan Sezer, Eric Wasylishen, others";/* msg2/msg3 are mostly [40] */
@@ -1696,20 +1697,20 @@ void M_Quit_Draw (void) //johnfitz -- modified for new quit message
 
 	sprintf (msg1, "QuakeSpasm " QUAKESPASM_VER_STRING);
 
-	//okay, this is kind of fucked up.  M_DrawTextBox will always act as if
-	//width is even. Also, the width and lines values are for the interior of the box,
-	//but the x and y values include the border.
+	// okay, this is kind of fucked up.  M_DrawTextBox will always act as if
+	// width is even. Also, the width and lines values are for the interior of the box,
+	// but the x and y values include the border.
 	boxlen = q_max (strlen (msg1), q_max ((sizeof (msg2) - 1), (sizeof (msg3) - 1))) + 1;
 	if (boxlen & 1) boxlen++;
 	M_DrawTextBox (160 - 4 * (boxlen + 2), 76, boxlen, 4);
 
-	//now do the text
+	// now do the text
 	M_Print (160 - 4 * strlen (msg1), 88, msg1);
 	M_Print (160 - 4 * (sizeof (msg2) - 1), 96, msg2);
 	M_PrintWhite (160 - 4 * (sizeof (msg3) - 1), 104, msg3);
 }
 
-//=============================================================================
+// =============================================================================
 /* LAN CONFIG MENU */
 
 int		lanConfig_cursor = -1;
@@ -1926,7 +1927,7 @@ qboolean M_LanConfig_TextEntry (void)
 	return (lanConfig_cursor == 0 || lanConfig_cursor == 2);
 }
 
-//=============================================================================
+// =============================================================================
 /* GAME OPTIONS MENU */
 
 typedef struct {
@@ -1982,7 +1983,7 @@ level_t		levels[] =
 	{ "dm6", "The Dark Zone" }
 };
 
-//MED 01/06/97 added hipnotic levels
+// MED 01/06/97 added hipnotic levels
 level_t     hipnoticlevels[] =
 {
 	{ "start", "Command HQ" },	// 0
@@ -2010,8 +2011,8 @@ level_t     hipnoticlevels[] =
 	{ "hipdm1", "The Edge of Oblivion" }			// 17
 };
 
-//PGM 01/07/97 added rogue levels
-//PGM 03/02/97 added dmatch level
+// PGM 01/07/97 added rogue levels
+// PGM 03/02/97 added dmatch level
 level_t		roguelevels[] =
 {
 	{ "start", "Split Decision" },
@@ -2050,7 +2051,7 @@ episode_t	episodes[] =
 	{ "Deathmatch Arena", 32, 6 }
 };
 
-//MED 01/06/97  added hipnotic episodes
+// MED 01/06/97  added hipnotic episodes
 episode_t   hipnoticepisodes[] =
 {
 	{ "Scourge of Armagon", 0, 1 },
@@ -2061,8 +2062,8 @@ episode_t   hipnoticepisodes[] =
 	{ "Deathmatch Arena", 17, 1 }
 };
 
-//PGM 01/07/97 added rogue episodes
-//PGM 03/02/97 added dmatch episode
+// PGM 01/07/97 added rogue episodes
+// PGM 03/02/97 added dmatch episode
 episode_t	rogueepisodes[] =
 {
 	{ "Introduction", 0, 1 },
@@ -2273,11 +2274,11 @@ void M_NetStart_Change (int dir)
 
 	case 7:
 		startepisode += dir;
-		//MED 01/06/97 added hipnotic count
+		// MED 01/06/97 added hipnotic count
 		if (hipnotic)
 			count = 6;
-		//PGM 01/07/97 added rogue count
-		//PGM 03/02/97 added 1 for dmatch episode
+		// PGM 01/07/97 added rogue count
+		// PGM 03/02/97 added 1 for dmatch episode
 		else if (rogue)
 			count = 4;
 		else if (registered.value)
@@ -2296,10 +2297,10 @@ void M_NetStart_Change (int dir)
 
 	case 8:
 		startlevel += dir;
-		//MED 01/06/97 added hipnotic episodes
+		// MED 01/06/97 added hipnotic episodes
 		if (hipnotic)
 			count = hipnoticepisodes[startepisode].levels;
-		//PGM 01/06/97 added hipnotic episodes
+		// PGM 01/06/97 added hipnotic episodes
 		else if (rogue)
 			count = rogueepisodes[startepisode].levels;
 		else
@@ -2378,7 +2379,7 @@ void M_GameOptions_Key (int key)
 	}
 }
 
-//=============================================================================
+// =============================================================================
 /* SEARCH MENU */
 
 qboolean	searchComplete = false;
@@ -2439,7 +2440,7 @@ void M_Search_Key (int key)
 {
 }
 
-//=============================================================================
+// =============================================================================
 /* SLIST MENU */
 
 int		slist_cursor;
@@ -2528,7 +2529,7 @@ void M_ServerList_Key (int k)
 
 }
 
-//=============================================================================
+// =============================================================================
 /* Menu Subsystem */
 
 
@@ -2563,14 +2564,14 @@ void M_Draw (void)
 			S_ExtraUpdate ();
 		}
 
-		Draw_FadeScreen (); //johnfitz -- fade even if console fills screen
+		Draw_FadeScreen (); // johnfitz -- fade even if console fills screen
 	}
 	else
 	{
 		m_recursiveDraw = false;
 	}
 
-	GL_SetCanvas (CANVAS_MENU); //johnfitz
+	GL_SetCanvas (CANVAS_MENU); // johnfitz
 
 	switch (m_state)
 	{

@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-//gl_warp.c -- warping animation support
+// gl_warp.c -- warping animation support
 
 #include "quakedef.h"
 
@@ -29,21 +29,21 @@ cvar_t r_waterquality = { "r_waterquality", "8", CVAR_NONE };
 cvar_t r_waterwarp = { "r_waterwarp", "1", CVAR_NONE };
 
 int gl_warpimagesize;
-float load_subdivide_size; //johnfitz -- remember what subdivide_size value was when this map was loaded
+float load_subdivide_size; // johnfitz -- remember what subdivide_size value was when this map was loaded
 
 float	turbsin[] =
 {
 #include "gl_warp_sin.h"
 };
 
-#define WARPCALC(s,t) ((s + turbsin[(int)((t*2)+(cl.time*(128.0/M_PI))) & 255]) * (1.0/64)) //johnfitz -- correct warp
-#define WARPCALC2(s,t) ((s + turbsin[(int)((t*0.125+cl.time)*(128.0/M_PI)) & 255]) * (1.0/64)) //johnfitz -- old warp
+#define WARPCALC(s,t) ((s + turbsin[(int)((t*2)+(cl.time*(128.0/M_PI))) & 255]) * (1.0/64)) // johnfitz -- correct warp
+#define WARPCALC2(s,t) ((s + turbsin[(int)((t*0.125+cl.time)*(128.0/M_PI)) & 255]) * (1.0/64)) // johnfitz -- old warp
 
-//==============================================================================
+// ==============================================================================
 //
 //  OLD-STYLE WATER
 //
-//==============================================================================
+// ==============================================================================
 
 extern	qmodel_t *loadmodel;
 
@@ -157,19 +157,19 @@ void SubdividePolygon (int numverts, float *verts)
 GL_SubdivideSurface
 ================
 */
-void GL_SubdivideSurface (msurface_t *fa)
+void GL_SubdivideSurface (msurface_t *surf)
 {
 	vec3_t	verts[64];
 	int		i;
 
-	warpface = fa;
+	warpface = surf;
 
-	//the first poly in the chain is the undivided poly for newwater rendering.
-	//grab the verts from that.
-	for (i = 0; i < fa->polys->numverts; i++)
-		VectorCopy (fa->polys->verts[i], verts[i]);
+	// the first poly in the chain is the undivided poly for newwater rendering.
+	// grab the verts from that.
+	for (i = 0; i < surf->polys->numverts; i++)
+		VectorCopy (surf->polys->verts[i], verts[i]);
 
-	SubdividePolygon (fa->polys->numverts, verts[0]);
+	SubdividePolygon (surf->polys->numverts, verts[0]);
 }
 
 /*
@@ -206,11 +206,11 @@ void DrawWaterPoly (glpoly_t *p)
 	}
 }
 
-//==============================================================================
+// ==============================================================================
 //
 //  RENDER-TO-FRAMEBUFFER WATER
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 =============
@@ -236,7 +236,7 @@ void R_UpdateWarpTextures (void)
 		if (!tx->update_warp)
 			continue;
 
-		//render warp
+		// render warp
 		GL_SetCanvas (CANVAS_WARPIMAGE);
 		GL_Bind (tx->gltexture);
 		for (x = 0.0; x < 128.0; x = x2)
@@ -253,7 +253,7 @@ void R_UpdateWarpTextures (void)
 			glEnd ();
 		}
 
-		//copy to texture
+		// copy to texture
 		GL_Bind (tx->warpimage);
 		glCopyTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, glx, gly + glheight - gl_warpimagesize, gl_warpimagesize, gl_warpimagesize);
 

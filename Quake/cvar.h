@@ -82,7 +82,7 @@ typedef struct cvar_s {
 	const char *string;
 	unsigned int	flags;
 	float		value;
-	const char *default_string; //johnfitz -- remember defaults for reset function
+	const char *default_string; // johnfitz -- remember defaults for reset function
 	cvarcallback_t	callback;
 	struct cvar_s *next;
 } cvar_t;

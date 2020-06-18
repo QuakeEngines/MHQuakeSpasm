@@ -38,7 +38,7 @@ WSADATA		winsockdata;
 #define __wsaerr_static			/* not static: used by net_wipx.c too */
 #include "wsaerror.h"
 
-//=============================================================================
+// =============================================================================
 
 #if !defined(_USE_WINSOCK2)
 static double	blocktime;
@@ -182,7 +182,7 @@ sys_socket_t WINS_Init (void)
 	return net_controlsocket;
 }
 
-//=============================================================================
+// =============================================================================
 
 void WINS_Shutdown (void)
 {
@@ -192,7 +192,7 @@ void WINS_Shutdown (void)
 		WSACleanup ();
 }
 
-//=============================================================================
+// =============================================================================
 
 void WINS_Listen (qboolean state)
 {
@@ -214,7 +214,7 @@ void WINS_Listen (qboolean state)
 	net_acceptsocket = INVALID_SOCKET;
 }
 
-//=============================================================================
+// =============================================================================
 
 sys_socket_t WINS_OpenSocket (int port)
 {
@@ -257,7 +257,7 @@ ErrorReturn:
 	return INVALID_SOCKET;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WINS_CloseSocket (sys_socket_t socketid)
 {
@@ -266,7 +266,7 @@ int WINS_CloseSocket (sys_socket_t socketid)
 	return closesocket (socketid);
 }
 
-//=============================================================================
+// =============================================================================
 
 /*
 ============
@@ -322,14 +322,14 @@ static int PartialIPAddress (const char *in, struct qsockaddr *hostaddr)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WINS_Connect (sys_socket_t socketid, struct qsockaddr *addr)
 {
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 sys_socket_t WINS_CheckNewConnections (void)
 {
@@ -346,7 +346,7 @@ sys_socket_t WINS_CheckNewConnections (void)
 	return INVALID_SOCKET;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WINS_Read (sys_socket_t socketid, byte *buf, int len, struct qsockaddr *addr)
 {
@@ -364,7 +364,7 @@ int WINS_Read (sys_socket_t socketid, byte *buf, int len, struct qsockaddr *addr
 	return ret;
 }
 
-//=============================================================================
+// =============================================================================
 
 static int WINS_MakeSocketBroadcastCapable (sys_socket_t socketid)
 {
@@ -383,7 +383,7 @@ static int WINS_MakeSocketBroadcastCapable (sys_socket_t socketid)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WINS_Broadcast (sys_socket_t socketid, byte *buf, int len)
 {
@@ -405,7 +405,7 @@ int WINS_Broadcast (sys_socket_t socketid, byte *buf, int len)
 	return WINS_Write (socketid, buf, len, (struct qsockaddr *) &broadcastaddr);
 }
 
-//=============================================================================
+// =============================================================================
 
 int WINS_Write (sys_socket_t socketid, byte *buf, int len, struct qsockaddr *addr)
 {
@@ -423,7 +423,7 @@ int WINS_Write (sys_socket_t socketid, byte *buf, int len, struct qsockaddr *add
 	return ret;
 }
 
-//=============================================================================
+// =============================================================================
 
 const char *WINS_AddrToString (struct qsockaddr *addr)
 {
@@ -437,7 +437,7 @@ const char *WINS_AddrToString (struct qsockaddr *addr)
 	return buffer;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WINS_StringToAddr (const char *string, struct qsockaddr *addr)
 {
@@ -452,7 +452,7 @@ int WINS_StringToAddr (const char *string, struct qsockaddr *addr)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WINS_GetSocketAddr (sys_socket_t socketid, struct qsockaddr *addr)
 {
@@ -469,7 +469,7 @@ int WINS_GetSocketAddr (sys_socket_t socketid, struct qsockaddr *addr)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WINS_GetNameFromAddr (struct qsockaddr *addr, char *name)
 {
@@ -487,7 +487,7 @@ int WINS_GetNameFromAddr (struct qsockaddr *addr, char *name)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WINS_GetAddrFromName (const char *name, struct qsockaddr *addr)
 {
@@ -508,7 +508,7 @@ int WINS_GetAddrFromName (const char *name, struct qsockaddr *addr)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WINS_AddrCompare (struct qsockaddr *addr1, struct qsockaddr *addr2)
 {
@@ -526,7 +526,7 @@ int WINS_AddrCompare (struct qsockaddr *addr1, struct qsockaddr *addr2)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WINS_GetSocketPort (struct qsockaddr *addr)
 {
@@ -540,5 +540,5 @@ int WINS_SetSocketPort (struct qsockaddr *addr, int port)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 

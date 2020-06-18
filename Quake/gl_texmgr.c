@@ -20,7 +20,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-//gl_texmgr.c -- fitzquake's texture manager. manages opengl texture images
+// gl_texmgr.c -- fitzquake's texture manager. manages opengl texture images
 
 #include "quakedef.h"
 
@@ -137,7 +137,7 @@ static void TexMgr_TextureMode_f (cvar_t *var)
 				glmode_idx = i;
 				for (glt = active_gltextures; glt; glt = glt->next)
 					TexMgr_SetFilterModes (glt);
-				//FIXME: warpimages need to be redrawn, too.
+				// FIXME: warpimages need to be redrawn, too.
 			}
 			return;
 		}
@@ -231,11 +231,11 @@ static void TexMgr_Imagedump_f (void)
 	byte *buffer;
 	char *c;
 
-	//create directory
+	// create directory
 	q_snprintf (dirname, sizeof (dirname), "%s/imagedump", com_gamedir);
 	Sys_mkdir (dirname);
 
-	//loop through textures
+	// loop through textures
 	for (glt = active_gltextures; glt; glt = glt->next)
 	{
 		q_strlcpy (tempname, glt->name, sizeof (tempname));
@@ -344,7 +344,7 @@ gltexture_t *TexMgr_NewTexture (void)
 
 static void GL_DeleteTexture (gltexture_t *texture);
 
-//ericw -- workaround for preventing TexMgr_FreeTexture during TexMgr_ReloadImages
+// ericw -- workaround for preventing TexMgr_FreeTexture during TexMgr_ReloadImages
 static qboolean in_reload_images;
 
 /*
@@ -472,7 +472,7 @@ void TexMgr_LoadPalette (void)
 	fread (pal, 1, 768, f);
 	fclose (f);
 
-	//standard palette, 255 is transparent
+	// standard palette, 255 is transparent
 	dst = (byte *) d_8to24table;
 	src = pal;
 	for (i = 0; i < 256; i++)
@@ -484,7 +484,7 @@ void TexMgr_LoadPalette (void)
 	}
 	((byte *) &d_8to24table[255])[3] = 0;
 
-	//fullbright palette, 0-223 are black (for additive blending)
+	// fullbright palette, 0-223 are black (for additive blending)
 	src = pal + 224 * 3;
 	dst = (byte *) &d_8to24table_fbright[224];
 	for (i = 224; i < 256; i++)
@@ -501,7 +501,7 @@ void TexMgr_LoadPalette (void)
 		dst[2] = dst[1] = dst[0] = 0;
 	}
 
-	//nobright palette, 224-255 are black (for additive blending)
+	// nobright palette, 224-255 are black (for additive blending)
 	dst = (byte *) d_8to24table_nobright;
 	src = pal;
 	for (i = 0; i < 256; i++)
@@ -518,15 +518,15 @@ void TexMgr_LoadPalette (void)
 		dst[2] = dst[1] = dst[0] = 0;
 	}
 
-	//fullbright palette, for fence textures
+	// fullbright palette, for fence textures
 	memcpy (d_8to24table_fbright_fence, d_8to24table_fbright, 256 * 4);
 	d_8to24table_fbright_fence[255] = 0; // Alpha of zero.
 
-	//nobright palette, for fence textures
+	// nobright palette, for fence textures
 	memcpy (d_8to24table_nobright_fence, d_8to24table_nobright, 256 * 4);
 	d_8to24table_nobright_fence[255] = 0; // Alpha of zero.
 
-	//conchars palette, 0 and 255 are transparent
+	// conchars palette, 0 and 255 are transparent
 	memcpy (d_8to24table_conchars, d_8to24table, 256 * 4);
 	((byte *) &d_8to24table_conchars[0])[3] = 0;
 
@@ -540,7 +540,7 @@ TexMgr_NewGame
 */
 void TexMgr_NewGame (void)
 {
-	TexMgr_FreeTextures (0, TEXPREF_PERSIST); //deletes all textures where TEXPREF_PERSIST is unset
+	TexMgr_FreeTextures (0, TEXPREF_PERSIST); // deletes all textures where TEXPREF_PERSIST is unset
 	TexMgr_LoadPalette ();
 }
 
@@ -602,8 +602,8 @@ must be called before any texture loading
 void TexMgr_Init (void)
 {
 	int i;
-	static byte notexture_data[16] = { 159, 91, 83, 255, 0, 0, 0, 255, 0, 0, 0, 255, 159, 91, 83, 255 }; //black and pink checker
-	static byte nulltexture_data[16] = { 127, 191, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 127, 191, 255, 255 }; //black and blue checker
+	static byte notexture_data[16] = { 159, 91, 83, 255, 0, 0, 0, 255, 0, 0, 0, 255, 159, 91, 83, 255 }; // black and pink checker
+	static byte nulltexture_data[16] = { 127, 191, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 127, 191, 255, 255 }; // black and blue checker
 	extern texture_t *r_notexture_mip, *r_notexture_mip2;
 
 	// init texture list
@@ -635,10 +635,10 @@ void TexMgr_Init (void)
 	notexture = TexMgr_LoadImage (NULL, "notexture", 2, 2, SRC_RGBA, notexture_data, "", (src_offset_t) notexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST | TEXPREF_NOPICMIP);
 	nulltexture = TexMgr_LoadImage (NULL, "nulltexture", 2, 2, SRC_RGBA, nulltexture_data, "", (src_offset_t) nulltexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST | TEXPREF_NOPICMIP);
 
-	//have to assign these here becuase Mod_Init is called before TexMgr_Init
+	// have to assign these here becuase Mod_Init is called before TexMgr_Init
 	r_notexture_mip->gltexture = r_notexture_mip2->gltexture = notexture;
 
-	//set safe size for warpimages
+	// set safe size for warpimages
 	gl_warpimagesize = 0;
 	TexMgr_RecalcWarpImageSize ();
 }
@@ -826,7 +826,7 @@ static void TexMgr_AlphaEdgeFix (byte *data, int width, int height)
 
 		for (j = 0; j < width; j++, dest += 4)
 		{
-			if (dest[3]) //not transparent
+			if (dest[3]) // not transparent
 				continue;
 
 			lastpix = 4 * ((j == 0) ? width - 1 : j - 1);
@@ -842,7 +842,7 @@ static void TexMgr_AlphaEdgeFix (byte *data, int width, int height)
 			b = thisrow + nextpix; if (data[b + 3]) { c[0] += data[b]; c[1] += data[b + 1]; c[2] += data[b + 2]; n++; }
 			b = nextrow + nextpix; if (data[b + 3]) { c[0] += data[b]; c[1] += data[b + 1]; c[2] += data[b + 2]; n++; }
 
-			//average all non-transparent neighbors
+			// average all non-transparent neighbors
 			if (n)
 			{
 				dest[0] = (byte) (c[0] / n);
@@ -870,7 +870,7 @@ static void TexMgr_PadEdgeFixW (byte *data, int width, int height)
 	padw = TexMgr_PadConditional (width);
 	padh = TexMgr_PadConditional (height);
 
-	//copy last full column to first empty column, leaving alpha byte at zero
+	// copy last full column to first empty column, leaving alpha byte at zero
 	src = data + (width - 1) * 4;
 	for (i = 0; i < padh; i++)
 	{
@@ -880,7 +880,7 @@ static void TexMgr_PadEdgeFixW (byte *data, int width, int height)
 		src += padw * 4;
 	}
 
-	//copy first full column to last empty column, leaving alpha byte at zero
+	// copy first full column to last empty column, leaving alpha byte at zero
 	src = data;
 	dst = data + (padw - 1) * 4;
 	for (i = 0; i < padh; i++)
@@ -908,7 +908,7 @@ static void TexMgr_PadEdgeFixH (byte *data, int width, int height)
 	padw = TexMgr_PadConditional (width);
 	padh = TexMgr_PadConditional (height);
 
-	//copy last full row to first empty row, leaving alpha byte at zero
+	// copy last full row to first empty row, leaving alpha byte at zero
 	dst = data + height * padw * 4;
 	src = dst - padw * 4;
 	for (i = 0; i < padw; i++)
@@ -920,7 +920,7 @@ static void TexMgr_PadEdgeFixH (byte *data, int width, int height)
 		dst += 4;
 	}
 
-	//copy first full row to last empty row, leaving alpha byte at zero
+	// copy first full row to last empty row, leaving alpha byte at zero
 	dst = data + (padh - 1) * padw * 4;
 	src = data;
 	for (i = 0; i < padw; i++)
@@ -1100,7 +1100,7 @@ static void TexMgr_LoadImage8 (gltexture_t *glt, byte *data)
 	if (glt->flags & TEXPREF_ALPHA && !(glt->flags & TEXPREF_CONCHARS))
 	{
 		for (i = 0; i < (int) (glt->width * glt->height); i++)
-			if (data[i] == 255) //transparent index
+			if (data[i] == 255) // transparent index
 				break;
 		if (i == (int) (glt->width * glt->height))
 			glt->flags -= TEXPREF_ALPHA;
@@ -1229,7 +1229,7 @@ gltexture_t *TexMgr_LoadImage (qmodel_t *owner, const char *name, int width, int
 	glt->source_height = height;
 	glt->source_crc = crc;
 
-	//upload it
+	// upload it
 	mark = Hunk_LowMark ();
 
 	switch (glt->source_format)
@@ -1275,7 +1275,7 @@ void TexMgr_ReloadImage (gltexture_t *glt, int shirt, int pants)
 
 	if (glt->source_file[0] && glt->source_offset)
 	{
-		//lump inside file
+		// lump inside file
 		long size;
 		FILE *f;
 		COM_FOpenFile (glt->source_file, &f, NULL);
@@ -1293,9 +1293,9 @@ void TexMgr_ReloadImage (gltexture_t *glt, int shirt, int pants)
 		fclose (f);
 	}
 	else if (glt->source_file[0] && !glt->source_offset)
-		data = Image_LoadImage (glt->source_file, (int *) &glt->source_width, (int *) &glt->source_height); //simple file
+		data = Image_LoadImage (glt->source_file, (int *) &glt->source_width, (int *) &glt->source_height); // simple file
 	else if (!glt->source_file[0] && glt->source_offset)
-		data = (byte *) glt->source_offset; //image in memory
+		data = (byte *) glt->source_offset; // image in memory
 
 	if (!data)
 	{
@@ -1324,7 +1324,7 @@ invalid:
 	}
 	if (glt->shirt > -1 && glt->pants > -1)
 	{
-		//create new translation table
+		// create new translation table
 		for (i = 0; i < 256; i++)
 			translation[i] = i;
 
@@ -1352,7 +1352,7 @@ invalid:
 				translation[BOTTOM_RANGE + i] = pants + 15 - i;
 		}
 
-		//translate texture
+		// translate texture
 		size = glt->width * glt->height;
 		dst = translated = (byte *) Hunk_Alloc (size);
 		src = data;

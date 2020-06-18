@@ -56,7 +56,7 @@ HULL BOXES
 
 
 static	hull_t		box_hull;
-static	mclipnode_t	box_clipnodes[6]; //johnfitz -- was dclipnode_t
+static	mclipnode_t	box_clipnodes[6]; // johnfitz -- was dclipnode_t
 static	mplane_t	box_planes[6];
 
 /*
@@ -519,7 +519,7 @@ SV_HullPointContents
 int SV_HullPointContents (hull_t *hull, int num, vec3_t p)
 {
 	float		d;
-	mclipnode_t *node; //johnfitz -- was dclipnode_t
+	mclipnode_t *node; // johnfitz -- was dclipnode_t
 	mplane_t *plane;
 
 	while (num >= 0)
@@ -565,7 +565,7 @@ int SV_TruePointContents (vec3_t p)
 	return SV_HullPointContents (&sv.worldmodel->hulls[0], 0, p);
 }
 
-//===========================================================================
+// ===========================================================================
 
 /*
 ============
@@ -603,7 +603,7 @@ SV_RecursiveHullCheck
 */
 qboolean SV_RecursiveHullCheck (hull_t *hull, int num, float p1f, float p2f, vec3_t p1, vec3_t p2, trace_t *trace)
 {
-	mclipnode_t *node; //johnfitz -- was dclipnode_t
+	mclipnode_t *node; // johnfitz -- was dclipnode_t
 	mplane_t *plane;
 	float		t1, t2;
 	float		frac;
@@ -697,9 +697,9 @@ qboolean SV_RecursiveHullCheck (hull_t *hull, int num, float p1f, float p2f, vec
 	if (trace->allsolid)
 		return false;		// never got out of the solid area
 
-//==================
+// ==================
 // the other side of the node is solid, this is the impact point
-//==================
+// ==================
 	if (!side)
 	{
 		VectorCopy (plane->normal, trace->plane.normal);
@@ -775,7 +775,7 @@ trace_t SV_ClipMoveToEntity (edict_t *ent, vec3_t start, vec3_t mins, vec3_t max
 	return trace;
 }
 
-//===========================================================================
+// ===========================================================================
 
 /*
 ====================

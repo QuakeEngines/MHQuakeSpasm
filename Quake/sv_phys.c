@@ -123,8 +123,8 @@ Returns false if the entity removed itself.
 qboolean SV_RunThink (edict_t *ent)
 {
 	float	thinktime;
-	float	oldframe; //johnfitz
-	int		i; //johnfitz
+	float	oldframe; // johnfitz
+	int		i; // johnfitz
 
 	thinktime = ent->v.nextthink;
 	if (thinktime <= 0 || thinktime > sv.time + host_frametime)
@@ -135,7 +135,7 @@ qboolean SV_RunThink (edict_t *ent)
 								// it is possible to start that way
 								// by a trigger with a local time.
 
-	oldframe = ent->v.frame; //johnfitz
+	oldframe = ent->v.frame; // johnfitz
 
 	ent->v.nextthink = 0;
 	pr_global_struct->time = thinktime;
@@ -143,20 +143,21 @@ qboolean SV_RunThink (edict_t *ent)
 	pr_global_struct->other = EDICT_TO_PROG (sv.edicts);
 	PR_ExecuteProgram (ent->v.think);
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
-	//capture interval to nextthink here and send it to client for better
-	//lerp timing, but only if interval is not 0.1 (which client assumes)
+	// johnfitz -- PROTOCOL_FITZQUAKE
+	// capture interval to nextthink here and send it to client for better
+	// lerp timing, but only if interval is not 0.1 (which client assumes)
 	ent->sendinterval = false;
 	if (!ent->free && ent->v.nextthink && (ent->v.movetype == MOVETYPE_STEP || ent->v.frame != oldframe))
 	{
 		i = Q_rint ((ent->v.nextthink - thinktime) * 255);
-		if (i >= 0 && i < 256 && i != 25 && i != 26) //25 and 26 are close enough to 0.1 to not send
+		if (i >= 0 && i < 256 && i != 25 && i != 26) // 25 and 26 are close enough to 0.1 to not send
 			ent->sendinterval = true;
 	}
-	//johnfitz
+	// johnfitz
 
 	return !ent->free;
 }
+
 
 /*
 ==================
@@ -450,9 +451,9 @@ void SV_PushMove (edict_t *pusher, float movetime)
 	vec3_t		mins, maxs, move;
 	vec3_t		entorig, pushorig;
 	int			num_moved;
-	edict_t **moved_edict; //johnfitz -- dynamically allocate
-	vec3_t *moved_from; //johnfitz -- dynamically allocate
-	int			mark; //johnfitz
+	edict_t **moved_edict; // johnfitz -- dynamically allocate
+	vec3_t *moved_from; // johnfitz -- dynamically allocate
+	int			mark; // johnfitz
 
 	if (!pusher->v.velocity[0] && !pusher->v.velocity[1] && !pusher->v.velocity[2])
 	{
@@ -475,11 +476,11 @@ void SV_PushMove (edict_t *pusher, float movetime)
 	pusher->v.ltime += movetime;
 	SV_LinkEdict (pusher, false);
 
-	//johnfitz -- dynamically allocate
+	// johnfitz -- dynamically allocate
 	mark = Hunk_LowMark ();
 	moved_edict = (edict_t **) Hunk_Alloc (sv.num_edicts * sizeof (edict_t *));
 	moved_from = (vec3_t *) Hunk_Alloc (sv.num_edicts * sizeof (vec3_t));
-	//johnfitz
+	// johnfitz
 
 // see if any solid entities are inside the final position
 	num_moved = 0;
@@ -559,12 +560,12 @@ void SV_PushMove (edict_t *pusher, float movetime)
 				VectorCopy (moved_from[i], moved_edict[i]->v.origin);
 				SV_LinkEdict (moved_edict[i], false);
 			}
-			Hunk_FreeToLowMark (mark); //johnfitz
+			Hunk_FreeToLowMark (mark); // johnfitz
 			return;
 		}
 	}
 
-	Hunk_FreeToLowMark (mark); //johnfitz
+	Hunk_FreeToLowMark (mark); // johnfitz
 
 }
 
@@ -781,7 +782,7 @@ int SV_TryUnstick (edict_t *ent, vec3_t oldvel)
 		if (fabs (oldorg[1] - ent->v.origin[1]) > 4
 			|| fabs (oldorg[0] - ent->v.origin[0]) > 4)
 		{
-			//Con_DPrintf ("unstuck!\n");
+			// Con_DPrintf ("unstuck!\n");
 			return clip;
 		}
 
@@ -969,7 +970,7 @@ void SV_Physics_Client (edict_t *ent, int num)
 	PR_ExecuteProgram (pr_global_struct->PlayerPostThink);
 }
 
-//============================================================================
+// ============================================================================
 
 /*
 =============
@@ -1162,7 +1163,7 @@ void SV_Physics_Step (edict_t *ent)
 }
 
 
-//============================================================================
+// ============================================================================
 
 /*
 ================
@@ -1182,7 +1183,7 @@ void SV_Physics (void)
 	pr_global_struct->time = sv.time;
 	PR_ExecuteProgram (pr_global_struct->StartFrame);
 
-	//SV_CheckAllEnts ();
+	// SV_CheckAllEnts ();
 
 	//
 	// treat each object in turn
@@ -1194,7 +1195,7 @@ void SV_Physics (void)
 	else
 		entity_cap = sv.num_edicts;
 
-	//for (i=0 ; i<sv.num_edicts ; i++, ent = NEXT_EDICT(ent))
+	// for (i=0 ; i<sv.num_edicts ; i++, ent = NEXT_EDICT(ent))
 	for (i = 0; i < entity_cap; i++, ent = NEXT_EDICT (ent))
 	{
 		if (ent->free)

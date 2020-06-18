@@ -69,7 +69,7 @@ const char *svc_strings[] =
 											"svc_cdtrack",			// [byte] track [byte] looptrack
 											"svc_sellscreen",
 											"svc_cutscene",
-											//johnfitz -- new server messages
+											// johnfitz -- new server messages
 											"",	// 35
 											"",	// 36
 											"svc_skybox", // 37					// [string] skyname
@@ -77,7 +77,7 @@ const char *svc_strings[] =
 											"", // 39
 											"svc_bf", // 40						// no data
 											"svc_fog", // 41					// [byte] density [byte] red [byte] green [byte] blue [float] time
-											"svc_spawnbaseline2", //42			// support for large modelindex, large framenum, alpha, using flags
+											"svc_spawnbaseline2", // 42			// support for large modelindex, large framenum, alpha, using flags
 											"svc_spawnstatic2", // 43			// support for large modelindex, large framenum, alpha, using flags
 											"svc_spawnstaticsound2", //	44		// [coord3] [short] samp [byte] vol [byte] aten
 											"", // 44
@@ -86,14 +86,14 @@ const char *svc_strings[] =
 											"", // 47
 											"", // 48
 											"", // 49
-										//johnfitz
+										// johnfitz
 };
 
-qboolean warn_about_nehahra_protocol; //johnfitz
+qboolean warn_about_nehahra_protocol; // johnfitz
 
-extern vec3_t	v_punchangles[2]; //johnfitz
+extern vec3_t	v_punchangles[2]; // johnfitz
 
-//=============================================================================
+// =============================================================================
 
 /*
 ===============
@@ -104,19 +104,19 @@ This error checks and tracks the total number of entities
 */
 entity_t *CL_EntityNum (int num)
 {
-	//johnfitz -- check minimum number too
+	// johnfitz -- check minimum number too
 	if (num < 0)
 		Host_Error ("CL_EntityNum: %i is an invalid number", num);
-	//john
+	// john
 
 	if (num >= cl.num_entities)
 	{
-		if (num >= cl_max_edicts) //johnfitz -- no more MAX_EDICTS
+		if (num >= cl_max_edicts) // johnfitz -- no more MAX_EDICTS
 			Host_Error ("CL_EntityNum: %i is an invalid number", num);
 		while (cl.num_entities <= num)
 		{
 			cl_entities[cl.num_entities].colormap = vid.colormap;
-			cl_entities[cl.num_entities].lerpflags |= LERP_RESETMOVE | LERP_RESETANIM; //johnfitz
+			cl_entities[cl.num_entities].lerpflags |= LERP_RESETMOVE | LERP_RESETANIM; // johnfitz
 			cl.num_entities++;
 		}
 	}
@@ -152,7 +152,7 @@ void CL_ParseStartSoundPacket (void)
 	else
 		attenuation = DEFAULT_SOUND_PACKET_ATTENUATION;
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
+	// johnfitz -- PROTOCOL_FITZQUAKE
 	if (field_mask & SND_LARGEENTITY)
 	{
 		ent = (unsigned short) MSG_ReadShort ();
@@ -169,14 +169,14 @@ void CL_ParseStartSoundPacket (void)
 		sound_num = (unsigned short) MSG_ReadShort ();
 	else
 		sound_num = MSG_ReadByte ();
-	//johnfitz
+	// johnfitz
 
-	//johnfitz -- check soundnum
+	// johnfitz -- check soundnum
 	if (sound_num >= MAX_SOUNDS)
 		Host_Error ("CL_ParseStartSoundPacket: %i > MAX_SOUNDS", sound_num);
-	//johnfitz
+	// johnfitz
 
-	if (ent > cl_max_edicts) //johnfitz -- no more MAX_EDICTS
+	if (ent > cl_max_edicts) // johnfitz -- no more MAX_EDICTS
 		Host_Error ("CL_ParseStartSoundPacket: ent = %i", ent);
 
 	for (i = 0; i < 3; i++)
@@ -275,14 +275,14 @@ void CL_ParseServerInfo (void)
 
 	// parse protocol version number
 	i = MSG_ReadLong ();
-	//johnfitz -- support multiple protocols
+	// johnfitz -- support multiple protocols
 	if (i != PROTOCOL_NETQUAKE && i != PROTOCOL_FITZQUAKE && i != PROTOCOL_RMQ)
 	{
-		Con_Printf ("\n"); //because there's no newline after serverinfo print
+		Con_Printf ("\n"); // because there's no newline after serverinfo print
 		Host_Error ("Server returned version %i, not %i or %i or %i", i, PROTOCOL_NETQUAKE, PROTOCOL_FITZQUAKE, PROTOCOL_RMQ);
 	}
 	cl.protocol = i;
-	//johnfitz
+	// johnfitz
 
 	if (cl.protocol == PROTOCOL_RMQ)
 	{
@@ -314,10 +314,10 @@ void CL_ParseServerInfo (void)
 	q_strlcpy (cl.levelname, str, sizeof (cl.levelname));
 
 	// seperate the printfs so the server message can have a color
-	Con_Printf ("\n%s\n", Con_Quakebar (40)); //johnfitz
+	Con_Printf ("\n%s\n", Con_Quakebar (40)); // johnfitz
 	Con_Printf ("%c%s\n", 2, str);
 
-	//johnfitz -- tell user which protocol this is
+	// johnfitz -- tell user which protocol this is
 	Con_Printf ("Using protocol %i\n", i);
 
 	// first we go through and touch all of the precache data that still
@@ -339,10 +339,10 @@ void CL_ParseServerInfo (void)
 		Mod_TouchModel (str);
 	}
 
-	//johnfitz -- check for excessive models
+	// johnfitz -- check for excessive models
 	if (nummodels >= 256)
 		Con_DWarning ("%i models exceeds standard limit of 256 (max = %d).\n", nummodels, MAX_MODELS);
-	//johnfitz
+	// johnfitz
 
 // precache sounds
 	memset (cl.sound_precache, 0, sizeof (cl.sound_precache));
@@ -359,10 +359,10 @@ void CL_ParseServerInfo (void)
 		S_TouchSound (str);
 	}
 
-	//johnfitz -- check for excessive sounds
+	// johnfitz -- check for excessive sounds
 	if (numsounds >= 256)
 		Con_DWarning ("%i sounds exceeds standard limit of 256 (max = %d).\n", numsounds, MAX_SOUNDS);
-	//johnfitz
+	// johnfitz
 
 //
 // now we try to load everything else until a cache allocation fails
@@ -396,18 +396,18 @@ void CL_ParseServerInfo (void)
 
 	V_NewMap ();
 
-	//johnfitz -- clear out string; we don't consider identical
-	//messages to be duplicates if the map has changed in between
+	// johnfitz -- clear out string; we don't consider identical
+	// messages to be duplicates if the map has changed in between
 	con_lastcenterstring[0] = 0;
-	//johnfitz
+	// johnfitz
 
 	Hunk_Check ();		// make sure nothing is hurt
 
 	noclip_anglehack = false;		// noclip is turned off at start
 
-	warn_about_nehahra_protocol = true; //johnfitz -- warn about nehahra protocol hack once per server connection
+	warn_about_nehahra_protocol = true; // johnfitz -- warn about nehahra protocol hack once per server connection
 
-//johnfitz -- reset developer stats
+// johnfitz -- reset developer stats
 	memset (&dev_stats, 0, sizeof (dev_stats));
 	memset (&dev_peakstats, 0, sizeof (dev_peakstats));
 	memset (&dev_overflows, 0, sizeof (dev_overflows));
@@ -444,7 +444,7 @@ void CL_ParseUpdate (int bits)
 		bits |= (i << 8);
 	}
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
+	// johnfitz -- PROTOCOL_FITZQUAKE
 	if (cl.protocol == PROTOCOL_FITZQUAKE || cl.protocol == PROTOCOL_RMQ)
 	{
 		if (bits & U_EXTEND1)
@@ -452,7 +452,7 @@ void CL_ParseUpdate (int bits)
 		if (bits & U_EXTEND2)
 			bits |= MSG_ReadByte () << 24;
 	}
-	//johnfitz
+	// johnfitz
 
 	if (bits & U_LONGENTITY)
 		num = MSG_ReadShort ();
@@ -466,10 +466,10 @@ void CL_ParseUpdate (int bits)
 	else
 		forcelink = false;
 
-	//johnfitz -- lerping
-	if (ent->msgtime + 0.2 < cl.mtime[0]) //more than 0.2 seconds since the last message (most entities think every 0.1 sec)
-		ent->lerpflags |= LERP_RESETANIM; //if we missed a think, we'd be lerping from the wrong frame
-	//johnfitz
+	// johnfitz -- lerping
+	if (ent->msgtime + 0.2 < cl.mtime[0]) // more than 0.2 seconds since the last message (most entities think every 0.1 sec)
+		ent->lerpflags |= LERP_RESETANIM; // if we missed a think, we'd be lerping from the wrong frame
+	// johnfitz
 
 	ent->msgtime = cl.mtime[0];
 
@@ -507,7 +507,7 @@ void CL_ParseUpdate (int bits)
 	{
 		ent->skinnum = skin;
 		if (num > 0 && num <= cl.maxclients)
-			R_TranslateNewPlayerSkin (num - 1); //johnfitz -- was R_TranslatePlayerSkin
+			R_TranslateNewPlayerSkin (num - 1); // johnfitz -- was R_TranslatePlayerSkin
 	}
 	if (bits & U_EFFECTS)
 		ent->effects = MSG_ReadByte ();
@@ -545,7 +545,7 @@ void CL_ParseUpdate (int bits)
 	else
 		ent->msg_angles[0][2] = ent->baseline.angles[2];
 
-	//johnfitz -- lerping for movetype_step entities
+	// johnfitz -- lerping for movetype_step entities
 	if (bits & U_STEP)
 	{
 		ent->lerpflags |= LERP_MOVESTEP;
@@ -553,9 +553,9 @@ void CL_ParseUpdate (int bits)
 	}
 	else
 		ent->lerpflags &= ~LERP_MOVESTEP;
-	//johnfitz
+	// johnfitz
 
-	//johnfitz -- PROTOCOL_FITZQUAKE and PROTOCOL_NEHAHRA
+	// johnfitz -- PROTOCOL_FITZQUAKE and PROTOCOL_NEHAHRA
 	if (cl.protocol == PROTOCOL_FITZQUAKE || cl.protocol == PROTOCOL_RMQ)
 	{
 		if (bits & U_ALPHA)
@@ -578,7 +578,7 @@ void CL_ParseUpdate (int bits)
 	}
 	else if (cl.protocol == PROTOCOL_NETQUAKE)
 	{
-		//HACK: if this bit is set, assume this is PROTOCOL_NEHAHRA
+		// HACK: if this bit is set, assume this is PROTOCOL_NEHAHRA
 		if (bits & U_TRANS)
 		{
 			float a, b;
@@ -590,17 +590,17 @@ void CL_ParseUpdate (int bits)
 			}
 
 			a = MSG_ReadFloat ();
-			b = MSG_ReadFloat (); //alpha
+			b = MSG_ReadFloat (); // alpha
 			if (a == 2)
-				MSG_ReadFloat (); //fullbright (not using this yet)
+				MSG_ReadFloat (); // fullbright (not using this yet)
 			ent->alpha = ENTALPHA_ENCODE (b);
 		}
 		else
 			ent->alpha = ent->baseline.alpha;
 	}
-	//johnfitz
+	// johnfitz
 
-	//johnfitz -- moved here from above
+	// johnfitz -- moved here from above
 	model = cl.model_precache[modnum];
 	if (model != ent->model)
 	{
@@ -617,11 +617,11 @@ void CL_ParseUpdate (int bits)
 		else
 			forcelink = true;	// hack to make null model players work
 		if (num > 0 && num <= cl.maxclients)
-			R_TranslateNewPlayerSkin (num - 1); //johnfitz -- was R_TranslatePlayerSkin
+			R_TranslateNewPlayerSkin (num - 1); // johnfitz -- was R_TranslatePlayerSkin
 
-		ent->lerpflags |= LERP_RESETANIM; //johnfitz -- don't lerp animation across model changes
+		ent->lerpflags |= LERP_RESETANIM; // johnfitz -- don't lerp animation across model changes
 	}
-	//johnfitz
+	// johnfitz
 
 	if (forcelink)
 	{	// didn't have an update last message
@@ -638,16 +638,16 @@ void CL_ParseUpdate (int bits)
 CL_ParseBaseline
 ==================
 */
-void CL_ParseBaseline (entity_t *ent, int version) //johnfitz -- added argument
+void CL_ParseBaseline (entity_t *ent, int version) // johnfitz -- added argument
 {
 	int	i;
-	int bits; //johnfitz
+	int bits; // johnfitz
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
+	// johnfitz -- PROTOCOL_FITZQUAKE
 	bits = (version == 2) ? MSG_ReadByte () : 0;
 	ent->baseline.modelindex = (bits & B_LARGEMODEL) ? MSG_ReadShort () : MSG_ReadByte ();
 	ent->baseline.frame = (bits & B_LARGEFRAME) ? MSG_ReadShort () : MSG_ReadByte ();
-	//johnfitz
+	// johnfitz
 
 	ent->baseline.colormap = MSG_ReadByte ();
 	ent->baseline.skin = MSG_ReadByte ();
@@ -657,7 +657,7 @@ void CL_ParseBaseline (entity_t *ent, int version) //johnfitz -- added argument
 		ent->baseline.angles[i] = MSG_ReadAngle (cl.protocolflags);
 	}
 
-	ent->baseline.alpha = (bits & B_ALPHA) ? MSG_ReadByte () : ENTALPHA_DEFAULT; //johnfitz -- PROTOCOL_FITZQUAKE
+	ent->baseline.alpha = (bits & B_ALPHA) ? MSG_ReadByte () : ENTALPHA_DEFAULT; // johnfitz -- PROTOCOL_FITZQUAKE
 }
 
 
@@ -671,16 +671,16 @@ Server information pertaining to this client only
 void CL_ParseClientdata (void)
 {
 	int		i, j;
-	int		bits; //johnfitz
+	int		bits; // johnfitz
 
-	bits = (unsigned short) MSG_ReadShort (); //johnfitz -- read bits here isntead of in CL_ParseServerMessage()
+	bits = (unsigned short) MSG_ReadShort (); // johnfitz -- read bits here isntead of in CL_ParseServerMessage()
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
+	// johnfitz -- PROTOCOL_FITZQUAKE
 	if (bits & SU_EXTEND1)
 		bits |= (MSG_ReadByte () << 16);
 	if (bits & SU_EXTEND2)
 		bits |= (MSG_ReadByte () << 24);
-	//johnfitz
+	// johnfitz
 
 	if (bits & SU_VIEWHEIGHT)
 		cl.viewheight = MSG_ReadChar ();
@@ -706,13 +706,13 @@ void CL_ParseClientdata (void)
 			cl.mvelocity[0][i] = 0;
 	}
 
-	//johnfitz -- update v_punchangles
+	// johnfitz -- update v_punchangles
 	if (v_punchangles[0][0] != cl.punchangle[0] || v_punchangles[0][1] != cl.punchangle[1] || v_punchangles[0][2] != cl.punchangle[2])
 	{
 		VectorCopy (v_punchangles[0], v_punchangles[1]);
 		VectorCopy (cl.punchangle, v_punchangles[0]);
 	}
-	//johnfitz
+	// johnfitz
 
 // [always sent]	if (bits & SU_ITEMS)
 	i = MSG_ReadLong ();
@@ -797,7 +797,7 @@ void CL_ParseClientdata (void)
 		}
 	}
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
+	// johnfitz -- PROTOCOL_FITZQUAKE
 	if (bits & SU_WEAPON2)
 		cl.stats[STAT_WEAPON] |= (MSG_ReadByte () << 8);
 	if (bits & SU_ARMOR2)
@@ -818,15 +818,15 @@ void CL_ParseClientdata (void)
 		cl.viewent.alpha = MSG_ReadByte ();
 	else
 		cl.viewent.alpha = ENTALPHA_DEFAULT;
-	//johnfitz
+	// johnfitz
 
-	//johnfitz -- lerping
-	//ericw -- this was done before the upper 8 bits of cl.stats[STAT_WEAPON] were filled in, breaking on large maps like zendar.bsp
+	// johnfitz -- lerping
+	// ericw -- this was done before the upper 8 bits of cl.stats[STAT_WEAPON] were filled in, breaking on large maps like zendar.bsp
 	if (cl.viewent.model != cl.model_precache[cl.stats[STAT_WEAPON]])
 	{
-		cl.viewent.lerpflags |= LERP_RESETANIM; //don't lerp animation across model changes
+		cl.viewent.lerpflags |= LERP_RESETANIM; // don't lerp animation across model changes
 	}
-	//johnfitz
+	// johnfitz
 }
 
 /*
@@ -874,7 +874,7 @@ void CL_NewTranslation (int slot)
 CL_ParseStatic
 =====================
 */
-void CL_ParseStatic (int version) //johnfitz -- added a parameter
+void CL_ParseStatic (int version) // johnfitz -- added a parameter
 {
 	entity_t *ent;
 	int		i;
@@ -885,18 +885,18 @@ void CL_ParseStatic (int version) //johnfitz -- added a parameter
 
 	ent = &cl_static_entities[i];
 	cl.num_statics++;
-	CL_ParseBaseline (ent, version); //johnfitz -- added second parameter
+	CL_ParseBaseline (ent, version); // johnfitz -- added second parameter
 
 // copy it to the current state
 
 	ent->model = cl.model_precache[ent->baseline.modelindex];
-	ent->lerpflags |= LERP_RESETANIM; //johnfitz -- lerping
+	ent->lerpflags |= LERP_RESETANIM; // johnfitz -- lerping
 	ent->frame = ent->baseline.frame;
 
 	ent->colormap = vid.colormap;
 	ent->skinnum = ent->baseline.skin;
 	ent->effects = ent->baseline.effects;
-	ent->alpha = ent->baseline.alpha; //johnfitz -- alpha
+	ent->alpha = ent->baseline.alpha; // johnfitz -- alpha
 
 	VectorCopy (ent->baseline.origin, ent->origin);
 	VectorCopy (ent->baseline.angles, ent->angles);
@@ -908,7 +908,7 @@ void CL_ParseStatic (int version) //johnfitz -- added a parameter
 CL_ParseStaticSound
 ===================
 */
-void CL_ParseStaticSound (int version) //johnfitz -- added argument
+void CL_ParseStaticSound (int version) // johnfitz -- added argument
 {
 	vec3_t		org;
 	int			sound_num, vol, atten;
@@ -917,12 +917,12 @@ void CL_ParseStaticSound (int version) //johnfitz -- added argument
 	for (i = 0; i < 3; i++)
 		org[i] = MSG_ReadCoord (cl.protocolflags);
 
-	//johnfitz -- PROTOCOL_FITZQUAKE
+	// johnfitz -- PROTOCOL_FITZQUAKE
 	if (version == 2)
 		sound_num = MSG_ReadShort ();
 	else
 		sound_num = MSG_ReadByte ();
-	//johnfitz
+	// johnfitz
 
 	vol = MSG_ReadByte ();
 	atten = MSG_ReadByte ();
@@ -942,8 +942,8 @@ void CL_ParseServerMessage (void)
 {
 	int			cmd;
 	int			i;
-	const char *str; //johnfitz
-	int			total, j, lastcmd; //johnfitz
+	const char *str; // johnfitz
+	int			total, j, lastcmd; // johnfitz
 
 //
 // if recording demos, copy the message out
@@ -974,7 +974,7 @@ void CL_ParseServerMessage (void)
 		}
 
 		// if the high bit of the command byte is set, it is a fast update
-		if (cmd & U_SIGNAL) //johnfitz -- was 128, changed for clarity
+		if (cmd & U_SIGNAL) // johnfitz -- was 128, changed for clarity
 		{
 			SHOWNET ("fast update");
 			CL_ParseUpdate (cmd & 127);
@@ -987,7 +987,7 @@ void CL_ParseServerMessage (void)
 		switch (cmd)
 		{
 		default:
-			Host_Error ("Illegible server message, previous was %s", svc_strings[lastcmd]); //johnfitz -- added svc_strings[lastcmd]
+			Host_Error ("Illegible server message, previous was %s", svc_strings[lastcmd]); // johnfitz -- added svc_strings[lastcmd]
 			break;
 
 		case svc_nop:
@@ -1000,16 +1000,16 @@ void CL_ParseServerMessage (void)
 			break;
 
 		case svc_clientdata:
-			CL_ParseClientdata (); //johnfitz -- removed bits parameter, we will read this inside CL_ParseClientdata()
+			CL_ParseClientdata (); // johnfitz -- removed bits parameter, we will read this inside CL_ParseClientdata()
 			break;
 
 		case svc_version:
 			i = MSG_ReadLong ();
-			//johnfitz -- support multiple protocols
+			// johnfitz -- support multiple protocols
 			if (i != PROTOCOL_NETQUAKE && i != PROTOCOL_FITZQUAKE && i != PROTOCOL_RMQ)
 				Host_Error ("Server returned version %i, not %i or %i or %i", i, PROTOCOL_NETQUAKE, PROTOCOL_FITZQUAKE, PROTOCOL_RMQ);
 			cl.protocol = i;
-			//johnfitz
+			// johnfitz
 			break;
 
 		case svc_disconnect:
@@ -1020,11 +1020,11 @@ void CL_ParseServerMessage (void)
 			break;
 
 		case svc_centerprint:
-			//johnfitz -- log centerprints to console
+			// johnfitz -- log centerprints to console
 			str = MSG_ReadString ();
 			SCR_CenterPrint (str);
 			Con_LogCenterPrint (str);
-			//johnfitz
+			// johnfitz
 			break;
 
 		case svc_stufftext:
@@ -1054,7 +1054,7 @@ void CL_ParseServerMessage (void)
 				Sys_Error ("svc_lightstyle > MAX_LIGHTSTYLES");
 			q_strlcpy (cl_lightstyle[i].map, MSG_ReadString (), MAX_STYLESTRING);
 			cl_lightstyle[i].length = Q_strlen (cl_lightstyle[i].map);
-			//johnfitz -- save extra info
+			// johnfitz -- save extra info
 			if (cl_lightstyle[i].length)
 			{
 				total = 0;
@@ -1068,7 +1068,7 @@ void CL_ParseServerMessage (void)
 			}
 			else
 				cl_lightstyle[i].average = cl_lightstyle[i].peak = 'm';
-			//johnfitz
+			// johnfitz
 			break;
 
 		case svc_sound:
@@ -1116,7 +1116,7 @@ void CL_ParseServerMessage (void)
 			break;
 
 		case svc_spawnstatic:
-			CL_ParseStatic (1); //johnfitz -- added parameter
+			CL_ParseStatic (1); // johnfitz -- added parameter
 			break;
 
 		case svc_temp_entity:
@@ -1142,14 +1142,14 @@ void CL_ParseServerMessage (void)
 			if (i <= cls.signon)
 				Host_Error ("Received signon %i when at %i", i, cls.signon);
 			cls.signon = i;
-			//johnfitz -- if signonnum==2, signon packet has been fully parsed, so check for excessive static ents and efrags
+			// johnfitz -- if signonnum==2, signon packet has been fully parsed, so check for excessive static ents and efrags
 			if (i == 2)
 			{
 				if (cl.num_statics > 128)
 					Con_DWarning ("%i static entities exceeds standard limit of 128 (max = %d).\n", cl.num_statics, MAX_STATIC_ENTITIES);
 				R_CheckEfrags ();
 			}
-			//johnfitz
+			// johnfitz
 			CL_SignonReply ();
 			break;
 
@@ -1169,7 +1169,7 @@ void CL_ParseServerMessage (void)
 			break;
 
 		case svc_spawnstaticsound:
-			CL_ParseStaticSound (1); //johnfitz -- added parameter
+			CL_ParseStaticSound (1); // johnfitz -- added parameter
 			break;
 
 		case svc_cdtrack:
@@ -1189,28 +1189,28 @@ void CL_ParseServerMessage (void)
 		case svc_finale:
 			cl.intermission = 2;
 			cl.completed_time = cl.time;
-			//johnfitz -- log centerprints to console
+			// johnfitz -- log centerprints to console
 			str = MSG_ReadString ();
 			SCR_CenterPrint (str);
 			Con_LogCenterPrint (str);
-			//johnfitz
+			// johnfitz
 			break;
 
 		case svc_cutscene:
 			cl.intermission = 3;
 			cl.completed_time = cl.time;
-			//johnfitz -- log centerprints to console
+			// johnfitz -- log centerprints to console
 			str = MSG_ReadString ();
 			SCR_CenterPrint (str);
 			Con_LogCenterPrint (str);
-			//johnfitz
+			// johnfitz
 			break;
 
 		case svc_sellscreen:
 			Cmd_ExecuteString ("help", src_command);
 			break;
 
-			//johnfitz -- new svc types
+			// johnfitz -- new svc types
 		case svc_skybox:
 			Sky_LoadSkyBox (MSG_ReadString ());
 			break;
@@ -1223,23 +1223,23 @@ void CL_ParseServerMessage (void)
 			Fog_ParseServerMessage ();
 			break;
 
-		case svc_spawnbaseline2: //PROTOCOL_FITZQUAKE
+		case svc_spawnbaseline2: // PROTOCOL_FITZQUAKE
 			i = MSG_ReadShort ();
 			// must use CL_EntityNum() to force cl.num_entities up
 			CL_ParseBaseline (CL_EntityNum (i), 2);
 			break;
 
-		case svc_spawnstatic2: //PROTOCOL_FITZQUAKE
+		case svc_spawnstatic2: // PROTOCOL_FITZQUAKE
 			CL_ParseStatic (2);
 			break;
 
-		case svc_spawnstaticsound2: //PROTOCOL_FITZQUAKE
+		case svc_spawnstaticsound2: // PROTOCOL_FITZQUAKE
 			CL_ParseStaticSound (2);
 			break;
-			//johnfitz
+			// johnfitz
 		}
 
-		lastcmd = cmd; //johnfitz
+		lastcmd = cmd; // johnfitz
 	}
 }
 

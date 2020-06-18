@@ -26,8 +26,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern cvar_t cl_maxpitch; //johnfitz -- variable pitch clamping
-extern cvar_t cl_minpitch; //johnfitz -- variable pitch clamping
+extern cvar_t cl_maxpitch; // johnfitz -- variable pitch clamping
+extern cvar_t cl_minpitch; // johnfitz -- variable pitch clamping
 
 /*
 ===============================================================================
@@ -219,7 +219,7 @@ float CL_KeyState (kbutton_t *key)
 }
 
 
-//==========================================================================
+// ==========================================================================
 
 cvar_t	cl_upspeed = { "cl_upspeed", "200", CVAR_NONE };
 cvar_t	cl_forwardspeed = { "cl_forwardspeed", "200", CVAR_ARCHIVE };
@@ -274,12 +274,12 @@ void CL_AdjustAngles (void)
 	if (up || down)
 		V_StopPitchDrift ();
 
-	//johnfitz -- variable pitch clamping
+	// johnfitz -- variable pitch clamping
 	if (cl.viewangles[PITCH] > cl_maxpitch.value)
 		cl.viewangles[PITCH] = cl_maxpitch.value;
 	if (cl.viewangles[PITCH] < cl_minpitch.value)
 		cl.viewangles[PITCH] = cl_minpitch.value;
-	//johnfitz
+	// johnfitz
 
 	if (cl.viewangles[ROLL] > 50)
 		cl.viewangles[ROLL] = 50;
@@ -359,12 +359,12 @@ void CL_SendMove (const usercmd_t *cmd)
 	MSG_WriteFloat (&buf, cl.mtime[0]);	// so server can get ping times
 
 	for (i = 0; i < 3; i++)
-		//johnfitz -- 16-bit angles for PROTOCOL_FITZQUAKE
+		// johnfitz -- 16-bit angles for PROTOCOL_FITZQUAKE
 		if (cl.protocol == PROTOCOL_NETQUAKE)
 			MSG_WriteAngle (&buf, cl.viewangles[i], cl.protocolflags);
 		else
 			MSG_WriteAngle16 (&buf, cl.viewangles[i], cl.protocolflags);
-	//johnfitz
+	// johnfitz
 
 	MSG_WriteShort (&buf, cmd->forwardmove);
 	MSG_WriteShort (&buf, cmd->sidemove);

@@ -44,7 +44,7 @@ extern const char *__WSAE_StrError (int);
 static sys_socket_t ipxsocket[IPXSOCKETS];
 static int sequence[IPXSOCKETS];
 
-//=============================================================================
+// =============================================================================
 
 sys_socket_t WIPX_Init (void)
 {
@@ -108,7 +108,7 @@ sys_socket_t WIPX_Init (void)
 	return net_controlsocket;
 }
 
-//=============================================================================
+// =============================================================================
 
 void WIPX_Shutdown (void)
 {
@@ -118,7 +118,7 @@ void WIPX_Shutdown (void)
 		WSACleanup ();
 }
 
-//=============================================================================
+// =============================================================================
 
 void WIPX_Listen (qboolean state)
 {
@@ -139,7 +139,7 @@ void WIPX_Listen (qboolean state)
 	net_acceptsocket = INVALID_SOCKET;
 }
 
-//=============================================================================
+// =============================================================================
 
 sys_socket_t WIPX_OpenSocket (int port)
 {
@@ -199,7 +199,7 @@ ErrorReturn:
 	return INVALID_SOCKET;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WIPX_CloseSocket (sys_socket_t handle)
 {
@@ -211,14 +211,14 @@ int WIPX_CloseSocket (sys_socket_t handle)
 	return ret;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WIPX_Connect (sys_socket_t handle, struct qsockaddr *addr)
 {
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 sys_socket_t WIPX_CheckNewConnections (void)
 {
@@ -237,7 +237,7 @@ sys_socket_t WIPX_CheckNewConnections (void)
 	return INVALID_SOCKET;
 }
 
-//=============================================================================
+// =============================================================================
 
 static byte netpacketBuffer[NET_DATAGRAMSIZE + 4];
 
@@ -266,14 +266,14 @@ int WIPX_Read (sys_socket_t handle, byte *buf, int len, struct qsockaddr *addr)
 	return ret;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WIPX_Broadcast (sys_socket_t handle, byte *buf, int len)
 {
 	return WIPX_Write (handle, buf, len, (struct qsockaddr *) &broadcastaddr);
 }
 
-//=============================================================================
+// =============================================================================
 
 int WIPX_Write (sys_socket_t handle, byte *buf, int len, struct qsockaddr *addr)
 {
@@ -298,7 +298,7 @@ int WIPX_Write (sys_socket_t handle, byte *buf, int len, struct qsockaddr *addr)
 	return ret;
 }
 
-//=============================================================================
+// =============================================================================
 
 const char *WIPX_AddrToString (struct qsockaddr *addr)
 {
@@ -320,7 +320,7 @@ const char *WIPX_AddrToString (struct qsockaddr *addr)
 	return buf;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WIPX_StringToAddr (const char *string, struct qsockaddr *addr)
 {
@@ -357,7 +357,7 @@ int WIPX_StringToAddr (const char *string, struct qsockaddr *addr)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WIPX_GetSocketAddr (sys_socket_t handle, struct qsockaddr *addr)
 {
@@ -375,7 +375,7 @@ int WIPX_GetSocketAddr (sys_socket_t handle, struct qsockaddr *addr)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WIPX_GetNameFromAddr (struct qsockaddr *addr, char *name)
 {
@@ -383,7 +383,7 @@ int WIPX_GetNameFromAddr (struct qsockaddr *addr, char *name)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WIPX_GetAddrFromName (const char *name, struct qsockaddr *addr)
 {
@@ -408,7 +408,7 @@ int WIPX_GetAddrFromName (const char *name, struct qsockaddr *addr)
 	return -1;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WIPX_AddrCompare (struct qsockaddr *addr1, struct qsockaddr *addr2)
 {
@@ -430,7 +430,7 @@ int WIPX_AddrCompare (struct qsockaddr *addr1, struct qsockaddr *addr2)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 
 int WIPX_GetSocketPort (struct qsockaddr *addr)
 {
@@ -444,5 +444,5 @@ int WIPX_SetSocketPort (struct qsockaddr *addr, int port)
 	return 0;
 }
 
-//=============================================================================
+// =============================================================================
 

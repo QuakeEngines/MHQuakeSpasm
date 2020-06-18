@@ -55,7 +55,7 @@ typedef struct edict_s {
 
 #define	EDICT_FROM_AREA(l)	STRUCT_FROM_LINK(l,edict_t,area)
 
-//============================================================================
+// ============================================================================
 
 extern	dprograms_t *progs;
 extern	dfunction_t *pr_functions;

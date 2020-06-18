@@ -33,7 +33,7 @@ int			r_framecount;		// used for dlight push checking
 
 mplane_t	frustum[4];
 
-//johnfitz -- rendering statistics
+// johnfitz -- rendering statistics
 int rs_brushpolys, rs_aliaspolys, rs_skypolys, rs_particles, rs_fogpolys;
 int rs_dynamiclightmaps, rs_brushpasses, rs_aliaspasses, rs_skypasses;
 float rs_megatexels;
@@ -46,7 +46,7 @@ vec3_t	vpn;
 vec3_t	vright;
 vec3_t	r_origin;
 
-float r_fovx, r_fovy; //johnfitz -- rendering fov may be different becuase of r_waterwarp and r_stereo
+float r_fovx, r_fovy; // johnfitz -- rendering fov may be different becuase of r_waterwarp and r_stereo
 
 //
 // screen size info
@@ -80,7 +80,7 @@ cvar_t	gl_flashblend = { "gl_flashblend", "0", CVAR_ARCHIVE };
 cvar_t	gl_playermip = { "gl_playermip", "0", CVAR_NONE };
 cvar_t	gl_nocolors = { "gl_nocolors", "0", CVAR_NONE };
 
-//johnfitz -- new cvars
+// johnfitz -- new cvars
 cvar_t	r_stereo = { "r_stereo", "0", CVAR_NONE };
 cvar_t	r_stereodepth = { "r_stereodepth", "128", CVAR_NONE };
 cvar_t	r_clearcolor = { "r_clearcolor", "2", CVAR_ARCHIVE };
@@ -100,7 +100,7 @@ cvar_t	r_nolerp_list = { "r_nolerp_list", "progs/flame.mdl,progs/flame2.mdl,prog
 cvar_t	r_noshadow_list = { "r_noshadow_list", "progs/flame2.mdl,progs/flame.mdl,progs/bolt1.mdl,progs/bolt2.mdl,progs/bolt3.mdl,progs/laser.mdl", CVAR_NONE };
 
 extern cvar_t	r_vfog;
-//johnfitz
+// johnfitz
 
 cvar_t	gl_zfix = { "gl_zfix", "0", CVAR_NONE }; // QuakeSpasm z-fighting fix
 
@@ -110,15 +110,15 @@ cvar_t	r_slimealpha = { "r_slimealpha", "0", CVAR_NONE };
 
 float	map_wateralpha, map_lavaalpha, map_telealpha, map_slimealpha;
 
-qboolean r_drawflat_cheatsafe, r_fullbright_cheatsafe, r_lightmap_cheatsafe, r_drawworld_cheatsafe; //johnfitz
+qboolean r_drawflat_cheatsafe, r_fullbright_cheatsafe, r_lightmap_cheatsafe, r_drawworld_cheatsafe; // johnfitz
 
 cvar_t	r_scale = { "r_scale", "1", CVAR_ARCHIVE };
 
-//==============================================================================
+// ==============================================================================
 //
 // GLSL GAMMA CORRECTION
 //
-//==============================================================================
+// ==============================================================================
 
 static GLuint r_gamma_texture;
 static GLuint r_gamma_program;
@@ -323,17 +323,17 @@ qboolean R_CullModelForEntity (entity_t *e)
 {
 	vec3_t mins, maxs;
 
-	if (e->angles[0] || e->angles[2]) //pitch or roll
+	if (e->angles[0] || e->angles[2]) // pitch or roll
 	{
 		VectorAdd (e->origin, e->model->rmins, mins);
 		VectorAdd (e->origin, e->model->rmaxs, maxs);
 	}
-	else if (e->angles[1]) //yaw
+	else if (e->angles[1]) // yaw
 	{
 		VectorAdd (e->origin, e->model->ymins, mins);
 		VectorAdd (e->origin, e->model->ymaxs, maxs);
 	}
-	else //no rotation
+	else // no rotation
 	{
 		VectorAdd (e->origin, e->model->mins, mins);
 		VectorAdd (e->origin, e->model->maxs, maxs);
@@ -383,11 +383,11 @@ void GL_PolygonOffset (int offset)
 	}
 }
 
-//==============================================================================
+// ==============================================================================
 //
 // SETUP FRAME
 //
-//==============================================================================
+// ==============================================================================
 
 int SignbitsForPlane (mplane_t *out)
 {
@@ -437,17 +437,17 @@ void R_SetFrustum (float fovx, float fovy)
 	int		i;
 
 	if (r_stereo.value)
-		fovx += 10; //silly hack so that polygons don't drop out becuase of stereo skew
+		fovx += 10; // silly hack so that polygons don't drop out becuase of stereo skew
 
-	TurnVector (frustum[0].normal, vpn, vright, fovx / 2 - 90); //left plane
-	TurnVector (frustum[1].normal, vpn, vright, 90 - fovx / 2); //right plane
-	TurnVector (frustum[2].normal, vpn, vup, 90 - fovy / 2); //bottom plane
-	TurnVector (frustum[3].normal, vpn, vup, fovy / 2 - 90); //top plane
+	TurnVector (frustum[0].normal, vpn, vright, fovx / 2 - 90); // left plane
+	TurnVector (frustum[1].normal, vpn, vright, 90 - fovx / 2); // right plane
+	TurnVector (frustum[2].normal, vpn, vup, 90 - fovy / 2); // bottom plane
+	TurnVector (frustum[3].normal, vpn, vup, fovy / 2 - 90); // top plane
 
 	for (i = 0; i < 4; i++)
 	{
 		frustum[i].type = PLANE_ANYZ;
-		frustum[i].dist = DotProduct (r_origin, frustum[i].normal); //FIXME: shouldn't this always be zero?
+		frustum[i].dist = DotProduct (r_origin, frustum[i].normal); // FIXME: shouldn't this always be zero?
 		frustum[i].signbits = SignbitsForPlane (&frustum[i]);
 	}
 }
@@ -458,7 +458,7 @@ GL_SetFrustum -- johnfitz -- written to replace MYgluPerspective
 =============
 */
 #define NEARCLIP 4
-float frustum_skew = 0.0; //used by r_stereo
+float frustum_skew = 0.0; // used by r_stereo
 void GL_SetFrustum (float fovx, float fovy)
 {
 	float xmax, ymax;
@@ -476,7 +476,7 @@ void R_SetupGL (void)
 {
 	int scale;
 
-	//johnfitz -- rewrote this section
+	// johnfitz -- rewrote this section
 	glMatrixMode (GL_PROJECTION);
 	glLoadIdentity ();
 	scale = CLAMP (1, (int) r_scale.value, 4); // ericw -- see R_ScaleView
@@ -484,11 +484,11 @@ void R_SetupGL (void)
 		gly + glheight - r_refdef.vrect.y - r_refdef.vrect.height,
 		r_refdef.vrect.width / scale,
 		r_refdef.vrect.height / scale);
-	//johnfitz
+	// johnfitz
 
-	GL_SetFrustum (r_fovx, r_fovy); //johnfitz -- use r_fov* vars
+	GL_SetFrustum (r_fovx, r_fovy); // johnfitz -- use r_fov* vars
 
-//	glCullFace(GL_BACK); //johnfitz -- glquake used CCW with backwards culling -- let's do it right
+//	glCullFace(GL_BACK); // johnfitz -- glquake used CCW with backwards culling -- let's do it right
 
 	glMatrixMode (GL_MODELVIEW);
 	glLoadIdentity ();
@@ -551,7 +551,7 @@ R_SetupView -- johnfitz -- this is the stuff that needs to be done once per fram
 */
 void R_SetupView (void)
 {
-	Fog_SetupFrame (); //johnfitz
+	Fog_SetupFrame (); // johnfitz
 
 // build the transformation matrix for the given view angles
 	VectorCopy (r_refdef.vieworg, r_origin);
@@ -566,7 +566,7 @@ void R_SetupView (void)
 
 	r_cache_thrash = false;
 
-	//johnfitz -- calculate r_fovx and r_fovy here
+	// johnfitz -- calculate r_fovx and r_fovy here
 	r_fovx = r_refdef.fov_x;
 	r_fovy = r_refdef.fov_y;
 	if (r_waterwarp.value)
@@ -574,24 +574,24 @@ void R_SetupView (void)
 		int contents = Mod_PointInLeaf (r_origin, cl.worldmodel)->contents;
 		if (contents == CONTENTS_WATER || contents == CONTENTS_SLIME || contents == CONTENTS_LAVA)
 		{
-			//variance is a percentage of width, where width = 2 * tan(fov / 2) otherwise the effect is too dramatic at high FOV and too subtle at low FOV.  what a mess!
+			// variance is a percentage of width, where width = 2 * tan(fov / 2) otherwise the effect is too dramatic at high FOV and too subtle at low FOV.  what a mess!
 			r_fovx = atan (tan (DEG2RAD (r_refdef.fov_x) / 2) * (0.97 + sin (cl.time * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
 			r_fovy = atan (tan (DEG2RAD (r_refdef.fov_y) / 2) * (1.03 - sin (cl.time * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
 		}
 	}
-	//johnfitz
+	// johnfitz
 
-	R_SetFrustum (r_fovx, r_fovy); //johnfitz -- use r_fov* vars
+	R_SetFrustum (r_fovx, r_fovy); // johnfitz -- use r_fov* vars
 
-	R_MarkSurfaces (); //johnfitz -- create texture chains from PVS
+	R_MarkSurfaces (); // johnfitz -- create texture chains from PVS
 
-	R_CullSurfaces (); //johnfitz -- do after R_SetFrustum and R_MarkSurfaces
+	R_CullSurfaces (); // johnfitz -- do after R_SetFrustum and R_MarkSurfaces
 
-	R_UpdateWarpTextures (); //johnfitz -- do this before R_Clear
+	R_UpdateWarpTextures (); // johnfitz -- do this before R_Clear
 
 	R_Clear ();
 
-	//johnfitz -- cheat-protect some draw modes
+	// johnfitz -- cheat-protect some draw modes
 	r_drawflat_cheatsafe = r_fullbright_cheatsafe = r_lightmap_cheatsafe = false;
 	r_drawworld_cheatsafe = true;
 	if (cl.maxclients == 1)
@@ -602,42 +602,42 @@ void R_SetupView (void)
 		else if (r_fullbright.value || !cl.worldmodel->lightdata) r_fullbright_cheatsafe = true;
 		else if (r_lightmap.value) r_lightmap_cheatsafe = true;
 	}
-	//johnfitz
+	// johnfitz
 }
 
-//==============================================================================
+// ==============================================================================
 //
 // RENDER VIEW
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 =============
 R_DrawEntitiesOnList
 =============
 */
-void R_DrawEntitiesOnList (qboolean alphapass) //johnfitz -- added parameter
+void R_DrawEntitiesOnList (qboolean alphapass) // johnfitz -- added parameter
 {
 	int		i;
 
 	if (!r_drawentities.value)
 		return;
 
-	//johnfitz -- sprites are not a special case
+	// johnfitz -- sprites are not a special case
 	for (i = 0; i < cl_numvisedicts; i++)
 	{
 		currententity = cl_visedicts[i];
 
-		//johnfitz -- if alphapass is true, draw only alpha entites this time
-		//if alphapass is false, draw only nonalpha entities this time
+		// johnfitz -- if alphapass is true, draw only alpha entites this time
+		// if alphapass is false, draw only nonalpha entities this time
 		if ((ENTALPHA_DECODE (currententity->alpha) < 1 && !alphapass) ||
 			(ENTALPHA_DECODE (currententity->alpha) == 1 && alphapass))
 			continue;
 
-		//johnfitz -- chasecam
+		// johnfitz -- chasecam
 		if (currententity == &cl_entities[cl.viewentity])
 			currententity->angles[0] *= 0.3;
-		//johnfitz
+		// johnfitz
 
 		switch (currententity->model->type)
 		{
@@ -671,10 +671,10 @@ void R_DrawViewModel (void)
 	if (!currententity->model)
 		return;
 
-	//johnfitz -- this fixes a crash
+	// johnfitz -- this fixes a crash
 	if (currententity->model->type != mod_alias)
 		return;
-	//johnfitz
+	// johnfitz
 
 	// hack the depth range to prevent view model from poking into walls
 	glDepthRange (0, 0.3);
@@ -749,20 +749,20 @@ void R_ShowBoundingBoxes (void)
 	for (i = 0, ed = NEXT_EDICT (sv.edicts); i < sv.num_edicts; i++, ed = NEXT_EDICT (ed))
 	{
 		if (ed == sv_player)
-			continue; //don't draw player's own bbox
+			continue; // don't draw player's own bbox
 
 //		if (r_showbboxes.value != 2)
 //			if (!SV_VisibleToClient (sv_player, ed, sv.worldmodel))
-//				continue; //don't draw if not in pvs
+//				continue; // don't draw if not in pvs
 
 		if (ed->v.mins[0] == ed->v.maxs[0] && ed->v.mins[1] == ed->v.maxs[1] && ed->v.mins[2] == ed->v.maxs[2])
 		{
-			//point entity
+			// point entity
 			R_EmitWirePoint (ed->v.origin);
 		}
 		else
 		{
-			//box entity
+			// box entity
 			VectorAdd (ed->v.mins, ed->v.origin, mins);
 			VectorAdd (ed->v.maxs, ed->v.origin, maxs);
 			R_EmitWireBox (mins, maxs);
@@ -946,35 +946,35 @@ R_RenderScene
 */
 void R_RenderScene (void)
 {
-	R_SetupScene (); //johnfitz -- this does everything that should be done once per call to RenderScene
+	R_SetupScene (); // johnfitz -- this does everything that should be done once per call to RenderScene
 
-	Fog_EnableGFog (); //johnfitz
+	Fog_EnableGFog (); // johnfitz
 
-	Sky_DrawSky (); //johnfitz
+	Sky_DrawSky (); // johnfitz
 
 	R_DrawWorld ();
 
 	S_ExtraUpdate (); // don't let sound get messed up if going slow
 
-	R_DrawShadows (); //johnfitz -- render entity shadows
+	R_DrawShadows (); // johnfitz -- render entity shadows
 
-	R_DrawEntitiesOnList (false); //johnfitz -- false means this is the pass for nonalpha entities
+	R_DrawEntitiesOnList (false); // johnfitz -- false means this is the pass for nonalpha entities
 
-	R_DrawWorld_Water (); //johnfitz -- drawn here since they might have transparency
+	R_DrawWorld_Water (); // johnfitz -- drawn here since they might have transparency
 
-	R_DrawEntitiesOnList (true); //johnfitz -- true means this is the pass for alpha entities
+	R_DrawEntitiesOnList (true); // johnfitz -- true means this is the pass for alpha entities
 
-	R_RenderDlights (); //triangle fan dlights -- johnfitz -- moved after water
+	R_RenderDlights (); // triangle fan dlights -- johnfitz -- moved after water
 
 	R_DrawParticles ();
 
-	Fog_DisableGFog (); //johnfitz
+	Fog_DisableGFog (); // johnfitz
 
-	R_DrawViewModel (); //johnfitz -- moved here from R_RenderView
+	R_DrawViewModel (); // johnfitz -- moved here from R_RenderView
 
-	R_ShowTris (); //johnfitz
+	R_ShowTris (); // johnfitz
 
-	R_ShowBoundingBoxes (); //johnfitz
+	R_ShowBoundingBoxes (); // johnfitz
 }
 
 static GLuint r_scaleview_texture;
@@ -1105,16 +1105,16 @@ void R_RenderView (void)
 		glFinish ();
 		time1 = Sys_DoubleTime ();
 
-		//johnfitz -- rendering statistics
+		// johnfitz -- rendering statistics
 		rs_brushpolys = rs_aliaspolys = rs_skypolys = rs_particles = rs_fogpolys = rs_megatexels =
 			rs_dynamiclightmaps = rs_aliaspasses = rs_skypasses = rs_brushpasses = 0;
 	}
 	else if (gl_finish.value)
 		glFinish ();
 
-	R_SetupView (); //johnfitz -- this does everything that should be done once per frame
+	R_SetupView (); // johnfitz -- this does everything that should be done once per frame
 
-	//johnfitz -- stereo rendering -- full of hacky goodness
+	// johnfitz -- stereo rendering -- full of hacky goodness
 	if (r_stereo.value)
 	{
 		float eyesep = CLAMP (-8.0f, r_stereo.value, 8.0f);
@@ -1122,24 +1122,24 @@ void R_RenderView (void)
 
 		AngleVectors (r_refdef.viewangles, vpn, vright, vup);
 
-		//render left eye (red)
+		// render left eye (red)
 		glColorMask (1, 0, 0, 1);
 		VectorMA (r_refdef.vieworg, -0.5f * eyesep, vright, r_refdef.vieworg);
 		frustum_skew = 0.5 * eyesep * NEARCLIP / fdepth;
-		srand ((int) (cl.time * 1000)); //sync random stuff between eyes
+		srand ((int) (cl.time * 1000)); // sync random stuff between eyes
 
 		R_RenderScene ();
 
-		//render right eye (cyan)
+		// render right eye (cyan)
 		glClear (GL_DEPTH_BUFFER_BIT);
 		glColorMask (0, 1, 1, 1);
 		VectorMA (r_refdef.vieworg, 1.0f * eyesep, vright, r_refdef.vieworg);
 		frustum_skew = -frustum_skew;
-		srand ((int) (cl.time * 1000)); //sync random stuff between eyes
+		srand ((int) (cl.time * 1000)); // sync random stuff between eyes
 
 		R_RenderScene ();
 
-		//restore
+		// restore
 		glColorMask (1, 1, 1, 1);
 		VectorMA (r_refdef.vieworg, -0.5f * eyesep, vright, r_refdef.vieworg);
 		frustum_skew = 0.0f;
@@ -1148,13 +1148,13 @@ void R_RenderView (void)
 	{
 		R_RenderScene ();
 	}
-	//johnfitz
+	// johnfitz
 
 	R_ScaleView ();
 
 	R_DrawPolyBlend (); // MH - put this back
 
-	//johnfitz -- modified r_speeds output
+	// johnfitz -- modified r_speeds output
 	time2 = Sys_DoubleTime ();
 	if (r_pos.value)
 		Con_Printf ("x %i y %i z %i (pitch %i yaw %i roll %i)\n",
@@ -1181,6 +1181,6 @@ void R_RenderView (void)
 			rs_brushpolys,
 			rs_aliaspolys,
 			rs_dynamiclightmaps);
-	//johnfitz
+	// johnfitz
 }
 

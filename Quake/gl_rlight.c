@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 int	r_dlightframecount;
 
-extern cvar_t r_flatlightstyles; //johnfitz
+extern cvar_t r_flatlightstyles; // johnfitz
 
 /*
 ==================
@@ -47,7 +47,7 @@ void R_AnimateLight (void)
 			d_lightstylevalue[j] = 256;
 			continue;
 		}
-		//johnfitz -- r_flatlightstyles
+		// johnfitz -- r_flatlightstyles
 		if (r_flatlightstyles.value == 2)
 			k = cl_lightstyle[j].peak - 'a';
 		else if (r_flatlightstyles.value == 1)
@@ -58,7 +58,7 @@ void R_AnimateLight (void)
 			k = cl_lightstyle[j].map[k] - 'a';
 		}
 		d_lightstylevalue[j] = k * 22;
-		//johnfitz
+		// johnfitz
 	}
 }
 
@@ -271,7 +271,7 @@ LIGHT SAMPLING
 
 mplane_t *lightplane;
 vec3_t			lightspot;
-vec3_t			lightcolor; //johnfitz -- lit support via lordhavoc
+vec3_t			lightcolor; // johnfitz -- lit support via lordhavoc
 
 /*
 =============
@@ -393,7 +393,7 @@ int R_LightPoint (vec3_t p)
 
 	end[0] = p[0];
 	end[1] = p[1];
-	end[2] = p[2] - 8192; //johnfitz -- was 2048
+	end[2] = p[2] - 8192; // johnfitz -- was 2048
 
 	lightcolor[0] = lightcolor[1] = lightcolor[2] = 0;
 	RecursiveLightPoint (lightcolor, cl.worldmodel->nodes, p, end);

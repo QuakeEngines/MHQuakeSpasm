@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // cmd.h -- Command buffer and command execution
 
-//===========================================================================
+// ===========================================================================
 
 /*
 
@@ -57,7 +57,7 @@ void Cbuf_Execute (void);
 // Normally called once per frame, but may be explicitly invoked.
 // Do not call inside a command function!
 
-//===========================================================================
+// ===========================================================================
 
 /*
 

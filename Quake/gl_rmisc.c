@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-//johnfitz -- new cvars
+// johnfitz -- new cvars
 extern cvar_t r_stereo;
 extern cvar_t r_stereodepth;
 extern cvar_t r_clearcolor;
@@ -45,10 +45,10 @@ extern cvar_t r_lerpmodels;
 extern cvar_t r_lerpmove;
 extern cvar_t r_nolerp_list;
 extern cvar_t r_noshadow_list;
-//johnfitz
+// johnfitz
 extern cvar_t gl_zfix; // QuakeSpasm z-fighting fix
 
-extern gltexture_t *playertextures[MAX_SCOREBOARD]; //johnfitz
+extern gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz
 
 
 /*
@@ -145,13 +145,13 @@ static void R_SetSlimealpha_f (cvar_t *var)
 GL_WaterAlphaForSurfface -- ericw
 ====================
 */
-float GL_WaterAlphaForSurface (msurface_t *fa)
+float GL_WaterAlphaForSurface (msurface_t *surf)
 {
-	if (fa->flags & SURF_DRAWLAVA)
+	if (surf->flags & SURF_DRAWLAVA)
 		return map_lavaalpha > 0 ? map_lavaalpha : map_wateralpha;
-	else if (fa->flags & SURF_DRAWTELE)
+	else if (surf->flags & SURF_DRAWTELE)
 		return map_telealpha > 0 ? map_telealpha : map_wateralpha;
-	else if (fa->flags & SURF_DRAWSLIME)
+	else if (surf->flags & SURF_DRAWSLIME)
 		return map_slimealpha > 0 ? map_slimealpha : map_wateralpha;
 	else
 		return map_wateralpha;
@@ -194,7 +194,7 @@ void R_Init (void)
 	Cvar_RegisterVariable (&gl_playermip);
 	Cvar_RegisterVariable (&gl_nocolors);
 
-	//johnfitz -- new cvars
+	// johnfitz -- new cvars
 	Cvar_RegisterVariable (&r_stereo);
 	Cvar_RegisterVariable (&r_stereodepth);
 	Cvar_RegisterVariable (&r_clearcolor);
@@ -221,7 +221,7 @@ void R_Init (void)
 	Cvar_SetCallback (&r_nolerp_list, R_Model_ExtraFlags_List_f);
 	Cvar_RegisterVariable (&r_noshadow_list);
 	Cvar_SetCallback (&r_noshadow_list, R_Model_ExtraFlags_List_f);
-	//johnfitz
+	// johnfitz
 
 	Cvar_RegisterVariable (&gl_zfix); // QuakeSpasm z-fighting fix
 	Cvar_RegisterVariable (&r_lavaalpha);
@@ -233,10 +233,10 @@ void R_Init (void)
 	Cvar_SetCallback (&r_slimealpha, R_SetSlimealpha_f);
 
 	R_InitParticles ();
-	R_SetClearColor_f (&r_clearcolor); //johnfitz
+	R_SetClearColor_f (&r_clearcolor); // johnfitz
 
-	Sky_Init (); //johnfitz
-	Fog_Init (); //johnfitz
+	Sky_Init (); // johnfitz
+	Fog_Init (); // johnfitz
 }
 
 /*
@@ -251,7 +251,7 @@ void R_TranslatePlayerSkin (int playernum)
 	top = (cl.scores[playernum].colors & 0xf0) >> 4;
 	bottom = cl.scores[playernum].colors & 15;
 
-	//FIXME: if gl_nocolors is on, then turned off, the textures may be out of sync with the scoreboard colors.
+	// FIXME: if gl_nocolors is on, then turned off, the textures may be out of sync with the scoreboard colors.
 	if (!gl_nocolors.value)
 		if (playertextures[playernum])
 			TexMgr_ReloadImage (playertextures[playernum], top, bottom);
@@ -271,7 +271,7 @@ void R_TranslateNewPlayerSkin (int playernum)
 	aliashdr_t *paliashdr;
 	int		skinnum;
 
-	//get correct texture pixels
+	// get correct texture pixels
 	currententity = &cl_entities[1 + playernum];
 
 	if (!currententity->model || currententity->model->type != mod_alias)
@@ -281,7 +281,7 @@ void R_TranslateNewPlayerSkin (int playernum)
 
 	skinnum = currententity->skinnum;
 
-	//TODO: move these tests to the place where skinnum gets received from the server
+	// TODO: move these tests to the place where skinnum gets received from the server
 	if (skinnum < 0 || skinnum >= paliashdr->numskins)
 	{
 		Con_DPrintf ("(%d): Invalid player skin #%d\n", playernum, skinnum);
@@ -290,12 +290,12 @@ void R_TranslateNewPlayerSkin (int playernum)
 
 	pixels = (byte *) paliashdr + paliashdr->texels[skinnum]; // This is not a persistent place!
 
-//upload new image
+// upload new image
 	q_snprintf (name, sizeof (name), "player_%i", playernum);
 	playertextures[playernum] = TexMgr_LoadImage (currententity->model, name, paliashdr->skinwidth, paliashdr->skinheight,
 		SRC_INDEXED, pixels, paliashdr->gltextures[skinnum][0]->source_file, paliashdr->gltextures[skinnum][0]->source_offset, TEXPREF_PAD | TEXPREF_OVERWRITE);
 
-	//now recolor it
+	// now recolor it
 	R_TranslatePlayerSkin (playernum);
 }
 
@@ -308,7 +308,7 @@ void R_NewGame (void)
 {
 	int i;
 
-	//clear playertexture pointers (the textures themselves were freed by texmgr_newgame)
+	// clear playertexture pointers (the textures themselves were freed by texmgr_newgame)
 	for (i = 0; i < MAX_SCOREBOARD; i++)
 		playertextures[i] = NULL;
 }
@@ -390,16 +390,16 @@ void R_NewMap (void)
 
 	GL_BuildLightmaps ();
 	GL_BuildBModelVertexBuffer ();
-	//ericw -- no longer load alias models into a VBO here, it's done in Mod_LoadAliasModel
+	// ericw -- no longer load alias models into a VBO here, it's done in Mod_LoadAliasModel
 
-	r_framecount = 0; //johnfitz -- paranoid?
-	r_visframecount = 0; //johnfitz -- paranoid?
+	r_framecount = 0; // johnfitz -- paranoid?
+	r_visframecount = 0; // johnfitz -- paranoid?
 
-	Sky_NewMap (); //johnfitz -- skybox in worldspawn
-	Fog_NewMap (); //johnfitz -- global fog in worldspawn
-	R_ParseWorldspawn (); //ericw -- wateralpha, lavaalpha, telealpha, slimealpha in worldspawn
+	Sky_NewMap (); // johnfitz -- skybox in worldspawn
+	Fog_NewMap (); // johnfitz -- global fog in worldspawn
+	R_ParseWorldspawn (); // ericw -- wateralpha, lavaalpha, telealpha, slimealpha in worldspawn
 
-	load_subdivide_size = gl_subdivide_size.value; //johnfitz -- is this the right place to set this?
+	load_subdivide_size = gl_subdivide_size.value; // johnfitz -- is this the right place to set this?
 }
 
 /*

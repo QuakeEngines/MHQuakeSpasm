@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	LINUX_VERSION		1.30
 #define	X11_VERSION		1.10
 
-#define	FITZQUAKE_VERSION	0.85	//johnfitz
+#define	FITZQUAKE_VERSION	0.85	// johnfitz
 #define	QUAKESPASM_VERSION	0.93
 #define	QUAKESPASM_VER_PATCH	2	// helper to print a string like 0.93.2
 #ifndef	QUAKESPASM_VER_SUFFIX
@@ -48,7 +48,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // combined version string like "0.92.1-beta1"
 #define	QUAKESPASM_VER_STRING	QS_STRINGIFY(QUAKESPASM_VERSION) "." QS_STRINGIFY(QUAKESPASM_VER_PATCH) QUAKESPASM_VER_SUFFIX
 
-//define	PARANOID			// speed sapping error checking
+// define	PARANOID			// speed sapping error checking
 
 #define	GAMENAME	"id1"		// directory to look in by default
 
@@ -80,14 +80,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	DIST_EPSILON	(0.03125)	// 1/32 epsilon to keep floating point happy (moved from world.c)
 
-#define	MAX_MSGLEN	64000		// max length of a reliable message //ericw -- was 32000
-#define	MAX_DATAGRAM	32000		// max length of unreliable message //johnfitz -- was 1024
+#define	MAX_MSGLEN	64000		// max length of a reliable message // ericw -- was 32000
+#define	MAX_DATAGRAM	32000		// max length of unreliable message // johnfitz -- was 1024
 
 #define	DATAGRAM_MTU	1400		// johnfitz -- actual limit for unreliable messages to nonlocal clients
 
-//
 // per-level limits
-//
 #define	MIN_EDICTS	256		// johnfitz -- lowest allowed value for max_edicts cvar
 #define	MAX_EDICTS	32000		// johnfitz -- highest allowed value for max_edicts cvar
 						// ents past 8192 can't play sounds in the standard protocol
@@ -99,9 +97,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	MAX_STYLESTRING		64
 
-//
 // stats are integers communicated to the client by the server
-//
 #define	MAX_CL_STATS		32
 #define	STAT_HEALTH		0
 #define	STAT_FRAGS		1
@@ -120,7 +116,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	STAT_MONSTERS		14	// bumped by svc_killedmonster
 
 // stock defines
-//
 #define	IT_SHOTGUN		1
 #define	IT_SUPER_SHOTGUN	2
 #define	IT_NAILGUN		4
@@ -149,8 +144,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	IT_SIGIL3		(1<<30)
 #define	IT_SIGIL4		(1<<31)
 
-//===========================================
-//rogue changed and added defines
+// ===========================================
+// rogue changed and added defines
 
 #define	RIT_SHELLS		128
 #define	RIT_NAILS		256
@@ -172,9 +167,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	RIT_ANTIGRAV		1073741824
 #define	RIT_SUPERHEALTH		2147483648
 
-//MED 01/04/97 added hipnotic defines
-//===========================================
-//hipnotic added defines
+// MED 01/04/97 added hipnotic defines
+// ===========================================
+// hipnotic added defines
 #define	HIT_PROXIMITY_GUN_BIT	16
 #define	HIT_MJOLNIR_BIT		7
 #define	HIT_LASER_CANNON_BIT	23
@@ -184,7 +179,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	HIT_WETSUIT		(1<<(23+2))
 #define	HIT_EMPATHY_SHIELDS	(1<<(23+3))
 
-//===========================================
+// ===========================================
 
 #define	MAX_SCOREBOARD		16
 #define	MAX_SCOREBOARDNAME	32
@@ -252,8 +247,8 @@ typedef struct {
 #include "gl_model.h"
 #include "world.h"
 
-#include "image.h"	//johnfitz
-#include "gl_texmgr.h"	//johnfitz
+#include "image.h"	// johnfitz
+#include "gl_texmgr.h"	// johnfitz
 #include "input.h"
 #include "keys.h"
 #include "menu.h"
@@ -261,7 +256,7 @@ typedef struct {
 #include "glquake.h"
 
 
-//=============================================================================
+// =============================================================================
 
 // the host system specifies the base of the directory tree, the
 // command line parms passed to the program, and the amount of memory
@@ -269,16 +264,14 @@ typedef struct {
 
 extern qboolean noclip_anglehack;
 
-//
 // host
-//
 extern	quakeparms_t *host_parms;
 
 extern	cvar_t		sys_ticrate;
 extern	cvar_t		sys_throttle;
 extern	cvar_t		sys_nostdout;
 extern	cvar_t		developer;
-extern	cvar_t		max_edicts; //johnfitz
+extern	cvar_t		max_edicts; // johnfitz
 
 extern	qboolean	host_initialized;	// true if into command execution
 extern	double		host_frametime;

@@ -19,15 +19,15 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-//gl_fog.c -- global and volumetric fog
+// gl_fog.c -- global and volumetric fog
 
 #include "quakedef.h"
 
-//==============================================================================
+// ==============================================================================
 //
 //  GLOBAL FOG
 //
-//==============================================================================
+// ==============================================================================
 
 #define DEFAULT_DENSITY 0.0
 #define DEFAULT_GRAY 0.3
@@ -42,8 +42,8 @@ float old_red;
 float old_green;
 float old_blue;
 
-float fade_time; //duration of fade
-float fade_done; //time when fade will be done
+float fade_time; // duration of fade
+float fade_done; // time when fade will be done
 
 /*
 =============
@@ -54,10 +54,10 @@ update internal variables
 */
 void Fog_Update (float density, float red, float green, float blue, float time)
 {
-	//save previous settings for fade
+	// save previous settings for fade
 	if (time > 0)
 	{
-		//check for a fade in progress
+		// check for a fade in progress
 		if (fade_done > cl.time)
 		{
 			float f;
@@ -135,7 +135,7 @@ void Fog_FogCommand_f (void)
 			fog_blue,
 			0.0);
 		break;
-	case 3: //TEST
+	case 3: // TEST
 		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
 			fog_red,
 			fog_green,
@@ -156,7 +156,7 @@ void Fog_FogCommand_f (void)
 			CLAMP (0.0, atof (Cmd_Argv (4)), 1.0),
 			0.0);
 		break;
-	case 6: //TEST
+	case 6: // TEST
 		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
 			CLAMP (0.0, atof (Cmd_Argv (2)), 1.0),
 			CLAMP (0.0, atof (Cmd_Argv (3)), 1.0),
@@ -178,7 +178,7 @@ void Fog_ParseWorldspawn (void)
 	char key[128], value[4096];
 	const char *data;
 
-	//initially no fog
+	// initially no fog
 	fog_density = DEFAULT_DENSITY;
 	fog_red = DEFAULT_GRAY;
 	fog_green = DEFAULT_GRAY;
@@ -251,7 +251,7 @@ float *Fog_GetColor (void)
 		c[3] = 1.0;
 	}
 
-	//find closest 24-bit RGB value, so solid-colored sky can match the fog perfectly
+	// find closest 24-bit RGB value, so solid-colored sky can match the fog perfectly
 	for (i = 0; i < 3; i++)
 		c[i] = (float) (Q_rint (c[i] * 255)) / 255.0f;
 
@@ -345,22 +345,22 @@ void Fog_StopAdditive (void)
 		glFogfv (GL_FOG_COLOR, Fog_GetColor ());
 }
 
-//==============================================================================
+// ==============================================================================
 //
 //  VOLUMETRIC FOG
 //
-//==============================================================================
+// ==============================================================================
 
 cvar_t r_vfog = { "r_vfog", "1", CVAR_NONE };
 
 void Fog_DrawVFog (void) { }
 void Fog_MarkModels (void) { }
 
-//==============================================================================
+// ==============================================================================
 //
 //  INIT
 //
-//==============================================================================
+// ==============================================================================
 
 /*
 =============
@@ -371,8 +371,8 @@ called whenever a map is loaded
 */
 void Fog_NewMap (void)
 {
-	Fog_ParseWorldspawn (); //for global fog
-	Fog_MarkModels (); //for volumetric fog
+	Fog_ParseWorldspawn (); // for global fog
+	Fog_MarkModels (); // for volumetric fog
 }
 
 /*
@@ -386,9 +386,9 @@ void Fog_Init (void)
 {
 	Cmd_AddCommand ("fog", Fog_FogCommand_f);
 
-	//Cvar_RegisterVariable (&r_vfog);
+	// Cvar_RegisterVariable (&r_vfog);
 
-	//set up global fog
+	// set up global fog
 	fog_density = DEFAULT_DENSITY;
 	fog_red = DEFAULT_GRAY;
 	fog_green = DEFAULT_GRAY;

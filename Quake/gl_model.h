@@ -83,10 +83,10 @@ typedef enum {
 typedef struct texture_s {
 	char				name[16];
 	unsigned			width, height;
-	struct gltexture_s *gltexture; //johnfitz -- pointer to gltexture
-	struct gltexture_s *fullbright; //johnfitz -- fullbright mask texture
-	struct gltexture_s *warpimage; //johnfitz -- for water animation
-	qboolean			update_warp; //johnfitz -- update warp this frame
+	struct gltexture_s *gltexture; // johnfitz -- pointer to gltexture
+	struct gltexture_s *fullbright; // johnfitz -- fullbright mask texture
+	struct gltexture_s *warpimage; // johnfitz -- for water animation
+	qboolean			update_warp; // johnfitz -- update warp this frame
 	struct msurface_s *texturechains[2];	// for texture chains
 	int					anim_total;				// total tenths in sequence ( 0 = no)
 	int					anim_min, anim_max;		// time for this frame min <=time< max
@@ -103,7 +103,7 @@ typedef struct texture_s {
 #define SURF_DRAWTILED		0x20
 #define SURF_DRAWBACKGROUND	0x40
 #define SURF_UNDERWATER		0x80
-#define SURF_NOTEXTURE		0x100 //johnfitz
+#define SURF_NOTEXTURE		0x100 // johnfitz
 #define SURF_DRAWFENCE		0x200
 #define SURF_DRAWLAVA		0x400
 #define SURF_DRAWSLIME		0x800
@@ -206,16 +206,16 @@ typedef struct mleaf_s {
 	byte		ambient_sound_level[NUM_AMBIENTS];
 } mleaf_t;
 
-//johnfitz -- for clipnodes>32k
+// johnfitz -- for clipnodes>32k
 typedef struct mclipnode_s {
 	int			planenum;
 	int			children[2]; // negative numbers are contents
 } mclipnode_t;
-//johnfitz
+// johnfitz
 
 // !!! if this is changed, it must be changed in asm_i386.h too !!!
 typedef struct {
-	mclipnode_t *clipnodes; //johnfitz -- was dclipnode_t
+	mclipnode_t *clipnodes; // johnfitz -- was dclipnode_t
 	mplane_t *planes;
 	int			firstclipnode;
 	int			lastclipnode;
@@ -236,7 +236,7 @@ SPRITE MODELS
 typedef struct mspriteframe_s {
 	int					width, height;
 	float				up, down, left, right;
-	float				smax, tmax; //johnfitz -- image might be padded
+	float				smax, tmax; // johnfitz -- image might be padded
 	struct gltexture_s *gltexture;
 } mspriteframe_t;
 
@@ -271,7 +271,7 @@ Alias models are position independent, so the cache manager can move them.
 ==============================================================================
 */
 
-//-- from RMQEngine
+// -- from RMQEngine
 // split out to keep vertex sizes down
 typedef struct aliasmesh_s {
 	float st[2];
@@ -286,7 +286,7 @@ typedef struct meshxyz_s {
 typedef struct meshst_s {
 	float st[2];
 } meshst_t;
-//--
+// --
 
 typedef struct {
 	int					firstpose;
@@ -335,33 +335,33 @@ typedef struct {
 	int			flags;
 	float		size;
 
-	//ericw -- used to populate vbo
+	// ericw -- used to populate vbo
 	int			numverts_vbo;   // number of verts with unique x,y,z,s,t
 	intptr_t		meshdesc;       // offset into extradata: numverts_vbo aliasmesh_t
 	int			numindexes;
 	intptr_t		indexes;        // offset into extradata: numindexes unsigned shorts
 	intptr_t		vertexes;       // offset into extradata: numposes*vertsperframe trivertx_t
-	//ericw --
+	// ericw --
 
 	int					numposes;
 	int					poseverts;
 	int					posedata;	// numposes*poseverts trivert_t
 	int					commands;	// gl command list with embedded s/t
-	struct gltexture_s *gltextures[MAX_SKINS][4]; //johnfitz
-	struct gltexture_s *fbtextures[MAX_SKINS][4]; //johnfitz
+	struct gltexture_s *gltextures[MAX_SKINS][4]; // johnfitz
+	struct gltexture_s *fbtextures[MAX_SKINS][4]; // johnfitz
 	int					texels[MAX_SKINS];	// only for player skins
 	maliasframedesc_t	frames[1];	// variable sized
 } aliashdr_t;
 
-#define	MAXALIASVERTS	2000 //johnfitz -- was 1024
+#define	MAXALIASVERTS	2000 // johnfitz -- was 1024
 #define	MAXALIASFRAMES	256
-#define	MAXALIASTRIS	4096 //ericw -- was 2048
+#define	MAXALIASTRIS	4096 // ericw -- was 2048
 extern	aliashdr_t *pheader;
 extern	stvert_t	stverts[MAXALIASVERTS];
 extern	mtriangle_t	triangles[MAXALIASTRIS];
 extern	trivertx_t *poseverts[MAXALIASFRAMES];
 
-//===================================================================
+// ===================================================================
 
 //
 // Whole model
@@ -379,11 +379,11 @@ typedef enum { mod_brush, mod_sprite, mod_alias } modtype_t;
 #define	EF_TRACER3	128			// purple trail
 #define	MF_HOLEY	(1u<<14)		// MarkV/QSS -- make index 255 transparent on mdl's
 
-//johnfitz -- extra flags for rendering
-#define	MOD_NOLERP		256		//don't lerp when animating
-#define	MOD_NOSHADOW	512		//don't cast a shadow
-#define	MOD_FBRIGHTHACK	1024	//when fullbrights are disabled, use a hack to render this model brighter
-//johnfitz
+// johnfitz -- extra flags for rendering
+#define	MOD_NOLERP		256		// don't lerp when animating
+#define	MOD_NOSHADOW	512		// don't cast a shadow
+#define	MOD_FBRIGHTHACK	1024	// when fullbrights are disabled, use a hack to render this model brighter
+// johnfitz
 
 typedef struct qmodel_s {
 	char		name[MAX_QPATH];
@@ -401,9 +401,9 @@ typedef struct qmodel_s {
 	// volume occupied by the model graphics
 	//
 	vec3_t		mins, maxs;
-	vec3_t		ymins, ymaxs; //johnfitz -- bounds for entities with nonzero yaw
-	vec3_t		rmins, rmaxs; //johnfitz -- bounds for entities with nonzero pitch or roll
-	//johnfitz -- removed float radius;
+	vec3_t		ymins, ymaxs; // johnfitz -- bounds for entities with nonzero yaw
+	vec3_t		rmins, rmaxs; // johnfitz -- bounds for entities with nonzero pitch or roll
+	// johnfitz -- removed float radius;
 
 //
 // solid volume for clipping
@@ -444,7 +444,7 @@ typedef struct qmodel_s {
 	int *surfedges;
 
 	int			numclipnodes;
-	mclipnode_t *clipnodes; //johnfitz -- was dclipnode_t
+	mclipnode_t *clipnodes; // johnfitz -- was dclipnode_t
 
 	int			nummarksurfaces;
 	msurface_t **marksurfaces;
@@ -479,7 +479,7 @@ typedef struct qmodel_s {
 
 } qmodel_t;
 
-//============================================================================
+// ============================================================================
 
 void	Mod_Init (void);
 void	Mod_ClearAll (void);

@@ -99,13 +99,13 @@ void CL_ParseBeam (qmodel_t *m)
 		}
 	}
 
-	//johnfitz -- less spammy overflow message
+	// johnfitz -- less spammy overflow message
 	if (!dev_overflows.beams || dev_overflows.beams + CONSOLE_RESPAM_TIME < realtime)
 	{
 		Con_Printf ("Beam list overflow!\n");
 		dev_overflows.beams = realtime;
 	}
-	//johnfitz
+	// johnfitz
 }
 
 /*
@@ -291,7 +291,7 @@ CL_UpdateTEnts
 */
 void CL_UpdateTEnts (void)
 {
-	int			i, j; //johnfitz -- use j instead of using i twice, so we don't corrupt memory
+	int			i, j; // johnfitz -- use j instead of using i twice, so we don't corrupt memory
 	beam_t *b;
 	vec3_t		dist, org;
 	float		d;
@@ -301,7 +301,7 @@ void CL_UpdateTEnts (void)
 
 	num_temp_entities = 0;
 
-	srand ((int) (cl.time * 1000)); //johnfitz -- freeze beams when paused
+	srand ((int) (cl.time * 1000)); // johnfitz -- freeze beams when paused
 
 // update lightning
 	for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++)
@@ -352,7 +352,7 @@ void CL_UpdateTEnts (void)
 			ent->angles[1] = yaw;
 			ent->angles[2] = rand () % 360;
 
-			//johnfitz -- use j instead of using i twice, so we don't corrupt memory
+			// johnfitz -- use j instead of using i twice, so we don't corrupt memory
 			for (j = 0; j < 3; j++)
 				org[j] += dist[j] * 30;
 			d -= 30;

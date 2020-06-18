@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
 #endif
 
-#define M_PI_DIV_180 (M_PI / 180.0) //johnfitz
+#define M_PI_DIV_180 (M_PI / 180.0) // johnfitz
 
 struct mplane_s;
 
@@ -50,7 +50,7 @@ static inline int IS_NAN (float x)
 }
 #endif
 
-#define Q_rint(x) ((x) > 0 ? (int)((x) + 0.5) : (int)((x) - 0.5)) //johnfitz -- from joequake
+#define Q_rint(x) ((x) > 0 ? (int)((x) + 0.5) : (int)((x) - 0.5)) // johnfitz -- from joequake
 
 #define DotProduct(x,y) (x[0]*y[0]+x[1]*y[1]+x[2]*y[2])
 #define DoublePrecisionDotProduct(x,y) ((double)x[0]*y[0]+(double)x[1]*y[1]+(double)x[2]*y[2])
@@ -58,7 +58,7 @@ static inline int IS_NAN (float x)
 #define VectorAdd(a,b,c) {c[0]=a[0]+b[0];c[1]=a[1]+b[1];c[2]=a[2]+b[2];}
 #define VectorCopy(a,b) {b[0]=a[0];b[1]=a[1];b[2]=a[2];}
 
-//johnfitz -- courtesy of lordhavoc
+// johnfitz -- courtesy of lordhavoc
 // QuakeSpasm: To avoid strict aliasing violations, use a float/int union instead of type punning.
 #define VectorNormalizeFast(_v)\
 {\
@@ -72,8 +72,8 @@ static inline int IS_NAN (float x)
 	}\
 }
 
-void TurnVector (vec3_t out, const vec3_t forward, const vec3_t side, float angle); //johnfitz
-void VectorAngles (const vec3_t forward, vec3_t angles); //johnfitz
+void TurnVector (vec3_t out, const vec3_t forward, const vec3_t side, float angle); // johnfitz
+void VectorAngles (const vec3_t forward, vec3_t angles); // johnfitz
 
 void VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc);
 

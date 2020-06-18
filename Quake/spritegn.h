@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // * pass data from one to the other via .spr files.        *
 // **********************************************************
 
-//-------------------------------------------------------
+// -------------------------------------------------------
 // This program generates .spr sprite package files.
 // The format of the files is as follows:
 //
@@ -45,7 +45,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //     dspriteframe_t frame header structure
 //     sprite bitmap
 // <endrepeat>
-//-------------------------------------------------------
+// -------------------------------------------------------
 
 #ifdef INCLUDELIBS
 

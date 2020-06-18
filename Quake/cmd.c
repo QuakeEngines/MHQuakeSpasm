@@ -28,7 +28,7 @@ void Cmd_ForwardToServer (void);
 
 #define	MAX_ALIAS_NAME	32
 
-#define CMDLINE_LENGTH 256 //johnfitz -- mirrored in common.c
+#define CMDLINE_LENGTH 256 // johnfitz -- mirrored in common.c
 
 typedef struct cmdalias_s {
 	struct cmdalias_s *next;
@@ -40,7 +40,7 @@ cmdalias_t *cmd_alias;
 
 qboolean	cmd_wait;
 
-//=============================================================================
+// =============================================================================
 
 /*
 ============
@@ -238,7 +238,7 @@ void Cmd_StuffCmds_f (void)
 			}
 		}
 		else if (cmdline.string[i] == '-' &&
-			(i == 0 || cmdline.string[i - 1] == ' ')) //johnfitz -- allow hypenated map names with +map
+			(i == 0 || cmdline.string[i - 1] == ' ')) // johnfitz -- allow hypenated map names with +map
 			plus = false;
 		else if (plus)
 			cmds[j++] = cmdline.string[i];
@@ -312,7 +312,7 @@ void Cmd_Alias_f (void)
 
 	switch (Cmd_Argc ())
 	{
-	case 1: //list all aliases
+	case 1: // list all aliases
 		for (a = cmd_alias, i = 0; a; a = a->next, i++)
 			Con_SafePrintf ("   %s: %s", a->name, a->value);
 		if (i)
@@ -320,12 +320,12 @@ void Cmd_Alias_f (void)
 		else
 			Con_SafePrintf ("no alias commands found\n");
 		break;
-	case 2: //output current alias string
+	case 2: // output current alias string
 		for (a = cmd_alias; a; a = a->next)
 			if (!strcmp (Cmd_Argv (1), a->name))
 				Con_Printf ("   %s: %s", a->name, a->value);
 		break;
-	default: //set alias string
+	default: // set alias string
 		s = Cmd_Argv (1);
 		if (strlen (s) >= MAX_ALIAS_NAME)
 		{
@@ -451,10 +451,10 @@ static	const char *cmd_args = NULL;
 
 cmd_source_t	cmd_source;
 
-//johnfitz -- better tab completion
-//static	cmd_function_t	*cmd_functions;		// possible commands to execute
+// johnfitz -- better tab completion
+// static	cmd_function_t	*cmd_functions;		// possible commands to execute
 cmd_function_t *cmd_functions;		// possible commands to execute
-//johnfitz
+// johnfitz
 
 /*
 ============
@@ -560,9 +560,9 @@ Cmd_Init
 */
 void Cmd_Init (void)
 {
-	Cmd_AddCommand ("cmdlist", Cmd_List_f); //johnfitz
-	Cmd_AddCommand ("unalias", Cmd_Unalias_f); //johnfitz
-	Cmd_AddCommand ("unaliasall", Cmd_Unaliasall_f); //johnfitz
+	Cmd_AddCommand ("cmdlist", Cmd_List_f); // johnfitz
+	Cmd_AddCommand ("unalias", Cmd_Unalias_f); // johnfitz
+	Cmd_AddCommand ("unaliasall", Cmd_Unaliasall_f); // johnfitz
 
 	Cmd_AddCommand ("stuffcmds", Cmd_StuffCmds_f);
 	Cmd_AddCommand ("exec", Cmd_Exec_f);
@@ -667,7 +667,7 @@ Cmd_AddCommand
 void	Cmd_AddCommand (const char *cmd_name, xcommand_t function)
 {
 	cmd_function_t *cmd;
-	cmd_function_t *cursor, *prev; //johnfitz -- sorted list insert
+	cmd_function_t *cursor, *prev; // johnfitz -- sorted list insert
 
 	if (host_initialized)	// because hunk allocation would get stomped
 		Sys_Error ("Cmd_AddCommand after host_initialized");
@@ -693,13 +693,13 @@ void	Cmd_AddCommand (const char *cmd_name, xcommand_t function)
 	cmd->name = cmd_name;
 	cmd->function = function;
 
-	//johnfitz -- insert each entry in alphabetical order
-	if (cmd_functions == NULL || strcmp (cmd->name, cmd_functions->name) < 0) //insert at front
+	// johnfitz -- insert each entry in alphabetical order
+	if (cmd_functions == NULL || strcmp (cmd->name, cmd_functions->name) < 0) // insert at front
 	{
 		cmd->next = cmd_functions;
 		cmd_functions = cmd;
 	}
-	else //insert later
+	else // insert later
 	{
 		prev = cmd_functions;
 		cursor = cmd_functions->next;
@@ -711,7 +711,7 @@ void	Cmd_AddCommand (const char *cmd_name, xcommand_t function)
 		cmd->next = prev->next;
 		prev->next = cmd;
 	}
-	//johnfitz
+	// johnfitz
 }
 
 /*

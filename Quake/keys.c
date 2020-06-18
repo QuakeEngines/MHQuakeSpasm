@@ -31,8 +31,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 char		key_lines[CMDLINES][MAXCMDLINE];
 
 int		key_linepos;
-int		key_insert;	//johnfitz -- insert key toggle (for editing)
-double		key_blinktime; //johnfitz -- fudge cursor blinking to make it easier to spot in certain cases
+int		key_insert;	// johnfitz -- insert key toggle (for editing)
+double		key_blinktime; // johnfitz -- fudge cursor blinking to make it easier to spot in certain cases
 
 int		edit_line = 0;
 int		history_line = 0;
@@ -260,7 +260,7 @@ void Key_Console (int key)
 
 		history_line = edit_line;
 		key_lines[edit_line][0] = ']';
-		key_lines[edit_line][1] = 0; //johnfitz -- otherwise old history items show up in the new edit line
+		key_lines[edit_line][1] = 0; // johnfitz -- otherwise old history items show up in the new edit line
 		key_linepos = 1;
 		if (cls.state == ca_disconnected)
 			SCR_UpdateScreen (); // force an update, because the command may take some time
@@ -302,7 +302,7 @@ void Key_Console (int key)
 	case K_HOME:
 		if (keydown[K_CTRL])
 		{
-			//skip initial empty lines
+			// skip initial empty lines
 			int i, x;
 			char *line;
 
@@ -453,7 +453,7 @@ void Char_Console (int key)
 	{
 		qboolean endpos = !workline[key_linepos];
 
-		key_tabpartial[0] = 0; //johnfitz
+		key_tabpartial[0] = 0; // johnfitz
 		// if inserting, move the text to the right
 		if (key_insert && !endpos)
 		{
@@ -475,7 +475,7 @@ void Char_Console (int key)
 	}
 }
 
-//============================================================================
+// ============================================================================
 
 qboolean	chat_team = false;
 static char	chat_buffer[MAXCMDLINE];
@@ -534,7 +534,7 @@ void Char_Message (int key)
 	chat_buffer[chat_bufferlen] = 0;
 }
 
-//============================================================================
+// ============================================================================
 
 
 /*
@@ -820,7 +820,7 @@ void Key_Init (void)
 
 	History_Init ();
 
-	key_blinktime = realtime; //johnfitz
+	key_blinktime = realtime; // johnfitz
 
 //
 // initialize consolekeys[]
@@ -878,7 +878,7 @@ void Key_Init (void)
 	//
 	// register our functions
 	//
-	Cmd_AddCommand ("bindlist", Key_Bindlist_f); //johnfitz
+	Cmd_AddCommand ("bindlist", Key_Bindlist_f); // johnfitz
 	Cmd_AddCommand ("bind", Key_Bind_f);
 	Cmd_AddCommand ("unbind", Key_Unbind_f);
 	Cmd_AddCommand ("unbindall", Key_Unbindall_f);

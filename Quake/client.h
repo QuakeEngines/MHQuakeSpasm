@@ -28,8 +28,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 typedef struct {
 	int		length;
 	char	map[MAX_STYLESTRING];
-	char	average; //johnfitz
-	char	peak; //johnfitz
+	char	average; // johnfitz
+	char	peak; // johnfitz
 } lightstyle_t;
 
 typedef struct {
@@ -60,7 +60,7 @@ typedef struct {
 
 #define	SIGNONS		4			// signon messages to receive before connected
 
-#define	MAX_DLIGHTS		64 //johnfitz -- was 32
+#define	MAX_DLIGHTS		64 // johnfitz -- was 32
 typedef struct {
 	vec3_t	origin;				// world space
 	vec3_t	transformed;		// inverse transform back to model space
@@ -69,11 +69,11 @@ typedef struct {
 	float	decay;				// drop this each second
 	float	minlight;			// don't add when contributing less
 	int		key;
-	vec3_t	color;				//johnfitz -- lit support via lordhavoc
+	vec3_t	color;				// johnfitz -- lit support via lordhavoc
 } dlight_t;
 
 
-#define	MAX_BEAMS	32 //johnfitz -- was 24
+#define	MAX_BEAMS	32 // johnfitz -- was 24
 typedef struct {
 	int		entity;
 	struct qmodel_s *model;
@@ -198,7 +198,7 @@ typedef struct {
 	struct sfx_s *sound_precache[MAX_SOUNDS];
 
 	char		mapname[128];
-	char		levelname[128];	// for display on solo scoreboard //johnfitz -- was 40.
+	char		levelname[128];	// for display on solo scoreboard // johnfitz -- was 40.
 	int			viewentity;		// cl_entitites[cl.viewentity] = player
 	int			maxclients;
 	int			gametype;
@@ -216,7 +216,7 @@ typedef struct {
 // frag scoreboard
 	scoreboard_t *scores;		// [cl.maxclients]
 
-	unsigned	protocol; //johnfitz
+	unsigned	protocol; // johnfitz
 	unsigned	protocolflags;
 } client_state_t;
 
@@ -259,8 +259,8 @@ extern	cvar_t	m_forward;
 extern	cvar_t	m_side;
 
 
-#define	MAX_TEMP_ENTITIES	256		//johnfitz -- was 64
-#define	MAX_STATIC_ENTITIES	4096	//ericw -- was 512	//johnfitz -- was 128
+#define	MAX_TEMP_ENTITIES	256		// johnfitz -- was 64
+#define	MAX_STATIC_ENTITIES	4096	// ericw -- was 512	// johnfitz -- was 128
 #define	MAX_VISEDICTS		4096	// larger, now we support BSP2
 
 extern	client_state_t	cl;
@@ -274,10 +274,10 @@ extern	beam_t			cl_beams[MAX_BEAMS];
 extern	entity_t *cl_visedicts[MAX_VISEDICTS];
 extern	int				cl_numvisedicts;
 
-extern	entity_t *cl_entities; //johnfitz -- was a static array, now on hunk
-extern	int				cl_max_edicts; //johnfitz -- only changes when new map loads
+extern	entity_t *cl_entities; // johnfitz -- was a static array, now on hunk
+extern	int				cl_max_edicts; // johnfitz -- only changes when new map loads
 
-//=============================================================================
+// =============================================================================
 
 //
 // cl_main
@@ -344,7 +344,7 @@ void V_StartPitchDrift (void);
 void V_StopPitchDrift (void);
 
 void V_RenderView (void);
-//void V_UpdatePalette (void); //johnfitz
+// void V_UpdatePalette (void); // johnfitz
 void V_Register (void);
 void V_ParseDamage (void);
 void V_SetContentsColor (int contents);
@@ -362,8 +362,8 @@ extern	cvar_t	chase_active;
 
 void Chase_Init (void);
 void TraceLine (vec3_t start, vec3_t end, vec3_t impact);
-void Chase_UpdateForClient (void);	//johnfitz
-void Chase_UpdateForDrawing (void);	//johnfitz
+void Chase_UpdateForClient (void);	// johnfitz
+void Chase_UpdateForDrawing (void);	// johnfitz
 
 #endif	/* _CLIENT_H_ */
 

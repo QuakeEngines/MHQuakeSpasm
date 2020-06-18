@@ -65,7 +65,7 @@ void W_CleanupName (const char *in, char *out)
 W_LoadWadFile
 ====================
 */
-void W_LoadWadFile (void) //johnfitz -- filename is now hard-coded for honesty
+void W_LoadWadFile (void) // johnfitz -- filename is now hard-coded for honesty
 {
 	lumpinfo_t *lump_p;
 	wadinfo_t *header;
@@ -73,8 +73,8 @@ void W_LoadWadFile (void) //johnfitz -- filename is now hard-coded for honesty
 	int			infotableofs;
 	const char *filename = WADFILENAME;
 
-	//johnfitz -- modified to use malloc
-	//TODO: use cache_alloc
+	// johnfitz -- modified to use malloc
+	// TODO: use cache_alloc
 	if (wad_base)
 		free (wad_base);
 	wad_base = COM_LoadMallocFile (filename, NULL);
@@ -125,7 +125,7 @@ lumpinfo_t *W_GetLumpinfo (const char *name)
 			return lump_p;
 	}
 
-	Con_SafePrintf ("W_GetLumpinfo: %s not found\n", name); //johnfitz -- was Sys_Error
+	Con_SafePrintf ("W_GetLumpinfo: %s not found\n", name); // johnfitz -- was Sys_Error
 	return NULL;
 }
 
@@ -135,7 +135,7 @@ void *W_GetLumpName (const char *name)
 
 	lump = W_GetLumpinfo (name);
 
-	if (!lump) return NULL; //johnfitz
+	if (!lump) return NULL; // johnfitz
 
 	return (void *) (wad_base + lump->filepos);
 }

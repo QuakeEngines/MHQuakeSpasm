@@ -67,9 +67,9 @@ extern	viddef_t	vid;				// global video state
 
 extern void (*vid_menudrawfn)(void);
 extern void (*vid_menukeyfn)(int key);
-extern void (*vid_menucmdfn)(void); //johnfitz
+extern void (*vid_menucmdfn)(void); // johnfitz
 
-void	VID_Init (void); //johnfitz -- removed palette from argument list
+void	VID_Init (void); // johnfitz -- removed palette from argument list
 
 void	VID_Shutdown (void);
 // Called at shutdown

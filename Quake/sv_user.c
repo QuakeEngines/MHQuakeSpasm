@@ -41,7 +41,7 @@ qboolean	onground;
 usercmd_t	cmd;
 
 cvar_t	sv_idealpitchscale = { "sv_idealpitchscale", "0.8", CVAR_NONE };
-cvar_t	sv_altnoclip = { "sv_altnoclip", "1", CVAR_ARCHIVE }; //johnfitz
+cvar_t	sv_altnoclip = { "sv_altnoclip", "1", CVAR_ARCHIVE }; // johnfitz
 
 /*
 ===============
@@ -308,7 +308,7 @@ void SV_NoclipMove (void)
 	velocity[0] = forward[0] * cmd.forwardmove + right[0] * cmd.sidemove;
 	velocity[1] = forward[1] * cmd.forwardmove + right[1] * cmd.sidemove;
 	velocity[2] = forward[2] * cmd.forwardmove + right[2] * cmd.sidemove;
-	velocity[2] += cmd.upmove * 2; //doubled to match running speed
+	velocity[2] += cmd.upmove * 2; // doubled to match running speed
 
 	if (VectorLength (velocity) > sv_maxspeed.value)
 	{
@@ -419,14 +419,14 @@ void SV_ClientThink (void)
 	//
 	// walk
 	//
-		//johnfitz -- alternate noclip
+		// johnfitz -- alternate noclip
 	if (sv_player->v.movetype == MOVETYPE_NOCLIP && sv_altnoclip.value)
 		SV_NoclipMove ();
 	else if (sv_player->v.waterlevel >= 2 && sv_player->v.movetype != MOVETYPE_NOCLIP)
 		SV_WaterMove ();
 	else
 		SV_AirMove ();
-	//johnfitz
+	// johnfitz
 }
 
 
@@ -448,12 +448,12 @@ void SV_ReadClientMove (usercmd_t *move)
 
 	// read current angles
 	for (i = 0; i < 3; i++)
-		//johnfitz -- 16-bit angles for PROTOCOL_FITZQUAKE
+		// johnfitz -- 16-bit angles for PROTOCOL_FITZQUAKE
 		if (sv.protocol == PROTOCOL_NETQUAKE)
 			angle[i] = MSG_ReadAngle (sv.protocolflags);
 		else
 			angle[i] = MSG_ReadAngle16 (sv.protocolflags);
-	//johnfitz
+	// johnfitz
 
 	VectorCopy (angle, host_client->edict->v.v_angle);
 
