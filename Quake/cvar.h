@@ -77,15 +77,14 @@ interface from being ambiguous.
 
 typedef void (*cvarcallback_t) (struct cvar_s *);
 
-typedef struct cvar_s
-{
-	const char	*name;
-	const char	*string;
+typedef struct cvar_s {
+	const char *name;
+	const char *string;
 	unsigned int	flags;
 	float		value;
-	const char	*default_string; //johnfitz -- remember defaults for reset function
+	const char *default_string; //johnfitz -- remember defaults for reset function
 	cvarcallback_t	callback;
-	struct cvar_s	*next;
+	struct cvar_s *next;
 } cvar_t;
 
 void	Cvar_RegisterVariable (cvar_t *variable);
@@ -126,8 +125,8 @@ void	Cvar_WriteVariables (FILE *f);
 // Writes lines containing "set variable value" for all variables
 // with the CVAR_ARCHIVE flag set
 
-cvar_t	*Cvar_FindVar (const char *var_name);
-cvar_t	*Cvar_FindVarAfter (const char *prev_name, unsigned int with_flags);
+cvar_t *Cvar_FindVar (const char *var_name);
+cvar_t *Cvar_FindVarAfter (const char *prev_name, unsigned int with_flags);
 
 void	Cvar_LockVar (const char *var_name);
 void	Cvar_UnlockVar (const char *var_name);
@@ -135,7 +134,7 @@ void	Cvar_UnlockAll (void);
 
 void	Cvar_Init (void);
 
-const char	*Cvar_CompleteVariable (const char *partial);
+const char *Cvar_CompleteVariable (const char *partial);
 // attempts to match a partial variable name for command line completion
 // returns NULL if nothing fits
 

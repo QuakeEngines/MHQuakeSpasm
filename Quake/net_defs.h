@@ -24,8 +24,7 @@
 #ifndef __NET_DEFS_H
 #define __NET_DEFS_H
 
-struct qsockaddr
-{
+struct qsockaddr {
 #if defined(HAVE_SA_LEN)
 	unsigned char qsa_len;
 	unsigned char qsa_family;
@@ -127,9 +126,8 @@ CCREP_RULE_INFO
 #define CCREP_PLAYER_INFO	0x84
 #define CCREP_RULE_INFO		0x85
 
-typedef struct qsocket_s
-{
-	struct qsocket_s	*next;
+typedef struct qsocket_s {
+	struct qsocket_s *next;
 	double		connecttime;
 	double		lastMessageTime;
 	double		lastSendTime;
@@ -141,44 +139,43 @@ typedef struct qsocket_s
 	int		driver;
 	int		landriver;
 	sys_socket_t	socket;
-	void		*driverdata;
+	void *driverdata;
 
 	unsigned int	ackSequence;
 	unsigned int	sendSequence;
 	unsigned int	unreliableSendSequence;
 	int		sendMessageLength;
-	byte		sendMessage [NET_MAXMESSAGE];
+	byte		sendMessage[NET_MAXMESSAGE];
 
 	unsigned int	receiveSequence;
 	unsigned int	unreliableReceiveSequence;
 	int		receiveMessageLength;
-	byte		receiveMessage [NET_MAXMESSAGE];
+	byte		receiveMessage[NET_MAXMESSAGE];
 
 	struct qsockaddr	addr;
 	char		address[NET_NAMELEN];
 
 } qsocket_t;
 
-extern qsocket_t	*net_activeSockets;
-extern qsocket_t	*net_freeSockets;
+extern qsocket_t *net_activeSockets;
+extern qsocket_t *net_freeSockets;
 extern int		net_numsockets;
 
-typedef struct
-{
-	const char	*name;
+typedef struct {
+	const char *name;
 	qboolean	initialized;
 	sys_socket_t	controlSock;
-	sys_socket_t	(*Init) (void);
+	sys_socket_t (*Init) (void);
 	void		(*Shutdown) (void);
 	void		(*Listen) (qboolean state);
-	sys_socket_t	(*Open_Socket) (int port);
+	sys_socket_t (*Open_Socket) (int port);
 	int		(*Close_Socket) (sys_socket_t socketid);
 	int		(*Connect) (sys_socket_t socketid, struct qsockaddr *addr);
-	sys_socket_t	(*CheckNewConnections) (void);
+	sys_socket_t (*CheckNewConnections) (void);
 	int		(*Read) (sys_socket_t socketid, byte *buf, int len, struct qsockaddr *addr);
 	int		(*Write) (sys_socket_t socketid, byte *buf, int len, struct qsockaddr *addr);
 	int		(*Broadcast) (sys_socket_t socketid, byte *buf, int len);
-	const char *	(*AddrToString) (struct qsockaddr *addr);
+	const char *(*AddrToString) (struct qsockaddr *addr);
 	int		(*StringToAddr) (const char *string, struct qsockaddr *addr);
 	int		(*GetSocketAddr) (sys_socket_t socketid, struct qsockaddr *addr);
 	int		(*GetNameFromAddr) (struct qsockaddr *addr, char *name);
@@ -192,20 +189,19 @@ typedef struct
 extern net_landriver_t	net_landrivers[];
 extern const int	net_numlandrivers;
 
-typedef struct
-{
-	const char	*name;
+typedef struct {
+	const char *name;
 	qboolean	initialized;
 	int		(*Init) (void);
 	void		(*Listen) (qboolean state);
 	void		(*SearchForHosts) (qboolean xmit);
-	qsocket_t	*(*Connect) (const char *host);
-	qsocket_t	*(*CheckNewConnections) (void);
+	qsocket_t *(*Connect) (const char *host);
+	qsocket_t *(*CheckNewConnections) (void);
 	int		(*QGetMessage) (qsocket_t *sock);
 	int		(*QSendMessage) (qsocket_t *sock, sizebuf_t *data);
 	int		(*SendUnreliableMessage) (qsocket_t *sock, sizebuf_t *data);
-	qboolean	(*CanSendMessage) (qsocket_t *sock);
-	qboolean	(*CanSendUnreliableMessage) (qsocket_t *sock);
+	qboolean (*CanSendMessage) (qsocket_t *sock);
+	qboolean (*CanSendUnreliableMessage) (qsocket_t *sock);
 	void		(*Close) (qsocket_t *sock);
 	void		(*Shutdown) (void);
 } net_driver_t;
@@ -224,14 +220,13 @@ extern int		unreliableMessagesSent;
 extern int		unreliableMessagesReceived;
 
 qsocket_t *NET_NewQSocket (void);
-void NET_FreeQSocket(qsocket_t *);
-double SetNetTime(void);
+void NET_FreeQSocket (qsocket_t *);
+double SetNetTime (void);
 
 
 #define HOSTCACHESIZE	8
 
-typedef struct
-{
+typedef struct {
 	char	name[16];
 	char	map[16];
 	char	cname[32];
@@ -246,15 +241,14 @@ extern int hostCacheCount;
 extern hostcache_t hostcache[HOSTCACHESIZE];
 
 
-typedef struct _PollProcedure
-{
-	struct _PollProcedure	*next;
+typedef struct _PollProcedure {
+	struct _PollProcedure *next;
 	double				nextTime;
 	void				(*procedure)(void *);
-	void				*arg;
+	void *arg;
 } PollProcedure;
 
-void SchedulePollProcedure(PollProcedure *pp, double timeOffset);
+void SchedulePollProcedure (PollProcedure *pp, double timeOffset);
 
 #endif	/* __NET_DEFS_H */
 

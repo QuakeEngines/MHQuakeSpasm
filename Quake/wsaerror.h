@@ -81,11 +81,11 @@ __wsaerr_static const char *__WSAE_StrError (int err)
 	case WSAEREFUSED:		return "Database query was refused";			/* 10112 */
 
 	default:
-		{
-			static char _err_unknown[64];
-			sprintf(_err_unknown, "Unknown WSAE error (%d)", err);
-			return  _err_unknown;
-		}
+	{
+		static char _err_unknown[64];
+		sprintf (_err_unknown, "Unknown WSAE error (%d)", err);
+		return  _err_unknown;
+	}
 	}
 }
 

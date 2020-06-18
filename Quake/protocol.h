@@ -231,8 +231,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define TE_BEAM				13
 // PGM 01/21/97
 
-typedef struct
-{
+typedef struct {
 	vec3_t		origin;
 	vec3_t		angles;
 	unsigned short 	modelindex;	//johnfitz -- was int
@@ -243,11 +242,10 @@ typedef struct
 	int		effects;
 } entity_state_t;
 
-typedef struct
-{
+typedef struct {
 	vec3_t	viewangles;
 
-// intended velocities
+	// intended velocities
 	float	forwardmove;
 	float	sidemove;
 	float	upmove;

@@ -31,7 +31,7 @@
 
 #undef LEGACY_FLAC
 #include <FLAC/stream_decoder.h>
-/* FLAC 1.1.3 has FLAC_API_VERSION_CURRENT == 8 */
+ /* FLAC 1.1.3 has FLAC_API_VERSION_CURRENT == 8 */
 #if !defined(FLAC_API_VERSION_CURRENT) || ((FLAC_API_VERSION_CURRENT+0) < 8)
 #define LEGACY_FLAC
 #include <FLAC/seekable_stream_decoder.h>
@@ -78,7 +78,7 @@ typedef struct {
 /* CALLBACK FUNCTIONS: */
 static void
 flac_error_func (const FLAC__StreamDecoder *decoder,
-		 FLAC__StreamDecoderErrorStatus status, void *client_data)
+	FLAC__StreamDecoderErrorStatus status, void *client_data)
 {
 	flacfile_t *ff = (flacfile_t *) client_data;
 	ff->error = -1;
@@ -87,13 +87,13 @@ flac_error_func (const FLAC__StreamDecoder *decoder,
 
 static FLAC__StreamDecoderReadStatus
 flac_read_func (const FLAC__StreamDecoder *decoder, FLAC__byte buffer[],
-		FLAC_SIZE_T *bytes, void *client_data)
+	FLAC_SIZE_T *bytes, void *client_data)
 {
 	flacfile_t *ff = (flacfile_t *) client_data;
 	if (*bytes > 0)
 	{
-		*bytes = FS_fread(buffer, 1, *bytes, ff->file);
-		if (FS_ferror(ff->file))
+		*bytes = FS_fread (buffer, 1, *bytes, ff->file);
+		if (FS_ferror (ff->file))
 			return FLAC__STREAM_DECODER_READ_STATUS_ABORT;
 		if (*bytes == 0)
 			return FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
@@ -104,17 +104,17 @@ flac_read_func (const FLAC__StreamDecoder *decoder, FLAC__byte buffer[],
 
 static FLAC__StreamDecoderSeekStatus
 flac_seek_func (const FLAC__StreamDecoder *decoder,
-		FLAC__uint64 absolute_byte_offset, void *client_data)
+	FLAC__uint64 absolute_byte_offset, void *client_data)
 {
 	flacfile_t *ff = (flacfile_t *) client_data;
-	if (FS_fseek(ff->file, (long)absolute_byte_offset, SEEK_SET) < 0)
+	if (FS_fseek (ff->file, (long) absolute_byte_offset, SEEK_SET) < 0)
 		return FLAC__STREAM_DECODER_SEEK_STATUS_ERROR;
 	return FLAC__STREAM_DECODER_SEEK_STATUS_OK;
 }
 
 static FLAC__StreamDecoderTellStatus
 flac_tell_func (const FLAC__StreamDecoder *decoder,
-		FLAC__uint64 *absolute_byte_offset, void *client_data)
+	FLAC__uint64 *absolute_byte_offset, void *client_data)
 {
 	flacfile_t *ff = (flacfile_t *) client_data;
 	long pos = FS_ftell (ff->file);
@@ -125,7 +125,7 @@ flac_tell_func (const FLAC__StreamDecoder *decoder,
 
 static FLAC__StreamDecoderLengthStatus
 flac_length_func (const FLAC__StreamDecoder *decoder,
-		  FLAC__uint64 *stream_length, void *client_data)
+	FLAC__uint64 *stream_length, void *client_data)
 {
 	flacfile_t *ff = (flacfile_t *) client_data;
 	*stream_length = (FLAC__uint64) FS_filelength (ff->file);
@@ -142,16 +142,18 @@ flac_eof_func (const FLAC__StreamDecoder *decoder, void *client_data)
 
 static FLAC__StreamDecoderWriteStatus
 flac_write_func (const FLAC__StreamDecoder *decoder,
-		 const FLAC__Frame *frame, const FLAC__int32 * const buffer[],
-		 void *client_data)
+	const FLAC__Frame *frame, const FLAC__int32 *const buffer[],
+	void *client_data)
 {
 	flacfile_t *ff = (flacfile_t *) client_data;
 
-	if (!ff->buffer) {
+	if (!ff->buffer)
+	{
 		ff->buffer = (byte *) malloc (ff->info->blocksize * ff->info->channels * ff->info->width);
-		if (!ff->buffer) {
+		if (!ff->buffer)
+		{
 			ff->error = -1; /* needn't set this here, but... */
-			Con_Printf("Insufficient memory for fLaC audio\n");
+			Con_Printf ("Insufficient memory for fLaC audio\n");
 			return FLAC__STREAM_DECODER_WRITE_STATUS_ABORT;
 		}
 	}
@@ -163,7 +165,7 @@ flac_write_func (const FLAC__StreamDecoder *decoder,
 
 		if (ff->info->bits == 8)
 		{
-			byte  *out = ff->buffer;
+			byte *out = ff->buffer;
 			for (i = 0; i < frame->header.blocksize; i++)
 				*out++ = *in++ + 128;
 		}
@@ -182,8 +184,8 @@ flac_write_func (const FLAC__StreamDecoder *decoder,
 
 		if (ff->info->bits == 8)
 		{
-			char  *lo = (char *) ff->buffer + 0;
-			char  *ro = (char *) ff->buffer + 1;
+			char *lo = (char *) ff->buffer + 0;
+			char *ro = (char *) ff->buffer + 1;
 			for (i = 0; i < frame->header.blocksize; i++, lo++, ro++)
 			{
 				*lo++ = *li++ + 128;
@@ -209,7 +211,7 @@ flac_write_func (const FLAC__StreamDecoder *decoder,
 
 static void
 flac_meta_func (const FLAC__StreamDecoder *decoder,
-			    const FLAC__StreamMetadata *metadata, void *client_data)
+	const FLAC__StreamMetadata *metadata, void *client_data)
 {
 	flacfile_t *ff = (flacfile_t *) client_data;
 	if (metadata->type == FLAC__METADATA_TYPE_STREAMINFO)
@@ -238,18 +240,18 @@ static qboolean S_FLAC_CodecOpenStream (snd_stream_t *stream)
 	flacfile_t *ff;
 	int rc;
 
-	ff = (flacfile_t *) Z_Malloc(sizeof(flacfile_t));
+	ff = (flacfile_t *) Z_Malloc (sizeof (flacfile_t));
 
 	ff->decoder = FLAC__stream_decoder_new ();
 	if (ff->decoder == NULL)
 	{
-		Con_Printf("Unable to create fLaC decoder\n");
+		Con_Printf ("Unable to create fLaC decoder\n");
 		goto _fail;
 	}
 
 	stream->priv = ff;
-	ff->info = & stream->info;
-	ff->file = & stream->fh;
+	ff->info = &stream->info;
+	ff->file = &stream->fh;
 	ff->info->dataofs = -1; /* check for STREAMINFO metadata existence */
 
 #ifdef LEGACY_FLAC
@@ -264,16 +266,16 @@ static qboolean S_FLAC_CodecOpenStream (snd_stream_t *stream)
 	FLAC__seekable_stream_decoder_set_client_data (ff->decoder, ff);
 	rc = FLAC__seekable_stream_decoder_init (ff->decoder);
 #else
-	rc = FLAC__stream_decoder_init_stream(ff->decoder,
-								flac_read_func,
-								flac_seek_func,
-								flac_tell_func,
-								flac_length_func,
-								flac_eof_func,
-								flac_write_func,
-								flac_meta_func,
-								flac_error_func,
-							ff);
+	rc = FLAC__stream_decoder_init_stream (ff->decoder,
+		flac_read_func,
+		flac_seek_func,
+		flac_tell_func,
+		flac_length_func,
+		flac_eof_func,
+		flac_write_func,
+		flac_meta_func,
+		flac_error_func,
+		ff);
 #endif
 	if (rc != FLAC__STREAM_DECODER_INIT_STATUS_OK) /* unlikely */
 	{
@@ -284,26 +286,26 @@ static qboolean S_FLAC_CodecOpenStream (snd_stream_t *stream)
 	rc = FLAC__stream_decoder_process_until_end_of_metadata (ff->decoder);
 	if (rc == false || ff->error)
 	{
-		rc = FLAC__stream_decoder_get_state(ff->decoder);
-		Con_Printf("%s not a valid flac file? (decoder state %i)\n",
-						stream->name, rc);
+		rc = FLAC__stream_decoder_get_state (ff->decoder);
+		Con_Printf ("%s not a valid flac file? (decoder state %i)\n",
+			stream->name, rc);
 		goto _fail;
 	}
 
 	if (ff->info->dataofs < 0)
 	{
-		Con_Printf("%s has no STREAMINFO\n", stream->name);
+		Con_Printf ("%s has no STREAMINFO\n", stream->name);
 		goto _fail;
 	}
 	if (ff->info->bits != 8 && ff->info->bits != 16)
 	{
-		Con_Printf("%s is not 8 or 16 bit\n", stream->name);
+		Con_Printf ("%s is not 8 or 16 bit\n", stream->name);
 		goto _fail;
 	}
 	if (ff->info->channels != 1 && ff->info->channels != 2)
 	{
-		Con_Printf("Unsupported number of channels %d in %s\n",
-					ff->info->channels, stream->name);
+		Con_Printf ("Unsupported number of channels %d in %s\n",
+			ff->info->channels, stream->name);
 		goto _fail;
 	}
 
@@ -315,7 +317,7 @@ _fail:
 		FLAC__stream_decoder_finish (ff->decoder);
 		FLAC__stream_decoder_delete (ff->decoder);
 	}
-	Z_Free(ff);
+	Z_Free (ff);
 	return false;
 }
 
@@ -325,7 +327,8 @@ static int S_FLAC_CodecReadStream (snd_stream_t *stream, int len, void *buffer)
 	byte *buf = (byte *) buffer;
 	int count = 0;
 
-	while (len) {
+	while (len)
+	{
 		int res = 0;
 		if (ff->size == ff->pos)
 			FLAC__stream_decoder_process_single (ff->decoder);
@@ -333,15 +336,20 @@ static int S_FLAC_CodecReadStream (snd_stream_t *stream, int len, void *buffer)
 		res = ff->size - ff->pos;
 		if (res > len)
 			res = len;
-		if (res > 0) {
+		if (res > 0)
+		{
 			memcpy (buf, ff->buffer + ff->pos, res);
 			count += res;
 			len -= res;
 			buf += res;
 			ff->pos += res;
-		} else if (res < 0) { /* error */
+		}
+		else if (res < 0)
+		{ /* error */
 			return -1;
-		} else {
+		}
+		else
+		{
 			Con_DPrintf ("FLAC: EOF\n");
 			break;
 		}
@@ -357,10 +365,10 @@ static void S_FLAC_CodecCloseStream (snd_stream_t *stream)
 	FLAC__stream_decoder_delete (ff->decoder);
 
 	if (ff->buffer)
-			free(ff->buffer);
-	Z_Free(ff);
+		free (ff->buffer);
+	Z_Free (ff);
 
-	S_CodecUtilClose(&stream);
+	S_CodecUtilClose (&stream);
 }
 
 static int S_FLAC_CodecRewindStream (snd_stream_t *stream)
@@ -368,7 +376,7 @@ static int S_FLAC_CodecRewindStream (snd_stream_t *stream)
 	flacfile_t *ff = (flacfile_t *) stream->priv;
 
 	ff->pos = ff->size = 0;
-	if (FLAC__stream_decoder_seek_absolute(ff->decoder, 0)) return 0;
+	if (FLAC__stream_decoder_seek_absolute (ff->decoder, 0)) return 0;
 	return -1;
 }
 

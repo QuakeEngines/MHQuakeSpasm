@@ -66,7 +66,7 @@ struct upkg_hdr {
 	/*struct _genhist *gen;*/
 };
 /*COMPILE_TIME_ASSERT(upkg_hdr, offsetof(struct upkg_hdr, gen) == UPKG_HDR_SIZE);*/
-COMPILE_TIME_ASSERT(upkg_hdr, sizeof(struct upkg_hdr) == UPKG_HDR_SIZE);
+COMPILE_TIME_ASSERT (upkg_hdr, sizeof (struct upkg_hdr) == UPKG_HDR_SIZE);
 
 #define UMUSIC_IT	0
 #define UMUSIC_S3M	1
@@ -94,19 +94,23 @@ static fci_t get_fci (const char *in, int *pos)
 	size = 1;
 	a = in[0] & 0x3f;
 
-	if (in[0] & 0x40) {
+	if (in[0] & 0x40)
+	{
 		size++;
 		a |= (in[1] & 0x7f) << 6;
 
-		if (in[1] & 0x80) {
+		if (in[1] & 0x80)
+		{
 			size++;
 			a |= (in[2] & 0x7f) << 13;
 
-			if (in[2] & 0x80) {
+			if (in[2] & 0x80)
+			{
 				size++;
 				a |= (in[3] & 0x7f) << 20;
 
-				if (in[3] & 0x80) {
+				if (in[3] & 0x80)
+				{
 					size++;
 					a |= (in[4] & 0x3f) << 27;
 				}
@@ -126,39 +130,44 @@ static int get_objtype (fshandle_t *f, int32_t ofs, int type)
 {
 	char sig[16];
 _retry:
-	FS_fseek(f, ofs, SEEK_SET);
-	FS_fread(sig, 16, 1, f);
-	if (type == UMUSIC_IT) {
-		if (memcmp(sig, "IMPM", 4) == 0)
+	FS_fseek (f, ofs, SEEK_SET);
+	FS_fread (sig, 16, 1, f);
+	if (type == UMUSIC_IT)
+	{
+		if (memcmp (sig, "IMPM", 4) == 0)
 			return UMUSIC_IT;
 		return -1;
 	}
-	if (type == UMUSIC_XM) {
-		if (memcmp(sig, "Extended Module:", 16) != 0)
+	if (type == UMUSIC_XM)
+	{
+		if (memcmp (sig, "Extended Module:", 16) != 0)
 			return -1;
-		FS_fread(sig, 16, 1, f);
+		FS_fread (sig, 16, 1, f);
 		if (sig[0] != ' ') return -1;
-		FS_fread(sig, 16, 1, f);
+		FS_fread (sig, 16, 1, f);
 		if (sig[5] != 0x1a) return -1;
 		return UMUSIC_XM;
 	}
-	if (type == UMUSIC_MP2) {
-		unsigned char *p = (unsigned char *)sig;
+	if (type == UMUSIC_MP2)
+	{
+		unsigned char *p = (unsigned char *) sig;
 		uint16_t u = ((p[0] << 8) | p[1]) & 0xFFFE;
 		if (u == 0xFFFC || u == 0xFFF4)
 			return UMUSIC_MP2;
 		return -1;
 	}
-	if (type == UMUSIC_WAV) {
-		if (memcmp(sig, "RIFF", 4) == 0 && memcmp(&sig[8], "WAVE", 4) == 0)
+	if (type == UMUSIC_WAV)
+	{
+		if (memcmp (sig, "RIFF", 4) == 0 && memcmp (&sig[8], "WAVE", 4) == 0)
 			return UMUSIC_WAV;
 		return -1;
 	}
 
-	FS_fseek(f, ofs + 44, SEEK_SET);
-	FS_fread(sig, 4, 1, f);
-	if (type == UMUSIC_S3M) {
-		if (memcmp(sig, "SCRM", 4) == 0)
+	FS_fseek (f, ofs + 44, SEEK_SET);
+	FS_fread (sig, 4, 1, f);
+	if (type == UMUSIC_S3M)
+	{
+		if (memcmp (sig, "SCRM", 4) == 0)
 			return UMUSIC_S3M;
 		/*return -1;*/
 		/* SpaceMarines.umx and Starseek.umx from Return to NaPali
@@ -167,10 +176,11 @@ _retry:
 		goto _retry;
 	}
 
-	FS_fseek(f, ofs + 1080, SEEK_SET);
-	FS_fread(sig, 4, 1, f);
-	if (type == UMUSIC_MOD) {
-		if (memcmp(sig, "M.K.", 4) == 0 || memcmp(sig, "M!K!", 4) == 0)
+	FS_fseek (f, ofs + 1080, SEEK_SET);
+	FS_fread (sig, 4, 1, f);
+	if (type == UMUSIC_MOD)
+	{
+		if (memcmp (sig, "M.K.", 4) == 0 || memcmp (sig, "M!K!", 4) == 0)
 			return UMUSIC_MOD;
 		return -1;
 	}
@@ -179,28 +189,28 @@ _retry:
 }
 
 static int read_export (fshandle_t *f, const struct upkg_hdr *hdr,
-			int32_t *ofs, int32_t *objsize)
+	int32_t *ofs, int32_t *objsize)
 {
 	char buf[40];
 	int idx = 0, t;
 
-	FS_fseek(f, *ofs, SEEK_SET);
-	if (FS_fread(buf, 4, 10, f) < 10)
+	FS_fseek (f, *ofs, SEEK_SET);
+	if (FS_fread (buf, 4, 10, f) < 10)
 		return -1;
 
 	if (hdr->file_version < 40) idx += 8;	/* 00 00 00 00 00 00 00 00 */
 	if (hdr->file_version < 60) idx += 16;	/* 81 00 00 00 00 00 FF FF FF FF FF FF FF FF 00 00 */
-	get_fci(&buf[idx], &idx);		/* skip junk */
-	t = get_fci(&buf[idx], &idx);		/* type_name */
+	get_fci (&buf[idx], &idx);		/* skip junk */
+	t = get_fci (&buf[idx], &idx);		/* type_name */
 	if (hdr->file_version > 61) idx += 4;	/* skip export size */
-	*objsize = get_fci(&buf[idx], &idx);
+	*objsize = get_fci (&buf[idx], &idx);
 	*ofs += idx;	/* offset for real data */
 
 	return t;	/* return type_name index */
 }
 
-static int read_typname(fshandle_t *f, const struct upkg_hdr *hdr,
-			int idx, char *out)
+static int read_typname (fshandle_t *f, const struct upkg_hdr *hdr,
+	int idx, char *out)
 {
 	int i, s;
 	long l;
@@ -208,25 +218,29 @@ static int read_typname(fshandle_t *f, const struct upkg_hdr *hdr,
 
 	if (idx >= hdr->name_count) return -1;
 	buf[63] = '\0';
-	for (i = 0, l = 0; i <= idx; i++) {
-		FS_fseek(f, hdr->name_offset + l, SEEK_SET);
-		FS_fread(buf, 1, 63, f);
-		if (hdr->file_version >= 64) {
-			s = *(signed char *)buf; /* numchars *including* terminator */
+	for (i = 0, l = 0; i <= idx; i++)
+	{
+		FS_fseek (f, hdr->name_offset + l, SEEK_SET);
+		FS_fread (buf, 1, 63, f);
+		if (hdr->file_version >= 64)
+		{
+			s = *(signed char *) buf; /* numchars *including* terminator */
 			if (s <= 0 || s > 64) return -1;
 			l += s + 5;	/* 1 for buf[0], 4 for int32_t name_flags */
-		} else {
-			l += (long)strlen(buf);
-			l +=  5;	/* 1 for terminator, 4 for int32_t name_flags */
+		}
+		else
+		{
+			l += (long) strlen (buf);
+			l += 5;	/* 1 for terminator, 4 for int32_t name_flags */
 		}
 	}
 
-	strcpy(out, (hdr->file_version >= 64)? &buf[1] : buf);
+	strcpy (out, (hdr->file_version >= 64) ? &buf[1] : buf);
 	return 0;
 }
 
-static int probe_umx   (fshandle_t *f, const struct upkg_hdr *hdr,
-			int32_t *ofs, int32_t *objsize)
+static int probe_umx (fshandle_t *f, const struct upkg_hdr *hdr,
+	int32_t *ofs, int32_t *objsize)
 {
 	int i, idx, t;
 	int32_t s, pos;
@@ -241,33 +255,35 @@ static int probe_umx   (fshandle_t *f, const struct upkg_hdr *hdr,
 	 * have only one export. Kran32.umx from Unreal has two,
 	 * but both pointing to the same music. */
 	if (hdr->export_offset >= fsiz) return -1;
-	memset(buf, 0, 64);
-	FS_fseek(f, hdr->export_offset, SEEK_SET);
-	FS_fread(buf, 1, 64, f);
+	memset (buf, 0, 64);
+	FS_fseek (f, hdr->export_offset, SEEK_SET);
+	FS_fread (buf, 1, 64, f);
 
-	get_fci(&buf[idx], &idx);	/* skip class_index */
-	get_fci(&buf[idx], &idx);	/* skip super_index */
+	get_fci (&buf[idx], &idx);	/* skip class_index */
+	get_fci (&buf[idx], &idx);	/* skip super_index */
 	if (hdr->file_version >= 60) idx += 4; /* skip int32 package_index */
-	get_fci(&buf[idx], &idx);	/* skip object_name */
+	get_fci (&buf[idx], &idx);	/* skip object_name */
 	idx += 4;			/* skip int32 object_flags */
 
-	s = get_fci(&buf[idx], &idx);	/* get serial_size */
+	s = get_fci (&buf[idx], &idx);	/* get serial_size */
 	if (s <= 0) return -1;
-	pos = get_fci(&buf[idx],&idx);	/* get serial_offset */
+	pos = get_fci (&buf[idx], &idx);	/* get serial_offset */
 	if (pos < 0 || pos > fsiz - 40) return -1;
 
-	if ((t = read_export(f, hdr, &pos, &s)) < 0) return -1;
+	if ((t = read_export (f, hdr, &pos, &s)) < 0) return -1;
 	if (s <= 0 || s > fsiz - pos) return -1;
 
-	if (read_typname(f, hdr, t, buf) < 0) return -1;
-	for (i = 0; mustype[i] != NULL; i++) {
-		if (!q_strcasecmp(buf, mustype[i])) {
+	if (read_typname (f, hdr, t, buf) < 0) return -1;
+	for (i = 0; mustype[i] != NULL; i++)
+	{
+		if (!q_strcasecmp (buf, mustype[i]))
+		{
 			t = i;
 			break;
 		}
 	}
 	if (mustype[i] == NULL) return -1;
-	if ((t = get_objtype(f, pos, t)) < 0) return -1;
+	if ((t = get_objtype (f, pos, t)) < 0) return -1;
 
 	*ofs = pos;
 	*objsize = s;
@@ -284,26 +300,30 @@ static int32_t probe_header (void *header)
 	/* byte swap the header - all members are 32 bit LE values */
 	p = (unsigned char *) header;
 	swp = (uint32_t *) header;
-	for (i = 0; i < UPKG_HDR_SIZE/4; i++, p += 4) {
+	for (i = 0; i < UPKG_HDR_SIZE / 4; i++, p += 4)
+	{
 		swp[i] = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
 	}
 
 	hdr = (struct upkg_hdr *) header;
-	if (hdr->tag != UPKG_HDR_TAG) {
-		Con_DPrintf("Unknown header tag 0x%x\n", hdr->tag);
+	if (hdr->tag != UPKG_HDR_TAG)
+	{
+		Con_DPrintf ("Unknown header tag 0x%x\n", hdr->tag);
 		return -1;
 	}
-	if (hdr->name_count	< 0	||
-	    hdr->name_offset	< 0	||
-	    hdr->export_count	< 0	||
-	    hdr->export_offset	< 0	||
-	    hdr->import_count	< 0	||
-	    hdr->import_offset	< 0	) {
-		Con_DPrintf("Negative values in header\n");
+	if (hdr->name_count < 0 ||
+		hdr->name_offset < 0 ||
+		hdr->export_count < 0 ||
+		hdr->export_offset < 0 ||
+		hdr->import_count < 0 ||
+		hdr->import_offset < 0)
+	{
+		Con_DPrintf ("Negative values in header\n");
 		return -1;
 	}
 
-	switch (hdr->file_version) {
+	switch (hdr->file_version)
+	{
 	case 35: case 37:	/* Unreal beta - */
 	case 40: case 41:				/* 1998 */
 	case 61:/* Unreal */
@@ -319,7 +339,7 @@ static int32_t probe_header (void *header)
 		return 0;
 	}
 
-	Con_DPrintf("Unknown upkg version %d\n", hdr->file_version);
+	Con_DPrintf ("Unknown upkg version %d\n", hdr->file_version);
 	return -1;
 }
 
@@ -327,12 +347,12 @@ static int process_upkg (fshandle_t *f, int32_t *ofs, int32_t *objsize)
 {
 	char header[UPKG_HDR_SIZE];
 
-	if (FS_fread(header, 1, UPKG_HDR_SIZE, f) < UPKG_HDR_SIZE)
+	if (FS_fread (header, 1, UPKG_HDR_SIZE, f) < UPKG_HDR_SIZE)
 		return -1;
-	if (probe_header(header) < 0)
+	if (probe_header (header) < 0)
 		return -1;
 
-	return probe_umx(f, (struct upkg_hdr *)header, ofs, objsize);
+	return probe_umx (f, (struct upkg_hdr *) header, ofs, objsize);
 }
 
 static qboolean S_UMX_CodecInitialize (void)
@@ -349,26 +369,28 @@ static qboolean S_UMX_CodecOpenStream (snd_stream_t *stream)
 	int type;
 	int32_t ofs = 0, size = 0;
 
-	type = process_upkg(&stream->fh, &ofs, &size);
-	if (type < 0) {
-		Con_DPrintf("%s: unrecognized umx\n", stream->name);
+	type = process_upkg (&stream->fh, &ofs, &size);
+	if (type < 0)
+	{
+		Con_DPrintf ("%s: unrecognized umx\n", stream->name);
 		return false;
 	}
 
-	Con_DPrintf("%s: %s data @ 0x%x, %d bytes\n", stream->name, mustype[type], ofs, size);
+	Con_DPrintf ("%s: %s data @ 0x%x, %d bytes\n", stream->name, mustype[type], ofs, size);
 	/* hack the fshandle_t start pos and length members so
 	 * that only the relevant data is accessed from now on */
 	stream->fh.start += ofs;
 	stream->fh.length = size;
-	FS_fseek(&stream->fh, 0, SEEK_SET);
+	FS_fseek (&stream->fh, 0, SEEK_SET);
 
-	switch (type) {
+	switch (type)
+	{
 	case UMUSIC_IT:
 	case UMUSIC_S3M:
 	case UMUSIC_XM:
-	case UMUSIC_MOD: return S_CodecForwardStream(stream, CODECTYPE_MOD);
-	case UMUSIC_WAV: return S_CodecForwardStream(stream, CODECTYPE_WAV);
-	case UMUSIC_MP2: return S_CodecForwardStream(stream, CODECTYPE_MP3);
+	case UMUSIC_MOD: return S_CodecForwardStream (stream, CODECTYPE_MOD);
+	case UMUSIC_WAV: return S_CodecForwardStream (stream, CODECTYPE_WAV);
+	case UMUSIC_MP2: return S_CodecForwardStream (stream, CODECTYPE_MP3);
 	}
 
 	return false;
@@ -381,7 +403,7 @@ static int S_UMX_CodecReadStream (snd_stream_t *stream, int bytes, void *buffer)
 
 static void S_UMX_CodecCloseStream (snd_stream_t *stream)
 {
-	S_CodecUtilClose(&stream);
+	S_CodecUtilClose (&stream);
 }
 
 static int S_UMX_CodecRewindStream (snd_stream_t *stream)

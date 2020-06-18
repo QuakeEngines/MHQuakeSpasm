@@ -21,13 +21,13 @@
 
 #include "strl_fn.h"
 
-/*
- * Appends src to string dst of size siz (unlike strncat, siz is the
- * full size of dst, not space left).  At most siz-1 characters
- * will be copied.  Always NUL terminates (unless siz <= strlen(dst)).
- * Returns strlen(src) + MIN(siz, strlen(initial dst)).
- * If retval >= siz, truncation occurred.
- */
+ /*
+  * Appends src to string dst of size siz (unlike strncat, siz is the
+  * full size of dst, not space left).  At most siz-1 characters
+  * will be copied.  Always NUL terminates (unless siz <= strlen(dst)).
+  * Returns strlen(src) + MIN(siz, strlen(initial dst)).
+  * If retval >= siz, truncation occurred.
+  */
 
 size_t
 q_strlcat (char *dst, const char *src, size_t siz)
@@ -44,9 +44,11 @@ q_strlcat (char *dst, const char *src, size_t siz)
 	n = siz - dlen;
 
 	if (n == 0)
-		return(dlen + strlen(s));
-	while (*s != '\0') {
-		if (n != 1) {
+		return(dlen + strlen (s));
+	while (*s != '\0')
+	{
+		if (n != 1)
+		{
 			*d++ = *s;
 			n--;
 		}

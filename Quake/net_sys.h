@@ -32,13 +32,13 @@
 #if defined(PLATFORM_BSD) || defined(PLATFORM_OSX)	|| \
     defined(PLATFORM_AMIGA) /* bsdsocket.library */	|| \
     defined(__GNU__) /* GNU/Hurd */ || defined(__riscos__)
-/* struct sockaddr has unsigned char sa_len as the first member in BSD
- * variants and the family member is also an unsigned char instead of an
- * unsigned short. This should matter only when PLATFORM_UNIX is defined,
- * however, checking for the offset of sa_family in every platform that
- * provide a struct sockaddr doesn't hurt either (see down below for the
- * compile time asserts.) */
-/* FIXME : GET RID OF THIS ABOMINATION !!! */
+ /* struct sockaddr has unsigned char sa_len as the first member in BSD
+  * variants and the family member is also an unsigned char instead of an
+  * unsigned short. This should matter only when PLATFORM_UNIX is defined,
+  * however, checking for the offset of sa_family in every platform that
+  * provide a struct sockaddr doesn't hurt either (see down below for the
+  * compile time asserts.) */
+  /* FIXME : GET RID OF THIS ABOMINATION !!! */
 #define	HAVE_SA_LEN	1
 #define	SA_FAM_OFFSET	1
 #else
@@ -46,7 +46,7 @@
 #define	SA_FAM_OFFSET	0
 #endif	/* BSD, sockaddr */
 
-/* unix includes and compatibility macros */
+ /* unix includes and compatibility macros */
 #if defined(PLATFORM_UNIX) || defined(PLATFORM_RISCOS)
 
 #include <sys/param.h>
@@ -66,7 +66,7 @@ typedef int	sys_socket_t;
 #define	SOCKET_ERROR	(-1)
 
 #if defined(__APPLE__) && defined(SO_NKE) && !defined(SO_NOADDRERR)
-				/* ancient Mac OS X SDKs 10.2 and older are missing socklen_t */
+/* ancient Mac OS X SDKs 10.2 and older are missing socklen_t */
 typedef int	socklen_t;			/* defining as signed int to match the old api */
 #endif	/* ancient OSX SDKs */
 
@@ -82,7 +82,7 @@ typedef int	socklen_t;			/* defining as signed int to match the old api */
 #define	socketerror(x)	strerror((x))
 
 /* Verify that we defined HAVE_SA_LEN correctly: */
-COMPILE_TIME_ASSERT(sockaddr, offsetof(struct sockaddr, sa_family) == SA_FAM_OFFSET);
+COMPILE_TIME_ASSERT (sockaddr, offsetof (struct sockaddr, sa_family) == SA_FAM_OFFSET);
 
 #endif	/* end of unix stuff */
 
@@ -134,7 +134,7 @@ typedef unsigned int	in_addr_t;	/* u_int32_t */
 #define	hstrerror(x)	strerror((x))
 
 /* Verify that we defined HAVE_SA_LEN correctly: */
-COMPILE_TIME_ASSERT(sockaddr, offsetof(struct sockaddr, sa_family) == SA_FAM_OFFSET);
+COMPILE_TIME_ASSERT (sockaddr, offsetof (struct sockaddr, sa_family) == SA_FAM_OFFSET);
 
 #endif	/* end of amiga bsdsocket.library stuff */
 
@@ -171,7 +171,7 @@ typedef SOCKET	sys_socket_t;
 #define	socketerror(x)	__WSAE_StrError((x))
 
 /* Verify that we defined HAVE_SA_LEN correctly: */
-COMPILE_TIME_ASSERT(sockaddr, offsetof(struct sockaddr, sa_family) == SA_FAM_OFFSET);
+COMPILE_TIME_ASSERT (sockaddr, offsetof (struct sockaddr, sa_family) == SA_FAM_OFFSET);
 
 #endif	/* end of windows stuff */
 

@@ -26,8 +26,7 @@
 #ifndef _SND_CODEC_H_
 #define _SND_CODEC_H_
 
-typedef struct snd_info_s
-{
+typedef struct snd_info_s {
 	int rate;
 	int bits, width;
 	int channels;
@@ -46,8 +45,7 @@ typedef enum {
 
 typedef struct snd_codec_s snd_codec_t;
 
-typedef struct snd_stream_s
-{
+typedef struct snd_stream_s {
 	fshandle_t fh;
 	qboolean pak;
 	char name[MAX_QPATH];	/* name of the source file */
@@ -65,22 +63,22 @@ void S_CodecShutdown (void);
  * are reponsible for attaching any path to the filename */
 
 snd_stream_t *S_CodecOpenStreamType (const char *filename, unsigned int type);
-	/* Decides according to the required type. */
+/* Decides according to the required type. */
 
 snd_stream_t *S_CodecOpenStreamAny (const char *filename);
-	/* Decides according to file extension. if the
-	 * name has no extension, try all available. */
+/* Decides according to file extension. if the
+ * name has no extension, try all available. */
 
 snd_stream_t *S_CodecOpenStreamExt (const char *filename);
-	/* Decides according to file extension. the name
-	 * MUST have an extension. */
+/* Decides according to file extension. the name
+ * MUST have an extension. */
 
 void S_CodecCloseStream (snd_stream_t *stream);
 int S_CodecReadStream (snd_stream_t *stream, int bytes, void *buffer);
 int S_CodecRewindStream (snd_stream_t *stream);
 
-snd_stream_t *S_CodecUtilOpen(const char *filename, snd_codec_t *codec);
-void S_CodecUtilClose(snd_stream_t **stream);
+snd_stream_t *S_CodecUtilOpen (const char *filename, snd_codec_t *codec);
+void S_CodecUtilClose (snd_stream_t **stream);
 
 
 #define CODECTYPE_NONE		0
@@ -97,8 +95,8 @@ void S_CodecUtilClose(snd_stream_t **stream);
 #define CODECTYPE_MIDI		CODECTYPE_MID
 
 int S_CodecIsAvailable (unsigned int type);
-	/* return 1 if available, 0 if codec failed init
-	 * or -1 if no such codec is present. */
+/* return 1 if available, 0 if codec failed init
+ * or -1 if no such codec is present. */
 
 #endif	/* _SND_CODEC_H_ */
 

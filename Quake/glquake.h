@@ -52,29 +52,27 @@ void R_TimeRefresh_f (void);
 void R_ReadPointFile_f (void);
 texture_t *R_TextureAnimation (texture_t *base, int frame);
 
-typedef struct surfcache_s
-{
-	struct surfcache_s	*next;
-	struct surfcache_s 	**owner;		// NULL is an empty chunk of memory
+typedef struct surfcache_s {
+	struct surfcache_s *next;
+	struct surfcache_s **owner;		// NULL is an empty chunk of memory
 	int			lightadj[MAXLIGHTMAPS]; // checked for strobe flush
 	int			dlight;
 	int			size;		// including header
 	unsigned		width;
 	unsigned		height;		// DEBUG only needed for debug
 	float			mipscale;
-	struct texture_s	*texture;	// checked for animating textures
+	struct texture_s *texture;	// checked for animating textures
 	byte			data[4];	// width*height elements
 } surfcache_t;
 
 
-typedef struct
-{
-	pixel_t		*surfdat;	// destination for generated surface
+typedef struct {
+	pixel_t *surfdat;	// destination for generated surface
 	int		rowbytes;	// destination logical width in bytes
-	msurface_t	*surf;		// description for surface to generate
+	msurface_t *surf;		// description for surface to generate
 	fixed8_t	lightadj[MAXLIGHTMAPS];
-							// adjust for lightmap levels for dynamic lighting
-	texture_t	*texture;	// corrected for animating textures
+	// adjust for lightmap levels for dynamic lighting
+	texture_t *texture;	// corrected for animating textures
 	int		surfmip;	// mipmapped ratio of surface texels / world pixels
 	int		surfwidth;	// in mipmapped texels
 	int		surfheight;	// in mipmapped texels
@@ -86,13 +84,12 @@ typedef enum {
 } ptype_t;
 
 // !!! if this is changed, it must be changed in d_ifacea.h too !!!
-typedef struct particle_s
-{
-// driver-usable fields
+typedef struct particle_s {
+	// driver-usable fields
 	vec3_t		org;
 	float		color;
-// drivers never touch the following fields
-	struct particle_s	*next;
+	// drivers never touch the following fields
+	struct particle_s *next;
 	vec3_t		vel;
 	float		ramp;
 	float		die;
@@ -104,7 +101,7 @@ typedef struct particle_s
 
 extern	qboolean	r_cache_thrash;		// compatability
 extern	vec3_t		modelorg, r_entorigin;
-extern	entity_t	*currententity;
+extern	entity_t *currententity;
 extern	int		r_visframecount;	// ??? what difs?
 extern	int		r_framecount;
 extern	mplane_t	frustum[4];
@@ -121,7 +118,7 @@ extern	vec3_t	r_origin;
 // screen size info
 //
 extern	refdef_t	r_refdef;
-extern	mleaf_t		*r_viewleaf, *r_oldviewleaf;
+extern	mleaf_t *r_viewleaf, *r_oldviewleaf;
 extern	int		d_lightstylevalue[256];	// 8.8 fraction of base light value
 
 extern	cvar_t	r_norefresh;
@@ -186,7 +183,7 @@ extern	qboolean	gl_vbo_able;
 typedef GLuint (APIENTRYP QS_PFNGLCREATESHADERPROC) (GLenum type);
 typedef void (APIENTRYP QS_PFNGLDELETESHADERPROC) (GLuint shader);
 typedef void (APIENTRYP QS_PFNGLDELETEPROGRAMPROC) (GLuint program);
-typedef void (APIENTRYP QS_PFNGLSHADERSOURCEPROC) (GLuint shader, GLsizei count, const GLchar *const*string, const GLint *length);
+typedef void (APIENTRYP QS_PFNGLSHADERSOURCEPROC) (GLuint shader, GLsizei count, const GLchar *const *string, const GLint *length);
 typedef void (APIENTRYP QS_PFNGLCOMPILESHADERPROC) (GLuint shader);
 typedef void (APIENTRYP QS_PFNGLGETSHADERIVPROC) (GLuint shader, GLenum pname, GLint *params);
 typedef void (APIENTRYP QS_PFNGLGETSHADERINFOLOGPROC) (GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
@@ -297,18 +294,17 @@ extern int gl_lightmap_format, lightmap_bytes;
 #define LMBLOCK_HEIGHT	256 //Alternatively, use texture arrays, which would avoid the need to switch textures as often.
 
 typedef struct glRect_s {
-	unsigned short l,t,w,h;
+	unsigned short l, t, w, h;
 } glRect_t;
-struct lightmap_s
-{
+struct lightmap_s {
 	gltexture_t *texture;
-	glpoly_t	*polys;
+	glpoly_t *polys;
 	qboolean	modified;
 	glRect_t	rectchange;
 
 	// the lightmap texture data needs to be kept in
 	// main memory so texsubimage can update properly
-	byte		*data;//[4*LMBLOCK_WIDTH*LMBLOCK_HEIGHT];
+	byte *data;//[4*LMBLOCK_WIDTH*LMBLOCK_HEIGHT];
 };
 extern struct lightmap_s *lightmap;
 extern int lightmap_count;	//allocated lightmaps

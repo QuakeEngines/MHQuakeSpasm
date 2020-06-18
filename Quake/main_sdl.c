@@ -56,7 +56,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static void Sys_AtExit (void)
 {
-	SDL_Quit();
+	SDL_Quit ();
 }
 
 static void Sys_InitSDL (void)
@@ -64,27 +64,27 @@ static void Sys_InitSDL (void)
 #if defined(USE_SDL2)
 	SDL_version v;
 	SDL_version *sdl_version = &v;
-	SDL_GetVersion(&v);
+	SDL_GetVersion (&v);
 #else
-	const SDL_version *sdl_version = SDL_Linked_Version();
+	const SDL_version *sdl_version = SDL_Linked_Version ();
 #endif
 
-	Sys_Printf("Found SDL version %i.%i.%i\n",sdl_version->major,sdl_version->minor,sdl_version->patch);
-	if (SDL_VERSIONNUM(sdl_version->major,sdl_version->minor,sdl_version->patch) < SDL_REQUIREDVERSION)
+	Sys_Printf ("Found SDL version %i.%i.%i\n", sdl_version->major, sdl_version->minor, sdl_version->patch);
+	if (SDL_VERSIONNUM (sdl_version->major, sdl_version->minor, sdl_version->patch) < SDL_REQUIREDVERSION)
 	{	/*reject running under older SDL versions */
-		Sys_Error("You need at least v%d.%d.%d of SDL to run this game.", SDL_MIN_X,SDL_MIN_Y,SDL_MIN_Z);
+		Sys_Error ("You need at least v%d.%d.%d of SDL to run this game.", SDL_MIN_X, SDL_MIN_Y, SDL_MIN_Z);
 	}
-	if (SDL_VERSIONNUM(sdl_version->major,sdl_version->minor,sdl_version->patch) >= SDL_NEW_VERSION_REJECT)
+	if (SDL_VERSIONNUM (sdl_version->major, sdl_version->minor, sdl_version->patch) >= SDL_NEW_VERSION_REJECT)
 	{	/*reject running under newer (1.3.x) SDL */
-		Sys_Error("Your version of SDL library is incompatible with me.\n"
-			  "You need a library version in the line of %d.%d.%d\n", SDL_MIN_X,SDL_MIN_Y,SDL_MIN_Z);
+		Sys_Error ("Your version of SDL library is incompatible with me.\n"
+			"You need a library version in the line of %d.%d.%d\n", SDL_MIN_X, SDL_MIN_Y, SDL_MIN_Z);
 	}
 
-	if (SDL_Init(0) < 0)
+	if (SDL_Init (0) < 0)
 	{
-		Sys_Error("Couldn't init SDL: %s", SDL_GetError());
+		Sys_Error ("Couldn't init SDL: %s", SDL_GetError ());
 	}
-	atexit(Sys_AtExit);
+	atexit (Sys_AtExit);
 }
 
 #define DEFAULT_MEMORY (256 * 1024 * 1024) // ericw -- was 72MB (64-bit) / 64MB (32-bit)
@@ -97,7 +97,7 @@ static quakeparms_t	parms;
 #define main SDL_main
 #endif
 
-int main(int argc, char *argv[])
+int main (int argc, char *argv[])
 {
 	int		t;
 	double		time, oldtime, newtime;
@@ -110,20 +110,20 @@ int main(int argc, char *argv[])
 
 	parms.errstate = 0;
 
-	COM_InitArgv(parms.argc, parms.argv);
+	COM_InitArgv (parms.argc, parms.argv);
 
-	isDedicated = (COM_CheckParm("-dedicated") != 0);
+	isDedicated = (COM_CheckParm ("-dedicated") != 0);
 
 	Sys_InitSDL ();
 
-	Sys_Init();
+	Sys_Init ();
 
 	parms.memsize = DEFAULT_MEMORY;
-	if (COM_CheckParm("-heapsize"))
+	if (COM_CheckParm ("-heapsize"))
 	{
-		t = COM_CheckParm("-heapsize") + 1;
+		t = COM_CheckParm ("-heapsize") + 1;
 		if (t < com_argc)
-			parms.memsize = Q_atoi(com_argv[t]) * 1024;
+			parms.memsize = Q_atoi (com_argv[t]) * 1024;
 	}
 
 	parms.membase = malloc (parms.memsize);
@@ -131,16 +131,16 @@ int main(int argc, char *argv[])
 	if (!parms.membase)
 		Sys_Error ("Not enough memory free; check disk space\n");
 
-	Sys_Printf("Quake %1.2f (c) id Software\n", VERSION);
-	Sys_Printf("GLQuake %1.2f (c) id Software\n", GLQUAKE_VERSION);
-	Sys_Printf("FitzQuake %1.2f (c) John Fitzgibbons\n", FITZQUAKE_VERSION);
-	Sys_Printf("FitzQuake SDL port (c) SleepwalkR, Baker\n");
-	Sys_Printf("QuakeSpasm " QUAKESPASM_VER_STRING " (c) Ozkan Sezer, Eric Wasylishen & others\n");
+	Sys_Printf ("Quake %1.2f (c) id Software\n", VERSION);
+	Sys_Printf ("GLQuake %1.2f (c) id Software\n", GLQUAKE_VERSION);
+	Sys_Printf ("FitzQuake %1.2f (c) John Fitzgibbons\n", FITZQUAKE_VERSION);
+	Sys_Printf ("FitzQuake SDL port (c) SleepwalkR, Baker\n");
+	Sys_Printf ("QuakeSpasm " QUAKESPASM_VER_STRING " (c) Ozkan Sezer, Eric Wasylishen & others\n");
 
-	Sys_Printf("Host_Init\n");
-	Host_Init();
+	Sys_Printf ("Host_Init\n");
+	Host_Init ();
 
-	oldtime = Sys_DoubleTime();
+	oldtime = Sys_DoubleTime ();
 	if (isDedicated)
 	{
 		while (1)
@@ -148,9 +148,9 @@ int main(int argc, char *argv[])
 			newtime = Sys_DoubleTime ();
 			time = newtime - oldtime;
 
-			while (time < sys_ticrate.value )
+			while (time < sys_ticrate.value)
 			{
-				SDL_Delay(1);
+				SDL_Delay (1);
 				newtime = Sys_DoubleTime ();
 				time = newtime - oldtime;
 			}
@@ -160,33 +160,33 @@ int main(int argc, char *argv[])
 		}
 	}
 	else
-	while (1)
-	{
-		/* If we have no input focus at all, sleep a bit */
-		if (!VID_HasMouseOrInputFocus() || cl.paused)
+		while (1)
 		{
-			SDL_Delay(16);
-		}
-		/* If we're minimised, sleep a bit more */
-		if (VID_IsMinimized())
-		{
-			scr_skipupdate = 1;
-			SDL_Delay(32);
-		}
-		else
-		{
-			scr_skipupdate = 0;
-		}
-		newtime = Sys_DoubleTime ();
-		time = newtime - oldtime;
+			/* If we have no input focus at all, sleep a bit */
+			if (!VID_HasMouseOrInputFocus () || cl.paused)
+			{
+				SDL_Delay (16);
+			}
+			/* If we're minimised, sleep a bit more */
+			if (VID_IsMinimized ())
+			{
+				scr_skipupdate = 1;
+				SDL_Delay (32);
+			}
+			else
+			{
+				scr_skipupdate = 0;
+			}
+			newtime = Sys_DoubleTime ();
+			time = newtime - oldtime;
 
-		Host_Frame ();
+			Host_Frame ();
 
-		if (time < sys_throttle.value && !cls.timedemo)
-			SDL_Delay(1);
+			if (time < sys_throttle.value && !cls.timedemo)
+				SDL_Delay (1);
 
-		oldtime = newtime;
-	}
+			oldtime = newtime;
+		}
 
 	return 0;
 }

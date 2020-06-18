@@ -39,139 +39,138 @@ int		history_line = 0;
 
 keydest_t	key_dest;
 
-char		*keybindings[MAX_KEYS];
+char *keybindings[MAX_KEYS];
 qboolean	consolekeys[MAX_KEYS];	// if true, can't be rebound while in console
 qboolean	menubound[MAX_KEYS];	// if true, can't be rebound while in menu
 qboolean	keydown[MAX_KEYS];
 
-typedef struct
-{
-	const char	*name;
+typedef struct {
+	const char *name;
 	int		keynum;
 } keyname_t;
 
 keyname_t keynames[] =
 {
-	{"TAB", K_TAB},
-	{"ENTER", K_ENTER},
-	{"ESCAPE", K_ESCAPE},
-	{"SPACE", K_SPACE},
-	{"BACKSPACE", K_BACKSPACE},
-	{"UPARROW", K_UPARROW},
-	{"DOWNARROW", K_DOWNARROW},
-	{"LEFTARROW", K_LEFTARROW},
-	{"RIGHTARROW", K_RIGHTARROW},
+	{ "TAB", K_TAB },
+	{ "ENTER", K_ENTER },
+	{ "ESCAPE", K_ESCAPE },
+	{ "SPACE", K_SPACE },
+	{ "BACKSPACE", K_BACKSPACE },
+	{ "UPARROW", K_UPARROW },
+	{ "DOWNARROW", K_DOWNARROW },
+	{ "LEFTARROW", K_LEFTARROW },
+	{ "RIGHTARROW", K_RIGHTARROW },
 
-	{"ALT", K_ALT},
-	{"CTRL", K_CTRL},
-	{"SHIFT", K_SHIFT},
+	{ "ALT", K_ALT },
+	{ "CTRL", K_CTRL },
+	{ "SHIFT", K_SHIFT },
 
-//	{"KP_NUMLOCK", K_KP_NUMLOCK},
-	{"KP_SLASH", K_KP_SLASH},
-	{"KP_STAR", K_KP_STAR},
-	{"KP_MINUS", K_KP_MINUS},
-	{"KP_HOME", K_KP_HOME},
-	{"KP_UPARROW", K_KP_UPARROW},
-	{"KP_PGUP", K_KP_PGUP},
-	{"KP_PLUS", K_KP_PLUS},
-	{"KP_LEFTARROW", K_KP_LEFTARROW},
-	{"KP_5", K_KP_5},
-	{"KP_RIGHTARROW", K_KP_RIGHTARROW},
-	{"KP_END", K_KP_END},
-	{"KP_DOWNARROW", K_KP_DOWNARROW},
-	{"KP_PGDN", K_KP_PGDN},
-	{"KP_ENTER", K_KP_ENTER},
-	{"KP_INS", K_KP_INS},
-	{"KP_DEL", K_KP_DEL},
+	//	{"KP_NUMLOCK", K_KP_NUMLOCK},
+	{ "KP_SLASH", K_KP_SLASH },
+	{ "KP_STAR", K_KP_STAR },
+	{ "KP_MINUS", K_KP_MINUS },
+	{ "KP_HOME", K_KP_HOME },
+	{ "KP_UPARROW", K_KP_UPARROW },
+	{ "KP_PGUP", K_KP_PGUP },
+	{ "KP_PLUS", K_KP_PLUS },
+	{ "KP_LEFTARROW", K_KP_LEFTARROW },
+	{ "KP_5", K_KP_5 },
+	{ "KP_RIGHTARROW", K_KP_RIGHTARROW },
+	{ "KP_END", K_KP_END },
+	{ "KP_DOWNARROW", K_KP_DOWNARROW },
+	{ "KP_PGDN", K_KP_PGDN },
+	{ "KP_ENTER", K_KP_ENTER },
+	{ "KP_INS", K_KP_INS },
+	{ "KP_DEL", K_KP_DEL },
 
-	{"F1", K_F1},
-	{"F2", K_F2},
-	{"F3", K_F3},
-	{"F4", K_F4},
-	{"F5", K_F5},
-	{"F6", K_F6},
-	{"F7", K_F7},
-	{"F8", K_F8},
-	{"F9", K_F9},
-	{"F10", K_F10},
-	{"F11", K_F11},
-	{"F12", K_F12},
+	{ "F1", K_F1 },
+	{ "F2", K_F2 },
+	{ "F3", K_F3 },
+	{ "F4", K_F4 },
+	{ "F5", K_F5 },
+	{ "F6", K_F6 },
+	{ "F7", K_F7 },
+	{ "F8", K_F8 },
+	{ "F9", K_F9 },
+	{ "F10", K_F10 },
+	{ "F11", K_F11 },
+	{ "F12", K_F12 },
 
-	{"INS", K_INS},
-	{"DEL", K_DEL},
-	{"PGDN", K_PGDN},
-	{"PGUP", K_PGUP},
-	{"HOME", K_HOME},
-	{"END", K_END},
+	{ "INS", K_INS },
+	{ "DEL", K_DEL },
+	{ "PGDN", K_PGDN },
+	{ "PGUP", K_PGUP },
+	{ "HOME", K_HOME },
+	{ "END", K_END },
 
-	{"COMMAND", K_COMMAND},
+	{ "COMMAND", K_COMMAND },
 
-	{"MOUSE1", K_MOUSE1},
-	{"MOUSE2", K_MOUSE2},
-	{"MOUSE3", K_MOUSE3},
-	{"MOUSE4", K_MOUSE4},
-	{"MOUSE5", K_MOUSE5},
+	{ "MOUSE1", K_MOUSE1 },
+	{ "MOUSE2", K_MOUSE2 },
+	{ "MOUSE3", K_MOUSE3 },
+	{ "MOUSE4", K_MOUSE4 },
+	{ "MOUSE5", K_MOUSE5 },
 
-	{"JOY1", K_JOY1},
-	{"JOY2", K_JOY2},
-	{"JOY3", K_JOY3},
-	{"JOY4", K_JOY4},
+	{ "JOY1", K_JOY1 },
+	{ "JOY2", K_JOY2 },
+	{ "JOY3", K_JOY3 },
+	{ "JOY4", K_JOY4 },
 
-	{"AUX1", K_AUX1},
-	{"AUX2", K_AUX2},
-	{"AUX3", K_AUX3},
-	{"AUX4", K_AUX4},
-	{"AUX5", K_AUX5},
-	{"AUX6", K_AUX6},
-	{"AUX7", K_AUX7},
-	{"AUX8", K_AUX8},
-	{"AUX9", K_AUX9},
-	{"AUX10", K_AUX10},
-	{"AUX11", K_AUX11},
-	{"AUX12", K_AUX12},
-	{"AUX13", K_AUX13},
-	{"AUX14", K_AUX14},
-	{"AUX15", K_AUX15},
-	{"AUX16", K_AUX16},
-	{"AUX17", K_AUX17},
-	{"AUX18", K_AUX18},
-	{"AUX19", K_AUX19},
-	{"AUX20", K_AUX20},
-	{"AUX21", K_AUX21},
-	{"AUX22", K_AUX22},
-	{"AUX23", K_AUX23},
-	{"AUX24", K_AUX24},
-	{"AUX25", K_AUX25},
-	{"AUX26", K_AUX26},
-	{"AUX27", K_AUX27},
-	{"AUX28", K_AUX28},
-	{"AUX29", K_AUX29},
-	{"AUX30", K_AUX30},
-	{"AUX31", K_AUX31},
-	{"AUX32", K_AUX32},
+	{ "AUX1", K_AUX1 },
+	{ "AUX2", K_AUX2 },
+	{ "AUX3", K_AUX3 },
+	{ "AUX4", K_AUX4 },
+	{ "AUX5", K_AUX5 },
+	{ "AUX6", K_AUX6 },
+	{ "AUX7", K_AUX7 },
+	{ "AUX8", K_AUX8 },
+	{ "AUX9", K_AUX9 },
+	{ "AUX10", K_AUX10 },
+	{ "AUX11", K_AUX11 },
+	{ "AUX12", K_AUX12 },
+	{ "AUX13", K_AUX13 },
+	{ "AUX14", K_AUX14 },
+	{ "AUX15", K_AUX15 },
+	{ "AUX16", K_AUX16 },
+	{ "AUX17", K_AUX17 },
+	{ "AUX18", K_AUX18 },
+	{ "AUX19", K_AUX19 },
+	{ "AUX20", K_AUX20 },
+	{ "AUX21", K_AUX21 },
+	{ "AUX22", K_AUX22 },
+	{ "AUX23", K_AUX23 },
+	{ "AUX24", K_AUX24 },
+	{ "AUX25", K_AUX25 },
+	{ "AUX26", K_AUX26 },
+	{ "AUX27", K_AUX27 },
+	{ "AUX28", K_AUX28 },
+	{ "AUX29", K_AUX29 },
+	{ "AUX30", K_AUX30 },
+	{ "AUX31", K_AUX31 },
+	{ "AUX32", K_AUX32 },
 
-	{"PAUSE", K_PAUSE},
+	{ "PAUSE", K_PAUSE },
 
-	{"MWHEELUP", K_MWHEELUP},
-	{"MWHEELDOWN", K_MWHEELDOWN},
+	{ "MWHEELUP", K_MWHEELUP },
+	{ "MWHEELDOWN", K_MWHEELDOWN },
 
-	{"SEMICOLON", ';'},	// because a raw semicolon seperates commands
+	{ "SEMICOLON", ';' },	// because a raw semicolon seperates commands
 
-	{"BACKQUOTE", '`'},	// because a raw backquote may toggle the console
-	{"TILDE", '~'},		// because a raw tilde may toggle the console
+	{ "BACKQUOTE", '`' },	// because a raw backquote may toggle the console
+	{ "TILDE", '~' },		// because a raw tilde may toggle the console
 
-	{"LTHUMB", K_LTHUMB},
-	{"RTHUMB", K_RTHUMB},
-	{"LSHOULDER", K_LSHOULDER},
-	{"RSHOULDER", K_RSHOULDER},
-	{"ABUTTON", K_ABUTTON},
-	{"BBUTTON", K_BBUTTON},
-	{"XBUTTON", K_XBUTTON},
-	{"YBUTTON", K_YBUTTON},
-	{"LTRIGGER", K_LTRIGGER},
-	{"RTRIGGER", K_RTRIGGER},
+	{ "LTHUMB", K_LTHUMB },
+	{ "RTHUMB", K_RTHUMB },
+	{ "LSHOULDER", K_LSHOULDER },
+	{ "RSHOULDER", K_RSHOULDER },
+	{ "ABUTTON", K_ABUTTON },
+	{ "BBUTTON", K_BBUTTON },
+	{ "XBUTTON", K_XBUTTON },
+	{ "YBUTTON", K_YBUTTON },
+	{ "LTRIGGER", K_LTRIGGER },
+	{ "RTRIGGER", K_RTRIGGER },
 
-	{NULL,		0}
+	{ NULL, 0 }
 };
 
 /*
@@ -190,7 +189,7 @@ static void PasteToConsole (void)
 	if (key_linepos == MAXCMDLINE - 1)
 		return;
 
-	if ((cbd = PL_GetClipboardData()) == NULL)
+	if ((cbd = PL_GetClipboardData ()) == NULL)
 		return;
 
 	p = cbd;
@@ -211,7 +210,7 @@ static void PasteToConsole (void)
 
 	workline = key_lines[edit_line];
 	workline += key_linepos;
-	mvlen = (int) strlen(workline);
+	mvlen = (int) strlen (workline);
 	if (mvlen + inslen + key_linepos > MAXCMDLINE - 1)
 	{
 		mvlen = MAXCMDLINE - 1 - key_linepos - inslen;
@@ -224,8 +223,8 @@ static void PasteToConsole (void)
 	memcpy (workline, cbd, inslen);
 	key_linepos += inslen;
 	workline[mvlen + inslen] = '\0';
-  done:
-	Z_Free(cbd);
+done:
+	Z_Free (cbd);
 }
 
 /*
@@ -256,7 +255,7 @@ void Key_Console (int key)
 
 		// If the last two lines are identical, skip storing this line in history 
 		// by not incrementing edit_line
-		if (strcmp(workline, key_lines[(edit_line-1)&31]))
+		if (strcmp (workline, key_lines[(edit_line - 1) & 31]))
 			edit_line = (edit_line + 1) & 31;
 
 		history_line = edit_line;
@@ -278,7 +277,7 @@ void Key_Console (int key)
 			workline += key_linepos - 1;
 			if (workline[1])
 			{
-				len = strlen(workline);
+				len = strlen (workline);
 				memmove (workline, workline + 1, len);
 			}
 			else	*workline = 0;
@@ -293,7 +292,7 @@ void Key_Console (int key)
 		{
 			if (workline[1])
 			{
-				len = strlen(workline);
+				len = strlen (workline);
 				memmove (workline, workline + 1, len);
 			}
 			else	*workline = 0;
@@ -318,7 +317,7 @@ void Key_Console (int key)
 				if (x != con_linewidth)
 					break;
 			}
-			con_backscroll = CLAMP(0, con_current-i%con_totallines-2, con_totallines-(glheight>>3)-1);
+			con_backscroll = CLAMP (0, con_current - i % con_totallines - 2, con_totallines - (glheight >> 3) - 1);
 		}
 		else	key_linepos = 1;
 		return;
@@ -326,19 +325,19 @@ void Key_Console (int key)
 	case K_END:
 		if (keydown[K_CTRL])
 			con_backscroll = 0;
-		else	key_linepos = strlen(workline);
+		else	key_linepos = strlen (workline);
 		return;
 
 	case K_PGUP:
 	case K_MWHEELUP:
-		con_backscroll += keydown[K_CTRL] ? ((con_vislines>>3) - 4) : 2;
-		if (con_backscroll > con_totallines - (vid.height>>3) - 1)
-			con_backscroll = con_totallines - (vid.height>>3) - 1;
+		con_backscroll += keydown[K_CTRL] ? ((con_vislines >> 3) - 4) : 2;
+		if (con_backscroll > con_totallines - (vid.height >> 3) - 1)
+			con_backscroll = con_totallines - (vid.height >> 3) - 1;
 		return;
 
 	case K_PGDN:
 	case K_MWHEELDOWN:
-		con_backscroll -= keydown[K_CTRL] ? ((con_vislines>>3) - 4) : 2;
+		con_backscroll -= keydown[K_CTRL] ? ((con_vislines >> 3) - 4) : 2;
 		if (con_backscroll < 0)
 			con_backscroll = 0;
 		return;
@@ -352,11 +351,11 @@ void Key_Console (int key)
 		return;
 
 	case K_RIGHTARROW:
-		len = strlen(workline);
-		if ((int)len == key_linepos)
+		len = strlen (workline);
+		if ((int) len == key_linepos)
 		{
-			len = strlen(key_lines[(edit_line + 31) & 31]);
-			if ((int)len <= key_linepos)
+			len = strlen (key_lines[(edit_line + 31) & 31]);
+			if ((int) len <= key_linepos)
 				return; // no character to get
 			workline += key_linepos;
 			*workline = key_lines[(edit_line + 31) & 31][key_linepos];
@@ -372,7 +371,7 @@ void Key_Console (int key)
 
 	case K_UPARROW:
 		if (history_line == edit_line)
-			Q_strcpy(current, workline);
+			Q_strcpy (current, workline);
 
 		history_line_last = history_line;
 		do
@@ -387,8 +386,8 @@ void Key_Console (int key)
 		}
 
 		key_tabpartial[0] = 0;
-		Q_strcpy(workline, key_lines[history_line]);
-		key_linepos = Q_strlen(workline);
+		Q_strcpy (workline, key_lines[history_line]);
+		key_linepos = Q_strlen (workline);
 		return;
 
 	case K_DOWNARROW:
@@ -403,39 +402,42 @@ void Key_Console (int key)
 		} while (history_line != edit_line && !key_lines[history_line][1]);
 
 		if (history_line == edit_line)
-			Q_strcpy(workline, current);
-		else	Q_strcpy(workline, key_lines[history_line]);
-		key_linepos = Q_strlen(workline);
+			Q_strcpy (workline, current);
+		else	Q_strcpy (workline, key_lines[history_line]);
+		key_linepos = Q_strlen (workline);
 		return;
 
 	case K_INS:
 		if (keydown[K_SHIFT])		/* Shift-Ins paste */
-			PasteToConsole();
+			PasteToConsole ();
 		else	key_insert ^= 1;
 		return;
 
 	case 'v':
 	case 'V':
 #if defined(PLATFORM_OSX) || defined(PLATFORM_MAC)
-		if (keydown[K_COMMAND]) {	/* Cmd+v paste (Mac-only) */
-			PasteToConsole();
+		if (keydown[K_COMMAND])
+		{	/* Cmd+v paste (Mac-only) */
+			PasteToConsole ();
 			return;
 		}
 #endif
-		if (keydown[K_CTRL]) {		/* Ctrl+v paste */
-			PasteToConsole();
+		if (keydown[K_CTRL])
+		{		/* Ctrl+v paste */
+			PasteToConsole ();
 			return;
 		}
 		break;
 
 	case 'c':
 	case 'C':
-		if (keydown[K_CTRL]) {		/* Ctrl+C: abort the line -- S.A */
+		if (keydown[K_CTRL])
+		{		/* Ctrl+C: abort the line -- S.A */
 			Con_Printf ("%s\n", workline);
 			workline[0] = ']';
 			workline[1] = 0;
 			key_linepos = 1;
-			history_line= edit_line;
+			history_line = edit_line;
 			return;
 		}
 		break;
@@ -447,7 +449,7 @@ void Char_Console (int key)
 	size_t		len;
 	char *workline = key_lines[edit_line];
 
-	if (key_linepos < MAXCMDLINE-1)
+	if (key_linepos < MAXCMDLINE - 1)
 	{
 		qboolean endpos = !workline[key_linepos];
 
@@ -457,7 +459,7 @@ void Char_Console (int key)
 		{
 			workline[MAXCMDLINE - 2] = 0;
 			workline += key_linepos;
-			len = strlen(workline) + 1;
+			len = strlen (workline) + 1;
 			memmove (workline + 1, workline, len);
 			*workline = key;
 		}
@@ -506,8 +508,8 @@ void Key_Message (int key)
 			Cbuf_AddText ("say_team \"");
 		else
 			Cbuf_AddText ("say \"");
-		Cbuf_AddText(chat_buffer);
-		Cbuf_AddText("\"\n");
+		Cbuf_AddText (chat_buffer);
+		Cbuf_AddText ("\"\n");
 
 		Key_EndChat ();
 		return;
@@ -525,7 +527,7 @@ void Key_Message (int key)
 
 void Char_Message (int key)
 {
-	if (chat_bufferlen == sizeof(chat_buffer) - 1)
+	if (chat_bufferlen == sizeof (chat_buffer) - 1)
 		return; // all full
 
 	chat_buffer[chat_bufferlen++] = key;
@@ -546,16 +548,16 @@ the K_* names are matched up.
 */
 int Key_StringToKeynum (const char *str)
 {
-	keyname_t	*kn;
+	keyname_t *kn;
 
 	if (!str || !str[0])
 		return -1;
 	if (!str[1])
 		return str[0];
 
-	for (kn=keynames ; kn->name ; kn++)
+	for (kn = keynames; kn->name; kn++)
 	{
-		if (!q_strcasecmp(str,kn->name))
+		if (!q_strcasecmp (str, kn->name))
 			return kn->keynum;
 	}
 	return -1;
@@ -573,7 +575,7 @@ FIXME: handle quote special (general escape sequence?)
 const char *Key_KeynumToString (int keynum)
 {
 	static	char	tinystr[2];
-	keyname_t	*kn;
+	keyname_t *kn;
 
 	if (keynum == -1)
 		return "<KEY NOT FOUND>";
@@ -604,16 +606,16 @@ void Key_SetBinding (int keynum, const char *binding)
 	if (keynum == -1)
 		return;
 
-// free old bindings
+	// free old bindings
 	if (keybindings[keynum])
 	{
 		Z_Free (keybindings[keynum]);
 		keybindings[keynum] = NULL;
 	}
 
-// allocate memory for new binding
+	// allocate memory for new binding
 	if (binding)
-		keybindings[keynum] = Z_Strdup(binding);
+		keybindings[keynum] = Z_Strdup (binding);
 }
 
 /*
@@ -625,16 +627,16 @@ void Key_Unbind_f (void)
 {
 	int	b;
 
-	if (Cmd_Argc() != 2)
+	if (Cmd_Argc () != 2)
 	{
 		Con_Printf ("unbind <key> : remove commands from a key\n");
 		return;
 	}
 
-	b = Key_StringToKeynum (Cmd_Argv(1));
+	b = Key_StringToKeynum (Cmd_Argv (1));
 	if (b == -1)
 	{
-		Con_Printf ("\"%s\" isn't a valid key\n", Cmd_Argv(1));
+		Con_Printf ("\"%s\" isn't a valid key\n", Cmd_Argv (1));
 		return;
 	}
 
@@ -666,7 +668,7 @@ void Key_Bindlist_f (void)
 	{
 		if (keybindings[i] && *keybindings[i])
 		{
-			Con_SafePrintf ("   %s \"%s\"\n", Key_KeynumToString(i), keybindings[i]);
+			Con_SafePrintf ("   %s \"%s\"\n", Key_KeynumToString (i), keybindings[i]);
 			count++;
 		}
 	}
@@ -683,36 +685,36 @@ void Key_Bind_f (void)
 	int	i, c, b;
 	char	cmd[1024];
 
-	c = Cmd_Argc();
+	c = Cmd_Argc ();
 
 	if (c != 2 && c != 3)
 	{
 		Con_Printf ("bind <key> [command] : attach a command to a key\n");
 		return;
 	}
-	b = Key_StringToKeynum (Cmd_Argv(1));
+	b = Key_StringToKeynum (Cmd_Argv (1));
 	if (b == -1)
 	{
-		Con_Printf ("\"%s\" isn't a valid key\n", Cmd_Argv(1));
+		Con_Printf ("\"%s\" isn't a valid key\n", Cmd_Argv (1));
 		return;
 	}
 
 	if (c == 2)
 	{
 		if (keybindings[b])
-			Con_Printf ("\"%s\" = \"%s\"\n", Cmd_Argv(1), keybindings[b] );
+			Con_Printf ("\"%s\" = \"%s\"\n", Cmd_Argv (1), keybindings[b]);
 		else
-			Con_Printf ("\"%s\" is not bound\n", Cmd_Argv(1) );
+			Con_Printf ("\"%s\" is not bound\n", Cmd_Argv (1));
 		return;
 	}
 
-// copy the rest of the command line
+	// copy the rest of the command line
 	cmd[0] = 0;
 	for (i = 2; i < c; i++)
 	{
-		q_strlcat (cmd, Cmd_Argv(i), sizeof(cmd));
-		if (i != (c-1))
-			q_strlcat (cmd, " ", sizeof(cmd));
+		q_strlcat (cmd, Cmd_Argv (i), sizeof (cmd));
+		if (i != (c - 1))
+			q_strlcat (cmd, " ", sizeof (cmd));
 	}
 
 	Key_SetBinding (b, cmd);
@@ -735,7 +737,7 @@ void Key_WriteBindings (FILE *f)
 	for (i = 0; i < MAX_KEYS; i++)
 	{
 		if (keybindings[i] && *keybindings[i])
-			fprintf (f, "bind \"%s\" \"%s\"\n", Key_KeynumToString(i), keybindings[i]);
+			fprintf (f, "bind \"%s\" \"%s\"\n", Key_KeynumToString (i), keybindings[i]);
 	}
 }
 
@@ -752,7 +754,7 @@ void History_Init (void)
 	}
 	key_linepos = 1;
 
-	hf = fopen(va("%s/%s", host_parms->userdir, HISTORY_FILE_NAME), "rt");
+	hf = fopen (va ("%s/%s", host_parms->userdir, HISTORY_FILE_NAME), "rt");
 	if (hf != NULL)
 	{
 		do
@@ -760,7 +762,7 @@ void History_Init (void)
 			i = 1;
 			do
 			{
-				c = fgetc(hf);
+				c = fgetc (hf);
 				key_lines[edit_line][i++] = c;
 			} while (c != '\r' && c != '\n' && c != EOF && i < MAXCMDLINE);
 			key_lines[edit_line][i - 1] = 0;
@@ -769,14 +771,14 @@ void History_Init (void)
 			if (c == '\r' || c == '\n')
 			{
 				do
-					c = fgetc(hf);
+					c = fgetc (hf);
 				while (c == '\r' || c == '\n');
 				if (c != EOF)
-					ungetc(c, hf);
+					ungetc (c, hf);
 				else	c = 0; /* loop once more, otherwise last line is lost */
 			}
 		} while (c != EOF && edit_line < CMDLINES);
-		fclose(hf);
+		fclose (hf);
 
 		history_line = edit_line = (edit_line - 1) & (CMDLINES - 1);
 		key_lines[edit_line][0] = ']';
@@ -789,7 +791,7 @@ void History_Shutdown (void)
 	int i;
 	FILE *hf;
 
-	hf = fopen(va("%s/%s", host_parms->userdir, HISTORY_FILE_NAME), "wt");
+	hf = fopen (va ("%s/%s", host_parms->userdir, HISTORY_FILE_NAME), "wt");
 	if (hf != NULL)
 	{
 		i = edit_line;
@@ -800,10 +802,10 @@ void History_Shutdown (void)
 
 		while (i != edit_line && key_lines[i][1])
 		{
-			fprintf(hf, "%s\n", key_lines[i] + 1);
+			fprintf (hf, "%s\n", key_lines[i] + 1);
 			i = (i + 1) & (CMDLINES - 1);
 		}
-		fclose(hf);
+		fclose (hf);
 	}
 }
 
@@ -866,20 +868,20 @@ void Key_Init (void)
 	consolekeys[K_MWHEELUP] = true;
 	consolekeys[K_MWHEELDOWN] = true;
 
-//
-// initialize menubound[]
-//
+	//
+	// initialize menubound[]
+	//
 	menubound[K_ESCAPE] = true;
 	for (i = 0; i < 12; i++)
-		menubound[K_F1+i] = true;
+		menubound[K_F1 + i] = true;
 
-//
-// register our functions
-//
-	Cmd_AddCommand ("bindlist",Key_Bindlist_f); //johnfitz
-	Cmd_AddCommand ("bind",Key_Bind_f);
-	Cmd_AddCommand ("unbind",Key_Unbind_f);
-	Cmd_AddCommand ("unbindall",Key_Unbindall_f);
+	//
+	// register our functions
+	//
+	Cmd_AddCommand ("bindlist", Key_Bindlist_f); //johnfitz
+	Cmd_AddCommand ("bind", Key_Bind_f);
+	Cmd_AddCommand ("unbind", Key_Unbind_f);
+	Cmd_AddCommand ("unbindall", Key_Unbindall_f);
 }
 
 static struct {
@@ -941,20 +943,20 @@ Should NOT be called during an interrupt!
 */
 void Key_Event (int key, qboolean down)
 {
-	char	*kb;
+	char *kb;
 	char	cmd[1024];
 
 	if (key < 0 || key >= MAX_KEYS)
 		return;
 
-// handle fullscreen toggle
+	// handle fullscreen toggle
 	if (down && (key == K_ENTER || key == K_KP_ENTER) && keydown[K_ALT])
 	{
-		VID_Toggle();
+		VID_Toggle ();
 		return;
 	}
 
-// handle autorepeats and stray key up events
+	// handle autorepeats and stray key up events
 	if (down)
 	{
 		if (keydown[key])
@@ -963,7 +965,7 @@ void Key_Event (int key, qboolean down)
 				return; // ignore autorepeats in game mode
 		}
 		else if (key >= 200 && !keybindings[key])
-			Con_Printf ("%s is unbound, hit F4 to set.\n", Key_KeynumToString(key));
+			Con_Printf ("%s is unbound, hit F4 to set.\n", Key_KeynumToString (key));
 	}
 	else if (!keydown[key])
 		return; // ignore stray key up events
@@ -977,7 +979,7 @@ void Key_Event (int key, qboolean down)
 		return;
 	}
 
-// handle escape specialy, so the user can never unbind it
+	// handle escape specialy, so the user can never unbind it
 	if (key == K_ESCAPE)
 	{
 		if (!down)
@@ -985,7 +987,7 @@ void Key_Event (int key, qboolean down)
 
 		if (keydown[K_SHIFT])
 		{
-			Con_ToggleConsole_f();
+			Con_ToggleConsole_f ();
 			return;
 		}
 
@@ -1008,33 +1010,33 @@ void Key_Event (int key, qboolean down)
 		return;
 	}
 
-// key up events only generate commands if the game key binding is
-// a button command (leading + sign).  These will occur even in console mode,
-// to keep the character from continuing an action started before a console
-// switch.  Button commands include the kenum as a parameter, so multiple
-// downs can be matched with ups
+	// key up events only generate commands if the game key binding is
+	// a button command (leading + sign).  These will occur even in console mode,
+	// to keep the character from continuing an action started before a console
+	// switch.  Button commands include the kenum as a parameter, so multiple
+	// downs can be matched with ups
 	if (!down)
 	{
 		kb = keybindings[key];
 		if (kb && kb[0] == '+')
 		{
-			sprintf (cmd, "-%s %i\n", kb+1, key);
+			sprintf (cmd, "-%s %i\n", kb + 1, key);
 			Cbuf_AddText (cmd);
 		}
 		return;
 	}
 
-// during demo playback, most keys bring up the main menu
+	// during demo playback, most keys bring up the main menu
 	if (cls.demoplayback && down && consolekeys[key] && key_dest == key_game && key != K_TAB)
 	{
 		M_ToggleMenu_f ();
 		return;
 	}
 
-// if not a consolekey, send to the interpreter no matter what mode is
+	// if not a consolekey, send to the interpreter no matter what mode is
 	if ((key_dest == key_menu && menubound[key]) ||
-	    (key_dest == key_console && !consolekeys[key]) ||
-	    (key_dest == key_game && (!con_forcedup || !consolekeys[key])))
+		(key_dest == key_console && !consolekeys[key]) ||
+		(key_dest == key_game && (!con_forcedup || !consolekeys[key])))
 	{
 		kb = keybindings[key];
 		if (kb)
@@ -1134,7 +1136,7 @@ qboolean Key_TextEntry (void)
 	case key_message:
 		return true;
 	case key_menu:
-		return M_TextEntry();
+		return M_TextEntry ();
 	case key_game:
 		if (!con_forcedup)
 			return false;
@@ -1180,7 +1182,7 @@ void Key_UpdateForDest (void)
 		if (forced && cls.state == ca_connected)
 		{
 			forced = false;
-			IN_Activate();
+			IN_Activate ();
 			key_dest = key_game;
 		}
 		break;
@@ -1188,11 +1190,11 @@ void Key_UpdateForDest (void)
 		if (cls.state != ca_connected)
 		{
 			forced = true;
-			IN_Deactivate(modestate == MS_WINDOWED);
+			IN_Deactivate (modestate == MS_WINDOWED);
 			key_dest = key_console;
 			break;
 		}
-	/* fallthrough */
+		/* fallthrough */
 	default:
 		forced = false;
 		break;

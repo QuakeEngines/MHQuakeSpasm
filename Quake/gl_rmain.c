@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 qboolean	r_cache_thrash;		// compatability
 
 vec3_t		modelorg, r_entorigin;
-entity_t	*currententity;
+entity_t *currententity;
 
 int			r_visframecount;	// bumped when going to a new PVS
 int			r_framecount;		// used for dlight push checking
@@ -53,66 +53,66 @@ float r_fovx, r_fovy; //johnfitz -- rendering fov may be different becuase of r_
 //
 refdef_t	r_refdef;
 
-mleaf_t		*r_viewleaf, *r_oldviewleaf;
+mleaf_t *r_viewleaf, *r_oldviewleaf;
 
 int		d_lightstylevalue[256];	// 8.8 fraction of base light value
 
 
-cvar_t	r_norefresh = {"r_norefresh","0",CVAR_NONE};
-cvar_t	r_drawentities = {"r_drawentities","1",CVAR_NONE};
-cvar_t	r_drawviewmodel = {"r_drawviewmodel","1",CVAR_NONE};
-cvar_t	r_speeds = {"r_speeds","0",CVAR_NONE};
-cvar_t	r_pos = {"r_pos","0",CVAR_NONE};
-cvar_t	r_fullbright = {"r_fullbright","0",CVAR_NONE};
-cvar_t	r_lightmap = {"r_lightmap","0",CVAR_NONE};
-cvar_t	r_shadows = {"r_shadows","0",CVAR_ARCHIVE};
-cvar_t	r_wateralpha = {"r_wateralpha","1",CVAR_ARCHIVE};
-cvar_t	r_dynamic = {"r_dynamic","1",CVAR_ARCHIVE};
-cvar_t	r_novis = {"r_novis","0",CVAR_ARCHIVE};
+cvar_t	r_norefresh = { "r_norefresh", "0", CVAR_NONE };
+cvar_t	r_drawentities = { "r_drawentities", "1", CVAR_NONE };
+cvar_t	r_drawviewmodel = { "r_drawviewmodel", "1", CVAR_NONE };
+cvar_t	r_speeds = { "r_speeds", "0", CVAR_NONE };
+cvar_t	r_pos = { "r_pos", "0", CVAR_NONE };
+cvar_t	r_fullbright = { "r_fullbright", "0", CVAR_NONE };
+cvar_t	r_lightmap = { "r_lightmap", "0", CVAR_NONE };
+cvar_t	r_shadows = { "r_shadows", "0", CVAR_ARCHIVE };
+cvar_t	r_wateralpha = { "r_wateralpha", "1", CVAR_ARCHIVE };
+cvar_t	r_dynamic = { "r_dynamic", "1", CVAR_ARCHIVE };
+cvar_t	r_novis = { "r_novis", "0", CVAR_ARCHIVE };
 
-cvar_t	gl_finish = {"gl_finish","0",CVAR_NONE};
-cvar_t	gl_clear = {"gl_clear","1",CVAR_NONE};
-cvar_t	gl_cull = {"gl_cull","1",CVAR_NONE};
-cvar_t	gl_smoothmodels = {"gl_smoothmodels","1",CVAR_NONE};
-cvar_t	gl_affinemodels = {"gl_affinemodels","0",CVAR_NONE};
-cvar_t	gl_polyblend = {"gl_polyblend","1",CVAR_NONE};
-cvar_t	gl_flashblend = {"gl_flashblend","0",CVAR_ARCHIVE};
-cvar_t	gl_playermip = {"gl_playermip","0",CVAR_NONE};
-cvar_t	gl_nocolors = {"gl_nocolors","0",CVAR_NONE};
+cvar_t	gl_finish = { "gl_finish", "0", CVAR_NONE };
+cvar_t	gl_clear = { "gl_clear", "1", CVAR_NONE };
+cvar_t	gl_cull = { "gl_cull", "1", CVAR_NONE };
+cvar_t	gl_smoothmodels = { "gl_smoothmodels", "1", CVAR_NONE };
+cvar_t	gl_affinemodels = { "gl_affinemodels", "0", CVAR_NONE };
+cvar_t	gl_polyblend = { "gl_polyblend", "1", CVAR_NONE };
+cvar_t	gl_flashblend = { "gl_flashblend", "0", CVAR_ARCHIVE };
+cvar_t	gl_playermip = { "gl_playermip", "0", CVAR_NONE };
+cvar_t	gl_nocolors = { "gl_nocolors", "0", CVAR_NONE };
 
 //johnfitz -- new cvars
-cvar_t	r_stereo = {"r_stereo","0",CVAR_NONE};
-cvar_t	r_stereodepth = {"r_stereodepth","128",CVAR_NONE};
-cvar_t	r_clearcolor = {"r_clearcolor","2",CVAR_ARCHIVE};
-cvar_t	r_drawflat = {"r_drawflat","0",CVAR_NONE};
-cvar_t	r_flatlightstyles = {"r_flatlightstyles", "0", CVAR_NONE};
-cvar_t	gl_fullbrights = {"gl_fullbrights", "1", CVAR_ARCHIVE};
-cvar_t	gl_farclip = {"gl_farclip", "16384", CVAR_ARCHIVE};
-cvar_t	gl_overbright = {"gl_overbright", "1", CVAR_ARCHIVE};
-cvar_t	gl_overbright_models = {"gl_overbright_models", "1", CVAR_ARCHIVE};
-cvar_t	r_oldskyleaf = {"r_oldskyleaf", "0", CVAR_NONE};
-cvar_t	r_drawworld = {"r_drawworld", "1", CVAR_NONE};
-cvar_t	r_showtris = {"r_showtris", "0", CVAR_NONE};
-cvar_t	r_showbboxes = {"r_showbboxes", "0", CVAR_NONE};
-cvar_t	r_lerpmodels = {"r_lerpmodels", "1", CVAR_NONE};
-cvar_t	r_lerpmove = {"r_lerpmove", "1", CVAR_NONE};
-cvar_t	r_nolerp_list = {"r_nolerp_list", "progs/flame.mdl,progs/flame2.mdl,progs/braztall.mdl,progs/brazshrt.mdl,progs/longtrch.mdl,progs/flame_pyre.mdl,progs/v_saw.mdl,progs/v_xfist.mdl,progs/h2stuff/newfire.mdl", CVAR_NONE};
-cvar_t	r_noshadow_list = {"r_noshadow_list", "progs/flame2.mdl,progs/flame.mdl,progs/bolt1.mdl,progs/bolt2.mdl,progs/bolt3.mdl,progs/laser.mdl", CVAR_NONE};
+cvar_t	r_stereo = { "r_stereo", "0", CVAR_NONE };
+cvar_t	r_stereodepth = { "r_stereodepth", "128", CVAR_NONE };
+cvar_t	r_clearcolor = { "r_clearcolor", "2", CVAR_ARCHIVE };
+cvar_t	r_drawflat = { "r_drawflat", "0", CVAR_NONE };
+cvar_t	r_flatlightstyles = { "r_flatlightstyles", "0", CVAR_NONE };
+cvar_t	gl_fullbrights = { "gl_fullbrights", "1", CVAR_ARCHIVE };
+cvar_t	gl_farclip = { "gl_farclip", "16384", CVAR_ARCHIVE };
+cvar_t	gl_overbright = { "gl_overbright", "1", CVAR_ARCHIVE };
+cvar_t	gl_overbright_models = { "gl_overbright_models", "1", CVAR_ARCHIVE };
+cvar_t	r_oldskyleaf = { "r_oldskyleaf", "0", CVAR_NONE };
+cvar_t	r_drawworld = { "r_drawworld", "1", CVAR_NONE };
+cvar_t	r_showtris = { "r_showtris", "0", CVAR_NONE };
+cvar_t	r_showbboxes = { "r_showbboxes", "0", CVAR_NONE };
+cvar_t	r_lerpmodels = { "r_lerpmodels", "1", CVAR_NONE };
+cvar_t	r_lerpmove = { "r_lerpmove", "1", CVAR_NONE };
+cvar_t	r_nolerp_list = { "r_nolerp_list", "progs/flame.mdl,progs/flame2.mdl,progs/braztall.mdl,progs/brazshrt.mdl,progs/longtrch.mdl,progs/flame_pyre.mdl,progs/v_saw.mdl,progs/v_xfist.mdl,progs/h2stuff/newfire.mdl", CVAR_NONE };
+cvar_t	r_noshadow_list = { "r_noshadow_list", "progs/flame2.mdl,progs/flame.mdl,progs/bolt1.mdl,progs/bolt2.mdl,progs/bolt3.mdl,progs/laser.mdl", CVAR_NONE };
 
 extern cvar_t	r_vfog;
 //johnfitz
 
-cvar_t	gl_zfix = {"gl_zfix", "0", CVAR_NONE}; // QuakeSpasm z-fighting fix
+cvar_t	gl_zfix = { "gl_zfix", "0", CVAR_NONE }; // QuakeSpasm z-fighting fix
 
-cvar_t	r_lavaalpha = {"r_lavaalpha","0",CVAR_NONE};
-cvar_t	r_telealpha = {"r_telealpha","0",CVAR_NONE};
-cvar_t	r_slimealpha = {"r_slimealpha","0",CVAR_NONE};
+cvar_t	r_lavaalpha = { "r_lavaalpha", "0", CVAR_NONE };
+cvar_t	r_telealpha = { "r_telealpha", "0", CVAR_NONE };
+cvar_t	r_slimealpha = { "r_slimealpha", "0", CVAR_NONE };
 
 float	map_wateralpha, map_lavaalpha, map_telealpha, map_slimealpha;
 
 qboolean r_drawflat_cheatsafe, r_fullbright_cheatsafe, r_lightmap_cheatsafe, r_drawworld_cheatsafe; //johnfitz
 
-cvar_t	r_scale = {"r_scale", "1", CVAR_ARCHIVE};
+cvar_t	r_scale = { "r_scale", "1", CVAR_ARCHIVE };
 
 //==============================================================================
 //
@@ -174,7 +174,7 @@ static void GLSLGamma_CreateShaders (void)
 
 	r_gamma_program = GL_CreateProgram (vertSource, fragSource, 0, NULL);
 
-// get uniform locations
+	// get uniform locations
 	gammaLoc = GL_GetUniformLocation (&r_gamma_program, "GammaValue");
 	contrastLoc = GL_GetUniformLocation (&r_gamma_program, "ContrastValue");
 	textureLoc = GL_GetUniformLocation (&r_gamma_program, "GammaTexture");
@@ -195,7 +195,7 @@ void GLSLGamma_GammaCorrect (void)
 	if (vid_gamma.value == 1 && vid_contrast.value == 1)
 		return;
 
-// create render-to-texture texture if needed
+	// create render-to-texture texture if needed
 	if (!r_gamma_texture)
 	{
 		glGenTextures (1, &r_gamma_texture);
@@ -206,34 +206,34 @@ void GLSLGamma_GammaCorrect (void)
 
 		if (!gl_texture_NPOT)
 		{
-			r_gamma_texture_width = TexMgr_Pad(r_gamma_texture_width);
-			r_gamma_texture_height = TexMgr_Pad(r_gamma_texture_height);
+			r_gamma_texture_width = TexMgr_Pad (r_gamma_texture_width);
+			r_gamma_texture_height = TexMgr_Pad (r_gamma_texture_height);
 		}
-	
+
 		glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, r_gamma_texture_width, r_gamma_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	}
 
-// create shader if needed
+	// create shader if needed
 	if (!r_gamma_program)
 	{
 		GLSLGamma_CreateShaders ();
 		if (!r_gamma_program)
 		{
-			Sys_Error("GLSLGamma_CreateShaders failed");
+			Sys_Error ("GLSLGamma_CreateShaders failed");
 		}
 	}
-	
-// copy the framebuffer to the texture
-	GL_DisableMultitexture();
+
+	// copy the framebuffer to the texture
+	GL_DisableMultitexture ();
 	glBindTexture (GL_TEXTURE_2D, r_gamma_texture);
 	glCopyTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, glx, gly, glwidth, glheight);
 
-// draw the texture back to the framebuffer with a fragment shader
+	// draw the texture back to the framebuffer with a fragment shader
 	GL_UseProgramFunc (r_gamma_program);
 	GL_Uniform1fFunc (gammaLoc, vid_gamma.value);
-	GL_Uniform1fFunc (contrastLoc, q_min(2.0, q_max(1.0, vid_contrast.value)));
+	GL_Uniform1fFunc (contrastLoc, q_min (2.0, q_max (1.0, vid_contrast.value)));
 	GL_Uniform1iFunc (textureLoc, 0); // use texture unit 0
 
 	glDisable (GL_ALPHA_TEST);
@@ -241,8 +241,8 @@ void GLSLGamma_GammaCorrect (void)
 
 	glViewport (glx, gly, glwidth, glheight);
 
-	smax = glwidth/(float)r_gamma_texture_width;
-	tmax = glheight/(float)r_gamma_texture_height;
+	smax = glwidth / (float) r_gamma_texture_width;
+	tmax = glheight / (float) r_gamma_texture_height;
 
 	glBegin (GL_QUADS);
 	glTexCoord2f (0, 0);
@@ -254,10 +254,10 @@ void GLSLGamma_GammaCorrect (void)
 	glTexCoord2f (0, tmax);
 	glVertex2f (-1, 1);
 	glEnd ();
-	
+
 	GL_UseProgramFunc (0);
-	
-// clear cached binding
+
+	// clear cached binding
 	GL_ClearBindings ();
 }
 
@@ -272,42 +272,42 @@ qboolean R_CullBox (vec3_t emins, vec3_t emaxs)
 {
 	int i;
 	mplane_t *p;
-	for (i = 0;i < 4;i++)
+	for (i = 0; i < 4; i++)
 	{
 		p = frustum + i;
-		switch(p->signbits)
+		switch (p->signbits)
 		{
 		default:
 		case 0:
-			if (p->normal[0]*emaxs[0] + p->normal[1]*emaxs[1] + p->normal[2]*emaxs[2] < p->dist)
+			if (p->normal[0] * emaxs[0] + p->normal[1] * emaxs[1] + p->normal[2] * emaxs[2] < p->dist)
 				return true;
 			break;
 		case 1:
-			if (p->normal[0]*emins[0] + p->normal[1]*emaxs[1] + p->normal[2]*emaxs[2] < p->dist)
+			if (p->normal[0] * emins[0] + p->normal[1] * emaxs[1] + p->normal[2] * emaxs[2] < p->dist)
 				return true;
 			break;
 		case 2:
-			if (p->normal[0]*emaxs[0] + p->normal[1]*emins[1] + p->normal[2]*emaxs[2] < p->dist)
+			if (p->normal[0] * emaxs[0] + p->normal[1] * emins[1] + p->normal[2] * emaxs[2] < p->dist)
 				return true;
 			break;
 		case 3:
-			if (p->normal[0]*emins[0] + p->normal[1]*emins[1] + p->normal[2]*emaxs[2] < p->dist)
+			if (p->normal[0] * emins[0] + p->normal[1] * emins[1] + p->normal[2] * emaxs[2] < p->dist)
 				return true;
 			break;
 		case 4:
-			if (p->normal[0]*emaxs[0] + p->normal[1]*emaxs[1] + p->normal[2]*emins[2] < p->dist)
+			if (p->normal[0] * emaxs[0] + p->normal[1] * emaxs[1] + p->normal[2] * emins[2] < p->dist)
 				return true;
 			break;
 		case 5:
-			if (p->normal[0]*emins[0] + p->normal[1]*emaxs[1] + p->normal[2]*emins[2] < p->dist)
+			if (p->normal[0] * emins[0] + p->normal[1] * emaxs[1] + p->normal[2] * emins[2] < p->dist)
 				return true;
 			break;
 		case 6:
-			if (p->normal[0]*emaxs[0] + p->normal[1]*emins[1] + p->normal[2]*emins[2] < p->dist)
+			if (p->normal[0] * emaxs[0] + p->normal[1] * emins[1] + p->normal[2] * emins[2] < p->dist)
 				return true;
 			break;
 		case 7:
-			if (p->normal[0]*emins[0] + p->normal[1]*emins[1] + p->normal[2]*emins[2] < p->dist)
+			if (p->normal[0] * emins[0] + p->normal[1] * emins[1] + p->normal[2] * emins[2] < p->dist)
 				return true;
 			break;
 		}
@@ -349,10 +349,10 @@ R_RotateForEntity -- johnfitz -- modified to take origin and angles instead of p
 */
 void R_RotateForEntity (vec3_t origin, vec3_t angles)
 {
-	glTranslatef (origin[0],  origin[1],  origin[2]);
-	glRotatef (angles[1],  0, 0, 1);
-	glRotatef (-angles[0],  0, 1, 0);
-	glRotatef (angles[2],  1, 0, 0);
+	glTranslatef (origin[0], origin[1], origin[2]);
+	glRotatef (angles[1], 0, 0, 1);
+	glRotatef (-angles[0], 0, 1, 0);
+	glRotatef (angles[2], 1, 0, 0);
 }
 
 /*
@@ -368,13 +368,13 @@ void GL_PolygonOffset (int offset)
 	{
 		glEnable (GL_POLYGON_OFFSET_FILL);
 		glEnable (GL_POLYGON_OFFSET_LINE);
-		glPolygonOffset(1, offset);
+		glPolygonOffset (1, offset);
 	}
 	else if (offset < 0)
 	{
 		glEnable (GL_POLYGON_OFFSET_FILL);
 		glEnable (GL_POLYGON_OFFSET_LINE);
-		glPolygonOffset(-1, offset);
+		glPolygonOffset (-1, offset);
 	}
 	else
 	{
@@ -396,10 +396,10 @@ int SignbitsForPlane (mplane_t *out)
 	// for fast box on planeside test
 
 	bits = 0;
-	for (j=0 ; j<3 ; j++)
+	for (j = 0; j < 3; j++)
 	{
 		if (out->normal[j] < 0)
-			bits |= 1<<j;
+			bits |= 1 << j;
 	}
 	return bits;
 }
@@ -419,12 +419,12 @@ void TurnVector (vec3_t out, const vec3_t forward, const vec3_t side, float angl
 {
 	float scale_forward, scale_side;
 
-	scale_forward = cos( DEG2RAD( angle ) );
-	scale_side = sin( DEG2RAD( angle ) );
+	scale_forward = cos (DEG2RAD (angle));
+	scale_side = sin (DEG2RAD (angle));
 
-	out[0] = scale_forward*forward[0] + scale_side*side[0];
-	out[1] = scale_forward*forward[1] + scale_side*side[1];
-	out[2] = scale_forward*forward[2] + scale_side*side[2];
+	out[0] = scale_forward * forward[0] + scale_side * side[0];
+	out[1] = scale_forward * forward[1] + scale_side * side[1];
+	out[2] = scale_forward * forward[2] + scale_side * side[2];
 }
 
 /*
@@ -439,12 +439,12 @@ void R_SetFrustum (float fovx, float fovy)
 	if (r_stereo.value)
 		fovx += 10; //silly hack so that polygons don't drop out becuase of stereo skew
 
-	TurnVector(frustum[0].normal, vpn, vright, fovx/2 - 90); //left plane
-	TurnVector(frustum[1].normal, vpn, vright, 90 - fovx/2); //right plane
-	TurnVector(frustum[2].normal, vpn, vup, 90 - fovy/2); //bottom plane
-	TurnVector(frustum[3].normal, vpn, vup, fovy/2 - 90); //top plane
+	TurnVector (frustum[0].normal, vpn, vright, fovx / 2 - 90); //left plane
+	TurnVector (frustum[1].normal, vpn, vright, 90 - fovx / 2); //right plane
+	TurnVector (frustum[2].normal, vpn, vup, 90 - fovy / 2); //bottom plane
+	TurnVector (frustum[3].normal, vpn, vup, fovy / 2 - 90); //top plane
 
-	for (i=0 ; i<4 ; i++)
+	for (i = 0; i < 4; i++)
 	{
 		frustum[i].type = PLANE_ANYZ;
 		frustum[i].dist = DotProduct (r_origin, frustum[i].normal); //FIXME: shouldn't this always be zero?
@@ -459,12 +459,12 @@ GL_SetFrustum -- johnfitz -- written to replace MYgluPerspective
 */
 #define NEARCLIP 4
 float frustum_skew = 0.0; //used by r_stereo
-void GL_SetFrustum(float fovx, float fovy)
+void GL_SetFrustum (float fovx, float fovy)
 {
 	float xmax, ymax;
-	xmax = NEARCLIP * tan( fovx * M_PI / 360.0 );
-	ymax = NEARCLIP * tan( fovy * M_PI / 360.0 );
-	glFrustum(-xmax + frustum_skew, xmax + frustum_skew, -ymax, ymax, NEARCLIP, gl_farclip.value);
+	xmax = NEARCLIP * tan (fovx * M_PI / 360.0);
+	ymax = NEARCLIP * tan (fovy * M_PI / 360.0);
+	glFrustum (-xmax + frustum_skew, xmax + frustum_skew, -ymax, ymax, NEARCLIP, gl_farclip.value);
 }
 
 /*
@@ -477,40 +477,40 @@ void R_SetupGL (void)
 	int scale;
 
 	//johnfitz -- rewrote this section
-	glMatrixMode(GL_PROJECTION);
-    glLoadIdentity ();
-	scale =  CLAMP(1, (int)r_scale.value, 4); // ericw -- see R_ScaleView
+	glMatrixMode (GL_PROJECTION);
+	glLoadIdentity ();
+	scale = CLAMP (1, (int) r_scale.value, 4); // ericw -- see R_ScaleView
 	glViewport (glx + r_refdef.vrect.x,
-				gly + glheight - r_refdef.vrect.y - r_refdef.vrect.height,
-				r_refdef.vrect.width / scale,
-				r_refdef.vrect.height / scale);
+		gly + glheight - r_refdef.vrect.y - r_refdef.vrect.height,
+		r_refdef.vrect.width / scale,
+		r_refdef.vrect.height / scale);
 	//johnfitz
 
-    GL_SetFrustum (r_fovx, r_fovy); //johnfitz -- use r_fov* vars
+	GL_SetFrustum (r_fovx, r_fovy); //johnfitz -- use r_fov* vars
 
 //	glCullFace(GL_BACK); //johnfitz -- glquake used CCW with backwards culling -- let's do it right
 
-	glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity ();
+	glMatrixMode (GL_MODELVIEW);
+	glLoadIdentity ();
 
-    glRotatef (-90,  1, 0, 0);	    // put Z going up
-    glRotatef (90,  0, 0, 1);	    // put Z going up
-    glRotatef (-r_refdef.viewangles[2],  1, 0, 0);
-    glRotatef (-r_refdef.viewangles[0],  0, 1, 0);
-    glRotatef (-r_refdef.viewangles[1],  0, 0, 1);
-    glTranslatef (-r_refdef.vieworg[0],  -r_refdef.vieworg[1],  -r_refdef.vieworg[2]);
+	glRotatef (-90, 1, 0, 0);	    // put Z going up
+	glRotatef (90, 0, 0, 1);	    // put Z going up
+	glRotatef (-r_refdef.viewangles[2], 1, 0, 0);
+	glRotatef (-r_refdef.viewangles[0], 0, 1, 0);
+	glRotatef (-r_refdef.viewangles[1], 0, 0, 1);
+	glTranslatef (-r_refdef.vieworg[0], -r_refdef.vieworg[1], -r_refdef.vieworg[2]);
 
 	//
 	// set drawing parms
 	//
 	if (gl_cull.value)
-		glEnable(GL_CULL_FACE);
+		glEnable (GL_CULL_FACE);
 	else
-		glDisable(GL_CULL_FACE);
+		glDisable (GL_CULL_FACE);
 
-	glDisable(GL_BLEND);
-	glDisable(GL_ALPHA_TEST);
-	glEnable(GL_DEPTH_TEST);
+	glDisable (GL_BLEND);
+	glDisable (GL_ALPHA_TEST);
+	glEnable (GL_DEPTH_TEST);
 }
 
 /*
@@ -557,7 +557,7 @@ void R_SetupView (void)
 	VectorCopy (r_refdef.vieworg, r_origin);
 	AngleVectors (r_refdef.viewangles, vpn, vright, vup);
 
-// current viewleaf
+	// current viewleaf
 	r_oldviewleaf = r_viewleaf;
 	r_viewleaf = Mod_PointInLeaf (r_origin, cl.worldmodel);
 
@@ -575,8 +575,8 @@ void R_SetupView (void)
 		if (contents == CONTENTS_WATER || contents == CONTENTS_SLIME || contents == CONTENTS_LAVA)
 		{
 			//variance is a percentage of width, where width = 2 * tan(fov / 2) otherwise the effect is too dramatic at high FOV and too subtle at low FOV.  what a mess!
-			r_fovx = atan(tan(DEG2RAD(r_refdef.fov_x) / 2) * (0.97 + sin(cl.time * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
-			r_fovy = atan(tan(DEG2RAD(r_refdef.fov_y) / 2) * (1.03 - sin(cl.time * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
+			r_fovx = atan (tan (DEG2RAD (r_refdef.fov_x) / 2) * (0.97 + sin (cl.time * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
+			r_fovy = atan (tan (DEG2RAD (r_refdef.fov_y) / 2) * (1.03 - sin (cl.time * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
 		}
 	}
 	//johnfitz
@@ -624,14 +624,14 @@ void R_DrawEntitiesOnList (qboolean alphapass) //johnfitz -- added parameter
 		return;
 
 	//johnfitz -- sprites are not a special case
-	for (i=0 ; i<cl_numvisedicts ; i++)
+	for (i = 0; i < cl_numvisedicts; i++)
 	{
 		currententity = cl_visedicts[i];
 
 		//johnfitz -- if alphapass is true, draw only alpha entites this time
 		//if alphapass is false, draw only nonalpha entities this time
-		if ((ENTALPHA_DECODE(currententity->alpha) < 1 && !alphapass) ||
-			(ENTALPHA_DECODE(currententity->alpha) == 1 && alphapass))
+		if ((ENTALPHA_DECODE (currententity->alpha) < 1 && !alphapass) ||
+			(ENTALPHA_DECODE (currententity->alpha) == 1 && alphapass))
 			continue;
 
 		//johnfitz -- chasecam
@@ -641,15 +641,15 @@ void R_DrawEntitiesOnList (qboolean alphapass) //johnfitz -- added parameter
 
 		switch (currententity->model->type)
 		{
-			case mod_alias:
-				R_DrawAliasModel (currententity);
-				break;
-			case mod_brush:
-				R_DrawBrushModel (currententity);
-				break;
-			case mod_sprite:
-				R_DrawSpriteModel (currententity);
-				break;
+		case mod_alias:
+			R_DrawAliasModel (currententity);
+			break;
+		case mod_brush:
+			R_DrawBrushModel (currententity);
+			break;
+		case mod_sprite:
+			R_DrawSpriteModel (currententity);
+			break;
 		}
 	}
 }
@@ -689,15 +689,15 @@ R_EmitWirePoint -- johnfitz -- draws a wireframe cross shape for point entities
 */
 void R_EmitWirePoint (vec3_t origin)
 {
-	int size=8;
+	int size = 8;
 
 	glBegin (GL_LINES);
-	glVertex3f (origin[0]-size, origin[1], origin[2]);
-	glVertex3f (origin[0]+size, origin[1], origin[2]);
-	glVertex3f (origin[0], origin[1]-size, origin[2]);
-	glVertex3f (origin[0], origin[1]+size, origin[2]);
-	glVertex3f (origin[0], origin[1], origin[2]-size);
-	glVertex3f (origin[0], origin[1], origin[2]+size);
+	glVertex3f (origin[0] - size, origin[1], origin[2]);
+	glVertex3f (origin[0] + size, origin[1], origin[2]);
+	glVertex3f (origin[0], origin[1] - size, origin[2]);
+	glVertex3f (origin[0], origin[1] + size, origin[2]);
+	glVertex3f (origin[0], origin[1], origin[2] - size);
+	glVertex3f (origin[0], origin[1], origin[2] + size);
 	glEnd ();
 }
 
@@ -732,8 +732,8 @@ draw bounding boxes -- the server-side boxes, not the renderer cullboxes
 void R_ShowBoundingBoxes (void)
 {
 	extern		edict_t *sv_player;
-	vec3_t		mins,maxs;
-	edict_t		*ed;
+	vec3_t		mins, maxs;
+	edict_t *ed;
 	int			i;
 
 	if (!r_showbboxes.value || cl.maxclients > 1 || !r_drawentities.value || !sv.active)
@@ -744,9 +744,9 @@ void R_ShowBoundingBoxes (void)
 	GL_PolygonOffset (OFFSET_SHOWTRIS);
 	glDisable (GL_TEXTURE_2D);
 	glDisable (GL_CULL_FACE);
-	glColor3f (1,1,1);
+	glColor3f (1, 1, 1);
 
-	for (i=0, ed=NEXT_EDICT(sv.edicts) ; i<sv.num_edicts ; i++, ed=NEXT_EDICT(ed))
+	for (i = 0, ed = NEXT_EDICT (sv.edicts); i < sv.num_edicts; i++, ed = NEXT_EDICT (ed))
 	{
 		if (ed == sv_player)
 			continue; //don't draw player's own bbox
@@ -769,7 +769,7 @@ void R_ShowBoundingBoxes (void)
 		}
 	}
 
-	glColor3f (1,1,1);
+	glColor3f (1, 1, 1);
 	glEnable (GL_TEXTURE_2D);
 	glEnable (GL_CULL_FACE);
 	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
@@ -795,9 +795,9 @@ void R_ShowTris (void)
 	glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
 	GL_PolygonOffset (OFFSET_SHOWTRIS);
 	glDisable (GL_TEXTURE_2D);
-	glColor3f (1,1,1);
-//	glEnable (GL_BLEND);
-//	glBlendFunc (GL_ONE, GL_ONE);
+	glColor3f (1, 1, 1);
+	//	glEnable (GL_BLEND);
+	//	glBlendFunc (GL_ONE, GL_ONE);
 
 	if (r_drawworld.value)
 	{
@@ -806,7 +806,7 @@ void R_ShowTris (void)
 
 	if (r_drawentities.value)
 	{
-		for (i=0 ; i<cl_numvisedicts ; i++)
+		for (i = 0; i < cl_numvisedicts; i++)
 		{
 			currententity = cl_visedicts[i];
 
@@ -849,9 +849,9 @@ void R_ShowTris (void)
 		R_DrawParticles_ShowTris ();
 	}
 
-//	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//	glDisable (GL_BLEND);
-	glColor3f (1,1,1);
+	//	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//	glDisable (GL_BLEND);
+	glColor3f (1, 1, 1);
 	glEnable (GL_TEXTURE_2D);
 	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 	GL_PolygonOffset (OFFSET_NONE);
@@ -874,13 +874,13 @@ void R_DrawShadows (void)
 	// Use stencil buffer to prevent self-intersecting shadows, from Baker (MarkV)
 	if (gl_stencilbits)
 	{
-		glClear(GL_STENCIL_BUFFER_BIT);
-		glStencilFunc(GL_EQUAL, 0, ~0);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		glEnable(GL_STENCIL_TEST);
+		glClear (GL_STENCIL_BUFFER_BIT);
+		glStencilFunc (GL_EQUAL, 0, ~0);
+		glStencilOp (GL_KEEP, GL_KEEP, GL_INCR);
+		glEnable (GL_STENCIL_TEST);
 	}
 
-	for (i=0 ; i<cl_numvisedicts ; i++)
+	for (i = 0; i < cl_numvisedicts; i++)
 	{
 		currententity = cl_visedicts[i];
 
@@ -895,7 +895,7 @@ void R_DrawShadows (void)
 
 	if (gl_stencilbits)
 	{
-		glDisable(GL_STENCIL_TEST);
+		glDisable (GL_STENCIL_TEST);
 	}
 }
 
@@ -996,7 +996,7 @@ void R_ScaleView_DeleteTexture (void)
 R_ScaleView
 
 The r_scale cvar allows rendering the 3D view at 1/2, 1/3, or 1/4 resolution.
-This function scales the reduced resolution 3D view back up to fill 
+This function scales the reduced resolution 3D view back up to fill
 r_refdef.vrect. This is for emulating a low-resolution pixellated look,
 or possibly as a perforance boost on slow graphics cards.
 ================
@@ -1008,7 +1008,7 @@ void R_ScaleView (void)
 	int srcx, srcy, srcw, srch;
 
 	// copied from R_SetupGL()
-	scale = CLAMP(1, (int)r_scale.value, 4);
+	scale = CLAMP (1, (int) r_scale.value, 4);
 	srcx = glx + r_refdef.vrect.x;
 	srcy = gly + glheight - r_refdef.vrect.y - r_refdef.vrect.height;
 	srcw = r_refdef.vrect.width / scale;
@@ -1039,8 +1039,8 @@ void R_ScaleView (void)
 
 		if (!gl_texture_NPOT)
 		{
-			r_scaleview_texture_width = TexMgr_Pad(r_scaleview_texture_width);
-			r_scaleview_texture_height = TexMgr_Pad(r_scaleview_texture_height);
+			r_scaleview_texture_width = TexMgr_Pad (r_scaleview_texture_width);
+			r_scaleview_texture_height = TexMgr_Pad (r_scaleview_texture_height);
 		}
 
 		glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, r_scaleview_texture_width, r_scaleview_texture_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -1060,14 +1060,14 @@ void R_ScaleView (void)
 
 	glViewport (srcx, srcy, r_refdef.vrect.width, r_refdef.vrect.height);
 
-	glMatrixMode(GL_PROJECTION);
+	glMatrixMode (GL_PROJECTION);
 	glLoadIdentity ();
-	glMatrixMode(GL_MODELVIEW);
+	glMatrixMode (GL_MODELVIEW);
 	glLoadIdentity ();
 
 	// correction factor if we lack NPOT textures, normally these are 1.0f
-	smax = srcw/(float)r_scaleview_texture_width;
-	tmax = srch/(float)r_scaleview_texture_height;
+	smax = srcw / (float) r_scaleview_texture_width;
+	tmax = srch / (float) r_scaleview_texture_height;
 
 	glBegin (GL_QUADS);
 	glTexCoord2f (0, 0);
@@ -1107,7 +1107,7 @@ void R_RenderView (void)
 
 		//johnfitz -- rendering statistics
 		rs_brushpolys = rs_aliaspolys = rs_skypolys = rs_particles = rs_fogpolys = rs_megatexels =
-		rs_dynamiclightmaps = rs_aliaspasses = rs_skypasses = rs_brushpasses = 0;
+			rs_dynamiclightmaps = rs_aliaspasses = rs_skypasses = rs_brushpasses = 0;
 	}
 	else if (gl_finish.value)
 		glFinish ();
@@ -1117,30 +1117,30 @@ void R_RenderView (void)
 	//johnfitz -- stereo rendering -- full of hacky goodness
 	if (r_stereo.value)
 	{
-		float eyesep = CLAMP(-8.0f, r_stereo.value, 8.0f);
-		float fdepth = CLAMP(32.0f, r_stereodepth.value, 1024.0f);
+		float eyesep = CLAMP (-8.0f, r_stereo.value, 8.0f);
+		float fdepth = CLAMP (32.0f, r_stereodepth.value, 1024.0f);
 
 		AngleVectors (r_refdef.viewangles, vpn, vright, vup);
 
 		//render left eye (red)
-		glColorMask(1, 0, 0, 1);
+		glColorMask (1, 0, 0, 1);
 		VectorMA (r_refdef.vieworg, -0.5f * eyesep, vright, r_refdef.vieworg);
 		frustum_skew = 0.5 * eyesep * NEARCLIP / fdepth;
-		srand((int) (cl.time * 1000)); //sync random stuff between eyes
+		srand ((int) (cl.time * 1000)); //sync random stuff between eyes
 
 		R_RenderScene ();
 
 		//render right eye (cyan)
 		glClear (GL_DEPTH_BUFFER_BIT);
-		glColorMask(0, 1, 1, 1);
+		glColorMask (0, 1, 1, 1);
 		VectorMA (r_refdef.vieworg, 1.0f * eyesep, vright, r_refdef.vieworg);
 		frustum_skew = -frustum_skew;
-		srand((int) (cl.time * 1000)); //sync random stuff between eyes
+		srand ((int) (cl.time * 1000)); //sync random stuff between eyes
 
 		R_RenderScene ();
 
 		//restore
-		glColorMask(1, 1, 1, 1);
+		glColorMask (1, 1, 1, 1);
 		VectorMA (r_refdef.vieworg, -0.5f * eyesep, vright, r_refdef.vieworg);
 		frustum_skew = 0.0f;
 	}
@@ -1158,29 +1158,29 @@ void R_RenderView (void)
 	time2 = Sys_DoubleTime ();
 	if (r_pos.value)
 		Con_Printf ("x %i y %i z %i (pitch %i yaw %i roll %i)\n",
-			(int)cl_entities[cl.viewentity].origin[0],
-			(int)cl_entities[cl.viewentity].origin[1],
-			(int)cl_entities[cl.viewentity].origin[2],
-			(int)cl.viewangles[PITCH],
-			(int)cl.viewangles[YAW],
-			(int)cl.viewangles[ROLL]);
+			(int) cl_entities[cl.viewentity].origin[0],
+			(int) cl_entities[cl.viewentity].origin[1],
+			(int) cl_entities[cl.viewentity].origin[2],
+			(int) cl.viewangles[PITCH],
+			(int) cl.viewangles[YAW],
+			(int) cl.viewangles[ROLL]);
 	else if (r_speeds.value == 2)
 		Con_Printf ("%3i ms  %4i/%4i wpoly %4i/%4i epoly %3i lmap %4i/%4i sky %1.1f mtex\n",
-					(int)((time2-time1)*1000),
-					rs_brushpolys,
-					rs_brushpasses,
-					rs_aliaspolys,
-					rs_aliaspasses,
-					rs_dynamiclightmaps,
-					rs_skypolys,
-					rs_skypasses,
-					TexMgr_FrameUsage ());
+			(int) ((time2 - time1) * 1000),
+			rs_brushpolys,
+			rs_brushpasses,
+			rs_aliaspolys,
+			rs_aliaspasses,
+			rs_dynamiclightmaps,
+			rs_skypolys,
+			rs_skypasses,
+			TexMgr_FrameUsage ());
 	else if (r_speeds.value)
 		Con_Printf ("%3i ms  %4i wpoly %4i epoly %3i lmap\n",
-					(int)((time2-time1)*1000),
-					rs_brushpolys,
-					rs_aliaspolys,
-					rs_dynamiclightmaps);
+			(int) ((time2 - time1) * 1000),
+			rs_brushpolys,
+			rs_aliaspolys,
+			rs_dynamiclightmaps);
 	//johnfitz
 }
 

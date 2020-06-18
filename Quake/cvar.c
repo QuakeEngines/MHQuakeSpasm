@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-static cvar_t	*cvar_vars;
+static cvar_t *cvar_vars;
 static char	cvar_null_string[] = "";
 
 //==============================================================================
@@ -41,14 +41,14 @@ Cvar_List_f -- johnfitz
 */
 void Cvar_List_f (void)
 {
-	cvar_t	*cvar;
-	const char 	*partial;
+	cvar_t *cvar;
+	const char *partial;
 	int		len, count;
 
-	if (Cmd_Argc() > 1)
+	if (Cmd_Argc () > 1)
 	{
 		partial = Cmd_Argv (1);
-		len = Q_strlen(partial);
+		len = Q_strlen (partial);
 	}
 	else
 	{
@@ -57,15 +57,15 @@ void Cvar_List_f (void)
 	}
 
 	count = 0;
-	for (cvar = cvar_vars ; cvar ; cvar = cvar->next)
+	for (cvar = cvar_vars; cvar; cvar = cvar->next)
 	{
-		if (partial && Q_strncmp(partial, cvar->name, len))
+		if (partial && Q_strncmp (partial, cvar->name, len))
 		{
 			continue;
 		}
 		Con_SafePrintf ("%s%s %s \"%s\"\n",
 			(cvar->flags & CVAR_ARCHIVE) ? "*" : " ",
-			(cvar->flags & CVAR_NOTIFY)  ? "s" : " ",
+			(cvar->flags & CVAR_NOTIFY) ? "s" : " ",
 			cvar->name,
 			cvar->string);
 		count++;
@@ -86,17 +86,17 @@ Cvar_Inc_f -- johnfitz
 */
 void Cvar_Inc_f (void)
 {
-	switch (Cmd_Argc())
+	switch (Cmd_Argc ())
 	{
 	default:
 	case 1:
-		Con_Printf("inc <cvar> [amount] : increment cvar\n");
+		Con_Printf ("inc <cvar> [amount] : increment cvar\n");
 		break;
 	case 2:
-		Cvar_SetValue (Cmd_Argv(1), Cvar_VariableValue(Cmd_Argv(1)) + 1);
+		Cvar_SetValue (Cmd_Argv (1), Cvar_VariableValue (Cmd_Argv (1)) + 1);
 		break;
 	case 3:
-		Cvar_SetValue (Cmd_Argv(1), Cvar_VariableValue(Cmd_Argv(1)) + Q_atof(Cmd_Argv(2)));
+		Cvar_SetValue (Cmd_Argv (1), Cvar_VariableValue (Cmd_Argv (1)) + Q_atof (Cmd_Argv (2)));
 		break;
 	}
 }
@@ -108,17 +108,17 @@ Cvar_Toggle_f -- johnfitz
 */
 void Cvar_Toggle_f (void)
 {
-	switch (Cmd_Argc())
+	switch (Cmd_Argc ())
 	{
 	default:
 	case 1:
-		Con_Printf("toggle <cvar> : toggle cvar\n");
+		Con_Printf ("toggle <cvar> : toggle cvar\n");
 		break;
 	case 2:
-		if (Cvar_VariableValue(Cmd_Argv(1)))
-			Cvar_Set (Cmd_Argv(1), "0");
+		if (Cvar_VariableValue (Cmd_Argv (1)))
+			Cvar_Set (Cmd_Argv (1), "0");
 		else
-			Cvar_Set (Cmd_Argv(1), "1");
+			Cvar_Set (Cmd_Argv (1), "1");
 		break;
 	}
 }
@@ -132,38 +132,38 @@ void Cvar_Cycle_f (void)
 {
 	int i;
 
-	if (Cmd_Argc() < 3)
+	if (Cmd_Argc () < 3)
 	{
-		Con_Printf("cycle <cvar> <value list>: cycle cvar through a list of values\n");
+		Con_Printf ("cycle <cvar> <value list>: cycle cvar through a list of values\n");
 		return;
 	}
 
 	//loop through the args until you find one that matches the current cvar value.
 	//yes, this will get stuck on a list that contains the same value twice.
 	//it's not worth dealing with, and i'm not even sure it can be dealt with.
-	for (i = 2; i < Cmd_Argc(); i++)
+	for (i = 2; i < Cmd_Argc (); i++)
 	{
 		//zero is assumed to be a string, even though it could actually be zero.  The worst case
 		//is that the first time you call this command, it won't match on zero when it should, but after that,
 		//it will be comparing strings that all had the same source (the user) so it will work.
-		if (Q_atof(Cmd_Argv(i)) == 0)
+		if (Q_atof (Cmd_Argv (i)) == 0)
 		{
-			if (!strcmp(Cmd_Argv(i), Cvar_VariableString(Cmd_Argv(1))))
+			if (!strcmp (Cmd_Argv (i), Cvar_VariableString (Cmd_Argv (1))))
 				break;
 		}
 		else
 		{
-			if (Q_atof(Cmd_Argv(i)) == Cvar_VariableValue(Cmd_Argv(1)))
+			if (Q_atof (Cmd_Argv (i)) == Cvar_VariableValue (Cmd_Argv (1)))
 				break;
 		}
 	}
 
-	if (i == Cmd_Argc())
-		Cvar_Set (Cmd_Argv(1), Cmd_Argv(2)); // no match
-	else if (i + 1 == Cmd_Argc())
-		Cvar_Set (Cmd_Argv(1), Cmd_Argv(2)); // matched last value in list
+	if (i == Cmd_Argc ())
+		Cvar_Set (Cmd_Argv (1), Cmd_Argv (2)); // no match
+	else if (i + 1 == Cmd_Argc ())
+		Cvar_Set (Cmd_Argv (1), Cmd_Argv (2)); // matched last value in list
 	else
-		Cvar_Set (Cmd_Argv(1), Cmd_Argv(i+1)); // matched earlier in list
+		Cvar_Set (Cmd_Argv (1), Cmd_Argv (i + 1)); // matched earlier in list
 }
 
 /*
@@ -173,14 +173,14 @@ Cvar_Reset_f -- johnfitz
 */
 void Cvar_Reset_f (void)
 {
-	switch (Cmd_Argc())
+	switch (Cmd_Argc ())
 	{
 	default:
 	case 1:
 		Con_Printf ("reset <cvar> : reset cvar to default\n");
 		break;
 	case 2:
-		Cvar_Reset (Cmd_Argv(1));
+		Cvar_Reset (Cmd_Argv (1));
 		break;
 	}
 }
@@ -192,9 +192,9 @@ Cvar_ResetAll_f -- johnfitz
 */
 void Cvar_ResetAll_f (void)
 {
-	cvar_t	*var;
+	cvar_t *var;
 
-	for (var = cvar_vars ; var ; var = var->next)
+	for (var = cvar_vars; var; var = var->next)
 		Cvar_Reset (var->name);
 }
 
@@ -205,9 +205,9 @@ Cvar_ResetCfg_f -- QuakeSpasm
 */
 void Cvar_ResetCfg_f (void)
 {
-	cvar_t	*var;
+	cvar_t *var;
 
-	for (var = cvar_vars ; var ; var = var->next)
+	for (var = cvar_vars; var; var = var->next)
 		if (var->flags & CVAR_ARCHIVE) Cvar_Reset (var->name);
 }
 
@@ -247,11 +247,11 @@ Cvar_FindVar
 */
 cvar_t *Cvar_FindVar (const char *var_name)
 {
-	cvar_t	*var;
+	cvar_t *var;
 
-	for (var = cvar_vars ; var ; var = var->next)
+	for (var = cvar_vars; var; var = var->next)
 	{
-		if (!Q_strcmp(var_name, var->name))
+		if (!Q_strcmp (var_name, var->name))
 			return var;
 	}
 
@@ -260,7 +260,7 @@ cvar_t *Cvar_FindVar (const char *var_name)
 
 cvar_t *Cvar_FindVarAfter (const char *prev_name, unsigned int with_flags)
 {
-	cvar_t	*var;
+	cvar_t *var;
 
 	if (*prev_name)
 	{
@@ -289,23 +289,23 @@ Cvar_LockVar
 */
 void Cvar_LockVar (const char *var_name)
 {
-	cvar_t	*var = Cvar_FindVar (var_name);
+	cvar_t *var = Cvar_FindVar (var_name);
 	if (var)
 		var->flags |= CVAR_LOCKED;
 }
 
 void Cvar_UnlockVar (const char *var_name)
 {
-	cvar_t	*var = Cvar_FindVar (var_name);
+	cvar_t *var = Cvar_FindVar (var_name);
 	if (var)
 		var->flags &= ~CVAR_LOCKED;
 }
 
 void Cvar_UnlockAll (void)
 {
-	cvar_t	*var;
+	cvar_t *var;
 
-	for (var = cvar_vars ; var ; var = var->next)
+	for (var = cvar_vars; var; var = var->next)
 	{
 		var->flags &= ~CVAR_LOCKED;
 	}
@@ -318,7 +318,7 @@ Cvar_VariableValue
 */
 float	Cvar_VariableValue (const char *var_name)
 {
-	cvar_t	*var;
+	cvar_t *var;
 
 	var = Cvar_FindVar (var_name);
 	if (!var)
@@ -350,17 +350,17 @@ Cvar_CompleteVariable
 */
 const char *Cvar_CompleteVariable (const char *partial)
 {
-	cvar_t	*cvar;
+	cvar_t *cvar;
 	int	len;
 
-	len = Q_strlen(partial);
+	len = Q_strlen (partial);
 	if (!len)
 		return NULL;
 
-// check functions
-	for (cvar = cvar_vars ; cvar ; cvar = cvar->next)
+	// check functions
+	for (cvar = cvar_vars; cvar; cvar = cvar->next)
 	{
-		if (!Q_strncmp(partial, cvar->name, len))
+		if (!Q_strncmp (partial, cvar->name, len))
 			return cvar->name;
 	}
 
@@ -374,7 +374,7 @@ Cvar_Reset -- johnfitz
 */
 void Cvar_Reset (const char *name)
 {
-	cvar_t	*var;
+	cvar_t *var;
 
 	var = Cvar_FindVar (name);
 	if (!var)
@@ -385,7 +385,7 @@ void Cvar_Reset (const char *name)
 
 void Cvar_SetQuick (cvar_t *var, const char *value)
 {
-	if (var->flags & (CVAR_ROM|CVAR_LOCKED))
+	if (var->flags & (CVAR_ROM | CVAR_LOCKED))
 		return;
 	if (!(var->flags & CVAR_REGISTERED))
 		return;
@@ -396,17 +396,17 @@ void Cvar_SetQuick (cvar_t *var, const char *value)
 	{
 		int	len;
 
-		if (!strcmp(var->string, value))
+		if (!strcmp (var->string, value))
 			return;	// no change
 
 		var->flags |= CVAR_CHANGED;
 		len = Q_strlen (value);
-		if (len != Q_strlen(var->string))
+		if (len != Q_strlen (var->string))
 		{
-			Z_Free ((void *)var->string);
+			Z_Free ((void *) var->string);
 			var->string = (char *) Z_Malloc (len + 1);
 		}
-		memcpy ((char *)var->string, value, len + 1);
+		memcpy ((char *) var->string, value, len + 1);
 	}
 
 	var->value = Q_atof (var->string);
@@ -417,9 +417,9 @@ void Cvar_SetQuick (cvar_t *var, const char *value)
 	//johnfitz -- during initialization, update default too
 	else if (!host_initialized)
 	{
-	//	Sys_Printf("changing default of %s: %s -> %s\n",
-	//		   var->name, var->default_string, var->string);
-		Z_Free ((void *)var->default_string);
+		//	Sys_Printf("changing default of %s: %s -> %s\n",
+		//		   var->name, var->default_string, var->string);
+		Z_Free ((void *) var->default_string);
 		var->default_string = Z_Strdup (var->string);
 	}
 	//johnfitz
@@ -432,11 +432,11 @@ void Cvar_SetValueQuick (cvar_t *var, const float value)
 {
 	char	val[32], *ptr = val;
 
-	if (value == (float)((int)value))
-		q_snprintf (val, sizeof(val), "%i", (int)value);
+	if (value == (float) ((int) value))
+		q_snprintf (val, sizeof (val), "%i", (int) value);
 	else
 	{
-		q_snprintf (val, sizeof(val), "%f", value);
+		q_snprintf (val, sizeof (val), "%f", value);
 		// kill trailing zeroes
 		while (*ptr)
 			ptr++;
@@ -454,7 +454,7 @@ Cvar_Set
 */
 void Cvar_Set (const char *var_name, const char *value)
 {
-	cvar_t		*var;
+	cvar_t *var;
 
 	var = Cvar_FindVar (var_name);
 	if (!var)
@@ -475,11 +475,11 @@ void Cvar_SetValue (const char *var_name, const float value)
 {
 	char	val[32], *ptr = val;
 
-	if (value == (float)((int)value))
-		q_snprintf (val, sizeof(val), "%i", (int)value);
+	if (value == (float) ((int) value))
+		q_snprintf (val, sizeof (val), "%i", (int) value);
 	else
 	{
-		q_snprintf (val, sizeof(val), "%f", value);
+		q_snprintf (val, sizeof (val), "%f", value);
 		// kill trailing zeroes
 		while (*ptr)
 			ptr++;
@@ -533,7 +533,7 @@ void Cvar_RegisterVariable (cvar_t *variable)
 {
 	char	value[512];
 	qboolean	set_rom;
-	cvar_t	*cursor,*prev; //johnfitz -- sorted list insert
+	cvar_t *cursor, *prev; //johnfitz -- sorted list insert
 
 // first check to see if it has already been defined
 	if (Cvar_FindVar (variable->name))
@@ -542,17 +542,17 @@ void Cvar_RegisterVariable (cvar_t *variable)
 		return;
 	}
 
-// check for overlap with a command
+	// check for overlap with a command
 	if (Cmd_Exists (variable->name))
 	{
 		Con_Printf ("Cvar_RegisterVariable: %s is a command\n", variable->name);
 		return;
 	}
 
-// link the variable in
-	//johnfitz -- insert each entry in alphabetical order
+	// link the variable in
+		//johnfitz -- insert each entry in alphabetical order
 	if (cvar_vars == NULL ||
-	    strcmp(variable->name, cvar_vars->name) < 0) // insert at front
+		strcmp (variable->name, cvar_vars->name) < 0) // insert at front
 	{
 		variable->next = cvar_vars;
 		cvar_vars = variable;
@@ -561,7 +561,7 @@ void Cvar_RegisterVariable (cvar_t *variable)
 	{
 		prev = cvar_vars;
 		cursor = cvar_vars->next;
-		while (cursor && (strcmp(variable->name, cursor->name) > 0))
+		while (cursor && (strcmp (variable->name, cursor->name) > 0))
 		{
 			prev = cursor;
 			cursor = cursor->next;
@@ -572,15 +572,15 @@ void Cvar_RegisterVariable (cvar_t *variable)
 	//johnfitz
 	variable->flags |= CVAR_REGISTERED;
 
-// copy the value off, because future sets will Z_Free it
-	q_strlcpy (value, variable->string, sizeof(value));
+	// copy the value off, because future sets will Z_Free it
+	q_strlcpy (value, variable->string, sizeof (value));
 	variable->string = NULL;
 	variable->default_string = NULL;
 
 	if (!(variable->flags & CVAR_CALLBACK))
 		variable->callback = NULL;
 
-// set it through the function to be consistent
+	// set it through the function to be consistent
 	set_rom = (variable->flags & CVAR_ROM);
 	variable->flags &= ~CVAR_ROM;
 	Cvar_SetQuick (variable, value);
@@ -612,21 +612,21 @@ Handles variable inspection and changing from the console
 */
 qboolean	Cvar_Command (void)
 {
-	cvar_t			*v;
+	cvar_t *v;
 
-// check variables
-	v = Cvar_FindVar (Cmd_Argv(0));
+	// check variables
+	v = Cvar_FindVar (Cmd_Argv (0));
 	if (!v)
 		return false;
 
-// perform a variable print or set
-	if (Cmd_Argc() == 1)
+	// perform a variable print or set
+	if (Cmd_Argc () == 1)
 	{
 		Con_Printf ("\"%s\" is \"%s\"\n", v->name, v->string);
 		return true;
 	}
 
-	Cvar_Set (v->name, Cmd_Argv(1));
+	Cvar_Set (v->name, Cmd_Argv (1));
 	return true;
 }
 
@@ -641,9 +641,9 @@ with the archive flag set to true.
 */
 void Cvar_WriteVariables (FILE *f)
 {
-	cvar_t	*var;
+	cvar_t *var;
 
-	for (var = cvar_vars ; var ; var = var->next)
+	for (var = cvar_vars; var; var = var->next)
 	{
 		if (var->flags & CVAR_ARCHIVE)
 			fprintf (f, "%s \"%s\"\n", var->name, var->string);

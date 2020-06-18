@@ -32,8 +32,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	/* 'argument'	: conversion from 'type1' to 'type2',
 			  possible loss of data */
 #  pragma warning(disable:4305)
-	/* 'identifier'	: truncation from 'type1' to 'type2' */
-	/*  in our case, truncation from 'double' to 'float' */
+			  /* 'identifier'	: truncation from 'type1' to 'type2' */
+			  /*  in our case, truncation from 'double' to 'float' */
 #  pragma warning(disable:4267)
 	/* 'var'	: conversion from 'size_t' to 'type',
 			  possible loss of data (/Wp64 warning) */
@@ -48,11 +48,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	((x) < (_minval) ? (_minval) :		\
 	 (x) > (_maxval) ? (_maxval) : (x))
 
-typedef struct sizebuf_s
-{
+typedef struct sizebuf_s {
 	qboolean	allowoverflow;	// if false, do a Sys_Error
 	qboolean	overflowed;		// set to true if the buffer size failed
-	byte		*data;
+	byte *data;
 	int		maxsize;
 	int		cursize;
 } sizebuf_t;
@@ -66,9 +65,8 @@ void SZ_Print (sizebuf_t *buf, const char *data);	// strcats onto the sizebuf
 
 //============================================================================
 
-typedef struct link_s
-{
-	struct link_s	*prev, *next;
+typedef struct link_s {
+	struct link_s *prev, *next;
 } link_t;
 
 
@@ -139,19 +137,19 @@ float Q_atof (const char *str);
 #include "strl_fn.h"
 
 /* locale-insensitive strcasecmp replacement functions: */
-extern int q_strcasecmp (const char * s1, const char * s2);
+extern int q_strcasecmp (const char *s1, const char *s2);
 extern int q_strncasecmp (const char *s1, const char *s2, size_t n);
 
 /* locale-insensitive case-insensitive alternative to strstr */
-extern char *q_strcasestr(const char *haystack, const char *needle);
+extern char *q_strcasestr (const char *haystack, const char *needle);
 
 /* locale-insensitive strlwr/upr replacement functions: */
 extern char *q_strlwr (char *str);
 extern char *q_strupr (char *str);
 
 /* snprintf, vsnprintf : always use our versions. */
-extern int q_snprintf (char *str, size_t size, const char *format, ...) FUNC_PRINTF(3,4);
-extern int q_vsnprintf(char *str, size_t size, const char *format, va_list args) FUNC_PRINTF(3,0);
+extern int q_snprintf (char *str, size_t size, const char *format, ...) FUNC_PRINTF (3, 4);
+extern int q_vsnprintf (char *str, size_t size, const char *format, va_list args) FUNC_PRINTF (3, 0);
 
 //============================================================================
 
@@ -162,7 +160,7 @@ const char *COM_Parse (const char *data);
 
 
 extern	int		com_argc;
-extern	char	**com_argv;
+extern	char **com_argv;
 
 extern	int		safemode;
 /* safe mode: in true, the engine will behave as if one
@@ -188,35 +186,32 @@ const char *COM_FileGetExtension (const char *in); /* doesn't return NULL */
 void COM_ExtractExtension (const char *in, char *out, size_t outsize);
 void COM_CreatePath (char *path);
 
-char *va (const char *format, ...) FUNC_PRINTF(1,2);
+char *va (const char *format, ...) FUNC_PRINTF (1, 2);
 // does a varargs printf into a temp buffer
 
 
 //============================================================================
 
 // QUAKEFS
-typedef struct
-{
+typedef struct {
 	char	name[MAX_QPATH];
 	int		filepos, filelen;
 } packfile_t;
 
-typedef struct pack_s
-{
+typedef struct pack_s {
 	char	filename[MAX_OSPATH];
 	int		handle;
 	int		numfiles;
-	packfile_t	*files;
+	packfile_t *files;
 } pack_t;
 
-typedef struct searchpath_s
-{
+typedef struct searchpath_s {
 	unsigned int path_id;	// identifier assigned to the game directory
 					// Note that <install_dir>/game1 and
 					// <userdir>/game1 have the same id.
 	char	filename[MAX_OSPATH];
-	pack_t	*pack;			// only one of filename / pack will be used
-	struct searchpath_s	*next;
+	pack_t *pack;			// only one of filename / pack will be used
+	struct searchpath_s *next;
 } searchpath_t;
 
 extern searchpath_t *com_searchpaths;
@@ -239,21 +234,21 @@ void COM_CloseFile (int h);
 // buffer. the buffer is allocated with a total size of com_filesize + 1. the
 // procedures differ by their buffer allocation method.
 byte *COM_LoadStackFile (const char *path, void *buffer, int bufsize,
-						unsigned int *path_id);
-	// uses the specified stack stack buffer with the specified size
-	// of bufsize. if bufsize is too short, uses temp hunk. the bufsize
-	// must include the +1
+	unsigned int *path_id);
+// uses the specified stack stack buffer with the specified size
+// of bufsize. if bufsize is too short, uses temp hunk. the bufsize
+// must include the +1
 byte *COM_LoadTempFile (const char *path, unsigned int *path_id);
-	// allocates the buffer on the temp hunk.
+// allocates the buffer on the temp hunk.
 byte *COM_LoadHunkFile (const char *path, unsigned int *path_id);
-	// allocates the buffer on the hunk.
+// allocates the buffer on the hunk.
 byte *COM_LoadZoneFile (const char *path, unsigned int *path_id);
-	// allocates the buffer on the zone.
+// allocates the buffer on the zone.
 void COM_LoadCacheFile (const char *path, struct cache_user_s *cu,
-						unsigned int *path_id);
-	// uses cache mem for allocating the buffer.
+	unsigned int *path_id);
+// uses cache mem for allocating the buffer.
 byte *COM_LoadMallocFile (const char *path, unsigned int *path_id);
-	// allocates the buffer on the system mem (malloc).
+// allocates the buffer on the system mem (malloc).
 
 // Opens the given path directly, ignoring search paths.
 // Returns NULL on failure, or else a '\0'-terminated malloc'ed buffer.
@@ -263,15 +258,15 @@ byte *COM_LoadMallocFile_TextMode_OSPath (const char *path, long *len_out);
 // Attempts to parse an int, followed by a newline.
 // Returns advanced buffer position.
 // Doesn't signal parsing failure, but this is not needed for savegame loading.
-const char *COM_ParseIntNewline(const char *buffer, int *value);
+const char *COM_ParseIntNewline (const char *buffer, int *value);
 
 // Attempts to parse a float followed by a newline.
 // Returns advanced buffer position.
-const char *COM_ParseFloatNewline(const char *buffer, float *value);
+const char *COM_ParseFloatNewline (const char *buffer, float *value);
 
 // Parse a string of non-whitespace into com_token, then tries to consume a
 // newline. Returns advanced buffer position.
-const char *COM_ParseStringNewline(const char *buffer);
+const char *COM_ParseStringNewline (const char *buffer);
 
 /* The following FS_*() stdio replacements are necessary if one is
  * to perform non-sequential reads on files reopened on pak files
@@ -279,8 +274,7 @@ const char *COM_ParseStringNewline(const char *buffer);
  * Allocating and filling in the fshandle_t structure is the users'
  * responsibility when the file is initially opened. */
 
-typedef struct _fshandle_t
-{
+typedef struct _fshandle_t {
 	FILE *file;
 	qboolean pak;	/* is the file read from a pak */
 	long start;	/* file or data start position */
@@ -288,22 +282,22 @@ typedef struct _fshandle_t
 	long pos;	/* current position relative to start */
 } fshandle_t;
 
-size_t FS_fread(void *ptr, size_t size, size_t nmemb, fshandle_t *fh);
-int FS_fseek(fshandle_t *fh, long offset, int whence);
-long FS_ftell(fshandle_t *fh);
-void FS_rewind(fshandle_t *fh);
-int FS_feof(fshandle_t *fh);
-int FS_ferror(fshandle_t *fh);
-int FS_fclose(fshandle_t *fh);
-int FS_fgetc(fshandle_t *fh);
-char *FS_fgets(char *s, int size, fshandle_t *fh);
+size_t FS_fread (void *ptr, size_t size, size_t nmemb, fshandle_t *fh);
+int FS_fseek (fshandle_t *fh, long offset, int whence);
+long FS_ftell (fshandle_t *fh);
+void FS_rewind (fshandle_t *fh);
+int FS_feof (fshandle_t *fh);
+int FS_ferror (fshandle_t *fh);
+int FS_fclose (fshandle_t *fh);
+int FS_fgetc (fshandle_t *fh);
+char *FS_fgets (char *s, int size, fshandle_t *fh);
 long FS_filelength (fshandle_t *fh);
 
 
 extern struct cvar_s	registered;
 extern qboolean		standard_quake, rogue, hipnotic;
 extern qboolean		fitzmode;
-	/* if true, run in fitzquake mode disabling custom quakespasm hacks */
+/* if true, run in fitzquake mode disabling custom quakespasm hacks */
 
 #endif	/* _Q_COMMON_H */
 

@@ -27,13 +27,13 @@ int			num_temp_entities;
 entity_t	cl_temp_entities[MAX_TEMP_ENTITIES];
 beam_t		cl_beams[MAX_BEAMS];
 
-sfx_t			*cl_sfx_wizhit;
-sfx_t			*cl_sfx_knighthit;
-sfx_t			*cl_sfx_tink1;
-sfx_t			*cl_sfx_ric1;
-sfx_t			*cl_sfx_ric2;
-sfx_t			*cl_sfx_ric3;
-sfx_t			*cl_sfx_r_exp3;
+sfx_t *cl_sfx_wizhit;
+sfx_t *cl_sfx_knighthit;
+sfx_t *cl_sfx_tink1;
+sfx_t *cl_sfx_ric1;
+sfx_t *cl_sfx_ric2;
+sfx_t *cl_sfx_ric3;
+sfx_t *cl_sfx_r_exp3;
 
 /*
 =================
@@ -60,7 +60,7 @@ void CL_ParseBeam (qmodel_t *m)
 {
 	int		ent;
 	vec3_t	start, end;
-	beam_t	*b;
+	beam_t *b;
 	int		i;
 
 	ent = MSG_ReadShort ();
@@ -73,8 +73,8 @@ void CL_ParseBeam (qmodel_t *m)
 	end[1] = MSG_ReadCoord (cl.protocolflags);
 	end[2] = MSG_ReadCoord (cl.protocolflags);
 
-// override any beam with the same entity
-	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
+	// override any beam with the same entity
+	for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++)
 		if (b->entity == ent)
 		{
 			b->entity = ent;
@@ -85,8 +85,8 @@ void CL_ParseBeam (qmodel_t *m)
 			return;
 		}
 
-// find a free beam
-	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
+	// find a free beam
+	for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
 		{
@@ -100,7 +100,7 @@ void CL_ParseBeam (qmodel_t *m)
 	}
 
 	//johnfitz -- less spammy overflow message
-	if (!dev_overflows.beams || dev_overflows.beams + CONSOLE_RESPAM_TIME < realtime )
+	if (!dev_overflows.beams || dev_overflows.beams + CONSOLE_RESPAM_TIME < realtime)
 	{
 		Con_Printf ("Beam list overflow!\n");
 		dev_overflows.beams = realtime;
@@ -117,7 +117,7 @@ void CL_ParseTEnt (void)
 {
 	int		type;
 	vec3_t	pos;
-	dlight_t	*dl;
+	dlight_t *dl;
 	int		rnd;
 	int		colorStart, colorLength;
 
@@ -145,11 +145,11 @@ void CL_ParseTEnt (void)
 		pos[1] = MSG_ReadCoord (cl.protocolflags);
 		pos[2] = MSG_ReadCoord (cl.protocolflags);
 		R_RunParticleEffect (pos, vec3_origin, 0, 10);
-		if ( rand() % 5 )
+		if (rand () % 5)
 			S_StartSound (-1, 0, cl_sfx_tink1, pos, 1, 1);
 		else
 		{
-			rnd = rand() & 3;
+			rnd = rand () & 3;
 			if (rnd == 1)
 				S_StartSound (-1, 0, cl_sfx_ric1, pos, 1, 1);
 			else if (rnd == 2)
@@ -164,11 +164,11 @@ void CL_ParseTEnt (void)
 		pos[2] = MSG_ReadCoord (cl.protocolflags);
 		R_RunParticleEffect (pos, vec3_origin, 0, 20);
 
-		if ( rand() % 5 )
+		if (rand () % 5)
 			S_StartSound (-1, 0, cl_sfx_tink1, pos, 1, 1);
 		else
 		{
-			rnd = rand() & 3;
+			rnd = rand () & 3;
 			if (rnd == 1)
 				S_StartSound (-1, 0, cl_sfx_ric1, pos, 1, 1);
 			else if (rnd == 2)
@@ -208,22 +208,22 @@ void CL_ParseTEnt (void)
 		break;
 
 	case TE_LIGHTNING1:				// lightning bolts
-		CL_ParseBeam (Mod_ForName("progs/bolt.mdl", true));
+		CL_ParseBeam (Mod_ForName ("progs/bolt.mdl", true));
 		break;
 
 	case TE_LIGHTNING2:				// lightning bolts
-		CL_ParseBeam (Mod_ForName("progs/bolt2.mdl", true));
+		CL_ParseBeam (Mod_ForName ("progs/bolt2.mdl", true));
 		break;
 
 	case TE_LIGHTNING3:				// lightning bolts
-		CL_ParseBeam (Mod_ForName("progs/bolt3.mdl", true));
+		CL_ParseBeam (Mod_ForName ("progs/bolt3.mdl", true));
 		break;
 
-// PGM 01/21/97
+		// PGM 01/21/97
 	case TE_BEAM:				// grappling hook beam
-		CL_ParseBeam (Mod_ForName("progs/beam.mdl", true));
+		CL_ParseBeam (Mod_ForName ("progs/beam.mdl", true));
 		break;
-// PGM 01/21/97
+		// PGM 01/21/97
 
 	case TE_LAVASPLASH:
 		pos[0] = MSG_ReadCoord (cl.protocolflags);
@@ -267,14 +267,14 @@ CL_NewTempEntity
 */
 entity_t *CL_NewTempEntity (void)
 {
-	entity_t	*ent;
+	entity_t *ent;
 
 	if (cl_numvisedicts == MAX_VISEDICTS)
 		return NULL;
 	if (num_temp_entities == MAX_TEMP_ENTITIES)
 		return NULL;
 	ent = &cl_temp_entities[num_temp_entities];
-	memset (ent, 0, sizeof(*ent));
+	memset (ent, 0, sizeof (*ent));
 	num_temp_entities++;
 	cl_visedicts[cl_numvisedicts] = ent;
 	cl_numvisedicts++;
@@ -292,10 +292,10 @@ CL_UpdateTEnts
 void CL_UpdateTEnts (void)
 {
 	int			i, j; //johnfitz -- use j instead of using i twice, so we don't corrupt memory
-	beam_t		*b;
+	beam_t *b;
 	vec3_t		dist, org;
 	float		d;
-	entity_t	*ent;
+	entity_t *ent;
 	float		yaw, pitch;
 	float		forward;
 
@@ -304,18 +304,18 @@ void CL_UpdateTEnts (void)
 	srand ((int) (cl.time * 1000)); //johnfitz -- freeze beams when paused
 
 // update lightning
-	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
+	for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
 			continue;
 
-	// if coming from the player, update the start position
+		// if coming from the player, update the start position
 		if (b->entity == cl.viewentity)
 		{
 			VectorCopy (cl_entities[cl.viewentity].origin, b->start);
 		}
 
-	// calculate pitch and yaw
+		// calculate pitch and yaw
 		VectorSubtract (b->end, b->start, dist);
 
 		if (dist[1] == 0 && dist[0] == 0)
@@ -328,19 +328,19 @@ void CL_UpdateTEnts (void)
 		}
 		else
 		{
-			yaw = (int) (atan2(dist[1], dist[0]) * 180 / M_PI);
+			yaw = (int) (atan2 (dist[1], dist[0]) * 180 / M_PI);
 			if (yaw < 0)
 				yaw += 360;
 
-			forward = sqrt (dist[0]*dist[0] + dist[1]*dist[1]);
-			pitch = (int) (atan2(dist[2], forward) * 180 / M_PI);
+			forward = sqrt (dist[0] * dist[0] + dist[1] * dist[1]);
+			pitch = (int) (atan2 (dist[2], forward) * 180 / M_PI);
 			if (pitch < 0)
 				pitch += 360;
 		}
 
-	// add new entities for the lightning
+		// add new entities for the lightning
 		VectorCopy (b->start, org);
-		d = VectorNormalize(dist);
+		d = VectorNormalize (dist);
 		while (d > 0)
 		{
 			ent = CL_NewTempEntity ();
@@ -350,11 +350,11 @@ void CL_UpdateTEnts (void)
 			ent->model = b->model;
 			ent->angles[0] = pitch;
 			ent->angles[1] = yaw;
-			ent->angles[2] = rand()%360;
+			ent->angles[2] = rand () % 360;
 
 			//johnfitz -- use j instead of using i twice, so we don't corrupt memory
-			for (j=0 ; j<3 ; j++)
-				org[j] += dist[j]*30;
+			for (j = 0; j < 3; j++)
+				org[j] += dist[j] * 30;
 			d -= 30;
 		}
 	}

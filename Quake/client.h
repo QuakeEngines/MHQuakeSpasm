@@ -25,25 +25,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // client.h
 
-typedef struct
-{
+typedef struct {
 	int		length;
 	char	map[MAX_STYLESTRING];
 	char	average; //johnfitz
 	char	peak; //johnfitz
 } lightstyle_t;
 
-typedef struct
-{
+typedef struct {
 	char	name[MAX_SCOREBOARDNAME];
 	float	entertime;
 	int		frags;
 	int		colors;			// two 4 bit fields
-	byte	translations[VID_GRADES*256];
+	byte	translations[VID_GRADES * 256];
 } scoreboard_t;
 
-typedef struct
-{
+typedef struct {
 	float	destcolor[3];
 	float	percent;		// 0-256
 } cshift_t;
@@ -64,8 +61,7 @@ typedef struct
 #define	SIGNONS		4			// signon messages to receive before connected
 
 #define	MAX_DLIGHTS		64 //johnfitz -- was 32
-typedef struct
-{
+typedef struct {
 	vec3_t	origin;				// world space
 	vec3_t	transformed;		// inverse transform back to model space
 	float	radius;
@@ -78,10 +74,9 @@ typedef struct
 
 
 #define	MAX_BEAMS	32 //johnfitz -- was 24
-typedef struct
-{
+typedef struct {
 	int		entity;
-	struct qmodel_s	*model;
+	struct qmodel_s *model;
 	float	endtime;
 	vec3_t	start, end;
 } beam_t;
@@ -91,20 +86,19 @@ typedef struct
 #define	MAX_DEMONAME	16
 
 typedef enum {
-ca_dedicated, 		// a dedicated server with no ability to start a client
-ca_disconnected, 	// full screen console with no connection
-ca_connected		// valid netcon, talking to a server
+	ca_dedicated, 		// a dedicated server with no ability to start a client
+	ca_disconnected, 	// full screen console with no connection
+	ca_connected		// valid netcon, talking to a server
 } cactive_t;
 
 //
 // the client_static_t structure is persistant through an arbitrary number
 // of server connections
 //
-typedef struct
-{
+typedef struct {
 	cactive_t	state;
 
-// personalization data sent to server
+	// personalization data sent to server
 	char		spawnparms[MAX_MAPSTRING];	// to restart a level
 
 // demo loop control
@@ -116,20 +110,20 @@ typedef struct
 	qboolean	demorecording;
 	qboolean	demoplayback;
 
-// did the user pause demo playback? (separate from cl.paused because we don't
-// want a svc_setpause inside the demo to actually pause demo playback).
+	// did the user pause demo playback? (separate from cl.paused because we don't
+	// want a svc_setpause inside the demo to actually pause demo playback).
 	qboolean	demopaused;
 
 	qboolean	timedemo;
 	int		forcetrack;		// -1 = use normal cd track
-	FILE		*demofile;
+	FILE *demofile;
 	int		td_lastframe;		// to meter out one message a frame
 	int		td_startframe;		// host_framecount at start
 	float		td_starttime;		// realtime at second frame of timedemo
 
 // connection information
 	int		signon;			// 0 to SIGNONS
-	struct qsocket_s	*netcon;
+	struct qsocket_s *netcon;
 	sizebuf_t	message;		// writing buffer to send to server
 
 } client_static_t;
@@ -140,8 +134,7 @@ extern client_static_t	cls;
 // the client_state_t structure is wiped completely at every
 // server signon
 //
-typedef struct
-{
+typedef struct {
 	int			movemessages;	// since connecting to this server
 								// throw out the first couple, so the player
 								// doesn't accidentally do something the
@@ -201,8 +194,8 @@ typedef struct
 //
 // information that is static for the entire time connected to a server
 //
-	struct qmodel_s		*model_precache[MAX_MODELS];
-	struct sfx_s		*sound_precache[MAX_SOUNDS];
+	struct qmodel_s *model_precache[MAX_MODELS];
+	struct sfx_s *sound_precache[MAX_SOUNDS];
 
 	char		mapname[128];
 	char		levelname[128];	// for display on solo scoreboard //johnfitz -- was 40.
@@ -210,9 +203,9 @@ typedef struct
 	int			maxclients;
 	int			gametype;
 
-// refresh related state
-	struct qmodel_s	*worldmodel;	// cl_entitites[0].model
-	struct efrag_s	*free_efrags;
+	// refresh related state
+	struct qmodel_s *worldmodel;	// cl_entitites[0].model
+	struct efrag_s *free_efrags;
 	int			num_efrags;
 	int			num_entities;	// held in cl_entities array
 	int			num_statics;	// held in cl_staticentities array
@@ -221,7 +214,7 @@ typedef struct
 	int			cdtrack, looptrack;	// cd audio
 
 // frag scoreboard
-	scoreboard_t	*scores;		// [cl.maxclients]
+	scoreboard_t *scores;		// [cl.maxclients]
 
 	unsigned	protocol; //johnfitz
 	unsigned	protocolflags;
@@ -278,10 +271,10 @@ extern	lightstyle_t	cl_lightstyle[MAX_LIGHTSTYLES];
 extern	dlight_t		cl_dlights[MAX_DLIGHTS];
 extern	entity_t		cl_temp_entities[MAX_TEMP_ENTITIES];
 extern	beam_t			cl_beams[MAX_BEAMS];
-extern	entity_t		*cl_visedicts[MAX_VISEDICTS];
+extern	entity_t *cl_visedicts[MAX_VISEDICTS];
 extern	int				cl_numvisedicts;
 
-extern	entity_t		*cl_entities; //johnfitz -- was a static array, now on hunk
+extern	entity_t *cl_entities; //johnfitz -- was a static array, now on hunk
 extern	int				cl_max_edicts; //johnfitz -- only changes when new map loads
 
 //=============================================================================
@@ -307,8 +300,7 @@ void CL_NextDemo (void);
 //
 // cl_input
 //
-typedef struct
-{
+typedef struct {
 	int		down[2];		// key nums holding it down
 	int		state;			// low bit is down state
 } kbutton_t;

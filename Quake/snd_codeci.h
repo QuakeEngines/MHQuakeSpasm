@@ -26,7 +26,7 @@
 #ifndef _SND_CODECI_H_
 #define _SND_CODECI_H_
 
-/* Codec internals */
+ /* Codec internals */
 typedef qboolean (*CODEC_INIT)(void);
 typedef void (*CODEC_SHUTDOWN)(void);
 typedef qboolean (*CODEC_OPEN)(snd_stream_t *stream);
@@ -34,8 +34,7 @@ typedef int (*CODEC_READ)(snd_stream_t *stream, int bytes, void *buffer);
 typedef int (*CODEC_REWIND)(snd_stream_t *stream);
 typedef void (*CODEC_CLOSE)(snd_stream_t *stream);
 
-struct snd_codec_s
-{
+struct snd_codec_s {
 	unsigned int type;	/* handled data type. (1U << n) */
 	qboolean initialized;	/* init succeedded */
 	const char *ext;	/* expected extension */
@@ -49,7 +48,7 @@ struct snd_codec_s
 };
 
 qboolean S_CodecForwardStream (snd_stream_t *stream, unsigned int type);
-			/* Forward a stream to another codec of 'type' type. */
+/* Forward a stream to another codec of 'type' type. */
 
 #endif	/* _SND_CODECI_H_ */
 

@@ -43,25 +43,25 @@ typedef struct stdio_buffer_s {
 	int pos;
 } stdio_buffer_t;
 
-static stdio_buffer_t *Buf_Alloc(FILE *f)
+static stdio_buffer_t *Buf_Alloc (FILE *f)
 {
-	stdio_buffer_t *buf = (stdio_buffer_t *) calloc(1, sizeof(stdio_buffer_t));
+	stdio_buffer_t *buf = (stdio_buffer_t *) calloc (1, sizeof (stdio_buffer_t));
 	buf->f = f;
 	return buf;
 }
 
-static void Buf_Free(stdio_buffer_t *buf)
+static void Buf_Free (stdio_buffer_t *buf)
 {
-	free(buf);
+	free (buf);
 }
 
-static inline int Buf_GetC(stdio_buffer_t *buf)
+static inline int Buf_GetC (stdio_buffer_t *buf)
 {
 	if (buf->pos >= buf->size)
 	{
-		buf->size = fread(buf->buffer, 1, sizeof(buf->buffer), buf->f);
+		buf->size = fread (buf->buffer, 1, sizeof (buf->buffer), buf->f);
 		buf->pos = 0;
-		
+
 		if (buf->size == 0)
 			return EOF;
 	}
@@ -80,14 +80,14 @@ TODO: search order: tga png jpg pcx lmp
 */
 byte *Image_LoadImage (const char *name, int *width, int *height)
 {
-	FILE	*f;
+	FILE *f;
 
-	q_snprintf (loadfilename, sizeof(loadfilename), "%s.tga", name);
+	q_snprintf (loadfilename, sizeof (loadfilename), "%s.tga", name);
 	COM_FOpenFile (loadfilename, &f, NULL);
 	if (f)
 		return Image_LoadTGA (f, width, height);
 
-	q_snprintf (loadfilename, sizeof(loadfilename), "%s.pcx", name);
+	q_snprintf (loadfilename, sizeof (loadfilename), "%s.pcx", name);
 	COM_FOpenFile (loadfilename, &f, NULL);
 	if (f)
 		return Image_LoadPCX (f, width, height);
@@ -117,22 +117,22 @@ int fgetLittleShort (FILE *f)
 {
 	byte	b1, b2;
 
-	b1 = fgetc(f);
-	b2 = fgetc(f);
+	b1 = fgetc (f);
+	b2 = fgetc (f);
 
-	return (short)(b1 + b2*256);
+	return (short) (b1 + b2 * 256);
 }
 
 int fgetLittleLong (FILE *f)
 {
 	byte	b1, b2, b3, b4;
 
-	b1 = fgetc(f);
-	b2 = fgetc(f);
-	b3 = fgetc(f);
-	b4 = fgetc(f);
+	b1 = fgetc (f);
+	b2 = fgetc (f);
+	b3 = fgetc (f);
+	b4 = fgetc (f);
 
-	return b1 + (b2<<8) + (b3<<16) + (b4<<24);
+	return b1 + (b2 << 8) + (b3 << 16) + (b4 << 24);
 }
 
 /*
@@ -151,29 +151,29 @@ qboolean Image_WriteTGA (const char *name, byte *data, int width, int height, in
 	byte	header[TARGAHEADERSIZE];
 
 	Sys_mkdir (com_gamedir); //if we've switched to a nonexistant gamedir, create it now so we don't crash
-	q_snprintf (pathname, sizeof(pathname), "%s/%s", com_gamedir, name);
+	q_snprintf (pathname, sizeof (pathname), "%s/%s", com_gamedir, name);
 	handle = Sys_FileOpenWrite (pathname);
 	if (handle == -1)
 		return false;
 
 	Q_memset (header, 0, TARGAHEADERSIZE);
 	header[2] = 2; // uncompressed type
-	header[12] = width&255;
-	header[13] = width>>8;
-	header[14] = height&255;
-	header[15] = height>>8;
+	header[12] = width & 255;
+	header[13] = width >> 8;
+	header[14] = height & 255;
+	header[15] = height >> 8;
 	header[16] = bpp; // pixel size
 	if (upsidedown)
 		header[17] = 0x20; //upside-down attribute
 
 	// swap red and blue bytes
-	bytes = bpp/8;
-	size = width*height*bytes;
-	for (i=0; i<size; i+=bytes)
+	bytes = bpp / 8;
+	size = width * height * bytes;
+	for (i = 0; i < size; i += bytes)
 	{
 		temp = data[i];
-		data[i] = data[i+2];
-		data[i+2] = temp;
+		data[i] = data[i + 2];
+		data[i + 2] = temp;
 	}
 
 	Sys_FileWrite (handle, header, TARGAHEADERSIZE);
@@ -191,31 +191,31 @@ Image_LoadTGA
 byte *Image_LoadTGA (FILE *fin, int *width, int *height)
 {
 	int				columns, rows, numPixels;
-	byte			*pixbuf;
+	byte *pixbuf;
 	int				row, column;
-	byte			*targa_rgba;
+	byte *targa_rgba;
 	int				realrow; //johnfitz -- fix for upside-down targas
 	qboolean		upside_down; //johnfitz -- fix for upside-down targas
-	stdio_buffer_t	*buf;
+	stdio_buffer_t *buf;
 
-	targa_header.id_length = fgetc(fin);
-	targa_header.colormap_type = fgetc(fin);
-	targa_header.image_type = fgetc(fin);
+	targa_header.id_length = fgetc (fin);
+	targa_header.colormap_type = fgetc (fin);
+	targa_header.image_type = fgetc (fin);
 
-	targa_header.colormap_index = fgetLittleShort(fin);
-	targa_header.colormap_length = fgetLittleShort(fin);
-	targa_header.colormap_size = fgetc(fin);
-	targa_header.x_origin = fgetLittleShort(fin);
-	targa_header.y_origin = fgetLittleShort(fin);
-	targa_header.width = fgetLittleShort(fin);
-	targa_header.height = fgetLittleShort(fin);
-	targa_header.pixel_size = fgetc(fin);
-	targa_header.attributes = fgetc(fin);
+	targa_header.colormap_index = fgetLittleShort (fin);
+	targa_header.colormap_length = fgetLittleShort (fin);
+	targa_header.colormap_size = fgetc (fin);
+	targa_header.x_origin = fgetLittleShort (fin);
+	targa_header.y_origin = fgetLittleShort (fin);
+	targa_header.width = fgetLittleShort (fin);
+	targa_header.height = fgetLittleShort (fin);
+	targa_header.pixel_size = fgetc (fin);
+	targa_header.attributes = fgetc (fin);
 
-	if (targa_header.image_type!=2 && targa_header.image_type!=10)
+	if (targa_header.image_type != 2 && targa_header.image_type != 10)
 		Sys_Error ("Image_LoadTGA: %s is not a type 2 or type 10 targa\n", loadfilename);
 
-	if (targa_header.colormap_type !=0 || (targa_header.pixel_size!=32 && targa_header.pixel_size!=24))
+	if (targa_header.colormap_type != 0 || (targa_header.pixel_size != 32 && targa_header.pixel_size != 24))
 		Sys_Error ("Image_LoadTGA: %s is not a 24bit or 32bit targa\n", loadfilename);
 
 	columns = targa_header.width;
@@ -223,40 +223,40 @@ byte *Image_LoadTGA (FILE *fin, int *width, int *height)
 	numPixels = columns * rows;
 	upside_down = !(targa_header.attributes & 0x20); //johnfitz -- fix for upside-down targas
 
-	targa_rgba = (byte *) Hunk_Alloc (numPixels*4);
+	targa_rgba = (byte *) Hunk_Alloc (numPixels * 4);
 
 	if (targa_header.id_length != 0)
-		fseek(fin, targa_header.id_length, SEEK_CUR);  // skip TARGA image comment
+		fseek (fin, targa_header.id_length, SEEK_CUR);  // skip TARGA image comment
 
-	buf = Buf_Alloc(fin);
+	buf = Buf_Alloc (fin);
 
-	if (targa_header.image_type==2) // Uncompressed, RGB images
+	if (targa_header.image_type == 2) // Uncompressed, RGB images
 	{
-		for(row=rows-1; row>=0; row--)
+		for (row = rows - 1; row >= 0; row--)
 		{
 			//johnfitz -- fix for upside-down targas
 			realrow = upside_down ? row : rows - 1 - row;
-			pixbuf = targa_rgba + realrow*columns*4;
+			pixbuf = targa_rgba + realrow * columns * 4;
 			//johnfitz
-			for(column=0; column<columns; column++)
+			for (column = 0; column < columns; column++)
 			{
-				unsigned char red,green,blue,alphabyte;
+				unsigned char red, green, blue, alphabyte;
 				switch (targa_header.pixel_size)
 				{
 				case 24:
-					blue = Buf_GetC(buf);
-					green = Buf_GetC(buf);
-					red = Buf_GetC(buf);
+					blue = Buf_GetC (buf);
+					green = Buf_GetC (buf);
+					red = Buf_GetC (buf);
 					*pixbuf++ = red;
 					*pixbuf++ = green;
 					*pixbuf++ = blue;
 					*pixbuf++ = 255;
 					break;
 				case 32:
-					blue = Buf_GetC(buf);
-					green = Buf_GetC(buf);
-					red = Buf_GetC(buf);
-					alphabyte = Buf_GetC(buf);
+					blue = Buf_GetC (buf);
+					green = Buf_GetC (buf);
+					red = Buf_GetC (buf);
+					alphabyte = Buf_GetC (buf);
 					*pixbuf++ = red;
 					*pixbuf++ = green;
 					*pixbuf++ = blue;
@@ -266,80 +266,80 @@ byte *Image_LoadTGA (FILE *fin, int *width, int *height)
 			}
 		}
 	}
-	else if (targa_header.image_type==10) // Runlength encoded RGB images
+	else if (targa_header.image_type == 10) // Runlength encoded RGB images
 	{
-		unsigned char red,green,blue,alphabyte,packetHeader,packetSize,j;
-		for(row=rows-1; row>=0; row--)
+		unsigned char red, green, blue, alphabyte, packetHeader, packetSize, j;
+		for (row = rows - 1; row >= 0; row--)
 		{
 			//johnfitz -- fix for upside-down targas
 			realrow = upside_down ? row : rows - 1 - row;
-			pixbuf = targa_rgba + realrow*columns*4;
+			pixbuf = targa_rgba + realrow * columns * 4;
 			//johnfitz
-			for(column=0; column<columns; )
+			for (column = 0; column < columns; )
 			{
-				packetHeader=Buf_GetC(buf);
+				packetHeader = Buf_GetC (buf);
 				packetSize = 1 + (packetHeader & 0x7f);
 				if (packetHeader & 0x80) // run-length packet
 				{
 					switch (targa_header.pixel_size)
 					{
 					case 24:
-						blue = Buf_GetC(buf);
-						green = Buf_GetC(buf);
-						red = Buf_GetC(buf);
+						blue = Buf_GetC (buf);
+						green = Buf_GetC (buf);
+						red = Buf_GetC (buf);
 						alphabyte = 255;
 						break;
 					case 32:
-						blue = Buf_GetC(buf);
-						green = Buf_GetC(buf);
-						red = Buf_GetC(buf);
-						alphabyte = Buf_GetC(buf);
+						blue = Buf_GetC (buf);
+						green = Buf_GetC (buf);
+						red = Buf_GetC (buf);
+						alphabyte = Buf_GetC (buf);
 						break;
 					default: /* avoid compiler warnings */
 						blue = red = green = alphabyte = 0;
 					}
 
-					for(j=0;j<packetSize;j++)
+					for (j = 0; j < packetSize; j++)
 					{
-						*pixbuf++=red;
-						*pixbuf++=green;
-						*pixbuf++=blue;
-						*pixbuf++=alphabyte;
+						*pixbuf++ = red;
+						*pixbuf++ = green;
+						*pixbuf++ = blue;
+						*pixbuf++ = alphabyte;
 						column++;
-						if (column==columns) // run spans across rows
+						if (column == columns) // run spans across rows
 						{
-							column=0;
-							if (row>0)
+							column = 0;
+							if (row > 0)
 								row--;
 							else
 								goto breakOut;
 							//johnfitz -- fix for upside-down targas
 							realrow = upside_down ? row : rows - 1 - row;
-							pixbuf = targa_rgba + realrow*columns*4;
+							pixbuf = targa_rgba + realrow * columns * 4;
 							//johnfitz
 						}
 					}
 				}
 				else // non run-length packet
 				{
-					for(j=0;j<packetSize;j++)
+					for (j = 0; j < packetSize; j++)
 					{
 						switch (targa_header.pixel_size)
 						{
 						case 24:
-							blue = Buf_GetC(buf);
-							green = Buf_GetC(buf);
-							red = Buf_GetC(buf);
+							blue = Buf_GetC (buf);
+							green = Buf_GetC (buf);
+							red = Buf_GetC (buf);
 							*pixbuf++ = red;
 							*pixbuf++ = green;
 							*pixbuf++ = blue;
 							*pixbuf++ = 255;
 							break;
 						case 32:
-							blue = Buf_GetC(buf);
-							green = Buf_GetC(buf);
-							red = Buf_GetC(buf);
-							alphabyte = Buf_GetC(buf);
+							blue = Buf_GetC (buf);
+							green = Buf_GetC (buf);
+							red = Buf_GetC (buf);
+							alphabyte = Buf_GetC (buf);
 							*pixbuf++ = red;
 							*pixbuf++ = green;
 							*pixbuf++ = blue;
@@ -349,30 +349,30 @@ byte *Image_LoadTGA (FILE *fin, int *width, int *height)
 							blue = red = green = alphabyte = 0;
 						}
 						column++;
-						if (column==columns) // pixel packet run spans across rows
+						if (column == columns) // pixel packet run spans across rows
 						{
-							column=0;
-							if (row>0)
+							column = 0;
+							if (row > 0)
 								row--;
 							else
 								goto breakOut;
 							//johnfitz -- fix for upside-down targas
 							realrow = upside_down ? row : rows - 1 - row;
-							pixbuf = targa_rgba + realrow*columns*4;
+							pixbuf = targa_rgba + realrow * columns * 4;
 							//johnfitz
 						}
 					}
 				}
 			}
-			breakOut:;
+breakOut:;
 		}
 	}
 
-	Buf_Free(buf);
-	fclose(fin);
+	Buf_Free (buf);
+	fclose (fin);
 
-	*width = (int)(targa_header.width);
-	*height = (int)(targa_header.height);
+	*width = (int) (targa_header.width);
+	*height = (int) (targa_header.height);
 	return targa_rgba;
 }
 
@@ -382,20 +382,19 @@ byte *Image_LoadTGA (FILE *fin, int *width, int *height)
 //
 //==============================================================================
 
-typedef struct
-{
-    char			signature;
-    char			version;
-    char			encoding;
-    char			bits_per_pixel;
-    unsigned short	xmin,ymin,xmax,ymax;
-    unsigned short	hdpi,vdpi;
-    byte			colortable[48];
-    char			reserved;
-    char			color_planes;
-    unsigned short	bytes_per_line;
-    unsigned short	palette_type;
-    char			filler[58];
+typedef struct {
+	char			signature;
+	char			version;
+	char			encoding;
+	char			bits_per_pixel;
+	unsigned short	xmin, ymin, xmax, ymax;
+	unsigned short	hdpi, vdpi;
+	byte			colortable[48];
+	char			reserved;
+	char			color_planes;
+	unsigned short	bytes_per_line;
+	unsigned short	palette_type;
+	char			filler[58];
 } pcxheader_t;
 
 /*
@@ -407,18 +406,18 @@ byte *Image_LoadPCX (FILE *f, int *width, int *height)
 {
 	pcxheader_t	pcx;
 	int			x, y, w, h, readbyte, runlength, start;
-	byte		*p, *data;
+	byte *p, *data;
 	byte		palette[768];
-	stdio_buffer_t  *buf;
+	stdio_buffer_t *buf;
 
 	start = ftell (f); //save start of file (since we might be inside a pak file, SEEK_SET might not be the start of the pcx)
 
-	fread(&pcx, sizeof(pcx), 1, f);
-	pcx.xmin = (unsigned short)LittleShort (pcx.xmin);
-	pcx.ymin = (unsigned short)LittleShort (pcx.ymin);
-	pcx.xmax = (unsigned short)LittleShort (pcx.xmax);
-	pcx.ymax = (unsigned short)LittleShort (pcx.ymax);
-	pcx.bytes_per_line = (unsigned short)LittleShort (pcx.bytes_per_line);
+	fread (&pcx, sizeof (pcx), 1, f);
+	pcx.xmin = (unsigned short) LittleShort (pcx.xmin);
+	pcx.ymin = (unsigned short) LittleShort (pcx.ymin);
+	pcx.xmax = (unsigned short) LittleShort (pcx.xmax);
+	pcx.ymax = (unsigned short) LittleShort (pcx.ymax);
+	pcx.bytes_per_line = (unsigned short) LittleShort (pcx.bytes_per_line);
 
 	if (pcx.signature != 0x0A)
 		Sys_Error ("'%s' is not a valid PCX file", loadfilename);
@@ -432,38 +431,38 @@ byte *Image_LoadPCX (FILE *f, int *width, int *height)
 	w = pcx.xmax - pcx.xmin + 1;
 	h = pcx.ymax - pcx.ymin + 1;
 
-	data = (byte *) Hunk_Alloc((w*h+1)*4); //+1 to allow reading padding byte on last line
+	data = (byte *) Hunk_Alloc ((w * h + 1) * 4); //+1 to allow reading padding byte on last line
 
 	//load palette
 	fseek (f, start + com_filesize - 768, SEEK_SET);
 	fread (palette, 1, 768, f);
 
 	//back to start of image data
-	fseek (f, start + sizeof(pcx), SEEK_SET);
+	fseek (f, start + sizeof (pcx), SEEK_SET);
 
-	buf = Buf_Alloc(f);
+	buf = Buf_Alloc (f);
 
-	for (y=0; y<h; y++)
+	for (y = 0; y < h; y++)
 	{
 		p = data + y * w * 4;
 
-		for (x=0; x<(pcx.bytes_per_line); ) //read the extra padding byte if necessary
+		for (x = 0; x < (pcx.bytes_per_line); ) //read the extra padding byte if necessary
 		{
-			readbyte = Buf_GetC(buf);
+			readbyte = Buf_GetC (buf);
 
-			if(readbyte >= 0xC0)
+			if (readbyte >= 0xC0)
 			{
 				runlength = readbyte & 0x3F;
-				readbyte = Buf_GetC(buf);
+				readbyte = Buf_GetC (buf);
 			}
 			else
 				runlength = 1;
 
-			while(runlength--)
+			while (runlength--)
 			{
-				p[0] = palette[readbyte*3];
-				p[1] = palette[readbyte*3+1];
-				p[2] = palette[readbyte*3+2];
+				p[0] = palette[readbyte * 3];
+				p[1] = palette[readbyte * 3 + 1];
+				p[2] = palette[readbyte * 3 + 2];
 				p[3] = 255;
 				p += 4;
 				x++;
@@ -471,8 +470,8 @@ byte *Image_LoadPCX (FILE *f, int *width, int *height)
 		}
 	}
 
-	Buf_Free(buf);
-	fclose(f);
+	Buf_Free (buf);
+	fclose (f);
 
 	*width = w;
 	*height = h;
@@ -485,19 +484,19 @@ byte *Image_LoadPCX (FILE *f, int *width, int *height)
 //
 //==============================================================================
 
-static byte *CopyFlipped(const byte *data, int width, int height, int bpp)
+static byte *CopyFlipped (const byte *data, int width, int height, int bpp)
 {
 	int	y, rowsize;
-	byte	*flipped;
+	byte *flipped;
 
 	rowsize = width * (bpp / 8);
-	flipped = (byte *) malloc(height * rowsize);
+	flipped = (byte *) malloc (height * rowsize);
 	if (!flipped)
 		return NULL;
 
-	for (y=0; y<height; y++)
+	for (y = 0; y < height; y++)
 	{
-		memcpy(&flipped[y * rowsize], &data[(height - 1 - y) * rowsize], rowsize);
+		memcpy (&flipped[y * rowsize], &data[(height - 1 - y) * rowsize], rowsize);
 	}
 	return flipped;
 }
@@ -513,7 +512,7 @@ qboolean Image_WriteJPG (const char *name, byte *data, int width, int height, in
 {
 	unsigned error;
 	char	pathname[MAX_OSPATH];
-	byte	*flipped;
+	byte *flipped;
 	int	bytes_per_pixel;
 
 	if (!(bpp == 32 || bpp == 24))
@@ -522,7 +521,7 @@ qboolean Image_WriteJPG (const char *name, byte *data, int width, int height, in
 	bytes_per_pixel = bpp / 8;
 
 	Sys_mkdir (com_gamedir); //if we've switched to a nonexistant gamedir, create it now so we don't crash
-	q_snprintf (pathname, sizeof(pathname), "%s/%s", com_gamedir, name);
+	q_snprintf (pathname, sizeof (pathname), "%s/%s", com_gamedir, name);
 
 	if (!upsidedown)
 	{
@@ -544,34 +543,34 @@ qboolean Image_WritePNG (const char *name, byte *data, int width, int height, in
 {
 	unsigned error;
 	char	pathname[MAX_OSPATH];
-	byte	*flipped;
-	unsigned char	*filters;
-	unsigned char	*png;
+	byte *flipped;
+	unsigned char *filters;
+	unsigned char *png;
 	size_t		pngsize;
 	LodePNGState	state;
 
 	if (!(bpp == 32 || bpp == 24))
-		Sys_Error("bpp not 24 or 32");
+		Sys_Error ("bpp not 24 or 32");
 
 	Sys_mkdir (com_gamedir); //if we've switched to a nonexistant gamedir, create it now so we don't crash
-	q_snprintf (pathname, sizeof(pathname), "%s/%s", com_gamedir, name);
+	q_snprintf (pathname, sizeof (pathname), "%s/%s", com_gamedir, name);
 
-	flipped = (!upsidedown)? CopyFlipped (data, width, height, bpp) : data;
+	flipped = (!upsidedown) ? CopyFlipped (data, width, height, bpp) : data;
 	filters = (unsigned char *) malloc (height);
 	if (!filters || !flipped)
 	{
 		if (!upsidedown)
-		  free (flipped);
+			free (flipped);
 		free (filters);
 		return false;
 	}
 
-// set some options for faster compression
-	lodepng_state_init(&state);
+	// set some options for faster compression
+	lodepng_state_init (&state);
 	state.encoder.zlibsettings.use_lz77 = 0;
 	state.encoder.auto_convert = 0;
 	state.encoder.filter_strategy = LFS_PREDEFINED;
-	memset(filters, 1, height); //use filter 1; see https://www.w3.org/TR/PNG-Filters.html
+	memset (filters, 1, height); //use filter 1; see https://www.w3.org/TR/PNG-Filters.html
 	state.encoder.predefined_filters = filters;
 
 	if (bpp == 24)
@@ -588,14 +587,14 @@ qboolean Image_WritePNG (const char *name, byte *data, int width, int height, in
 	error = lodepng_encode (&png, &pngsize, flipped, width, height, &state);
 	if (error == 0) lodepng_save_file (png, pngsize, pathname);
 #ifdef LODEPNG_COMPILE_ERROR_TEXT
-	else Con_Printf("WritePNG: %s\n", lodepng_error_text (error));
+	else Con_Printf ("WritePNG: %s\n", lodepng_error_text (error));
 #endif
 
 	lodepng_state_cleanup (&state);
 	free (png);
 	free (filters);
 	if (!upsidedown)
-	  free (flipped);
+		free (flipped);
 
 	return (error == 0);
 }

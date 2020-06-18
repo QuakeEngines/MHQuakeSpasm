@@ -25,21 +25,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // server.h
 
-typedef struct
-{
+typedef struct {
 	int			maxclients;
 	int			maxclientslimit;
-	struct client_s	*clients;		// [maxclients]
+	struct client_s *clients;		// [maxclients]
 	int			serverflags;		// episode completion information
 	qboolean	changelevel_issued;	// cleared when at SV_SpawnServer
 } server_static_t;
 
 //=============================================================================
 
-typedef enum {ss_loading, ss_active} server_state_t;
+typedef enum { ss_loading, ss_active } server_state_t;
 
-typedef struct
-{
+typedef struct {
 	qboolean	active;				// false if only a net client
 
 	qboolean	paused;
@@ -52,14 +50,14 @@ typedef struct
 
 	char		name[64];			// map name
 	char		modelname[64];		// maps/<name>.bsp, for model_precache[0]
-	struct qmodel_s	*worldmodel;
-	const char	*model_precache[MAX_MODELS];	// NULL terminated
-	struct qmodel_s	*models[MAX_MODELS];
-	const char	*sound_precache[MAX_SOUNDS];	// NULL terminated
-	const char	*lightstyles[MAX_LIGHTSTYLES];
+	struct qmodel_s *worldmodel;
+	const char *model_precache[MAX_MODELS];	// NULL terminated
+	struct qmodel_s *models[MAX_MODELS];
+	const char *sound_precache[MAX_SOUNDS];	// NULL terminated
+	const char *lightstyles[MAX_LIGHTSTYLES];
 	int			num_edicts;
 	int			max_edicts;
-	edict_t		*edicts;			// can NOT be array indexed, because
+	edict_t *edicts;			// can NOT be array indexed, because
 									// edict_t is variable sized, but can
 									// be used to reference the world ent
 	server_state_t	state;			// some actions are only valid during load
@@ -71,7 +69,7 @@ typedef struct
 	byte		reliable_datagram_buf[MAX_DATAGRAM];
 
 	sizebuf_t	signon;
-	byte		signon_buf[MAX_MSGLEN-2]; //johnfitz -- was 8192, now uses MAX_MSGLEN
+	byte		signon_buf[MAX_MSGLEN - 2]; //johnfitz -- was 8192, now uses MAX_MSGLEN
 
 	unsigned	protocol; //johnfitz
 	unsigned	protocolflags;
@@ -81,8 +79,7 @@ typedef struct
 #define	NUM_PING_TIMES		16
 #define	NUM_SPAWN_PARMS		16
 
-typedef struct client_s
-{
+typedef struct client_s {
 	qboolean		active;				// false = client is free
 	qboolean		spawned;			// false = don't send datagrams
 	qboolean		dropasap;			// has been told to go to another level
@@ -99,7 +96,7 @@ typedef struct client_s
 	sizebuf_t		message;			// can be added to at any time,
 										// copied and clear once per frame
 	byte			msgbuf[MAX_MSGLEN];
-	edict_t			*edict;				// EDICT_NUM(clientnum+1)
+	edict_t *edict;				// EDICT_NUM(clientnum+1)
 	char			name[32];			// for printing to other people
 	int				colors;
 
@@ -109,7 +106,7 @@ typedef struct client_s
 // spawn parms are carried from level to level
 	float			spawn_parms[NUM_SPAWN_PARMS];
 
-// client known data for deltas
+	// client known data for deltas
 	int				old_frags;
 } client_t;
 
@@ -185,9 +182,9 @@ extern	cvar_t	timelimit;
 extern	server_static_t	svs;				// persistant server info
 extern	server_t		sv;					// local server
 
-extern	client_t	*host_client;
+extern	client_t *host_client;
 
-extern	edict_t		*sv_player;
+extern	edict_t *sv_player;
 
 //===========================================================
 
@@ -195,7 +192,7 @@ void SV_Init (void);
 
 void SV_StartParticle (vec3_t org, vec3_t dir, int color, int count);
 void SV_StartSound (edict_t *entity, int channel, const char *sample, int volume,
-    float attenuation);
+	float attenuation);
 
 void SV_DropClient (qboolean crash);
 
@@ -209,10 +206,10 @@ void SV_SetIdealPitch (void);
 void SV_AddUpdates (void);
 
 void SV_ClientThink (void);
-void SV_AddClientToServer (struct qsocket_s	*ret);
+void SV_AddClientToServer (struct qsocket_s *ret);
 
-void SV_ClientPrintf (const char *fmt, ...) FUNC_PRINTF(1,2);
-void SV_BroadcastPrintf (const char *fmt, ...) FUNC_PRINTF(1,2);
+void SV_ClientPrintf (const char *fmt, ...) FUNC_PRINTF (1, 2);
+void SV_BroadcastPrintf (const char *fmt, ...) FUNC_PRINTF (1, 2);
 
 void SV_Physics (void);
 

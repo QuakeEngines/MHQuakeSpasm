@@ -191,16 +191,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	SOUND_CHANNELS		8
 
-typedef struct
-{
+typedef struct {
 	const char *basedir;
 	const char *userdir;	// user's directory on UNIX platforms.
 				// if user directories are enabled, basedir
 				// and userdir will point to different
 				// memory locations, otherwise to the same.
 	int	argc;
-	char	**argv;
-	void	*membase;
+	char **argv;
+	void *membase;
 	int	memsize;
 	int	numcpus;
 	int	errstate;
@@ -283,36 +282,35 @@ extern	cvar_t		max_edicts; //johnfitz
 
 extern	qboolean	host_initialized;	// true if into command execution
 extern	double		host_frametime;
-extern	byte		*host_colormap;
+extern	byte *host_colormap;
 extern	int		host_framecount;	// incremented every frame, never reset
 extern	double		realtime;		// not bounded in any way, changed at
 							// start of every frame, never reset
 
-typedef struct filelist_item_s
-{
+typedef struct filelist_item_s {
 	char			name[32];
-	struct filelist_item_s	*next;
+	struct filelist_item_s *next;
 } filelist_item_t;
 
-extern filelist_item_t	*modlist;
-extern filelist_item_t	*extralevels;
-extern filelist_item_t	*demolist;
+extern filelist_item_t *modlist;
+extern filelist_item_t *extralevels;
+extern filelist_item_t *demolist;
 
 void Host_ClearMemory (void);
 void Host_ServerFrame (void);
 void Host_InitCommands (void);
 void Host_Init (void);
-void Host_Shutdown(void);
+void Host_Shutdown (void);
 void Host_Callback_Notify (cvar_t *var);	/* callback function for CVAR_NOTIFY */
-FUNC_NORETURN void Host_Error (const char *error, ...) FUNC_PRINTF(1,2);
-FUNC_NORETURN void Host_EndGame (const char *message, ...) FUNC_PRINTF(1,2);
+FUNC_NORETURN void Host_Error (const char *error, ...) FUNC_PRINTF (1, 2);
+FUNC_NORETURN void Host_EndGame (const char *message, ...) FUNC_PRINTF (1, 2);
 #ifdef __WATCOMC__
 #pragma aux Host_Error aborts;
 #pragma aux Host_EndGame aborts;
 #endif
 void Host_Frame (void);
 void Host_Quit_f (void);
-void Host_ClientCommands (const char *fmt, ...) FUNC_PRINTF(1,2);
+void Host_ClientCommands (const char *fmt, ...) FUNC_PRINTF (1, 2);
 void Host_ShutdownServer (qboolean crash);
 void Host_WriteConfiguration (void);
 

@@ -673,7 +673,7 @@ void SCR_DrawCrosshair (void)
 		return;
 
 	GL_SetCanvas (CANVAS_CROSSHAIR);
-//	Draw_Character (-4, -4, '+'); //0,0 is center of viewport
+	//	Draw_Character (-4, -4, '+'); //0,0 is center of viewport
 	Draw_Pic ((-pic_crosshair->width) / 2, (-pic_crosshair->height) / 2, pic_crosshair); //johnfitz -- stretched menus
 }
 

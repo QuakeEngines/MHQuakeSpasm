@@ -48,12 +48,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 qboolean		isDedicated;
 qboolean	Win95, Win95old, WinNT, WinVista;
-cvar_t		sys_throttle = {"sys_throttle", "0.02", CVAR_ARCHIVE};
+cvar_t		sys_throttle = { "sys_throttle", "0.02", CVAR_ARCHIVE };
 
 static HANDLE		hinput, houtput;
 
 #define	MAX_HANDLES		32	/* johnfitz -- was 10 */
-static FILE		*sys_handles[MAX_HANDLES];
+static FILE *sys_handles[MAX_HANDLES];
 
 
 static int findhandle (void)
@@ -83,11 +83,11 @@ long Sys_filelength (FILE *f)
 
 int Sys_FileOpenRead (const char *path, int *hndl)
 {
-	FILE	*f;
+	FILE *f;
 	int	i, retval;
 
 	i = findhandle ();
-	f = fopen(path, "rb");
+	f = fopen (path, "rb");
 
 	if (!f)
 	{
@@ -98,7 +98,7 @@ int Sys_FileOpenRead (const char *path, int *hndl)
 	{
 		sys_handles[i] = f;
 		*hndl = i;
-		retval = Sys_filelength(f);
+		retval = Sys_filelength (f);
 	}
 
 	return retval;
@@ -106,14 +106,14 @@ int Sys_FileOpenRead (const char *path, int *hndl)
 
 int Sys_FileOpenWrite (const char *path)
 {
-	FILE	*f;
+	FILE *f;
 	int		i;
 
 	i = findhandle ();
-	f = fopen(path, "wb");
+	f = fopen (path, "wb");
 
 	if (!f)
-		Sys_Error ("Error opening %s: %s", path, strerror(errno));
+		Sys_Error ("Error opening %s: %s", path, strerror (errno));
 
 	sys_handles[i] = f;
 	return i;
@@ -142,13 +142,13 @@ int Sys_FileWrite (int handle, const void *data, int count)
 
 int Sys_FileTime (const char *path)
 {
-	FILE	*f;
+	FILE *f;
 
-	f = fopen(path, "rb");
+	f = fopen (path, "rb");
 
 	if (f)
 	{
-		fclose(f);
+		fclose (f);
 		return 1;
 	}
 
@@ -176,7 +176,7 @@ static void Sys_GetBasedir (char *argv0, char *dst, size_t dstsize)
 	Sys_SetWorkingDirectory ();
 #endif
 
-	rc = GetCurrentDirectory(dstsize, dst);
+	rc = GetCurrentDirectory (dstsize, dst);
 	if (rc == 0 || rc > dstsize)
 		Sys_Error ("Couldn't determine current directory");
 
@@ -222,7 +222,7 @@ static void Sys_SetDPIAware (void)
 		FreeLibrary (hUser32);
 }
 
-static void Sys_SetTimerResolution(void)
+static void Sys_SetTimerResolution (void)
 {
 	/* Set OS timer resolution to 1ms.
 	   Works around buffer underruns with directsound and SDL2, but also
@@ -239,15 +239,15 @@ void Sys_Init (void)
 	Sys_SetTimerResolution ();
 	Sys_SetDPIAware ();
 
-	memset (cwd, 0, sizeof(cwd));
-	Sys_GetBasedir(NULL, cwd, sizeof(cwd));
+	memset (cwd, 0, sizeof (cwd));
+	Sys_GetBasedir (NULL, cwd, sizeof (cwd));
 	host_parms->basedir = cwd;
 
 	/* userdirs not really necessary for windows guys.
 	 * can be done if necessary, though... */
 	host_parms->userdir = host_parms->basedir; /* code elsewhere relies on this ! */
 
-	vinfo.dwOSVersionInfoSize = sizeof(vinfo);
+	vinfo.dwOSVersionInfoSize = sizeof (vinfo);
 
 	if (!GetVersionEx (&vinfo))
 		Sys_Error ("Couldn't get OS info");
@@ -264,7 +264,7 @@ void Sys_Init (void)
 		WinNT = true;
 		if (vinfo.dwMajorVersion >= 6)
 			WinVista = true;
-		GetSystemInfo(&info);
+		GetSystemInfo (&info);
 		host_parms->numcpus = info.dwNumberOfProcessors;
 		if (host_parms->numcpus < 1)
 			host_parms->numcpus = 1;
@@ -281,7 +281,7 @@ void Sys_Init (void)
 				Win95old = true;
 		}
 	}
-	Sys_Printf("Detected %d CPUs.\n", host_parms->numcpus);
+	Sys_Printf ("Detected %d CPUs.\n", host_parms->numcpus);
 
 	if (isDedicated)
 	{
@@ -298,10 +298,10 @@ void Sys_Init (void)
 
 void Sys_mkdir (const char *path)
 {
-	if (CreateDirectory(path, NULL) != 0)
+	if (CreateDirectory (path, NULL) != 0)
 		return;
-	if (GetLastError() != ERROR_ALREADY_EXISTS)
-		Sys_Error("Unable to create directory %s", path);
+	if (GetLastError () != ERROR_ALREADY_EXISTS)
+		Sys_Error ("Unable to create directory %s", path);
 }
 
 static const char errortxt1[] = "\nERROR-OUT BEGIN\n\n";
@@ -316,11 +316,11 @@ void Sys_Error (const char *error, ...)
 	host_parms->errstate++;
 
 	va_start (argptr, error);
-	q_vsnprintf (text, sizeof(text), error, argptr);
+	q_vsnprintf (text, sizeof (text), error, argptr);
 	va_end (argptr);
 
 	if (isDedicated)
-		WriteFile (houtput, errortxt1, strlen(errortxt1), &dummy, NULL);
+		WriteFile (houtput, errortxt1, strlen (errortxt1), &dummy, NULL);
 	/* SDL will put these into its own stderr log,
 	   so print to stderr even in graphical mode. */
 	fputs (errortxt1, stderr);
@@ -329,12 +329,12 @@ void Sys_Error (const char *error, ...)
 	fputs (text, stderr);
 	fputs ("\n\n", stderr);
 	if (!isDedicated)
-		PL_ErrorDialog(text);
+		PL_ErrorDialog (text);
 	else
 	{
-		WriteFile (houtput, errortxt2, strlen(errortxt2), &dummy, NULL);
-		WriteFile (houtput, text,      strlen(text),      &dummy, NULL);
-		WriteFile (houtput, "\r\n",    2,		  &dummy, NULL);
+		WriteFile (houtput, errortxt2, strlen (errortxt2), &dummy, NULL);
+		WriteFile (houtput, text, strlen (text), &dummy, NULL);
+		WriteFile (houtput, "\r\n", 2, &dummy, NULL);
 		SDL_Delay (3000);	/* show the console 3 more seconds */
 	}
 
@@ -347,25 +347,25 @@ void Sys_Printf (const char *fmt, ...)
 	char		text[1024];
 	DWORD		dummy;
 
-	va_start (argptr,fmt);
-	q_vsnprintf (text, sizeof(text), fmt, argptr);
+	va_start (argptr, fmt);
+	q_vsnprintf (text, sizeof (text), fmt, argptr);
 	va_end (argptr);
 
 	if (isDedicated)
 	{
-		WriteFile(houtput, text, strlen(text), &dummy, NULL);
+		WriteFile (houtput, text, strlen (text), &dummy, NULL);
 	}
 	else
 	{
-	/* SDL will put these into its own stdout log,
-	   so print to stdout even in graphical mode. */
+		/* SDL will put these into its own stdout log,
+		   so print to stdout even in graphical mode. */
 		fputs (text, stdout);
 	}
 }
 
 void Sys_Quit (void)
 {
-	Host_Shutdown();
+	Host_Shutdown ();
 
 	if (isDedicated)
 		FreeConsole ();
@@ -392,7 +392,7 @@ double Sys_DoubleTime (void)
 		return (double) (now - start) / SDL_GetPerformanceFrequency ();
 	}
 #else
-	return SDL_GetTicks() / 1000.0;
+	return SDL_GetTicks () / 1000.0;
 #endif
 }
 
@@ -404,15 +404,15 @@ const char *Sys_ConsoleInput (void)
 	int		ch;
 	DWORD		dummy, numread, numevents;
 
-	for ( ;; )
+	for (;; )
 	{
-		if (GetNumberOfConsoleInputEvents(hinput, &numevents) == 0)
+		if (GetNumberOfConsoleInputEvents (hinput, &numevents) == 0)
 			Sys_Error ("Error getting # of console events");
 
-		if (! numevents)
+		if (!numevents)
 			break;
 
-		if (ReadConsoleInput(hinput, recs, 1, &numread) == 0)
+		if (ReadConsoleInput (hinput, recs, 1, &numread) == 0)
 			Sys_Error ("Error reading console input");
 
 		if (numread != 1)
@@ -420,42 +420,42 @@ const char *Sys_ConsoleInput (void)
 
 		if (recs[0].EventType == KEY_EVENT)
 		{
-		    if (recs[0].Event.KeyEvent.bKeyDown == FALSE)
-		    {
-			ch = recs[0].Event.KeyEvent.uChar.AsciiChar;
-
-			switch (ch)
+			if (recs[0].Event.KeyEvent.bKeyDown == FALSE)
 			{
-			case '\r':
-				WriteFile(houtput, "\r\n", 2, &dummy, NULL);
+				ch = recs[0].Event.KeyEvent.uChar.AsciiChar;
 
-				if (textlen != 0)
+				switch (ch)
 				{
-					con_text[textlen] = 0;
-					textlen = 0;
-					return con_text;
+				case '\r':
+					WriteFile (houtput, "\r\n", 2, &dummy, NULL);
+
+					if (textlen != 0)
+					{
+						con_text[textlen] = 0;
+						textlen = 0;
+						return con_text;
+					}
+
+					break;
+
+				case '\b':
+					WriteFile (houtput, "\b \b", 3, &dummy, NULL);
+					if (textlen != 0)
+						textlen--;
+
+					break;
+
+				default:
+					if (ch >= ' ')
+					{
+						WriteFile (houtput, &ch, 1, &dummy, NULL);
+						con_text[textlen] = ch;
+						textlen = (textlen + 1) & 0xff;
+					}
+
+					break;
 				}
-
-				break;
-
-			case '\b':
-				WriteFile(houtput, "\b \b", 3, &dummy, NULL);
-				if (textlen != 0)
-					textlen--;
-
-				break;
-
-			default:
-				if (ch >= ' ')
-				{
-					WriteFile(houtput, &ch, 1, &dummy, NULL);
-					con_text[textlen] = ch;
-					textlen = (textlen + 1) & 0xff;
-				}
-
-				break;
 			}
-		    }
 		}
 	}
 
@@ -464,13 +464,13 @@ const char *Sys_ConsoleInput (void)
 
 void Sys_Sleep (unsigned long msecs)
 {
-/*	Sleep (msecs);*/
+	/*	Sleep (msecs);*/
 	SDL_Delay (msecs);
 }
 
 void Sys_SendKeyEvents (void)
 {
-	IN_Commands();		//ericw -- allow joysticks to add keys so they can be used to confirm SCR_ModalMessage
-	IN_SendKeyEvents();
+	IN_Commands ();		//ericw -- allow joysticks to add keys so they can be used to confirm SCR_ModalMessage
+	IN_SendKeyEvents ();
 }
 

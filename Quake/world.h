@@ -23,21 +23,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef _QUAKE_WORLD_H
 #define _QUAKE_WORLD_H
 
-typedef struct
-{
+typedef struct {
 	vec3_t	normal;
 	float	dist;
 } plane_t;
 
-typedef struct
-{
+typedef struct {
 	qboolean	allsolid;	// if true, plane is not valid
 	qboolean	startsolid;	// if true, the initial point was in a solid area
 	qboolean	inopen, inwater;
 	float	fraction;		// time completed, 1.0 = didn't hit anything
 	vec3_t	endpos;			// final position
 	plane_t	plane;			// surface normal at impact
-	edict_t	*ent;			// entity the surface is on
+	edict_t *ent;			// entity the surface is on
 } trace_t;
 
 
@@ -66,7 +64,7 @@ int SV_TruePointContents (vec3_t p);
 // does not check any entities at all
 // the non-true version remaps the water current contents to content_water
 
-edict_t	*SV_TestEntityPosition (edict_t *ent);
+edict_t *SV_TestEntityPosition (edict_t *ent);
 
 trace_t SV_Move (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int type, edict_t *passedict);
 // mins and maxs are reletive

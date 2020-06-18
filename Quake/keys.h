@@ -158,10 +158,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	MAXCMDLINE	256
 
-typedef enum {key_game, key_console, key_message, key_menu} keydest_t;
+typedef enum { key_game, key_console, key_message, key_menu } keydest_t;
 
 extern keydest_t	key_dest;
-extern	char	*keybindings[MAX_KEYS];
+extern	char *keybindings[MAX_KEYS];
 
 #define		CMDLINES 64
 

@@ -44,7 +44,7 @@ static void SDLCALL paint_audio (void *unused, Uint8 *stream, int len)
 
 	if (!shm)
 	{	/* shouldn't happen, but just in case */
-		memset(stream, 0, len);
+		memset (stream, 0, len);
 		return;
 	}
 
@@ -62,7 +62,7 @@ static void SDLCALL paint_audio (void *unused, Uint8 *stream, int len)
 		len2 = len - len1;
 	}
 
-	memcpy(stream, shm->buffer + pos, len1);
+	memcpy (stream, shm->buffer + pos, len1);
 
 	if (len2 <= 0)
 	{
@@ -70,7 +70,7 @@ static void SDLCALL paint_audio (void *unused, Uint8 *stream, int len)
 	}
 	else
 	{	/* wraparound? */
-		memcpy(stream + len1, shm->buffer, len2);
+		memcpy (stream + len1, shm->buffer, len2);
 		shm->samplepos = (len2 / (shm->samplebits / 8));
 	}
 
@@ -84,9 +84,9 @@ qboolean SNDDMA_Init (dma_t *dma)
 	int		tmp, val;
 	char	drivername[128];
 
-	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
+	if (SDL_InitSubSystem (SDL_INIT_AUDIO) < 0)
 	{
-		Con_Printf("Couldn't init SDL audio: %s\n", SDL_GetError());
+		Con_Printf ("Couldn't init SDL audio: %s\n", SDL_GetError ());
 		return false;
 	}
 
@@ -108,14 +108,14 @@ qboolean SNDDMA_Init (dma_t *dma)
 	desired.userdata = NULL;
 
 	/* Open the audio device */
-	if (SDL_OpenAudio(&desired, NULL) == -1)
+	if (SDL_OpenAudio (&desired, NULL) == -1)
 	{
-		Con_Printf("Couldn't open SDL audio: %s\n", SDL_GetError());
-		SDL_QuitSubSystem(SDL_INIT_AUDIO);
+		Con_Printf ("Couldn't open SDL audio: %s\n", SDL_GetError ());
+		SDL_QuitSubSystem (SDL_INIT_AUDIO);
 		return false;
 	}
 
-	memset ((void *) dma, 0, sizeof(dma_t));
+	memset ((void *) dma, 0, sizeof (dma_t));
 	shm = dma;
 
 	/* Fill the audio DMA information block */
@@ -140,18 +140,18 @@ qboolean SNDDMA_Init (dma_t *dma)
 	shm->submission_chunk = 1;
 
 	Con_Printf ("SDL audio spec  : %d Hz, %d samples, %d channels\n",
-			desired.freq, desired.samples, desired.channels);
+		desired.freq, desired.samples, desired.channels);
 #if defined(USE_SDL2)
 	{
-		const char *driver = SDL_GetCurrentAudioDriver();
-		const char *device = SDL_GetAudioDeviceName(0, SDL_FALSE);
-		q_snprintf(drivername, sizeof(drivername), "%s - %s",
+		const char *driver = SDL_GetCurrentAudioDriver ();
+		const char *device = SDL_GetAudioDeviceName (0, SDL_FALSE);
+		q_snprintf (drivername, sizeof (drivername), "%s - %s",
 			driver != NULL ? driver : "(UNKNOWN)",
 			device != NULL ? device : "(UNKNOWN)");
 	}
 #else
-	if (SDL_AudioDriverName(drivername, sizeof(drivername)) == NULL)
-		strcpy(drivername, "(UNKNOWN)");
+	if (SDL_AudioDriverName (drivername, sizeof (drivername)) == NULL)
+		strcpy (drivername, "(UNKNOWN)");
 #endif
 	buffersize = shm->samples * (shm->samplebits / 8);
 	Con_Printf ("SDL audio driver: %s, %d bytes buffer\n", drivername, buffersize);
@@ -159,14 +159,14 @@ qboolean SNDDMA_Init (dma_t *dma)
 	shm->buffer = (unsigned char *) calloc (1, buffersize);
 	if (!shm->buffer)
 	{
-		SDL_CloseAudio();
-		SDL_QuitSubSystem(SDL_INIT_AUDIO);
+		SDL_CloseAudio ();
+		SDL_QuitSubSystem (SDL_INIT_AUDIO);
 		shm = NULL;
 		Con_Printf ("Failed allocating memory for SDL audio\n");
 		return false;
 	}
 
-	SDL_PauseAudio(0);
+	SDL_PauseAudio (0);
 
 	return true;
 }
@@ -181,8 +181,8 @@ void SNDDMA_Shutdown (void)
 	if (shm)
 	{
 		Con_Printf ("Shutting down SDL sound\n");
-		SDL_CloseAudio();
-		SDL_QuitSubSystem(SDL_INIT_AUDIO);
+		SDL_CloseAudio ();
+		SDL_QuitSubSystem (SDL_INIT_AUDIO);
 		if (shm->buffer)
 			free (shm->buffer);
 		shm->buffer = NULL;
@@ -197,16 +197,16 @@ void SNDDMA_LockBuffer (void)
 
 void SNDDMA_Submit (void)
 {
-	SDL_UnlockAudio();
+	SDL_UnlockAudio ();
 }
 
 void SNDDMA_BlockSound (void)
 {
-	SDL_PauseAudio(1);
+	SDL_PauseAudio (1);
 }
 
 void SNDDMA_UnblockSound (void)
 {
-	SDL_PauseAudio(0);
+	SDL_PauseAudio (0);
 }
 

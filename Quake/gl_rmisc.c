@@ -78,12 +78,12 @@ R_SetClearColor_f -- johnfitz
 */
 static void R_SetClearColor_f (cvar_t *var)
 {
-	byte	*rgb;
+	byte *rgb;
 	int		s;
 
-	s = (int)r_clearcolor.value & 0xFF;
-	rgb = (byte*)(d_8to24table + s);
-	glClearColor (rgb[0]/255.0,rgb[1]/255.0,rgb[2]/255.0,0);
+	s = (int) r_clearcolor.value & 0xFF;
+	rgb = (byte *) (d_8to24table + s);
+	glClearColor (rgb[0] / 255.0, rgb[1] / 255.0, rgb[2] / 255.0, 0);
 }
 
 /*
@@ -105,7 +105,7 @@ R_Model_ExtraFlags_List_f -- johnfitz -- called when r_nolerp_list or r_noshadow
 static void R_Model_ExtraFlags_List_f (cvar_t *var)
 {
 	int i;
-	for (i=0; i < MAX_MODELS; i++)
+	for (i = 0; i < MAX_MODELS; i++)
 		Mod_SetExtraFlags (cl.model_precache[i]);
 }
 
@@ -257,8 +257,8 @@ void R_TranslatePlayerSkin (int playernum)
 {
 	int			top, bottom;
 
-	top = (cl.scores[playernum].colors & 0xf0)>>4;
-	bottom = cl.scores[playernum].colors &15;
+	top = (cl.scores[playernum].colors & 0xf0) >> 4;
+	bottom = cl.scores[playernum].colors & 15;
 
 	//FIXME: if gl_nocolors is on, then turned off, the textures may be out of sync with the scoreboard colors.
 	if (!gl_nocolors.value)
@@ -276,35 +276,35 @@ added bug fix from bengt jardup
 void R_TranslateNewPlayerSkin (int playernum)
 {
 	char		name[64];
-	byte		*pixels;
-	aliashdr_t	*paliashdr;
+	byte *pixels;
+	aliashdr_t *paliashdr;
 	int		skinnum;
 
-//get correct texture pixels
-	currententity = &cl_entities[1+playernum];
+	//get correct texture pixels
+	currententity = &cl_entities[1 + playernum];
 
 	if (!currententity->model || currententity->model->type != mod_alias)
 		return;
 
-	paliashdr = (aliashdr_t *)Mod_Extradata (currententity->model);
+	paliashdr = (aliashdr_t *) Mod_Extradata (currententity->model);
 
 	skinnum = currententity->skinnum;
 
 	//TODO: move these tests to the place where skinnum gets received from the server
 	if (skinnum < 0 || skinnum >= paliashdr->numskins)
 	{
-		Con_DPrintf("(%d): Invalid player skin #%d\n", playernum, skinnum);
+		Con_DPrintf ("(%d): Invalid player skin #%d\n", playernum, skinnum);
 		skinnum = 0;
 	}
 
-	pixels = (byte *)paliashdr + paliashdr->texels[skinnum]; // This is not a persistent place!
+	pixels = (byte *) paliashdr + paliashdr->texels[skinnum]; // This is not a persistent place!
 
 //upload new image
-	q_snprintf(name, sizeof(name), "player_%i", playernum);
+	q_snprintf (name, sizeof (name), "player_%i", playernum);
 	playertextures[playernum] = TexMgr_LoadImage (currententity->model, name, paliashdr->skinwidth, paliashdr->skinheight,
 		SRC_INDEXED, pixels, paliashdr->gltextures[skinnum][0]->source_file, paliashdr->gltextures[skinnum][0]->source_offset, TEXPREF_PAD | TEXPREF_OVERWRITE);
 
-//now recolor it
+	//now recolor it
 	R_TranslatePlayerSkin (playernum);
 }
 
@@ -318,7 +318,7 @@ void R_NewGame (void)
 	int i;
 
 	//clear playertexture pointers (the textures themselves were freed by texmgr_newgame)
-	for (i=0; i<MAX_SCOREBOARD; i++)
+	for (i = 0; i < MAX_SCOREBOARD; i++)
 		playertextures[i] = NULL;
 }
 
@@ -339,40 +339,40 @@ static void R_ParseWorldspawn (void)
 	map_telealpha = r_telealpha.value;
 	map_slimealpha = r_slimealpha.value;
 
-	data = COM_Parse(cl.worldmodel->entities);
+	data = COM_Parse (cl.worldmodel->entities);
 	if (!data)
 		return; // error
 	if (com_token[0] != '{')
 		return; // error
 	while (1)
 	{
-		data = COM_Parse(data);
+		data = COM_Parse (data);
 		if (!data)
 			return; // error
 		if (com_token[0] == '}')
 			break; // end of worldspawn
 		if (com_token[0] == '_')
-			q_strlcpy(key, com_token + 1, sizeof(key));
+			q_strlcpy (key, com_token + 1, sizeof (key));
 		else
-			q_strlcpy(key, com_token, sizeof(key));
-		while (key[0] && key[strlen(key)-1] == ' ') // remove trailing spaces
-			key[strlen(key)-1] = 0;
-		data = COM_Parse(data);
+			q_strlcpy (key, com_token, sizeof (key));
+		while (key[0] && key[strlen (key) - 1] == ' ') // remove trailing spaces
+			key[strlen (key) - 1] = 0;
+		data = COM_Parse (data);
 		if (!data)
 			return; // error
-		q_strlcpy(value, com_token, sizeof(value));
+		q_strlcpy (value, com_token, sizeof (value));
 
-		if (!strcmp("wateralpha", key))
-			map_wateralpha = atof(value);
+		if (!strcmp ("wateralpha", key))
+			map_wateralpha = atof (value);
 
-		if (!strcmp("lavaalpha", key))
-			map_lavaalpha = atof(value);
+		if (!strcmp ("lavaalpha", key))
+			map_lavaalpha = atof (value);
 
-		if (!strcmp("telealpha", key))
-			map_telealpha = atof(value);
+		if (!strcmp ("telealpha", key))
+			map_telealpha = atof (value);
 
-		if (!strcmp("slimealpha", key))
-			map_slimealpha = atof(value);
+		if (!strcmp ("slimealpha", key))
+			map_slimealpha = atof (value);
 	}
 }
 
@@ -386,12 +386,12 @@ void R_NewMap (void)
 {
 	int		i;
 
-	for (i=0 ; i<256 ; i++)
+	for (i = 0; i < 256; i++)
 		d_lightstylevalue[i] = 264;		// normal light value
 
 // clear out efrags in case the level hasn't been reloaded
 // FIXME: is this one short?
-	for (i=0 ; i<cl.worldmodel->numleafs ; i++)
+	for (i = 0; i < cl.worldmodel->numleafs; i++)
 		cl.worldmodel->leafs[i].efrags = NULL;
 
 	r_viewleaf = NULL;
@@ -425,23 +425,23 @@ void R_TimeRefresh_f (void)
 
 	if (cls.state != ca_connected)
 	{
-		Con_Printf("Not connected to a server\n");
+		Con_Printf ("Not connected to a server\n");
 		return;
 	}
 
 	start = Sys_DoubleTime ();
 	for (i = 0; i < 128; i++)
 	{
-		GL_BeginRendering(&glx, &gly, &glwidth, &glheight);
-		r_refdef.viewangles[1] = i/128.0*360.0;
+		GL_BeginRendering (&glx, &gly, &glwidth, &glheight);
+		r_refdef.viewangles[1] = i / 128.0 * 360.0;
 		R_RenderView ();
 		GL_EndRendering ();
 	}
 
 	glFinish ();
 	stop = Sys_DoubleTime ();
-	time = stop-start;
-	Con_Printf ("%f seconds (%f fps)\n", time, 128/time);
+	time = stop - start;
+	Con_Printf ("%f seconds (%f fps)\n", time, 128 / time);
 }
 
 void D_FlushCaches (void)
@@ -460,9 +460,9 @@ static qboolean GL_CheckShader (GLuint shader)
 	{
 		char infolog[1024];
 
-		memset(infolog, 0, sizeof(infolog));
-		GL_GetShaderInfoLogFunc (shader, sizeof(infolog), NULL, infolog);
-		
+		memset (infolog, 0, sizeof (infolog));
+		GL_GetShaderInfoLogFunc (shader, sizeof (infolog), NULL, infolog);
+
 		Con_Warning ("GLSL program failed to compile: %s", infolog);
 
 		return false;
@@ -479,8 +479,8 @@ static qboolean GL_CheckProgram (GLuint program)
 	{
 		char infolog[1024];
 
-		memset(infolog, 0, sizeof(infolog));
-		GL_GetProgramInfoLogFunc (program, sizeof(infolog), NULL, infolog);
+		memset (infolog, 0, sizeof (infolog));
+		GL_GetProgramInfoLogFunc (program, sizeof (infolog), NULL, infolog);
 
 		Con_Warning ("GLSL program failed to link: %s", infolog);
 
@@ -501,10 +501,10 @@ GLint GL_GetUniformLocation (GLuint *programPtr, const char *name)
 	if (!programPtr)
 		return -1;
 
-	location = GL_GetUniformLocationFunc(*programPtr, name);
+	location = GL_GetUniformLocationFunc (*programPtr, name);
 	if (location == -1)
 	{
-		Con_Warning("GL_GetUniformLocationFunc %s failed\n", name);
+		Con_Warning ("GL_GetUniformLocationFunc %s failed\n", name);
 		*programPtr = 0;
 	}
 	return location;
@@ -549,12 +549,12 @@ GLuint GL_CreateProgram (const GLchar *vertSource, const GLchar *fragSource, int
 	GL_DeleteShaderFunc (vertShader);
 	GL_AttachShaderFunc (program, fragShader);
 	GL_DeleteShaderFunc (fragShader);
-	
+
 	for (i = 0; i < numbindings; i++)
 	{
 		GL_BindAttribLocationFunc (program, bindings[i].attrib, bindings[i].name);
 	}
-	
+
 	GL_LinkProgramFunc (program);
 
 	if (!GL_CheckProgram (program))
@@ -564,7 +564,7 @@ GLuint GL_CreateProgram (const GLchar *vertSource, const GLchar *fragSource, int
 	}
 	else
 	{
-		if (gl_num_programs == (sizeof(gl_programs)/sizeof(GLuint)))
+		if (gl_num_programs == (sizeof (gl_programs) / sizeof (GLuint)))
 			Host_Error ("gl_programs overflow");
 
 		gl_programs[gl_num_programs] = program;
@@ -610,20 +610,20 @@ void GL_BindBuffer (GLenum target, GLuint buffer)
 
 	if (!gl_vbo_able)
 		return;
-	
+
 	switch (target)
 	{
-		case GL_ARRAY_BUFFER:
-			cache = &current_array_buffer;
-			break;
-		case GL_ELEMENT_ARRAY_BUFFER:
-			cache = &current_element_array_buffer;
-			break;
-		default:
-			Host_Error("GL_BindBuffer: unsupported target %d", (int)target);
-			return;
+	case GL_ARRAY_BUFFER:
+		cache = &current_array_buffer;
+		break;
+	case GL_ELEMENT_ARRAY_BUFFER:
+		cache = &current_element_array_buffer;
+		break;
+	default:
+		Host_Error ("GL_BindBuffer: unsupported target %d", (int) target);
+		return;
 	}
-	
+
 	if (*cache != buffer)
 	{
 		*cache = buffer;

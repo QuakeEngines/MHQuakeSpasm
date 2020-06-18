@@ -96,11 +96,11 @@ void Fog_ParseServerMessage (void)
 {
 	float density, red, green, blue, time;
 
-	density = MSG_ReadByte() / 255.0;
-	red = MSG_ReadByte() / 255.0;
-	green = MSG_ReadByte() / 255.0;
-	blue = MSG_ReadByte() / 255.0;
-	time = q_max(0.0, MSG_ReadShort() / 100.0);
+	density = MSG_ReadByte () / 255.0;
+	red = MSG_ReadByte () / 255.0;
+	green = MSG_ReadByte () / 255.0;
+	blue = MSG_ReadByte () / 255.0;
+	time = q_max (0.0, MSG_ReadShort () / 100.0);
 
 	Fog_Update (density, red, green, blue, time);
 }
@@ -114,54 +114,54 @@ handle the 'fog' console command
 */
 void Fog_FogCommand_f (void)
 {
-	switch (Cmd_Argc())
+	switch (Cmd_Argc ())
 	{
 	default:
 	case 1:
-		Con_Printf("usage:\n");
-		Con_Printf("   fog <density>\n");
-		Con_Printf("   fog <red> <green> <blue>\n");
-		Con_Printf("   fog <density> <red> <green> <blue>\n");
-		Con_Printf("current values:\n");
-		Con_Printf("   \"density\" is \"%f\"\n", fog_density);
-		Con_Printf("   \"red\" is \"%f\"\n", fog_red);
-		Con_Printf("   \"green\" is \"%f\"\n", fog_green);
-		Con_Printf("   \"blue\" is \"%f\"\n", fog_blue);
+		Con_Printf ("usage:\n");
+		Con_Printf ("   fog <density>\n");
+		Con_Printf ("   fog <red> <green> <blue>\n");
+		Con_Printf ("   fog <density> <red> <green> <blue>\n");
+		Con_Printf ("current values:\n");
+		Con_Printf ("   \"density\" is \"%f\"\n", fog_density);
+		Con_Printf ("   \"red\" is \"%f\"\n", fog_red);
+		Con_Printf ("   \"green\" is \"%f\"\n", fog_green);
+		Con_Printf ("   \"blue\" is \"%f\"\n", fog_blue);
 		break;
 	case 2:
-		Fog_Update(q_max(0.0, atof(Cmd_Argv(1))),
-				   fog_red,
-				   fog_green,
-				   fog_blue,
-				   0.0);
+		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
+			fog_red,
+			fog_green,
+			fog_blue,
+			0.0);
 		break;
 	case 3: //TEST
-		Fog_Update(q_max(0.0, atof(Cmd_Argv(1))),
-				   fog_red,
-				   fog_green,
-				   fog_blue,
-				   atof(Cmd_Argv(2)));
+		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
+			fog_red,
+			fog_green,
+			fog_blue,
+			atof (Cmd_Argv (2)));
 		break;
 	case 4:
-		Fog_Update(fog_density,
-				   CLAMP(0.0, atof(Cmd_Argv(1)), 1.0),
-				   CLAMP(0.0, atof(Cmd_Argv(2)), 1.0),
-				   CLAMP(0.0, atof(Cmd_Argv(3)), 1.0),
-				   0.0);
+		Fog_Update (fog_density,
+			CLAMP (0.0, atof (Cmd_Argv (1)), 1.0),
+			CLAMP (0.0, atof (Cmd_Argv (2)), 1.0),
+			CLAMP (0.0, atof (Cmd_Argv (3)), 1.0),
+			0.0);
 		break;
 	case 5:
-		Fog_Update(q_max(0.0, atof(Cmd_Argv(1))),
-				   CLAMP(0.0, atof(Cmd_Argv(2)), 1.0),
-				   CLAMP(0.0, atof(Cmd_Argv(3)), 1.0),
-				   CLAMP(0.0, atof(Cmd_Argv(4)), 1.0),
-				   0.0);
+		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
+			CLAMP (0.0, atof (Cmd_Argv (2)), 1.0),
+			CLAMP (0.0, atof (Cmd_Argv (3)), 1.0),
+			CLAMP (0.0, atof (Cmd_Argv (4)), 1.0),
+			0.0);
 		break;
 	case 6: //TEST
-		Fog_Update(q_max(0.0, atof(Cmd_Argv(1))),
-				   CLAMP(0.0, atof(Cmd_Argv(2)), 1.0),
-				   CLAMP(0.0, atof(Cmd_Argv(3)), 1.0),
-				   CLAMP(0.0, atof(Cmd_Argv(4)), 1.0),
-				   atof(Cmd_Argv(5)));
+		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
+			CLAMP (0.0, atof (Cmd_Argv (2)), 1.0),
+			CLAMP (0.0, atof (Cmd_Argv (3)), 1.0),
+			CLAMP (0.0, atof (Cmd_Argv (4)), 1.0),
+			atof (Cmd_Argv (5)));
 		break;
 	}
 }
@@ -192,32 +192,32 @@ void Fog_ParseWorldspawn (void)
 	fade_time = 0.0;
 	fade_done = 0.0;
 
-	data = COM_Parse(cl.worldmodel->entities);
+	data = COM_Parse (cl.worldmodel->entities);
 	if (!data)
 		return; // error
 	if (com_token[0] != '{')
 		return; // error
 	while (1)
 	{
-		data = COM_Parse(data);
+		data = COM_Parse (data);
 		if (!data)
 			return; // error
 		if (com_token[0] == '}')
 			break; // end of worldspawn
 		if (com_token[0] == '_')
-			q_strlcpy(key, com_token + 1, sizeof(key));
+			q_strlcpy (key, com_token + 1, sizeof (key));
 		else
-			q_strlcpy(key, com_token, sizeof(key));
-		while (key[0] && key[strlen(key)-1] == ' ') // remove trailing spaces
-			key[strlen(key)-1] = 0;
-		data = COM_Parse(data);
+			q_strlcpy (key, com_token, sizeof (key));
+		while (key[0] && key[strlen (key) - 1] == ' ') // remove trailing spaces
+			key[strlen (key) - 1] = 0;
+		data = COM_Parse (data);
 		if (!data)
 			return; // error
-		q_strlcpy(value, com_token, sizeof(value));
+		q_strlcpy (value, com_token, sizeof (value));
 
-		if (!strcmp("fog", key))
+		if (!strcmp ("fog", key))
 		{
-			sscanf(value, "%f %f %f %f", &fog_density, &fog_red, &fog_green, &fog_blue);
+			sscanf (value, "%f %f %f %f", &fog_density, &fog_red, &fog_green, &fog_blue);
 		}
 	}
 }
@@ -252,8 +252,8 @@ float *Fog_GetColor (void)
 	}
 
 	//find closest 24-bit RGB value, so solid-colored sky can match the fog perfectly
-	for (i=0;i<3;i++)
-		c[i] = (float)(Q_rint(c[i] * 255)) / 255.0f;
+	for (i = 0; i < 3; i++)
+		c[i] = (float) (Q_rint (c[i] * 255)) / 255.0f;
 
 	return c;
 }
@@ -287,8 +287,8 @@ called at the beginning of each frame
 */
 void Fog_SetupFrame (void)
 {
-	glFogfv(GL_FOG_COLOR, Fog_GetColor());
-	glFogf(GL_FOG_DENSITY, Fog_GetDensity() / 64.0);
+	glFogfv (GL_FOG_COLOR, Fog_GetColor ());
+	glFogf (GL_FOG_DENSITY, Fog_GetDensity () / 64.0);
 }
 
 /*
@@ -300,8 +300,8 @@ called before drawing stuff that should be fogged
 */
 void Fog_EnableGFog (void)
 {
-	if (Fog_GetDensity() > 0)
-		glEnable(GL_FOG);
+	if (Fog_GetDensity () > 0)
+		glEnable (GL_FOG);
 }
 
 /*
@@ -313,8 +313,8 @@ called after drawing stuff that should be fogged
 */
 void Fog_DisableGFog (void)
 {
-	if (Fog_GetDensity() > 0)
-		glDisable(GL_FOG);
+	if (Fog_GetDensity () > 0)
+		glDisable (GL_FOG);
 }
 
 /*
@@ -326,10 +326,10 @@ called before drawing stuff that is additive blended -- sets fog color to black
 */
 void Fog_StartAdditive (void)
 {
-	vec3_t color = {0,0,0};
+	vec3_t color = { 0, 0, 0 };
 
-	if (Fog_GetDensity() > 0)
-		glFogfv(GL_FOG_COLOR, color);
+	if (Fog_GetDensity () > 0)
+		glFogfv (GL_FOG_COLOR, color);
 }
 
 /*
@@ -341,8 +341,8 @@ called after drawing stuff that is additive blended -- restores fog color
 */
 void Fog_StopAdditive (void)
 {
-	if (Fog_GetDensity() > 0)
-		glFogfv(GL_FOG_COLOR, Fog_GetColor());
+	if (Fog_GetDensity () > 0)
+		glFogfv (GL_FOG_COLOR, Fog_GetColor ());
 }
 
 //==============================================================================
@@ -351,10 +351,10 @@ void Fog_StopAdditive (void)
 //
 //==============================================================================
 
-cvar_t r_vfog = {"r_vfog", "1", CVAR_NONE};
+cvar_t r_vfog = { "r_vfog", "1", CVAR_NONE };
 
-void Fog_DrawVFog (void){}
-void Fog_MarkModels (void){}
+void Fog_DrawVFog (void) { }
+void Fog_MarkModels (void) { }
 
 //==============================================================================
 //
@@ -384,7 +384,7 @@ called when quake initializes
 */
 void Fog_Init (void)
 {
-	Cmd_AddCommand ("fog",Fog_FogCommand_f);
+	Cmd_AddCommand ("fog", Fog_FogCommand_f);
 
 	//Cvar_RegisterVariable (&r_vfog);
 
@@ -400,11 +400,11 @@ void Fog_Init (void)
 /*
 =============
 Fog_SetupState
- 
+
 ericw -- moved from Fog_Init, state that needs to be setup when a new context is created
 =============
 */
 void Fog_SetupState (void)
 {
-	glFogi(GL_FOG_MODE, GL_EXP2);
+	glFogi (GL_FOG_MODE, GL_EXP2);
 }

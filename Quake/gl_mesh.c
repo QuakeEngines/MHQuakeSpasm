@@ -32,8 +32,8 @@ ALIAS MODEL DISPLAY LIST GENERATION
 =================================================================
 */
 
-qmodel_t	*aliasmodel;
-aliashdr_t	*paliashdr;
+qmodel_t *aliasmodel;
+aliashdr_t *paliashdr;
 
 int		used[8192]; // qboolean
 
@@ -62,34 +62,34 @@ int	StripLength (int starttri, int startv)
 {
 	int			m1, m2;
 	int			j;
-	mtriangle_t	*last, *check;
+	mtriangle_t *last, *check;
 	int			k;
 
 	used[starttri] = 2;
 
 	last = &triangles[starttri];
 
-	stripverts[0] = last->vertindex[(startv)%3];
-	stripverts[1] = last->vertindex[(startv+1)%3];
-	stripverts[2] = last->vertindex[(startv+2)%3];
+	stripverts[0] = last->vertindex[(startv) % 3];
+	stripverts[1] = last->vertindex[(startv + 1) % 3];
+	stripverts[2] = last->vertindex[(startv + 2) % 3];
 
 	striptris[0] = starttri;
 	stripcount = 1;
 
-	m1 = last->vertindex[(startv+2)%3];
-	m2 = last->vertindex[(startv+1)%3];
+	m1 = last->vertindex[(startv + 2) % 3];
+	m2 = last->vertindex[(startv + 1) % 3];
 
 	// look for a matching triangle
 nexttri:
-	for (j=starttri+1, check=&triangles[starttri+1] ; j<pheader->numtris ; j++, check++)
+	for (j = starttri + 1, check = &triangles[starttri + 1]; j < pheader->numtris; j++, check++)
 	{
 		if (check->facesfront != last->facesfront)
 			continue;
-		for (k=0 ; k<3 ; k++)
+		for (k = 0; k < 3; k++)
 		{
 			if (check->vertindex[k] != m1)
 				continue;
-			if (check->vertindex[ (k+1)%3 ] != m2)
+			if (check->vertindex[(k + 1) % 3] != m2)
 				continue;
 
 			// this is the next part of the fan
@@ -100,11 +100,11 @@ nexttri:
 
 			// the new edge
 			if (stripcount & 1)
-				m2 = check->vertindex[ (k+2)%3 ];
+				m2 = check->vertindex[(k + 2) % 3];
 			else
-				m1 = check->vertindex[ (k+2)%3 ];
+				m1 = check->vertindex[(k + 2) % 3];
 
-			stripverts[stripcount+2] = check->vertindex[ (k+2)%3 ];
+			stripverts[stripcount + 2] = check->vertindex[(k + 2) % 3];
 			striptris[stripcount] = j;
 			stripcount++;
 
@@ -115,7 +115,7 @@ nexttri:
 done:
 
 	// clear the temp used flags
-	for (j=starttri+1 ; j<pheader->numtris ; j++)
+	for (j = starttri + 1; j < pheader->numtris; j++)
 		if (used[j] == 2)
 			used[j] = 0;
 
@@ -131,35 +131,35 @@ int	FanLength (int starttri, int startv)
 {
 	int		m1, m2;
 	int		j;
-	mtriangle_t	*last, *check;
+	mtriangle_t *last, *check;
 	int		k;
 
 	used[starttri] = 2;
 
 	last = &triangles[starttri];
 
-	stripverts[0] = last->vertindex[(startv)%3];
-	stripverts[1] = last->vertindex[(startv+1)%3];
-	stripverts[2] = last->vertindex[(startv+2)%3];
+	stripverts[0] = last->vertindex[(startv) % 3];
+	stripverts[1] = last->vertindex[(startv + 1) % 3];
+	stripverts[2] = last->vertindex[(startv + 2) % 3];
 
 	striptris[0] = starttri;
 	stripcount = 1;
 
-	m1 = last->vertindex[(startv+0)%3];
-	m2 = last->vertindex[(startv+2)%3];
+	m1 = last->vertindex[(startv + 0) % 3];
+	m2 = last->vertindex[(startv + 2) % 3];
 
 
 	// look for a matching triangle
 nexttri:
-	for (j=starttri+1, check=&triangles[starttri+1] ; j<pheader->numtris ; j++, check++)
+	for (j = starttri + 1, check = &triangles[starttri + 1]; j < pheader->numtris; j++, check++)
 	{
 		if (check->facesfront != last->facesfront)
 			continue;
-		for (k=0 ; k<3 ; k++)
+		for (k = 0; k < 3; k++)
 		{
 			if (check->vertindex[k] != m1)
 				continue;
-			if (check->vertindex[ (k+1)%3 ] != m2)
+			if (check->vertindex[(k + 1) % 3] != m2)
 				continue;
 
 			// this is the next part of the fan
@@ -169,9 +169,9 @@ nexttri:
 				goto done;
 
 			// the new edge
-			m2 = check->vertindex[ (k+2)%3 ];
+			m2 = check->vertindex[(k + 2) % 3];
 
-			stripverts[stripcount+2] = m2;
+			stripverts[stripcount + 2] = m2;
 			striptris[stripcount] = j;
 			stripcount++;
 
@@ -182,7 +182,7 @@ nexttri:
 done:
 
 	// clear the temp used flags
-	for (j=starttri+1 ; j<pheader->numtris ; j++)
+	for (j = starttri + 1; j < pheader->numtris; j++)
 		if (used[j] == 2)
 			used[j] = 0;
 
@@ -213,7 +213,7 @@ void BuildTris (void)
 	//
 	numorder = 0;
 	numcommands = 0;
-	memset (used, 0, sizeof(used));
+	memset (used, 0, sizeof (used));
 	for (i = 0; i < pheader->numtris; i++)
 	{
 		// pick an unused triangle and start the trifan
@@ -222,8 +222,8 @@ void BuildTris (void)
 
 		bestlen = 0;
 		besttype = 0;
-		for (type = 0 ; type < 2 ; type++)
-//	type = 1;
+		for (type = 0; type < 2; type++)
+			//	type = 1;
 		{
 			for (startv = 0; startv < 3; startv++)
 			{
@@ -235,7 +235,7 @@ void BuildTris (void)
 				{
 					besttype = type;
 					bestlen = len;
-					for (j = 0; j < bestlen+2; j++)
+					for (j = 0; j < bestlen + 2; j++)
 						bestverts[j] = stripverts[j];
 					for (j = 0; j < bestlen; j++)
 						besttris[j] = striptris[j];
@@ -248,11 +248,11 @@ void BuildTris (void)
 			used[besttris[j]] = 1;
 
 		if (besttype == 1)
-			commands[numcommands++] = (bestlen+2);
+			commands[numcommands++] = (bestlen + 2);
 		else
-			commands[numcommands++] = -(bestlen+2);
+			commands[numcommands++] = -(bestlen + 2);
 
-		for (j = 0; j < bestlen+2; j++)
+		for (j = 0; j < bestlen + 2; j++)
 		{
 			int		tmp;
 
@@ -268,10 +268,10 @@ void BuildTris (void)
 			s = (s + 0.5) / pheader->skinwidth;
 			t = (t + 0.5) / pheader->skinheight;
 
-		//	*(float *)&commands[numcommands++] = s;
-		//	*(float *)&commands[numcommands++] = t;
-			// NOTE: 4 == sizeof(int)
-			//	   == sizeof(float)
+			//	*(float *)&commands[numcommands++] = s;
+			//	*(float *)&commands[numcommands++] = t;
+				// NOTE: 4 == sizeof(int)
+				//	   == sizeof(float)
 			memcpy (&tmp, &s, 4);
 			commands[numcommands++] = tmp;
 			memcpy (&tmp, &t, 4);
@@ -298,22 +298,22 @@ GL_MakeAliasModelDisplayLists
 void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr)
 {
 	int		i, j;
-	int			*cmds;
-	trivertx_t	*verts;
+	int *cmds;
+	trivertx_t *verts;
 	float	hscale, vscale; //johnfitz -- padded skins
 	int		count; //johnfitz -- precompute texcoords for padded skins
-	int		*loadcmds; //johnfitz
+	int *loadcmds; //johnfitz
 
 	//johnfitz -- padded skins
-	hscale = (float)hdr->skinwidth/(float)TexMgr_PadConditional(hdr->skinwidth);
-	vscale = (float)hdr->skinheight/(float)TexMgr_PadConditional(hdr->skinheight);
+	hscale = (float) hdr->skinwidth / (float) TexMgr_PadConditional (hdr->skinwidth);
+	vscale = (float) hdr->skinheight / (float) TexMgr_PadConditional (hdr->skinheight);
 	//johnfitz
 
 	aliasmodel = m;
 	paliashdr = hdr;	// (aliashdr_t *)Mod_Extradata (m);
 
 //johnfitz -- generate meshes
-	Con_DPrintf2 ("meshing %s...\n",m->name);
+	Con_DPrintf2 ("meshing %s...\n", m->name);
 	BuildTris ();
 
 	// save the data out
@@ -321,11 +321,11 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr)
 	paliashdr->poseverts = numorder;
 
 	cmds = (int *) Hunk_Alloc (numcommands * 4);
-	paliashdr->commands = (byte *)cmds - (byte *)paliashdr;
+	paliashdr->commands = (byte *) cmds - (byte *) paliashdr;
 
 	//johnfitz -- precompute texcoords for padded skins
 	loadcmds = commands;
-	while(1)
+	while (1)
 	{
 		*cmds++ = count = *loadcmds++;
 
@@ -337,16 +337,16 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr)
 
 		do
 		{
-			*(float *)cmds++ = hscale * (*(float *)loadcmds++);
-			*(float *)cmds++ = vscale * (*(float *)loadcmds++);
+			*(float *) cmds++ = hscale * (*(float *) loadcmds++);
+			*(float *) cmds++ = vscale * (*(float *) loadcmds++);
 		} while (--count);
 	}
 	//johnfitz
 
-	verts = (trivertx_t *) Hunk_Alloc (paliashdr->numposes * paliashdr->poseverts * sizeof(trivertx_t));
-	paliashdr->posedata = (byte *)verts - (byte *)paliashdr;
-	for (i=0 ; i<paliashdr->numposes ; i++)
-		for (j=0 ; j<numorder ; j++)
+	verts = (trivertx_t *) Hunk_Alloc (paliashdr->numposes * paliashdr->poseverts * sizeof (trivertx_t));
+	paliashdr->posedata = (byte *) verts - (byte *) paliashdr;
+	for (i = 0; i < paliashdr->numposes; i++)
+		for (j = 0; j < numorder; j++)
 			*verts++ = poseverts[i][vertexorder[j]];
 
 	// ericw
@@ -378,11 +378,11 @@ void GL_MakeAliasModelDisplayLists_VBO (void)
 		return;
 
 	// first, copy the verts onto the hunk
-	verts = (trivertx_t *) Hunk_Alloc (paliashdr->numposes * paliashdr->numverts * sizeof(trivertx_t));
-	paliashdr->vertexes = (byte *)verts - (byte *)paliashdr;
-	for (i=0 ; i<paliashdr->numposes ; i++)
-		for (j=0 ; j<paliashdr->numverts ; j++)
-			verts[i*paliashdr->numverts + j] = poseverts[i][j];
+	verts = (trivertx_t *) Hunk_Alloc (paliashdr->numposes * paliashdr->numverts * sizeof (trivertx_t));
+	paliashdr->vertexes = (byte *) verts - (byte *) paliashdr;
+	for (i = 0; i < paliashdr->numposes; i++)
+		for (j = 0; j < paliashdr->numverts; j++)
+			verts[i * paliashdr->numverts + j] = poseverts[i][j];
 
 	// there can never be more than this number of verts and we just put them all on the hunk
 	maxverts_vbo = pheader->numtris * 3;
@@ -437,7 +437,7 @@ void GL_MakeAliasModelDisplayLists_VBO (void)
 			}
 		}
 	}
-	
+
 	// upload immediately
 	GLMesh_LoadVertexBuffer (aliasmodel, pheader);
 }
@@ -465,42 +465,42 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr)
 
 	if (!gl_glsl_alias_able)
 		return;
-	
-// count the sizes we need
-	
-	// ericw -- RMQEngine stored these vbo*ofs values in aliashdr_t, but we must not
-	// mutate Mod_Extradata since it might be reloaded from disk, so I moved them to qmodel_t
-	// (test case: roman1.bsp from arwop, 64mb heap)
+
+	// count the sizes we need
+
+		// ericw -- RMQEngine stored these vbo*ofs values in aliashdr_t, but we must not
+		// mutate Mod_Extradata since it might be reloaded from disk, so I moved them to qmodel_t
+		// (test case: roman1.bsp from arwop, 64mb heap)
 	m->vboindexofs = 0;
-	
+
 	m->vboxyzofs = 0;
 	totalvbosize += (hdr->numposes * hdr->numverts_vbo * sizeof (meshxyz_t)); // ericw -- what RMQEngine called nummeshframes is called numposes in QuakeSpasm
-	
+
 	m->vbostofs = totalvbosize;
 	totalvbosize += (hdr->numverts_vbo * sizeof (meshst_t));
-	
+
 	if (!hdr->numindexes) return;
 	if (!totalvbosize) return;
-	
-// grab the pointers to data in the extradata
+
+	// grab the pointers to data in the extradata
 
 	desc = (aliasmesh_t *) ((byte *) hdr + hdr->meshdesc);
 	indexes = (short *) ((byte *) hdr + hdr->indexes);
-	trivertexes = (trivertx_t *) ((byte *)hdr + hdr->vertexes);
+	trivertexes = (trivertx_t *) ((byte *) hdr + hdr->vertexes);
 
-// upload indices buffer
+	// upload indices buffer
 
 	GL_DeleteBuffersFunc (1, &m->meshindexesvbo);
 	GL_GenBuffersFunc (1, &m->meshindexesvbo);
 	GL_BindBufferFunc (GL_ELEMENT_ARRAY_BUFFER, m->meshindexesvbo);
 	GL_BufferDataFunc (GL_ELEMENT_ARRAY_BUFFER, hdr->numindexes * sizeof (unsigned short), indexes, GL_STATIC_DRAW);
 
-// create the vertex buffer (empty)
+	// create the vertex buffer (empty)
 
-	vbodata = (byte *) malloc(totalvbosize);
-	memset(vbodata, 0, totalvbosize);
+	vbodata = (byte *) malloc (totalvbosize);
+	memset (vbodata, 0, totalvbosize);
 
-// fill in the vertices at the start of the buffer
+	// fill in the vertices at the start of the buffer
 	for (f = 0; f < hdr->numposes; f++) // ericw -- what RMQEngine called nummeshframes is called numposes in QuakeSpasm
 	{
 		int v;
@@ -526,14 +526,14 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr)
 		}
 	}
 
-// fill in the ST coords at the end of the buffer
+	// fill in the ST coords at the end of the buffer
 	{
 		meshst_t *st;
 		float hscale, vscale;
 
 		//johnfitz -- padded skins
-		hscale = (float)hdr->skinwidth/(float)TexMgr_PadConditional(hdr->skinwidth);
-		vscale = (float)hdr->skinheight/(float)TexMgr_PadConditional(hdr->skinheight);
+		hscale = (float) hdr->skinwidth / (float) TexMgr_PadConditional (hdr->skinwidth);
+		vscale = (float) hdr->skinheight / (float) TexMgr_PadConditional (hdr->skinheight);
 		//johnfitz
 
 		st = (meshst_t *) (vbodata + m->vbostofs);
@@ -544,7 +544,7 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr)
 		}
 	}
 
-// upload vertexes buffer
+	// upload vertexes buffer
 	GL_DeleteBuffersFunc (1, &m->meshvbo);
 	GL_GenBuffersFunc (1, &m->meshvbo);
 	GL_BindBufferFunc (GL_ARRAY_BUFFER, m->meshvbo);
@@ -552,7 +552,7 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr)
 
 	free (vbodata);
 
-// invalidate the cached bindings
+	// invalidate the cached bindings
 	GL_ClearBufferBindings ();
 }
 
@@ -571,14 +571,14 @@ void GLMesh_LoadVertexBuffers (void)
 
 	if (!gl_glsl_alias_able)
 		return;
-	
+
 	for (j = 1; j < MAX_MODELS; j++)
 	{
 		if (!(m = cl.model_precache[j])) break;
 		if (m->type != mod_alias) continue;
 
 		hdr = (const aliashdr_t *) Mod_Extradata (m);
-		
+
 		GLMesh_LoadVertexBuffer (m, hdr);
 	}
 }
@@ -594,21 +594,21 @@ void GLMesh_DeleteVertexBuffers (void)
 {
 	int j;
 	qmodel_t *m;
-	
+
 	if (!gl_glsl_alias_able)
 		return;
-	
+
 	for (j = 1; j < MAX_MODELS; j++)
 	{
 		if (!(m = cl.model_precache[j])) break;
 		if (m->type != mod_alias) continue;
-		
+
 		GL_DeleteBuffersFunc (1, &m->meshvbo);
 		m->meshvbo = 0;
 
 		GL_DeleteBuffersFunc (1, &m->meshindexesvbo);
 		m->meshindexesvbo = 0;
 	}
-	
+
 	GL_ClearBufferBindings ();
 }

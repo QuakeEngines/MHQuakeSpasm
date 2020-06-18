@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static qboolean	textmode;
 
-static cvar_t in_debugkeys = {"in_debugkeys", "0", CVAR_NONE};
+static cvar_t in_debugkeys = { "in_debugkeys", "0", CVAR_NONE };
 
 #ifdef __APPLE__
 /* Mouse acceleration needs to be disabled on OS X */
@@ -87,8 +87,8 @@ static int SDLCALL IN_FilterMouseEvents (const SDL_Event *event)
 	switch (event->type)
 	{
 	case SDL_MOUSEMOTION:
-	// case SDL_MOUSEBUTTONDOWN:
-	// case SDL_MOUSEBUTTONUP:
+		// case SDL_MOUSEBUTTONDOWN:
+		// case SDL_MOUSEBUTTONUP:
 		return 0;
 	}
 
@@ -102,98 +102,98 @@ static int SDLCALL IN_SDL2_FilterMouseEvents (void *userdata, SDL_Event *event)
 }
 #endif
 
-static void IN_BeginIgnoringMouseEvents(void)
+static void IN_BeginIgnoringMouseEvents (void)
 {
 #if defined(USE_SDL2)
 	SDL_EventFilter currentFilter = NULL;
 	void *currentUserdata = NULL;
-	SDL_GetEventFilter(&currentFilter, &currentUserdata);
+	SDL_GetEventFilter (&currentFilter, &currentUserdata);
 
 	if (currentFilter != IN_SDL2_FilterMouseEvents)
-		SDL_SetEventFilter(IN_SDL2_FilterMouseEvents, NULL);
+		SDL_SetEventFilter (IN_SDL2_FilterMouseEvents, NULL);
 #else
-	if (SDL_GetEventFilter() != IN_FilterMouseEvents)
-		SDL_SetEventFilter(IN_FilterMouseEvents);
+	if (SDL_GetEventFilter () != IN_FilterMouseEvents)
+		SDL_SetEventFilter (IN_FilterMouseEvents);
 #endif
 }
 
-static void IN_EndIgnoringMouseEvents(void)
+static void IN_EndIgnoringMouseEvents (void)
 {
 #if defined(USE_SDL2)
 	SDL_EventFilter currentFilter;
 	void *currentUserdata;
-	if (SDL_GetEventFilter(&currentFilter, &currentUserdata) == SDL_TRUE)
-		SDL_SetEventFilter(NULL, NULL);
+	if (SDL_GetEventFilter (&currentFilter, &currentUserdata) == SDL_TRUE)
+		SDL_SetEventFilter (NULL, NULL);
 #else
-	if (SDL_GetEventFilter() != NULL)
-		SDL_SetEventFilter(NULL);
+	if (SDL_GetEventFilter () != NULL)
+		SDL_SetEventFilter (NULL);
 #endif
 }
 
 #ifdef MACOS_X_ACCELERATION_HACK
-static cvar_t in_disablemacosxmouseaccel = {"in_disablemacosxmouseaccel", "1", CVAR_ARCHIVE};
+static cvar_t in_disablemacosxmouseaccel = { "in_disablemacosxmouseaccel", "1", CVAR_ARCHIVE };
 static double originalMouseSpeed = -1.0;
 
-static io_connect_t IN_GetIOHandle(void)
+static io_connect_t IN_GetIOHandle (void)
 {
 	io_connect_t iohandle = MACH_PORT_NULL;
 	io_service_t iohidsystem = MACH_PORT_NULL;
 	mach_port_t masterport;
 	kern_return_t status;
 
-	status = IOMasterPort(MACH_PORT_NULL, &masterport);
+	status = IOMasterPort (MACH_PORT_NULL, &masterport);
 	if (status != KERN_SUCCESS)
 		return 0;
 
-	iohidsystem = IORegistryEntryFromPath(masterport, kIOServicePlane ":/IOResources/IOHIDSystem");
+	iohidsystem = IORegistryEntryFromPath (masterport, kIOServicePlane ":/IOResources/IOHIDSystem");
 	if (!iohidsystem)
 		return 0;
 
-	status = IOServiceOpen(iohidsystem, mach_task_self(), kIOHIDParamConnectType, &iohandle);
-	IOObjectRelease(iohidsystem);
+	status = IOServiceOpen (iohidsystem, mach_task_self (), kIOHIDParamConnectType, &iohandle);
+	IOObjectRelease (iohidsystem);
 
 	return iohandle;
 }
 
 static void IN_DisableOSXMouseAccel (void)
 {
-	io_connect_t mouseDev = IN_GetIOHandle();
+	io_connect_t mouseDev = IN_GetIOHandle ();
 	if (mouseDev != 0)
 	{
-		if (IOHIDGetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), &originalMouseSpeed) == kIOReturnSuccess)
+		if (IOHIDGetAccelerationWithKey (mouseDev, CFSTR (kIOHIDMouseAccelerationType), &originalMouseSpeed) == kIOReturnSuccess)
 		{
-			if (IOHIDSetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), -1.0) != kIOReturnSuccess)
+			if (IOHIDSetAccelerationWithKey (mouseDev, CFSTR (kIOHIDMouseAccelerationType), -1.0) != kIOReturnSuccess)
 			{
-				Cvar_Set("in_disablemacosxmouseaccel", "0");
-				Con_Printf("WARNING: Could not disable mouse acceleration (failed at IOHIDSetAccelerationWithKey).\n");
+				Cvar_Set ("in_disablemacosxmouseaccel", "0");
+				Con_Printf ("WARNING: Could not disable mouse acceleration (failed at IOHIDSetAccelerationWithKey).\n");
 			}
 		}
 		else
 		{
-			Cvar_Set("in_disablemacosxmouseaccel", "0");
-			Con_Printf("WARNING: Could not disable mouse acceleration (failed at IOHIDGetAccelerationWithKey).\n");
+			Cvar_Set ("in_disablemacosxmouseaccel", "0");
+			Con_Printf ("WARNING: Could not disable mouse acceleration (failed at IOHIDGetAccelerationWithKey).\n");
 		}
-		IOServiceClose(mouseDev);
+		IOServiceClose (mouseDev);
 	}
 	else
 	{
-		Cvar_Set("in_disablemacosxmouseaccel", "0");
-		Con_Printf("WARNING: Could not disable mouse acceleration (failed at IO_GetIOHandle).\n");
+		Cvar_Set ("in_disablemacosxmouseaccel", "0");
+		Con_Printf ("WARNING: Could not disable mouse acceleration (failed at IO_GetIOHandle).\n");
 	}
 }
 
 static void IN_ReenableOSXMouseAccel (void)
 {
-	io_connect_t mouseDev = IN_GetIOHandle();
+	io_connect_t mouseDev = IN_GetIOHandle ();
 	if (mouseDev != 0)
 	{
-		if (IOHIDSetAccelerationWithKey(mouseDev, CFSTR(kIOHIDMouseAccelerationType), originalMouseSpeed) != kIOReturnSuccess)
-			Con_Printf("WARNING: Could not re-enable mouse acceleration (failed at IOHIDSetAccelerationWithKey).\n");
-		IOServiceClose(mouseDev);
+		if (IOHIDSetAccelerationWithKey (mouseDev, CFSTR (kIOHIDMouseAccelerationType), originalMouseSpeed) != kIOReturnSuccess)
+			Con_Printf ("WARNING: Could not re-enable mouse acceleration (failed at IOHIDSetAccelerationWithKey).\n");
+		IOServiceClose (mouseDev);
 	}
 	else
 	{
-		Con_Printf("WARNING: Could not re-enable mouse acceleration (failed at IO_GetIOHandle).\n");
+		Con_Printf ("WARNING: Could not re-enable mouse acceleration (failed at IO_GetIOHandle).\n");
 	}
 	originalMouseSpeed = -1;
 }
@@ -208,31 +208,31 @@ void IN_Activate (void)
 #ifdef MACOS_X_ACCELERATION_HACK
 	/* Save the status of mouse acceleration */
 	if (originalMouseSpeed == -1 && in_disablemacosxmouseaccel.value)
-		IN_DisableOSXMouseAccel();
+		IN_DisableOSXMouseAccel ();
 #endif
 
 #if defined(USE_SDL2)
-	if (SDL_SetRelativeMouseMode(SDL_TRUE) != 0)
+	if (SDL_SetRelativeMouseMode (SDL_TRUE) != 0)
 	{
-		Con_Printf("WARNING: SDL_SetRelativeMouseMode(SDL_TRUE) failed.\n");
+		Con_Printf ("WARNING: SDL_SetRelativeMouseMode(SDL_TRUE) failed.\n");
 	}
 #else
-	if (SDL_WM_GrabInput(SDL_GRAB_QUERY) != SDL_GRAB_ON)
+	if (SDL_WM_GrabInput (SDL_GRAB_QUERY) != SDL_GRAB_ON)
 	{
-		SDL_WM_GrabInput(SDL_GRAB_ON);
-		if (SDL_WM_GrabInput(SDL_GRAB_QUERY) != SDL_GRAB_ON)
-			Con_Printf("WARNING: SDL_WM_GrabInput(SDL_GRAB_ON) failed.\n");
+		SDL_WM_GrabInput (SDL_GRAB_ON);
+		if (SDL_WM_GrabInput (SDL_GRAB_QUERY) != SDL_GRAB_ON)
+			Con_Printf ("WARNING: SDL_WM_GrabInput(SDL_GRAB_ON) failed.\n");
 	}
 
-	if (SDL_ShowCursor(SDL_QUERY) != SDL_DISABLE)
+	if (SDL_ShowCursor (SDL_QUERY) != SDL_DISABLE)
 	{
-		SDL_ShowCursor(SDL_DISABLE);
-		if (SDL_ShowCursor(SDL_QUERY) != SDL_DISABLE)
-			Con_Printf("WARNING: SDL_ShowCursor(SDL_DISABLE) failed.\n");
+		SDL_ShowCursor (SDL_DISABLE);
+		if (SDL_ShowCursor (SDL_QUERY) != SDL_DISABLE)
+			Con_Printf ("WARNING: SDL_ShowCursor(SDL_DISABLE) failed.\n");
 	}
 #endif
 
-	IN_EndIgnoringMouseEvents();
+	IN_EndIgnoringMouseEvents ();
 
 	total_dx = 0;
 	total_dy = 0;
@@ -245,32 +245,32 @@ void IN_Deactivate (qboolean free_cursor)
 
 #ifdef MACOS_X_ACCELERATION_HACK
 	if (originalMouseSpeed != -1)
-		IN_ReenableOSXMouseAccel();
+		IN_ReenableOSXMouseAccel ();
 #endif
 
 	if (free_cursor)
 	{
 #if defined(USE_SDL2)
-		SDL_SetRelativeMouseMode(SDL_FALSE);
+		SDL_SetRelativeMouseMode (SDL_FALSE);
 #else
-		if (SDL_WM_GrabInput(SDL_GRAB_QUERY) != SDL_GRAB_OFF)
+		if (SDL_WM_GrabInput (SDL_GRAB_QUERY) != SDL_GRAB_OFF)
 		{
-			SDL_WM_GrabInput(SDL_GRAB_OFF);
-			if (SDL_WM_GrabInput(SDL_GRAB_QUERY) != SDL_GRAB_OFF)
-				Con_Printf("WARNING: SDL_WM_GrabInput(SDL_GRAB_OFF) failed.\n");
+			SDL_WM_GrabInput (SDL_GRAB_OFF);
+			if (SDL_WM_GrabInput (SDL_GRAB_QUERY) != SDL_GRAB_OFF)
+				Con_Printf ("WARNING: SDL_WM_GrabInput(SDL_GRAB_OFF) failed.\n");
 		}
 
-		if (SDL_ShowCursor(SDL_QUERY) != SDL_ENABLE)
+		if (SDL_ShowCursor (SDL_QUERY) != SDL_ENABLE)
 		{
-			SDL_ShowCursor(SDL_ENABLE);
-			if (SDL_ShowCursor(SDL_QUERY) != SDL_ENABLE)
-				Con_Printf("WARNING: SDL_ShowCursor(SDL_ENABLE) failed.\n");
+			SDL_ShowCursor (SDL_ENABLE);
+			if (SDL_ShowCursor (SDL_QUERY) != SDL_ENABLE)
+				Con_Printf ("WARNING: SDL_ShowCursor(SDL_ENABLE) failed.\n");
 		}
 #endif
 	}
 
 	/* discard all mouse events when input is deactivated */
-	IN_BeginIgnoringMouseEvents();
+	IN_BeginIgnoringMouseEvents ();
 }
 
 void IN_StartupJoystick (void)
@@ -280,54 +280,54 @@ void IN_StartupJoystick (void)
 	int nummappings;
 	char controllerdb[MAX_OSPATH];
 	SDL_GameController *gamecontroller;
-	
-	if (COM_CheckParm("-nojoy"))
+
+	if (COM_CheckParm ("-nojoy"))
 		return;
-	
-	if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) == -1 )
+
+	if (SDL_InitSubSystem (SDL_INIT_GAMECONTROLLER) == -1)
 	{
-		Con_Warning("could not initialize SDL Game Controller\n");
+		Con_Warning ("could not initialize SDL Game Controller\n");
 		return;
 	}
-	
+
 	// Load additional SDL2 controller definitions from gamecontrollerdb.txt
-	q_snprintf (controllerdb, sizeof(controllerdb), "%s/gamecontrollerdb.txt", com_basedir);
-	nummappings = SDL_GameControllerAddMappingsFromFile(controllerdb);
+	q_snprintf (controllerdb, sizeof (controllerdb), "%s/gamecontrollerdb.txt", com_basedir);
+	nummappings = SDL_GameControllerAddMappingsFromFile (controllerdb);
 	if (nummappings > 0)
-		Con_Printf("%d mappings loaded from gamecontrollerdb.txt\n", nummappings);
-	
+		Con_Printf ("%d mappings loaded from gamecontrollerdb.txt\n", nummappings);
+
 	// Also try host_parms->userdir
 	if (host_parms->userdir != host_parms->basedir)
 	{
-		q_snprintf (controllerdb, sizeof(controllerdb), "%s/gamecontrollerdb.txt", host_parms->userdir);
-		nummappings = SDL_GameControllerAddMappingsFromFile(controllerdb);
+		q_snprintf (controllerdb, sizeof (controllerdb), "%s/gamecontrollerdb.txt", host_parms->userdir);
+		nummappings = SDL_GameControllerAddMappingsFromFile (controllerdb);
 		if (nummappings > 0)
-			Con_Printf("%d mappings loaded from gamecontrollerdb.txt\n", nummappings);
+			Con_Printf ("%d mappings loaded from gamecontrollerdb.txt\n", nummappings);
 	}
 
-	for (i = 0; i < SDL_NumJoysticks(); i++)
+	for (i = 0; i < SDL_NumJoysticks (); i++)
 	{
-		const char *joyname = SDL_JoystickNameForIndex(i);
-		if ( SDL_IsGameController(i) )
+		const char *joyname = SDL_JoystickNameForIndex (i);
+		if (SDL_IsGameController (i))
 		{
-			const char *controllername = SDL_GameControllerNameForIndex(i);
-			gamecontroller = SDL_GameControllerOpen(i);
+			const char *controllername = SDL_GameControllerNameForIndex (i);
+			gamecontroller = SDL_GameControllerOpen (i);
 			if (gamecontroller)
 			{
-				Con_Printf("detected controller: %s\n", controllername != NULL ? controllername : "NULL");
-				
-				joy_active_instaceid = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gamecontroller));
+				Con_Printf ("detected controller: %s\n", controllername != NULL ? controllername : "NULL");
+
+				joy_active_instaceid = SDL_JoystickInstanceID (SDL_GameControllerGetJoystick (gamecontroller));
 				joy_active_controller = gamecontroller;
 				break;
 			}
 			else
 			{
-				Con_Warning("failed to open controller: %s\n", controllername != NULL ? controllername : "NULL");
+				Con_Warning ("failed to open controller: %s\n", controllername != NULL ? controllername : "NULL");
 			}
 		}
 		else
 		{
-			Con_Warning("joystick missing controller mappings: %s\n", joyname != NULL ? joyname : "NULL" );
+			Con_Warning ("joystick missing controller mappings: %s\n", joyname != NULL ? joyname : "NULL");
 		}
 	}
 #endif
@@ -336,79 +336,76 @@ void IN_StartupJoystick (void)
 void IN_ShutdownJoystick (void)
 {
 #if defined(USE_SDL2)
-	SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
+	SDL_QuitSubSystem (SDL_INIT_GAMECONTROLLER);
 #endif
 }
 
 void IN_Init (void)
 {
-	textmode = Key_TextEntry();
+	textmode = Key_TextEntry ();
 
 #if !defined(USE_SDL2)
 	SDL_EnableUNICODE (textmode);
-	if (SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL) == -1)
-		Con_Printf("Warning: SDL_EnableKeyRepeat() failed.\n");
+	if (SDL_EnableKeyRepeat (SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL) == -1)
+		Con_Printf ("Warning: SDL_EnableKeyRepeat() failed.\n");
 #else
 	if (textmode)
-		SDL_StartTextInput();
+		SDL_StartTextInput ();
 	else
-		SDL_StopTextInput();
+		SDL_StopTextInput ();
 #endif
-	if (safemode || COM_CheckParm("-nomouse"))
+	if (safemode || COM_CheckParm ("-nomouse"))
 	{
 		no_mouse = true;
 		/* discard all mouse events when input is deactivated */
-		IN_BeginIgnoringMouseEvents();
+		IN_BeginIgnoringMouseEvents ();
 	}
 
 #ifdef MACOS_X_ACCELERATION_HACK
-	Cvar_RegisterVariable(&in_disablemacosxmouseaccel);
+	Cvar_RegisterVariable (&in_disablemacosxmouseaccel);
 #endif
-	Cvar_RegisterVariable(&in_debugkeys);
-	Cvar_RegisterVariable(&joy_sensitivity_yaw);
-	Cvar_RegisterVariable(&joy_sensitivity_pitch);
-	Cvar_RegisterVariable(&joy_deadzone);
-	Cvar_RegisterVariable(&joy_deadzone_trigger);
-	Cvar_RegisterVariable(&joy_invert);
-	Cvar_RegisterVariable(&joy_exponent);
-	Cvar_RegisterVariable(&joy_exponent_move);
-	Cvar_RegisterVariable(&joy_swapmovelook);
-	Cvar_RegisterVariable(&joy_enable);
+	Cvar_RegisterVariable (&in_debugkeys);
+	Cvar_RegisterVariable (&joy_sensitivity_yaw);
+	Cvar_RegisterVariable (&joy_sensitivity_pitch);
+	Cvar_RegisterVariable (&joy_deadzone);
+	Cvar_RegisterVariable (&joy_deadzone_trigger);
+	Cvar_RegisterVariable (&joy_invert);
+	Cvar_RegisterVariable (&joy_exponent);
+	Cvar_RegisterVariable (&joy_exponent_move);
+	Cvar_RegisterVariable (&joy_swapmovelook);
+	Cvar_RegisterVariable (&joy_enable);
 
-	IN_Activate();
-	IN_StartupJoystick();
+	IN_Activate ();
+	IN_StartupJoystick ();
 }
 
 void IN_Shutdown (void)
 {
-	IN_Deactivate(true);
-	IN_ShutdownJoystick();
+	IN_Deactivate (true);
+	IN_ShutdownJoystick ();
 }
 
 extern cvar_t cl_maxpitch; /* johnfitz -- variable pitch clamping */
 extern cvar_t cl_minpitch; /* johnfitz -- variable pitch clamping */
 
 
-void IN_MouseMotion(int dx, int dy)
+void IN_MouseMotion (int dx, int dy)
 {
 	total_dx += dx;
 	total_dy += dy;
 }
 
 #if defined(USE_SDL2)
-typedef struct joyaxis_s
-{
+typedef struct joyaxis_s {
 	float x;
 	float y;
 } joyaxis_t;
 
-typedef struct joy_buttonstate_s
-{
+typedef struct joy_buttonstate_s {
 	qboolean buttondown[SDL_CONTROLLER_BUTTON_MAX];
 } joybuttonstate_t;
 
-typedef struct axisstate_s
-{
+typedef struct axisstate_s {
 	float axisvalue[SDL_CONTROLLER_AXIS_MAX]; // normalized to +-1
 } joyaxisstate_t;
 
@@ -430,9 +427,9 @@ IN_AxisMagnitude
 Returns the vector length of the given joystick axis
 ================
 */
-static vec_t IN_AxisMagnitude(joyaxis_t axis)
+static vec_t IN_AxisMagnitude (joyaxis_t axis)
 {
-	vec_t magnitude = sqrtf((axis.x * axis.x) + (axis.y * axis.y));
+	vec_t magnitude = sqrtf ((axis.x * axis.x) + (axis.y * axis.y));
 	return magnitude;
 }
 
@@ -444,17 +441,17 @@ assumes axis values are in [-1, 1] and the vector magnitude has been clamped at 
 Raises the axis values to the given exponent, keeping signs.
 ================
 */
-static joyaxis_t IN_ApplyEasing(joyaxis_t axis, float exponent)
+static joyaxis_t IN_ApplyEasing (joyaxis_t axis, float exponent)
 {
-	joyaxis_t result = {0};
+	joyaxis_t result = { 0 };
 	vec_t eased_magnitude;
-	vec_t magnitude = IN_AxisMagnitude(axis);
-	
+	vec_t magnitude = IN_AxisMagnitude (axis);
+
 	if (magnitude == 0)
 		return result;
-	
-	eased_magnitude = powf(magnitude, exponent);
-	
+
+	eased_magnitude = powf (magnitude, exponent);
+
 	result.x = axis.x * (eased_magnitude / magnitude);
 	result.y = axis.y * (eased_magnitude / magnitude);
 	return result;
@@ -472,11 +469,11 @@ you can pull back on the stick to go slower (and the final speed is clamped
 by sv_maxspeed).
 ================
 */
-static joyaxis_t IN_ApplyMoveEasing(joyaxis_t axis, float exponent)
+static joyaxis_t IN_ApplyMoveEasing (joyaxis_t axis, float exponent)
 {
-	joyaxis_t result = IN_ApplyEasing(axis, exponent);
-	const float v = sqrtf(2.0f);
-	
+	joyaxis_t result = IN_ApplyEasing (axis, exponent);
+	const float v = sqrtf (2.0f);
+
 	result.x *= v;
 	result.y *= v;
 
@@ -489,7 +486,7 @@ IN_ApplyDeadzone
 
 in: raw joystick axis values converted to floats in +-1
 out: applies a circular deadzone and clamps the magnitude at 1
-     (my 360 controller is slightly non-circular and the stick travels further on the diagonals)
+	 (my 360 controller is slightly non-circular and the stick travels further on the diagonals)
 
 deadzone is expected to satisfy 0 < deadzone < 1
 
@@ -497,18 +494,19 @@ from https://github.com/jeremiah-sypult/Quakespasm-Rift
 and adapted from http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html
 ================
 */
-static joyaxis_t IN_ApplyDeadzone(joyaxis_t axis, float deadzone)
+static joyaxis_t IN_ApplyDeadzone (joyaxis_t axis, float deadzone)
 {
-	joyaxis_t result = {0};
-	vec_t magnitude = IN_AxisMagnitude(axis);
-	
-	if ( magnitude > deadzone ) {
-		const vec_t new_magnitude = q_min(1.0, (magnitude - deadzone) / (1.0 - deadzone));
+	joyaxis_t result = { 0 };
+	vec_t magnitude = IN_AxisMagnitude (axis);
+
+	if (magnitude > deadzone)
+	{
+		const vec_t new_magnitude = q_min (1.0, (magnitude - deadzone) / (1.0 - deadzone));
 		const vec_t scale = new_magnitude / magnitude;
 		result.x = axis.x * scale;
 		result.y = axis.y * scale;
 	}
-	
+
 	return result;
 }
 
@@ -517,25 +515,25 @@ static joyaxis_t IN_ApplyDeadzone(joyaxis_t axis, float deadzone)
 IN_KeyForControllerButton
 ================
 */
-static int IN_KeyForControllerButton(SDL_GameControllerButton button)
+static int IN_KeyForControllerButton (SDL_GameControllerButton button)
 {
 	switch (button)
 	{
-		case SDL_CONTROLLER_BUTTON_A: return K_ABUTTON;
-		case SDL_CONTROLLER_BUTTON_B: return K_BBUTTON;
-		case SDL_CONTROLLER_BUTTON_X: return K_XBUTTON;
-		case SDL_CONTROLLER_BUTTON_Y: return K_YBUTTON;
-		case SDL_CONTROLLER_BUTTON_BACK: return K_TAB;
-		case SDL_CONTROLLER_BUTTON_START: return K_ESCAPE;
-		case SDL_CONTROLLER_BUTTON_LEFTSTICK: return K_LTHUMB;
-		case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return K_RTHUMB;
-		case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return K_LSHOULDER;
-		case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return K_RSHOULDER;
-		case SDL_CONTROLLER_BUTTON_DPAD_UP: return K_UPARROW;
-		case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return K_DOWNARROW;
-		case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return K_LEFTARROW;
-		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return K_RIGHTARROW;
-		default: return 0;
+	case SDL_CONTROLLER_BUTTON_A: return K_ABUTTON;
+	case SDL_CONTROLLER_BUTTON_B: return K_BBUTTON;
+	case SDL_CONTROLLER_BUTTON_X: return K_XBUTTON;
+	case SDL_CONTROLLER_BUTTON_Y: return K_YBUTTON;
+	case SDL_CONTROLLER_BUTTON_BACK: return K_TAB;
+	case SDL_CONTROLLER_BUTTON_START: return K_ESCAPE;
+	case SDL_CONTROLLER_BUTTON_LEFTSTICK: return K_LTHUMB;
+	case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return K_RTHUMB;
+	case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return K_LSHOULDER;
+	case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return K_RSHOULDER;
+	case SDL_CONTROLLER_BUTTON_DPAD_UP: return K_UPARROW;
+	case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return K_DOWNARROW;
+	case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return K_LEFTARROW;
+	case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return K_RIGHTARROW;
+	default: return 0;
 	}
 }
 
@@ -549,11 +547,11 @@ and generates key repeats if the button is held down.
 Adapted from DarkPlaces by lordhavoc
 ================
 */
-static void IN_JoyKeyEvent(qboolean wasdown, qboolean isdown, int key, double *timer)
+static void IN_JoyKeyEvent (qboolean wasdown, qboolean isdown, int key, double *timer)
 {
 	// we can't use `realtime` for key repeats because it is not monotomic
-	const double currenttime = Sys_DoubleTime();
-	
+	const double currenttime = Sys_DoubleTime ();
+
 	if (wasdown)
 	{
 		if (isdown)
@@ -561,13 +559,13 @@ static void IN_JoyKeyEvent(qboolean wasdown, qboolean isdown, int key, double *t
 			if (currenttime >= *timer)
 			{
 				*timer = currenttime + 0.1;
-				Key_Event(key, true);
+				Key_Event (key, true);
 			}
 		}
 		else
 		{
 			*timer = 0;
-			Key_Event(key, false);
+			Key_Event (key, false);
 		}
 	}
 	else
@@ -575,7 +573,7 @@ static void IN_JoyKeyEvent(qboolean wasdown, qboolean isdown, int key, double *t
 		if (isdown)
 		{
 			*timer = currenttime + 0.5;
-			Key_Event(key, true);
+			Key_Event (key, true);
 		}
 	}
 }
@@ -595,47 +593,47 @@ void IN_Commands (void)
 	int i;
 	const float stickthreshold = 0.9;
 	const float triggerthreshold = joy_deadzone_trigger.value;
-	
+
 	if (!joy_enable.value)
 		return;
-	
+
 	if (!joy_active_controller)
 		return;
 
 	// emit key events for controller buttons
 	for (i = 0; i < SDL_CONTROLLER_BUTTON_MAX; i++)
 	{
-		qboolean newstate = SDL_GameControllerGetButton(joy_active_controller, (SDL_GameControllerButton)i);
+		qboolean newstate = SDL_GameControllerGetButton (joy_active_controller, (SDL_GameControllerButton) i);
 		qboolean oldstate = joy_buttonstate.buttondown[i];
-		
+
 		joy_buttonstate.buttondown[i] = newstate;
-		
+
 		// NOTE: This can cause a reentrant call of IN_Commands, via SCR_ModalMessage when confirming a new game.
-		IN_JoyKeyEvent(oldstate, newstate, IN_KeyForControllerButton((SDL_GameControllerButton)i), &joy_buttontimer[i]);
+		IN_JoyKeyEvent (oldstate, newstate, IN_KeyForControllerButton ((SDL_GameControllerButton) i), &joy_buttontimer[i]);
 	}
-	
+
 	for (i = 0; i < SDL_CONTROLLER_AXIS_MAX; i++)
 	{
-		newaxisstate.axisvalue[i] = SDL_GameControllerGetAxis(joy_active_controller, (SDL_GameControllerAxis)i) / 32768.0f;
+		newaxisstate.axisvalue[i] = SDL_GameControllerGetAxis (joy_active_controller, (SDL_GameControllerAxis) i) / 32768.0f;
 	}
-	
+
 	// emit emulated arrow keys so the analog sticks can be used in the menu
 	if (key_dest != key_game)
 	{
-		IN_JoyKeyEvent(joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTX] < -stickthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTX] < -stickthreshold, K_LEFTARROW, &joy_emulatedkeytimer[0]);
-		IN_JoyKeyEvent(joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTX] > stickthreshold,  newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTX] > stickthreshold, K_RIGHTARROW, &joy_emulatedkeytimer[1]);
-		IN_JoyKeyEvent(joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTY] < -stickthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTY] < -stickthreshold, K_UPARROW, &joy_emulatedkeytimer[2]);
-		IN_JoyKeyEvent(joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTY] > stickthreshold,  newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTY] > stickthreshold, K_DOWNARROW, &joy_emulatedkeytimer[3]);
-		IN_JoyKeyEvent(joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTX] < -stickthreshold,newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTX] < -stickthreshold, K_LEFTARROW, &joy_emulatedkeytimer[4]);
-		IN_JoyKeyEvent(joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTX] > stickthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTX] > stickthreshold, K_RIGHTARROW, &joy_emulatedkeytimer[5]);
-		IN_JoyKeyEvent(joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTY] < -stickthreshold,newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTY] < -stickthreshold, K_UPARROW, &joy_emulatedkeytimer[6]);
-		IN_JoyKeyEvent(joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTY] > stickthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTY] > stickthreshold, K_DOWNARROW, &joy_emulatedkeytimer[7]);
+		IN_JoyKeyEvent (joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTX] < -stickthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTX] < -stickthreshold, K_LEFTARROW, &joy_emulatedkeytimer[0]);
+		IN_JoyKeyEvent (joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTX] > stickthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTX] > stickthreshold, K_RIGHTARROW, &joy_emulatedkeytimer[1]);
+		IN_JoyKeyEvent (joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTY] < -stickthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTY] < -stickthreshold, K_UPARROW, &joy_emulatedkeytimer[2]);
+		IN_JoyKeyEvent (joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTY] > stickthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTY] > stickthreshold, K_DOWNARROW, &joy_emulatedkeytimer[3]);
+		IN_JoyKeyEvent (joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTX] < -stickthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTX] < -stickthreshold, K_LEFTARROW, &joy_emulatedkeytimer[4]);
+		IN_JoyKeyEvent (joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTX] > stickthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTX] > stickthreshold, K_RIGHTARROW, &joy_emulatedkeytimer[5]);
+		IN_JoyKeyEvent (joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTY] < -stickthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTY] < -stickthreshold, K_UPARROW, &joy_emulatedkeytimer[6]);
+		IN_JoyKeyEvent (joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTY] > stickthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTY] > stickthreshold, K_DOWNARROW, &joy_emulatedkeytimer[7]);
 	}
-	
+
 	// emit emulated keys for the analog triggers
-	IN_JoyKeyEvent(joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_TRIGGERLEFT] > triggerthreshold,  newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_TRIGGERLEFT] > triggerthreshold, K_LTRIGGER, &joy_emulatedkeytimer[8]);
-	IN_JoyKeyEvent(joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_TRIGGERRIGHT] > triggerthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_TRIGGERRIGHT] > triggerthreshold, K_RTRIGGER, &joy_emulatedkeytimer[9]);
-	
+	IN_JoyKeyEvent (joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_TRIGGERLEFT] > triggerthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_TRIGGERLEFT] > triggerthreshold, K_LTRIGGER, &joy_emulatedkeytimer[8]);
+	IN_JoyKeyEvent (joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_TRIGGERRIGHT] > triggerthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_TRIGGERRIGHT] > triggerthreshold, K_RTRIGGER, &joy_emulatedkeytimer[9]);
+
 	joy_axisstate = newaxisstate;
 #endif
 }
@@ -654,28 +652,28 @@ void IN_JoyMove (usercmd_t *cmd)
 
 	if (!joy_enable.value)
 		return;
-	
+
 	if (!joy_active_controller)
 		return;
-	
+
 	moveRaw.x = joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTX];
 	moveRaw.y = joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTY];
 	lookRaw.x = joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTX];
 	lookRaw.y = joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTY];
-	
+
 	if (joy_swapmovelook.value)
 	{
 		joyaxis_t temp = moveRaw;
 		moveRaw = lookRaw;
 		lookRaw = temp;
 	}
-	
-	moveDeadzone = IN_ApplyDeadzone(moveRaw, joy_deadzone.value);
-	lookDeadzone = IN_ApplyDeadzone(lookRaw, joy_deadzone.value);
 
-	moveEased = IN_ApplyMoveEasing(moveDeadzone, joy_exponent_move.value);
-	lookEased = IN_ApplyEasing(lookDeadzone, joy_exponent.value);
-	
+	moveDeadzone = IN_ApplyDeadzone (moveRaw, joy_deadzone.value);
+	lookDeadzone = IN_ApplyDeadzone (lookRaw, joy_deadzone.value);
+
+	moveEased = IN_ApplyMoveEasing (moveDeadzone, joy_exponent_move.value);
+	lookEased = IN_ApplyEasing (lookDeadzone, joy_exponent.value);
+
 	if ((in_speed.state & 1) ^ (cl_alwaysrun.value != 0.0))
 		speed = cl_movespeedkey.value;
 	else
@@ -688,7 +686,7 @@ void IN_JoyMove (usercmd_t *cmd)
 	cl.viewangles[PITCH] += lookEased.y * joy_sensitivity_pitch.value * (joy_invert.value ? -1.0 : 1.0) * host_frametime;
 
 	if (lookEased.x != 0 || lookEased.y != 0)
-		V_StopPitchDrift();
+		V_StopPitchDrift ();
 
 	/* johnfitz -- variable pitch clamping */
 	if (cl.viewangles[PITCH] > cl_maxpitch.value)
@@ -698,7 +696,7 @@ void IN_JoyMove (usercmd_t *cmd)
 #endif
 }
 
-void IN_MouseMove(usercmd_t *cmd)
+void IN_MouseMove (usercmd_t *cmd)
 {
 	int		dmx, dmy;
 
@@ -708,7 +706,7 @@ void IN_MouseMove(usercmd_t *cmd)
 	total_dx = 0;
 	total_dy = 0;
 
-	if ( (in_strafe.state & 1) || (lookstrafe.value && (in_mlook.state & 1) ))
+	if ((in_strafe.state & 1) || (lookstrafe.value && (in_mlook.state & 1)))
 		cmd->sidemove += m_side.value * dmx;
 	else
 		cl.viewangles[YAW] -= m_yaw.value * dmx;
@@ -719,7 +717,7 @@ void IN_MouseMove(usercmd_t *cmd)
 			V_StopPitchDrift ();
 	}
 
-	if ( (in_mlook.state & 1) && !(in_strafe.state & 1))
+	if ((in_mlook.state & 1) && !(in_strafe.state & 1))
 	{
 		cl.viewangles[PITCH] += m_pitch.value * dmy;
 		/* johnfitz -- variable pitch clamping */
@@ -737,10 +735,10 @@ void IN_MouseMove(usercmd_t *cmd)
 	}
 }
 
-void IN_Move(usercmd_t *cmd)
+void IN_Move (usercmd_t *cmd)
 {
-	IN_JoyMove(cmd);
-	IN_MouseMove(cmd);
+	IN_JoyMove (cmd);
+	IN_MouseMove (cmd);
 }
 
 void IN_ClearStates (void)
@@ -749,33 +747,33 @@ void IN_ClearStates (void)
 
 void IN_UpdateInputMode (void)
 {
-	qboolean want_textmode = Key_TextEntry();
+	qboolean want_textmode = Key_TextEntry ();
 	if (textmode != want_textmode)
 	{
 		textmode = want_textmode;
 #if !defined(USE_SDL2)
-		SDL_EnableUNICODE(textmode);
+		SDL_EnableUNICODE (textmode);
 		if (in_debugkeys.value)
-			Con_Printf("SDL_EnableUNICODE %d time: %g\n", textmode, Sys_DoubleTime());
+			Con_Printf ("SDL_EnableUNICODE %d time: %g\n", textmode, Sys_DoubleTime ());
 #else
 		if (textmode)
 		{
-			SDL_StartTextInput();
+			SDL_StartTextInput ();
 			if (in_debugkeys.value)
-				Con_Printf("SDL_StartTextInput time: %g\n", Sys_DoubleTime());
+				Con_Printf ("SDL_StartTextInput time: %g\n", Sys_DoubleTime ());
 		}
 		else
 		{
-			SDL_StopTextInput();
+			SDL_StopTextInput ();
 			if (in_debugkeys.value)
-				Con_Printf("SDL_StopTextInput time: %g\n", Sys_DoubleTime());
+				Con_Printf ("SDL_StopTextInput time: %g\n", Sys_DoubleTime ());
 		}
 #endif
 	}
 }
 
 #if !defined(USE_SDL2)
-static inline int IN_SDL_KeysymToQuakeKey(SDLKey sym)
+static inline int IN_SDL_KeysymToQuakeKey (SDLKey sym)
 {
 	if (sym > SDLK_SPACE && sym < SDLK_DELETE)
 		return sym;
@@ -851,7 +849,7 @@ static inline int IN_SDL_KeysymToQuakeKey(SDLKey sym)
 #endif
 
 #if defined(USE_SDL2)
-static inline int IN_SDL2_ScancodeToQuakeKey(SDL_Scancode scancode)
+static inline int IN_SDL2_ScancodeToQuakeKey (SDL_Scancode scancode)
 {
 	switch (scancode)
 	{
@@ -974,27 +972,27 @@ static inline int IN_SDL2_ScancodeToQuakeKey(SDL_Scancode scancode)
 #endif
 
 #if defined(USE_SDL2)
-static void IN_DebugTextEvent(SDL_Event *event)
+static void IN_DebugTextEvent (SDL_Event *event)
 {
-	Con_Printf ("SDL_TEXTINPUT '%s' time: %g\n", event->text.text, Sys_DoubleTime());
+	Con_Printf ("SDL_TEXTINPUT '%s' time: %g\n", event->text.text, Sys_DoubleTime ());
 }
 #endif
 
-static void IN_DebugKeyEvent(SDL_Event *event)
+static void IN_DebugKeyEvent (SDL_Event *event)
 {
 	const char *eventtype = (event->key.state == SDL_PRESSED) ? "SDL_KEYDOWN" : "SDL_KEYUP";
 #if defined(USE_SDL2)
 	Con_Printf ("%s scancode: '%s' keycode: '%s' time: %g\n",
 		eventtype,
-		SDL_GetScancodeName(event->key.keysym.scancode),
-		SDL_GetKeyName(event->key.keysym.sym),
-		Sys_DoubleTime());
+		SDL_GetScancodeName (event->key.keysym.scancode),
+		SDL_GetKeyName (event->key.keysym.sym),
+		Sys_DoubleTime ());
 #else
 	Con_Printf ("%s sym: '%s' unicode: %04x time: %g\n",
 		eventtype,
-		SDL_GetKeyName(event->key.keysym.sym),
-		(int)event->key.keysym.unicode,
-		Sys_DoubleTime());
+		SDL_GetKeyName (event->key.keysym.sym),
+		(int) event->key.keysym.unicode,
+		Sys_DoubleTime ());
 #endif
 }
 
@@ -1004,38 +1002,38 @@ void IN_SendKeyEvents (void)
 	int key;
 	qboolean down;
 
-	while (SDL_PollEvent(&event))
+	while (SDL_PollEvent (&event))
 	{
 		switch (event.type)
 		{
 #if defined(USE_SDL2)
 		case SDL_WINDOWEVENT:
 			if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
-				S_UnblockSound();
+				S_UnblockSound ();
 			else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
-				S_BlockSound();
+				S_BlockSound ();
 			break;
 #else
 		case SDL_ACTIVEEVENT:
-			if (event.active.state & (SDL_APPINPUTFOCUS|SDL_APPACTIVE))
+			if (event.active.state & (SDL_APPINPUTFOCUS | SDL_APPACTIVE))
 			{
 				if (event.active.gain)
-					S_UnblockSound();
-				else	S_BlockSound();
+					S_UnblockSound ();
+				else	S_BlockSound ();
 			}
 			break;
 #endif
 #if defined(USE_SDL2)
 		case SDL_TEXTINPUT:
 			if (in_debugkeys.value)
-				IN_DebugTextEvent(&event);
+				IN_DebugTextEvent (&event);
 
-		// SDL2: We use SDL_TEXTINPUT for typing in the console / chat.
-		// SDL2 uses the local keyboard layout and handles modifiers
-		// (shift for uppercase, etc.) for us.
+			// SDL2: We use SDL_TEXTINPUT for typing in the console / chat.
+			// SDL2 uses the local keyboard layout and handles modifiers
+			// (shift for uppercase, etc.) for us.
 			{
 				unsigned char *ch;
-				for (ch = (unsigned char *)event.text.text; *ch; ch++)
+				for (ch = (unsigned char *) event.text.text; *ch; ch++)
 					if ((*ch & ~0x7F) == 0)
 						Char_Event (*ch);
 			}
@@ -1046,14 +1044,14 @@ void IN_SendKeyEvents (void)
 			down = (event.key.state == SDL_PRESSED);
 
 			if (in_debugkeys.value)
-				IN_DebugKeyEvent(&event);
+				IN_DebugKeyEvent (&event);
 
 #if defined(USE_SDL2)
-		// SDL2: we interpret the keyboard as the US layout, so keybindings
-		// are based on key position, not the label on the key cap.
-			key = IN_SDL2_ScancodeToQuakeKey(event.key.keysym.scancode);
+			// SDL2: we interpret the keyboard as the US layout, so keybindings
+			// are based on key position, not the label on the key cap.
+			key = IN_SDL2_ScancodeToQuakeKey (event.key.keysym.scancode);
 #else
-			key = IN_SDL_KeysymToQuakeKey(event.key.keysym.sym);
+			key = IN_SDL_KeysymToQuakeKey (event.key.keysym.sym);
 #endif
 
 			Key_Event (key, down);
@@ -1067,66 +1065,66 @@ void IN_SendKeyEvents (void)
 		case SDL_MOUSEBUTTONDOWN:
 		case SDL_MOUSEBUTTONUP:
 			if (event.button.button < 1 ||
-			    event.button.button > sizeof(buttonremap) / sizeof(buttonremap[0]))
+				event.button.button > sizeof (buttonremap) / sizeof (buttonremap[0]))
 			{
 				Con_Printf ("Ignored event for mouse button %d\n",
-							event.button.button);
+					event.button.button);
 				break;
 			}
-			Key_Event(buttonremap[event.button.button - 1], event.button.state == SDL_PRESSED);
+			Key_Event (buttonremap[event.button.button - 1], event.button.state == SDL_PRESSED);
 			break;
 
 #if defined(USE_SDL2)
 		case SDL_MOUSEWHEEL:
 			if (event.wheel.y > 0)
 			{
-				Key_Event(K_MWHEELUP, true);
-				Key_Event(K_MWHEELUP, false);
+				Key_Event (K_MWHEELUP, true);
+				Key_Event (K_MWHEELUP, false);
 			}
 			else if (event.wheel.y < 0)
 			{
-				Key_Event(K_MWHEELDOWN, true);
-				Key_Event(K_MWHEELDOWN, false);
+				Key_Event (K_MWHEELDOWN, true);
+				Key_Event (K_MWHEELDOWN, false);
 			}
 			break;
 #endif
 
 		case SDL_MOUSEMOTION:
-			IN_MouseMotion(event.motion.xrel, event.motion.yrel);
+			IN_MouseMotion (event.motion.xrel, event.motion.yrel);
 			break;
 
 #if defined(USE_SDL2)
 		case SDL_CONTROLLERDEVICEADDED:
 			if (joy_active_instaceid == -1)
 			{
-				joy_active_controller = SDL_GameControllerOpen(event.cdevice.which);
+				joy_active_controller = SDL_GameControllerOpen (event.cdevice.which);
 				if (joy_active_controller == NULL)
-					Con_DPrintf("Couldn't open game controller\n");
+					Con_DPrintf ("Couldn't open game controller\n");
 				else
 				{
 					SDL_Joystick *joy;
-					joy = SDL_GameControllerGetJoystick(joy_active_controller);
-					joy_active_instaceid = SDL_JoystickInstanceID(joy);
+					joy = SDL_GameControllerGetJoystick (joy_active_controller);
+					joy_active_instaceid = SDL_JoystickInstanceID (joy);
 				}
 			}
 			else
-				Con_DPrintf("Ignoring SDL_CONTROLLERDEVICEADDED\n");
+				Con_DPrintf ("Ignoring SDL_CONTROLLERDEVICEADDED\n");
 			break;
 		case SDL_CONTROLLERDEVICEREMOVED:
 			if (joy_active_instaceid != -1 && event.cdevice.which == joy_active_instaceid)
 			{
-				SDL_GameControllerClose(joy_active_controller);
+				SDL_GameControllerClose (joy_active_controller);
 				joy_active_controller = NULL;
 				joy_active_instaceid = -1;
 			}
 			else
-				Con_DPrintf("Ignoring SDL_CONTROLLERDEVICEREMOVED\n");
+				Con_DPrintf ("Ignoring SDL_CONTROLLERDEVICEREMOVED\n");
 			break;
 		case SDL_CONTROLLERDEVICEREMAPPED:
-			Con_DPrintf("Ignoring SDL_CONTROLLERDEVICEREMAPPED\n");
+			Con_DPrintf ("Ignoring SDL_CONTROLLERDEVICEREMAPPED\n");
 			break;
 #endif
-				
+
 		case SDL_QUIT:
 			CL_Disconnect ();
 			Sys_Quit ();

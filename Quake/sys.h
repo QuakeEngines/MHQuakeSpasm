@@ -38,7 +38,7 @@ int Sys_FileOpenWrite (const char *path);
 void Sys_FileClose (int handle);
 void Sys_FileSeek (int handle, int position);
 int Sys_FileRead (int handle, void *dest, int count);
-int Sys_FileWrite (int handle,const void *data, int count);
+int Sys_FileWrite (int handle, const void *data, int count);
 int Sys_FileTime (const char *path);
 void Sys_mkdir (const char *path);
 
@@ -46,14 +46,14 @@ void Sys_mkdir (const char *path);
 // system IO
 //
 FUNC_NORETURN void Sys_Quit (void);
-FUNC_NORETURN void Sys_Error (const char *error, ...) FUNC_PRINTF(1,2);
+FUNC_NORETURN void Sys_Error (const char *error, ...) FUNC_PRINTF (1, 2);
 // an error will cause the entire program to exit
 #ifdef __WATCOMC__
 #pragma aux Sys_Error aborts;
 #pragma aux Sys_Quit aborts;
 #endif
 
-void Sys_Printf (const char *fmt, ...) FUNC_PRINTF(1,2);
+void Sys_Printf (const char *fmt, ...) FUNC_PRINTF (1, 2);
 // send text to the console
 
 double Sys_DoubleTime (void);

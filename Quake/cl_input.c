@@ -63,11 +63,11 @@ int			in_impulse;
 void KeyDown (kbutton_t *b)
 {
 	int		k;
-	const char	*c;
+	const char *c;
 
-	c = Cmd_Argv(1);
+	c = Cmd_Argv (1);
 	if (c[0])
-		k = atoi(c);
+		k = atoi (c);
 	else
 		k = -1;		// typed manually at the console for continuous down
 
@@ -92,11 +92,11 @@ void KeyDown (kbutton_t *b)
 void KeyUp (kbutton_t *b)
 {
 	int		k;
-	const char	*c;
+	const char *c;
 
-	c = Cmd_Argv(1);
+	c = Cmd_Argv (1);
 	if (c[0])
-		k = atoi(c);
+		k = atoi (c);
 	else
 	{ // typed manually at the console, assume for unsticking, so clear all
 		b->down[0] = b->down[1] = 0;
@@ -119,49 +119,50 @@ void KeyUp (kbutton_t *b)
 	b->state |= 4; 		// impulse up
 }
 
-void IN_KLookDown (void) {KeyDown(&in_klook);}
-void IN_KLookUp (void) {KeyUp(&in_klook);}
-void IN_MLookDown (void) {KeyDown(&in_mlook);}
-void IN_MLookUp (void) {
-	KeyUp(&in_mlook);
-	if ( !(in_mlook.state&1) &&  lookspring.value)
-		V_StartPitchDrift();
+void IN_KLookDown (void) { KeyDown (&in_klook); }
+void IN_KLookUp (void) { KeyUp (&in_klook); }
+void IN_MLookDown (void) { KeyDown (&in_mlook); }
+void IN_MLookUp (void)
+{
+	KeyUp (&in_mlook);
+	if (!(in_mlook.state & 1) && lookspring.value)
+		V_StartPitchDrift ();
 }
-void IN_UpDown(void) {KeyDown(&in_up);}
-void IN_UpUp(void) {KeyUp(&in_up);}
-void IN_DownDown(void) {KeyDown(&in_down);}
-void IN_DownUp(void) {KeyUp(&in_down);}
-void IN_LeftDown(void) {KeyDown(&in_left);}
-void IN_LeftUp(void) {KeyUp(&in_left);}
-void IN_RightDown(void) {KeyDown(&in_right);}
-void IN_RightUp(void) {KeyUp(&in_right);}
-void IN_ForwardDown(void) {KeyDown(&in_forward);}
-void IN_ForwardUp(void) {KeyUp(&in_forward);}
-void IN_BackDown(void) {KeyDown(&in_back);}
-void IN_BackUp(void) {KeyUp(&in_back);}
-void IN_LookupDown(void) {KeyDown(&in_lookup);}
-void IN_LookupUp(void) {KeyUp(&in_lookup);}
-void IN_LookdownDown(void) {KeyDown(&in_lookdown);}
-void IN_LookdownUp(void) {KeyUp(&in_lookdown);}
-void IN_MoveleftDown(void) {KeyDown(&in_moveleft);}
-void IN_MoveleftUp(void) {KeyUp(&in_moveleft);}
-void IN_MoverightDown(void) {KeyDown(&in_moveright);}
-void IN_MoverightUp(void) {KeyUp(&in_moveright);}
+void IN_UpDown (void) { KeyDown (&in_up); }
+void IN_UpUp (void) { KeyUp (&in_up); }
+void IN_DownDown (void) { KeyDown (&in_down); }
+void IN_DownUp (void) { KeyUp (&in_down); }
+void IN_LeftDown (void) { KeyDown (&in_left); }
+void IN_LeftUp (void) { KeyUp (&in_left); }
+void IN_RightDown (void) { KeyDown (&in_right); }
+void IN_RightUp (void) { KeyUp (&in_right); }
+void IN_ForwardDown (void) { KeyDown (&in_forward); }
+void IN_ForwardUp (void) { KeyUp (&in_forward); }
+void IN_BackDown (void) { KeyDown (&in_back); }
+void IN_BackUp (void) { KeyUp (&in_back); }
+void IN_LookupDown (void) { KeyDown (&in_lookup); }
+void IN_LookupUp (void) { KeyUp (&in_lookup); }
+void IN_LookdownDown (void) { KeyDown (&in_lookdown); }
+void IN_LookdownUp (void) { KeyUp (&in_lookdown); }
+void IN_MoveleftDown (void) { KeyDown (&in_moveleft); }
+void IN_MoveleftUp (void) { KeyUp (&in_moveleft); }
+void IN_MoverightDown (void) { KeyDown (&in_moveright); }
+void IN_MoverightUp (void) { KeyUp (&in_moveright); }
 
-void IN_SpeedDown(void) {KeyDown(&in_speed);}
-void IN_SpeedUp(void) {KeyUp(&in_speed);}
-void IN_StrafeDown(void) {KeyDown(&in_strafe);}
-void IN_StrafeUp(void) {KeyUp(&in_strafe);}
+void IN_SpeedDown (void) { KeyDown (&in_speed); }
+void IN_SpeedUp (void) { KeyUp (&in_speed); }
+void IN_StrafeDown (void) { KeyDown (&in_strafe); }
+void IN_StrafeUp (void) { KeyUp (&in_strafe); }
 
-void IN_AttackDown(void) {KeyDown(&in_attack);}
-void IN_AttackUp(void) {KeyUp(&in_attack);}
+void IN_AttackDown (void) { KeyDown (&in_attack); }
+void IN_AttackUp (void) { KeyUp (&in_attack); }
 
-void IN_UseDown (void) {KeyDown(&in_use);}
-void IN_UseUp (void) {KeyUp(&in_use);}
-void IN_JumpDown (void) {KeyDown(&in_jump);}
-void IN_JumpUp (void) {KeyUp(&in_jump);}
+void IN_UseDown (void) { KeyDown (&in_use); }
+void IN_UseUp (void) { KeyUp (&in_use); }
+void IN_JumpDown (void) { KeyDown (&in_jump); }
+void IN_JumpUp (void) { KeyUp (&in_jump); }
 
-void IN_Impulse (void) {in_impulse=Q_atoi(Cmd_Argv(1));}
+void IN_Impulse (void) { in_impulse = Q_atoi (Cmd_Argv (1)); }
 
 /*
 ===============
@@ -220,19 +221,19 @@ float CL_KeyState (kbutton_t *key)
 
 //==========================================================================
 
-cvar_t	cl_upspeed = {"cl_upspeed","200",CVAR_NONE};
-cvar_t	cl_forwardspeed = {"cl_forwardspeed","200", CVAR_ARCHIVE};
-cvar_t	cl_backspeed = {"cl_backspeed","200", CVAR_ARCHIVE};
-cvar_t	cl_sidespeed = {"cl_sidespeed","350",CVAR_NONE};
+cvar_t	cl_upspeed = { "cl_upspeed", "200", CVAR_NONE };
+cvar_t	cl_forwardspeed = { "cl_forwardspeed", "200", CVAR_ARCHIVE };
+cvar_t	cl_backspeed = { "cl_backspeed", "200", CVAR_ARCHIVE };
+cvar_t	cl_sidespeed = { "cl_sidespeed", "350", CVAR_NONE };
 
-cvar_t	cl_movespeedkey = {"cl_movespeedkey","2.0",CVAR_NONE};
+cvar_t	cl_movespeedkey = { "cl_movespeedkey", "2.0", CVAR_NONE };
 
-cvar_t	cl_yawspeed = {"cl_yawspeed","140",CVAR_NONE};
-cvar_t	cl_pitchspeed = {"cl_pitchspeed","150",CVAR_NONE};
+cvar_t	cl_yawspeed = { "cl_yawspeed", "140", CVAR_NONE };
+cvar_t	cl_pitchspeed = { "cl_pitchspeed", "150", CVAR_NONE };
 
-cvar_t	cl_anglespeedkey = {"cl_anglespeedkey","1.5",CVAR_NONE};
+cvar_t	cl_anglespeedkey = { "cl_anglespeedkey", "1.5", CVAR_NONE };
 
-cvar_t	cl_alwaysrun = {"cl_alwaysrun","0",CVAR_ARCHIVE}; // QuakeSpasm -- new always run
+cvar_t	cl_alwaysrun = { "cl_alwaysrun", "0", CVAR_ARCHIVE }; // QuakeSpasm -- new always run
 
 /*
 ================
@@ -253,22 +254,22 @@ void CL_AdjustAngles (void)
 
 	if (!(in_strafe.state & 1))
 	{
-		cl.viewangles[YAW] -= speed*cl_yawspeed.value*CL_KeyState (&in_right);
-		cl.viewangles[YAW] += speed*cl_yawspeed.value*CL_KeyState (&in_left);
-		cl.viewangles[YAW] = anglemod(cl.viewangles[YAW]);
+		cl.viewangles[YAW] -= speed * cl_yawspeed.value * CL_KeyState (&in_right);
+		cl.viewangles[YAW] += speed * cl_yawspeed.value * CL_KeyState (&in_left);
+		cl.viewangles[YAW] = anglemod (cl.viewangles[YAW]);
 	}
 	if (in_klook.state & 1)
 	{
 		V_StopPitchDrift ();
-		cl.viewangles[PITCH] -= speed*cl_pitchspeed.value * CL_KeyState (&in_forward);
-		cl.viewangles[PITCH] += speed*cl_pitchspeed.value * CL_KeyState (&in_back);
+		cl.viewangles[PITCH] -= speed * cl_pitchspeed.value * CL_KeyState (&in_forward);
+		cl.viewangles[PITCH] += speed * cl_pitchspeed.value * CL_KeyState (&in_back);
 	}
 
 	up = CL_KeyState (&in_lookup);
-	down = CL_KeyState(&in_lookdown);
+	down = CL_KeyState (&in_lookdown);
 
-	cl.viewangles[PITCH] -= speed*cl_pitchspeed.value * up;
-	cl.viewangles[PITCH] += speed*cl_pitchspeed.value * down;
+	cl.viewangles[PITCH] -= speed * cl_pitchspeed.value * up;
+	cl.viewangles[PITCH] += speed * cl_pitchspeed.value * down;
 
 	if (up || down)
 		V_StopPitchDrift ();
@@ -300,7 +301,7 @@ void CL_BaseMove (usercmd_t *cmd)
 
 	CL_AdjustAngles ();
 
-	Q_memset (cmd, 0, sizeof(*cmd));
+	Q_memset (cmd, 0, sizeof (*cmd));
 
 	if (in_strafe.state & 1)
 	{
@@ -314,15 +315,15 @@ void CL_BaseMove (usercmd_t *cmd)
 	cmd->upmove += cl_upspeed.value * CL_KeyState (&in_up);
 	cmd->upmove -= cl_upspeed.value * CL_KeyState (&in_down);
 
-	if (! (in_klook.state & 1) )
+	if (!(in_klook.state & 1))
 	{
 		cmd->forwardmove += cl_forwardspeed.value * CL_KeyState (&in_forward);
 		cmd->forwardmove -= cl_backspeed.value * CL_KeyState (&in_back);
 	}
 
-//
-// adjust for speed key
-//
+	//
+	// adjust for speed key
+	//
 	if ((in_speed.state & 1) ^ (cl_alwaysrun.value != 0.0))
 	{
 		cmd->forwardmove *= cl_movespeedkey.value;
@@ -350,31 +351,31 @@ void CL_SendMove (const usercmd_t *cmd)
 
 	cl.cmd = *cmd;
 
-//
-// send the movement message
-//
+	//
+	// send the movement message
+	//
 	MSG_WriteByte (&buf, clc_move);
 
 	MSG_WriteFloat (&buf, cl.mtime[0]);	// so server can get ping times
 
-	for (i=0 ; i<3 ; i++)
+	for (i = 0; i < 3; i++)
 		//johnfitz -- 16-bit angles for PROTOCOL_FITZQUAKE
 		if (cl.protocol == PROTOCOL_NETQUAKE)
 			MSG_WriteAngle (&buf, cl.viewangles[i], cl.protocolflags);
 		else
 			MSG_WriteAngle16 (&buf, cl.viewangles[i], cl.protocolflags);
-		//johnfitz
+	//johnfitz
 
 	MSG_WriteShort (&buf, cmd->forwardmove);
 	MSG_WriteShort (&buf, cmd->sidemove);
 	MSG_WriteShort (&buf, cmd->upmove);
 
-//
-// send button bits
-//
+	//
+	// send button bits
+	//
 	bits = 0;
 
-	if ( in_attack.state & 3 )
+	if (in_attack.state & 3)
 		bits |= 1;
 	in_attack.state &= ~2;
 
@@ -387,16 +388,16 @@ void CL_SendMove (const usercmd_t *cmd)
 	MSG_WriteByte (&buf, in_impulse);
 	in_impulse = 0;
 
-//
-// deliver the message
-//
+	//
+	// deliver the message
+	//
 	if (cls.demoplayback)
 		return;
 
-//
-// allways dump the first two message, because it may contain leftover inputs
-// from the last level
-//
+	//
+	// allways dump the first two message, because it may contain leftover inputs
+	// from the last level
+	//
 	if (++cl.movemessages <= 2)
 		return;
 
@@ -414,18 +415,18 @@ CL_InitInput
 */
 void CL_InitInput (void)
 {
-	Cmd_AddCommand ("+moveup",IN_UpDown);
-	Cmd_AddCommand ("-moveup",IN_UpUp);
-	Cmd_AddCommand ("+movedown",IN_DownDown);
-	Cmd_AddCommand ("-movedown",IN_DownUp);
-	Cmd_AddCommand ("+left",IN_LeftDown);
-	Cmd_AddCommand ("-left",IN_LeftUp);
-	Cmd_AddCommand ("+right",IN_RightDown);
-	Cmd_AddCommand ("-right",IN_RightUp);
-	Cmd_AddCommand ("+forward",IN_ForwardDown);
-	Cmd_AddCommand ("-forward",IN_ForwardUp);
-	Cmd_AddCommand ("+back",IN_BackDown);
-	Cmd_AddCommand ("-back",IN_BackUp);
+	Cmd_AddCommand ("+moveup", IN_UpDown);
+	Cmd_AddCommand ("-moveup", IN_UpUp);
+	Cmd_AddCommand ("+movedown", IN_DownDown);
+	Cmd_AddCommand ("-movedown", IN_DownUp);
+	Cmd_AddCommand ("+left", IN_LeftDown);
+	Cmd_AddCommand ("-left", IN_LeftUp);
+	Cmd_AddCommand ("+right", IN_RightDown);
+	Cmd_AddCommand ("-right", IN_RightUp);
+	Cmd_AddCommand ("+forward", IN_ForwardDown);
+	Cmd_AddCommand ("-forward", IN_ForwardUp);
+	Cmd_AddCommand ("+back", IN_BackDown);
+	Cmd_AddCommand ("-back", IN_BackUp);
 	Cmd_AddCommand ("+lookup", IN_LookupDown);
 	Cmd_AddCommand ("-lookup", IN_LookupUp);
 	Cmd_AddCommand ("+lookdown", IN_LookdownDown);

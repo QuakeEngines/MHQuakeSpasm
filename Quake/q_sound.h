@@ -26,21 +26,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define __QUAKE_SOUND__
 
 /* !!! if this is changed, it must be changed in asm_i386.h too !!! */
-typedef struct
-{
+typedef struct {
 	int left;
 	int right;
 } portable_samplepair_t;
 
-typedef struct sfx_s
-{
+typedef struct sfx_s {
 	char	name[MAX_QPATH];
 	cache_user_t	cache;
 } sfx_t;
 
 /* !!! if this is changed, it must be changed in asm_i386.h too !!! */
-typedef struct
-{
+typedef struct {
 	int	length;
 	int	loopstart;
 	int	speed;
@@ -49,8 +46,7 @@ typedef struct
 	byte	data[1];	/* variable sized	*/
 } sfxcache_t;
 
-typedef struct
-{
+typedef struct {
 	int	channels;
 	int	samples;		/* mono samples in buffer			*/
 	int	submission_chunk;	/* don't mix less than this #			*/
@@ -58,13 +54,12 @@ typedef struct
 	int	samplebits;
 	int	signed8;		/* device opened for S8 format? (e.g. Amiga AHI) */
 	int	speed;
-	unsigned char	*buffer;
+	unsigned char *buffer;
 } dma_t;
 
 /* !!! if this is changed, it must be changed in asm_i386.h too !!! */
-typedef struct
-{
-	sfx_t	*sfx;			/* sfx number					*/
+typedef struct {
+	sfx_t *sfx;			/* sfx number					*/
 	int	leftvol;		/* 0-255 volume					*/
 	int	rightvol;		/* 0-255 volume					*/
 	int	end;			/* end time in global paintsamples		*/
@@ -79,8 +74,7 @@ typedef struct
 
 #define WAV_FORMAT_PCM	1
 
-typedef struct
-{
+typedef struct {
 	int	rate;
 	int	width;
 	int	channels;
@@ -95,7 +89,7 @@ void S_Shutdown (void);
 void S_StartSound (int entnum, int entchannel, sfx_t *sfx, vec3_t origin, float fvol, float attenuation);
 void S_StaticSound (sfx_t *sfx, vec3_t origin, float vol, float attenuation);
 void S_StopSound (int entnum, int entchannel);
-void S_StopAllSounds(qboolean clear);
+void S_StopAllSounds (qboolean clear);
 void S_ClearBuffer (void);
 void S_Update (vec3_t origin, vec3_t forward, vec3_t right, vec3_t up);
 void S_ExtraUpdate (void);
@@ -118,29 +112,29 @@ channel_t *SND_PickChannel (int entnum, int entchannel);
 void SND_Spatialize (channel_t *ch);
 
 /* music stream support */
-void S_RawSamples(int samples, int rate, int width, int channels, byte * data, float volume);
-				/* Expects data in signed 16 bit, or unsigned 8 bit format. */
+void S_RawSamples (int samples, int rate, int width, int channels, byte *data, float volume);
+/* Expects data in signed 16 bit, or unsigned 8 bit format. */
 
 /* initializes cycling through a DMA buffer and returns information on it */
-qboolean SNDDMA_Init(dma_t *dma);
+qboolean SNDDMA_Init (dma_t *dma);
 
 /* gets the current DMA position */
-int SNDDMA_GetDMAPos(void);
+int SNDDMA_GetDMAPos (void);
 
 /* shutdown the DMA xfer. */
-void SNDDMA_Shutdown(void);
+void SNDDMA_Shutdown (void);
 
 /* validates & locks the dma buffer */
-void SNDDMA_LockBuffer(void);
+void SNDDMA_LockBuffer (void);
 
 /* unlocks the dma buffer / sends sound to the device */
-void SNDDMA_Submit(void);
+void SNDDMA_Submit (void);
 
 /* blocks sound output upon window focus loss */
-void SNDDMA_BlockSound(void);
+void SNDDMA_BlockSound (void);
 
 /* unblocks the output upon window focus gain */
-void SNDDMA_UnblockSound(void);
+void SNDDMA_UnblockSound (void);
 
 /* ====================================================================
  * User-setable variables
@@ -156,7 +150,7 @@ extern	channel_t	snd_channels[MAX_CHANNELS];
  * MAX_DYNAMIC_CHANNELS + NUM_AMBIENTS to total_channels = static sounds
  */
 
-extern	volatile dma_t	*shm;
+extern	volatile dma_t *shm;
 
 extern	int		total_channels;
 extern	int		soundtime;

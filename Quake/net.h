@@ -49,10 +49,10 @@ extern	int		net_activeconnections;
 void	NET_Init (void);
 void	NET_Shutdown (void);
 
-struct qsocket_s	*NET_CheckNewConnections (void);
+struct qsocket_s *NET_CheckNewConnections (void);
 // returns a new connection number if there is one pending, else -1
 
-struct qsocket_s	*NET_Connect (const char *host);
+struct qsocket_s *NET_Connect (const char *host);
 // called by client to connect to a host.  Returns -1 if not able to
 
 double NET_QSocketGetTime (const struct qsocket_s *sock);
@@ -76,7 +76,7 @@ int	NET_SendUnreliableMessage (struct qsocket_s *sock, sizebuf_t *data);
 // returns 1 if the message was sent properly
 // returns -1 if the connection died
 
-int	NET_SendToAll(sizebuf_t *data, double blocktime);
+int	NET_SendToAll (sizebuf_t *data, double blocktime);
 // This is a reliable *blocking* send to all attached clients.
 
 void	NET_Close (struct qsocket_s *sock);
