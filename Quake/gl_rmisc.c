@@ -61,15 +61,6 @@ static void GL_Overbright_f (cvar_t *var)
 	R_RebuildAllLightmaps ();
 }
 
-/*
-====================
-GL_Fullbrights_f -- johnfitz
-====================
-*/
-static void GL_Fullbrights_f (cvar_t *var)
-{
-	TexMgr_ReloadNobrightImages ();
-}
 
 /*
 ====================
@@ -221,7 +212,7 @@ void R_Init (void)
 	Cvar_RegisterVariable (&gl_farclip);
 	Cvar_RegisterVariable (&gl_fullbrights);
 	Cvar_RegisterVariable (&gl_overbright);
-	Cvar_SetCallback (&gl_fullbrights, GL_Fullbrights_f);
+	Cvar_SetCallback (&gl_fullbrights, NULL);
 	Cvar_SetCallback (&gl_overbright, GL_Overbright_f);
 	Cvar_RegisterVariable (&gl_overbright_models);
 	Cvar_RegisterVariable (&r_lerpmodels);

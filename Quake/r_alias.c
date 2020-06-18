@@ -181,7 +181,7 @@ void GLAlias_CreateShaders (void)
 		"	if (UseOverbright)\n"
 		"		result.rgb *= 2.0;\n"
 		"	if (UseFullbrightTex)\n"
-		"		result += texture2D(FullbrightTex, gl_TexCoord[0].xy);\n"
+		"		result = max (result, texture2D(FullbrightTex, gl_TexCoord[0].xy));\n"
 		"	result = clamp(result, 0.0, 1.0);\n"
 		"	float fog = exp(-gl_Fog.density * gl_Fog.density * FogFragCoord * FogFragCoord);\n"
 		"	fog = clamp(fog, 0.0, 1.0);\n"

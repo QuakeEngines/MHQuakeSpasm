@@ -35,7 +35,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define TEXPREF_OVERWRITE		0x0040	// overwrite existing same-name texture
 #define TEXPREF_NOPICMIP		0x0080	// always load full-sized
 #define TEXPREF_FULLBRIGHT		0x0100	// use fullbright mask palette
-#define TEXPREF_NOBRIGHT		0x0200	// use nobright mask palette
 #define TEXPREF_CONCHARS		0x0400	// use conchars palette
 #define TEXPREF_WARPIMAGE		0x0800	// resize this texture when warpimagesize changes
 
@@ -92,7 +91,6 @@ gltexture_t *TexMgr_LoadImage (qmodel_t *owner, const char *name, int width, int
 	byte *data, const char *source_file, src_offset_t source_offset, unsigned flags);
 void TexMgr_ReloadImage (gltexture_t *glt, int shirt, int pants);
 void TexMgr_ReloadImages (void);
-void TexMgr_ReloadNobrightImages (void);
 
 int TexMgr_Pad (int s);
 int TexMgr_SafeTextureSize (int s);

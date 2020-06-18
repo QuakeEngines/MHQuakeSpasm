@@ -1115,14 +1115,6 @@ static void TexMgr_LoadImage8 (gltexture_t *glt, byte *data)
 			usepal = d_8to24table_fbright;
 		padbyte = 0;
 	}
-	else if (glt->flags & TEXPREF_NOBRIGHT && gl_fullbrights.value)
-	{
-		if (glt->flags & TEXPREF_ALPHA)
-			usepal = d_8to24table_nobright_fence;
-		else
-			usepal = d_8to24table_nobright;
-		padbyte = 0;
-	}
 	else if (glt->flags & TEXPREF_CONCHARS)
 	{
 		usepal = d_8to24table_conchars;
@@ -1417,19 +1409,6 @@ void TexMgr_ReloadImages (void)
 	in_reload_images = false;
 }
 
-/*
-================
-TexMgr_ReloadNobrightImages -- reloads all texture that were loaded with the nobright palette.  called when gl_fullbrights changes
-================
-*/
-void TexMgr_ReloadNobrightImages (void)
-{
-	gltexture_t *glt;
-
-	for (glt = active_gltextures; glt; glt = glt->next)
-		if (glt->flags & TEXPREF_NOBRIGHT)
-			TexMgr_ReloadImage (glt, -1, -1);
-}
 
 /*
 ================================================================================
