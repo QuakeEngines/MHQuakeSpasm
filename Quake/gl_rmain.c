@@ -92,7 +92,6 @@ cvar_t	gl_overbright = { "gl_overbright", "1", CVAR_ARCHIVE };
 cvar_t	gl_overbright_models = { "gl_overbright_models", "1", CVAR_ARCHIVE };
 cvar_t	r_oldskyleaf = { "r_oldskyleaf", "0", CVAR_NONE };
 cvar_t	r_drawworld = { "r_drawworld", "1", CVAR_NONE };
-cvar_t	r_showtris = { "r_showtris", "0", CVAR_NONE };
 cvar_t	r_showbboxes = { "r_showbboxes", "0", CVAR_NONE };
 cvar_t	r_lerpmodels = { "r_lerpmodels", "1", CVAR_NONE };
 cvar_t	r_lerpmove = { "r_lerpmove", "1", CVAR_NONE };
@@ -741,7 +740,6 @@ void R_ShowBoundingBoxes (void)
 
 	glDisable (GL_DEPTH_TEST);
 	glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
-	GL_PolygonOffset (OFFSET_SHOWTRIS);
 	glDisable (GL_TEXTURE_2D);
 	glDisable (GL_CULL_FACE);
 	glColor3f (1, 1, 1);
@@ -777,87 +775,6 @@ void R_ShowBoundingBoxes (void)
 	glEnable (GL_DEPTH_TEST);
 }
 
-/*
-================
-R_ShowTris -- johnfitz
-================
-*/
-void R_ShowTris (void)
-{
-	extern cvar_t r_particles;
-	int i;
-
-	if (r_showtris.value < 1 || r_showtris.value > 2 || cl.maxclients > 1)
-		return;
-
-	if (r_showtris.value == 1)
-		glDisable (GL_DEPTH_TEST);
-	glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
-	GL_PolygonOffset (OFFSET_SHOWTRIS);
-	glDisable (GL_TEXTURE_2D);
-	glColor3f (1, 1, 1);
-	//	glEnable (GL_BLEND);
-	//	glBlendFunc (GL_ONE, GL_ONE);
-
-	if (r_drawworld.value)
-	{
-		R_DrawWorld_ShowTris ();
-	}
-
-	if (r_drawentities.value)
-	{
-		for (i = 0; i < cl_numvisedicts; i++)
-		{
-			currententity = cl_visedicts[i];
-
-			if (currententity == &cl_entities[cl.viewentity]) // chasecam
-				currententity->angles[0] *= 0.3;
-
-			switch (currententity->model->type)
-			{
-			case mod_brush:
-				R_DrawBrushModel_ShowTris (currententity);
-				break;
-			case mod_alias:
-				R_DrawAliasModel_ShowTris (currententity);
-				break;
-			case mod_sprite:
-				R_DrawSpriteModel (currententity);
-				break;
-			default:
-				break;
-			}
-		}
-
-		// viewmodel
-		currententity = &cl.viewent;
-		if (r_drawviewmodel.value
-			&& !chase_active.value
-			&& cl.stats[STAT_HEALTH] > 0
-			&& !(cl.items & IT_INVISIBILITY)
-			&& currententity->model
-			&& currententity->model->type == mod_alias)
-		{
-			glDepthRange (0, 0.3);
-			R_DrawAliasModel_ShowTris (currententity);
-			glDepthRange (0, 1);
-		}
-	}
-
-	if (r_particles.value)
-	{
-		R_DrawParticles_ShowTris ();
-	}
-
-	//	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//	glDisable (GL_BLEND);
-	glColor3f (1, 1, 1);
-	glEnable (GL_TEXTURE_2D);
-	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-	GL_PolygonOffset (OFFSET_NONE);
-	if (r_showtris.value == 1)
-		glEnable (GL_DEPTH_TEST);
-}
 
 /*
 ================
@@ -971,8 +888,6 @@ void R_RenderScene (void)
 	Fog_DisableGFog (); // johnfitz
 
 	R_DrawViewModel (); // johnfitz -- moved here from R_RenderView
-
-	R_ShowTris (); // johnfitz
 
 	R_ShowBoundingBoxes (); // johnfitz
 }

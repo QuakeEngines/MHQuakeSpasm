@@ -93,9 +93,10 @@ void DrawGLPoly (glpoly_t *p)
 	glEnd ();
 }
 
+
 /*
 ================
-DrawGLTriangleFan -- johnfitz -- like DrawGLPoly but for r_showtris
+DrawGLTriangleFan
 ================
 */
 void DrawGLTriangleFan (glpoly_t *p)
@@ -140,6 +141,7 @@ void R_DrawBrushModel (entity_t *e)
 	clmodel = e->model;
 
 	VectorSubtract (r_refdef.vieworg, e->origin, modelorg);
+
 	if (e->angles[0] || e->angles[1] || e->angles[2])
 	{
 		vec3_t	temp;
@@ -154,14 +156,12 @@ void R_DrawBrushModel (entity_t *e)
 
 	psurf = &clmodel->surfaces[clmodel->firstmodelsurface];
 
-	// calculate dynamic lighting for bmodel if it's not an
-	// instanced model
+	// calculate dynamic lighting for bmodel if it's not an instanced model
 	if (clmodel->firstmodelsurface != 0 && !gl_flashblend.value)
 	{
 		for (k = 0; k < MAX_DLIGHTS; k++)
 		{
-			if ((cl_dlights[k].die < cl.time) ||
-				(!cl_dlights[k].radius))
+			if ((cl_dlights[k].die < cl.time) || (!cl_dlights[k].radius))
 				continue;
 
 			// MH - dlight transform
@@ -169,35 +169,39 @@ void R_DrawBrushModel (entity_t *e)
 			cl_dlights[k].transformed[1] = cl_dlights[k].origin[1] - e->origin[1];
 			cl_dlights[k].transformed[2] = cl_dlights[k].origin[2] - e->origin[2];
 
-			R_MarkLights (&cl_dlights[k], k,
-				clmodel->nodes + clmodel->hulls[0].firstclipnode);
+			R_MarkLights (&cl_dlights[k], k, clmodel->nodes + clmodel->hulls[0].firstclipnode);
 		}
 	}
 
 	glPushMatrix ();
 	e->angles[0] = -e->angles[0];	// stupid quake bug
+
 	if (gl_zfix.value)
 	{
 		e->origin[0] -= DIST_EPSILON;
 		e->origin[1] -= DIST_EPSILON;
 		e->origin[2] -= DIST_EPSILON;
 	}
+
 	R_RotateForEntity (e->origin, e->angles);
+
 	if (gl_zfix.value)
 	{
 		e->origin[0] += DIST_EPSILON;
 		e->origin[1] += DIST_EPSILON;
 		e->origin[2] += DIST_EPSILON;
 	}
+
 	e->angles[0] = -e->angles[0];	// stupid quake bug
 
 	R_ClearTextureChains (clmodel, chain_model);
+
 	for (i = 0; i < clmodel->nummodelsurfaces; i++, psurf++)
 	{
 		pplane = psurf->plane;
 		dot = DotProduct (modelorg, pplane->normal) - pplane->dist;
-		if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) ||
-			(!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
+
+		if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) || (!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
 		{
 			R_ChainSurface (psurf, chain_model);
 			rs_brushpolys++;
@@ -210,61 +214,6 @@ void R_DrawBrushModel (entity_t *e)
 	glPopMatrix ();
 }
 
-/*
-=================
-R_DrawBrushModel_ShowTris -- johnfitz
-=================
-*/
-void R_DrawBrushModel_ShowTris (entity_t *e)
-{
-	int			i;
-	msurface_t *psurf;
-	float		dot;
-	mplane_t *pplane;
-	qmodel_t *clmodel;
-
-	if (R_CullModelForEntity (e))
-		return;
-
-	currententity = e;
-	clmodel = e->model;
-
-	VectorSubtract (r_refdef.vieworg, e->origin, modelorg);
-	if (e->angles[0] || e->angles[1] || e->angles[2])
-	{
-		vec3_t	temp;
-		vec3_t	forward, right, up;
-
-		VectorCopy (modelorg, temp);
-		AngleVectors (e->angles, forward, right, up);
-		modelorg[0] = DotProduct (temp, forward);
-		modelorg[1] = -DotProduct (temp, right);
-		modelorg[2] = DotProduct (temp, up);
-	}
-
-	psurf = &clmodel->surfaces[clmodel->firstmodelsurface];
-
-	glPushMatrix ();
-	e->angles[0] = -e->angles[0];	// stupid quake bug
-	R_RotateForEntity (e->origin, e->angles);
-	e->angles[0] = -e->angles[0];	// stupid quake bug
-
-	//
-	// draw it
-	//
-	for (i = 0; i < clmodel->nummodelsurfaces; i++, psurf++)
-	{
-		pplane = psurf->plane;
-		dot = DotProduct (modelorg, pplane->normal) - pplane->dist;
-		if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) ||
-			(!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
-		{
-			DrawGLTriangleFan (psurf->polys);
-		}
-	}
-
-	glPopMatrix ();
-}
 
 /*
 =============================================================

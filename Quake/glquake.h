@@ -233,8 +233,9 @@ extern	qboolean	gl_texture_NPOT;
 #define OFFSET_NONE 0
 #define OFFSET_DECAL -1
 #define OFFSET_FOG -2
-#define OFFSET_SHOWTRIS -3
+
 void GL_PolygonOffset (int);
+
 
 // johnfitz -- GL_EXT_texture_env_combine
 // the values for GL_ARB_ are identical
@@ -368,11 +369,6 @@ int R_LightPoint (vec3_t p);
 void R_BuildLightMap (msurface_t *surf, byte *dest, int stride);
 void R_RenderDynamicLightmaps (msurface_t *surf);
 void R_UploadLightmaps (void);
-
-void R_DrawWorld_ShowTris (void);
-void R_DrawBrushModel_ShowTris (entity_t *e);
-void R_DrawAliasModel_ShowTris (entity_t *e);
-void R_DrawParticles_ShowTris (void);
 
 GLint GL_GetUniformLocation (GLuint *programPtr, const char *name);
 GLuint GL_CreateProgram (const GLchar *vertSource, const GLchar *fragSource, int numbindings, const glsl_attrib_binding_t *bindings);

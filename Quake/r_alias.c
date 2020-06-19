@@ -52,7 +52,7 @@ float	entalpha; // johnfitz
 
 qboolean	overbright; // johnfitz
 
-qboolean shading = true; // johnfitz -- if false, disable vertex shading for various reasons (fullbright, r_lightmap, showtris, etc)
+qboolean shading = true; // johnfitz -- if false, disable vertex shading for various reasons (fullbright, r_lightmap, etc)
 
 // johnfitz -- struct for passing lerp information to drawing functions
 typedef struct {
@@ -956,35 +956,6 @@ void GL_DrawAliasShadow (entity_t *e)
 	glDepthMask (GL_TRUE);
 
 	// clean up
-	glPopMatrix ();
-}
-
-/*
-=================
-R_DrawAliasModel_ShowTris -- johnfitz
-=================
-*/
-void R_DrawAliasModel_ShowTris (entity_t *e)
-{
-	aliashdr_t *paliashdr;
-	lerpdata_t	lerpdata;
-
-	if (R_CullModelForEntity (e))
-		return;
-
-	paliashdr = (aliashdr_t *) Mod_Extradata (e->model);
-	R_SetupAliasFrame (paliashdr, e->frame, &lerpdata);
-	R_SetupEntityTransform (e, &lerpdata);
-
-	glPushMatrix ();
-	R_RotateForEntity (lerpdata.origin, lerpdata.angles);
-	glTranslatef (paliashdr->scale_origin[0], paliashdr->scale_origin[1], paliashdr->scale_origin[2]);
-	glScalef (paliashdr->scale[0], paliashdr->scale[1], paliashdr->scale[2]);
-
-	shading = false;
-	glColor3f (1, 1, 1);
-	GL_DrawAliasFrame (paliashdr, lerpdata);
-
 	glPopMatrix ();
 }
 

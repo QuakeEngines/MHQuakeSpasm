@@ -37,7 +37,6 @@ extern cvar_t gl_overbright_models;
 extern cvar_t r_waterwarp;
 extern cvar_t r_oldskyleaf;
 extern cvar_t r_drawworld;
-extern cvar_t r_showtris;
 extern cvar_t r_showbboxes;
 extern cvar_t r_lerpmodels;
 extern cvar_t r_lerpmove;
@@ -203,7 +202,6 @@ void R_Init (void)
 	Cvar_RegisterVariable (&r_oldskyleaf);
 	Cvar_SetCallback (&r_oldskyleaf, R_VisChanged);
 	Cvar_RegisterVariable (&r_drawworld);
-	Cvar_RegisterVariable (&r_showtris);
 	Cvar_RegisterVariable (&r_showbboxes);
 	Cvar_RegisterVariable (&gl_farclip);
 	Cvar_RegisterVariable (&gl_fullbrights);

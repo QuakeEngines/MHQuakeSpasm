@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern cvar_t gl_fullbrights, r_drawflat, gl_overbright, r_oldskyleaf, r_showtris; // johnfitz
+extern cvar_t gl_fullbrights, r_drawflat, gl_overbright, r_oldskyleaf; // johnfitz
 
 byte *SV_FatPVS (vec3_t org, qmodel_t *worldmodel);
 
@@ -300,32 +300,6 @@ static void R_EndTransparentDrawing (float entalpha)
 	}
 }
 
-/*
-================
-R_DrawTextureChains_ShowTris -- johnfitz
-================
-*/
-void R_DrawTextureChains_ShowTris (qmodel_t *model, texchain_t chain)
-{
-	int			i;
-	msurface_t *s;
-	texture_t *t;
-
-	for (i = 0; i < model->numtextures; i++)
-	{
-		t = model->textures[i];
-		if (!t)
-			continue;
-
-		for (s = t->texturechains[chain]; s; s = s->texturechain)
-		{
-			if (!s->culled)
-			{
-				DrawGLTriangleFan (s->polys);
-			}
-		}
-	}
-}
 
 /*
 ================
@@ -968,19 +942,6 @@ void R_DrawWorld_Water (void)
 		return;
 
 	R_DrawTextureChains_Water (cl.worldmodel, NULL, chain_world);
-}
-
-/*
-=============
-R_DrawWorld_ShowTris -- ericw -- moved from R_DrawTextureChains_ShowTris, which is no longer specific to the world.
-=============
-*/
-void R_DrawWorld_ShowTris (void)
-{
-	if (!r_drawworld_cheatsafe)
-		return;
-
-	R_DrawTextureChains_ShowTris (cl.worldmodel, chain_world);
 }
 
 

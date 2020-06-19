@@ -151,7 +151,7 @@ void R_DrawSpriteModel (entity_t *e)
 	GL_Bind (frame->gltexture);
 
 	glEnable (GL_ALPHA_TEST);
-	glBegin (GL_TRIANGLE_FAN); // was GL_QUADS, but changed to support r_showtris
+	glBegin (GL_QUADS);
 
 	glTexCoord2f (0, frame->tmax);
 	VectorMA (e->origin, frame->down, s_up, point);
