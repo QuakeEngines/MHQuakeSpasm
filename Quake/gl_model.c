@@ -401,7 +401,7 @@ Mod_LoadTextures
 */
 void Mod_LoadTextures (lump_t *l)
 {
-	int		i, j, pixels, num, maxanim, altmax;
+	int		i, j, num, maxanim, altmax;
 	miptex_t *mt;
 	texture_t *tx, *tx2;
 	texture_t *anims[10];
@@ -436,7 +436,10 @@ void Mod_LoadTextures (lump_t *l)
 	loadmodel->numtextures = nummiptex + 2; // johnfitz -- need 2 dummy texture chains for missing textures
 	loadmodel->textures = (texture_t **) Hunk_AllocName (loadmodel->numtextures * sizeof (*loadmodel->textures), loadname);
 
-	for (i = 0; i < nummiptex; i++)
+	// alloc this once-only for faster loading; we don't need to store off (byte *) (tx + 1) in GL so save a bunch of memory by not doing so
+	tx = (texture_t *) Hunk_AllocName (sizeof (texture_t) * nummiptex, loadname);
+
+	for (i = 0; i < nummiptex; i++, tx++)
 	{
 		m->dataofs[i] = LittleLong (m->dataofs[i]);
 
@@ -453,8 +456,6 @@ void Mod_LoadTextures (lump_t *l)
 		if ((mt->width & 15) || (mt->height & 15))
 			Sys_Error ("Texture %s is not 16 aligned", mt->name);
 
-		pixels = mt->width * mt->height / 64 * 85;
-		tx = (texture_t *) Hunk_AllocName (sizeof (texture_t) + pixels, loadname);
 		loadmodel->textures[i] = tx;
 
 		memcpy (tx->name, mt->name, sizeof (tx->name));
@@ -463,19 +464,6 @@ void Mod_LoadTextures (lump_t *l)
 
 		for (j = 0; j < MIPLEVELS; j++)
 			tx->offsets[j] = mt->offsets[j] + sizeof (texture_t) - sizeof (miptex_t);
-
-		// the pixels immediately follow the structures
-		// ericw -- check for pixels extending past the end of the lump.
-		// appears in the wild; e.g. jam2_tronyn.bsp (func_mapjam2),
-		// kellbase1.bsp (quoth), and can lead to a segfault if we read past
-		// the end of the .bsp file buffer
-		if (((byte *) (mt + 1) + pixels) > (mod_base + l->fileofs + l->filelen))
-		{
-			Con_DPrintf ("Texture %s extends past end of lump\n", mt->name);
-			pixels = q_max (0, (mod_base + l->fileofs + l->filelen) - (byte *) (mt + 1));
-		}
-
-		memcpy (tx + 1, mt + 1, pixels);
 
 		tx->fullbright = NULL; // johnfitz
 
@@ -486,15 +474,14 @@ void Mod_LoadTextures (lump_t *l)
 		if (!isDedicated) // no texture uploading for dedicated server
 		{
 			if (!q_strncasecmp (tx->name, "sky", 3)) // sky texture // also note -- was Q_strncmp, changed to match qbsp
-				Sky_LoadTexture (tx);
+				Sky_LoadTexture (tx, (byte *) (mt + 1));
 			else if (tx->name[0] == '*') // warping texture
 			{
 				// external textures -- first look in "textures/mapname/" then look in "textures/"
 				COM_StripExtension (loadmodel->name + 5, mapname, sizeof (mapname));
 				q_snprintf (filename, sizeof (filename), "textures/%s/#%s", mapname, tx->name + 1); // this also replaces the '*' with a '#'
-				data = Image_LoadImage (filename, &fwidth, &fheight);
 
-				if (!data)
+				if ((data = Image_LoadImage (filename, &fwidth, &fheight)) == NULL)
 				{
 					q_snprintf (filename, sizeof (filename), "textures/#%s", tx->name + 1);
 					data = Image_LoadImage (filename, &fwidth, &fheight);
@@ -510,7 +497,7 @@ void Mod_LoadTextures (lump_t *l)
 				{
 					q_snprintf (texturename, sizeof (texturename), "%s:%s", loadmodel->name, tx->name);
 					offset = (src_offset_t) (mt + 1) - (src_offset_t) mod_base;
-					tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (tx + 1), loadmodel->name, offset, TEXPREF_MIPMAP);
+					tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (mt + 1), loadmodel->name, offset, TEXPREF_MIPMAP);
 				}
 			}
 			else // regular texture
@@ -557,15 +544,15 @@ void Mod_LoadTextures (lump_t *l)
 					q_snprintf (texturename, sizeof (texturename), "%s:%s", loadmodel->name, tx->name);
 					offset = (src_offset_t) (mt + 1) - (src_offset_t) mod_base;
 
-					if (Mod_CheckFullbrights ((byte *) (tx + 1), pixels))
+					if (Mod_CheckFullbrights ((byte *) (mt + 1), tx->width * tx->height))
 					{
-						tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (tx + 1), loadmodel->name, offset, TEXPREF_MIPMAP | extraflags);
+						tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (mt + 1), loadmodel->name, offset, TEXPREF_MIPMAP | extraflags);
 						q_snprintf (texturename, sizeof (texturename), "%s:%s_glow", loadmodel->name, tx->name);
-						tx->fullbright = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (tx + 1), loadmodel->name, offset, TEXPREF_MIPMAP | TEXPREF_FULLBRIGHT | extraflags);
+						tx->fullbright = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (mt + 1), loadmodel->name, offset, TEXPREF_MIPMAP | TEXPREF_FULLBRIGHT | extraflags);
 					}
 					else
 					{
-						tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (tx + 1), loadmodel->name, offset, TEXPREF_MIPMAP | extraflags);
+						tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (mt + 1), loadmodel->name, offset, TEXPREF_MIPMAP | extraflags);
 					}
 				}
 			}

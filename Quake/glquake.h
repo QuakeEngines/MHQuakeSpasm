@@ -389,7 +389,7 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr);
 void Sky_Init (void);
 void Sky_DrawSky (void);
 void Sky_NewMap (void);
-void Sky_LoadTexture (texture_t *mt);
+void Sky_LoadTexture (texture_t *mt, byte *src);
 void Sky_LoadSkyBox (const char *name);
 
 void TexMgr_RecalcWarpImageSize (void);

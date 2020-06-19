@@ -1445,7 +1445,7 @@ is defined in VA_NUM_BUFFS.
 FIXME: make this buffer size safe someday
 ============
 */
-#define	VA_NUM_BUFFS	4
+#define	VA_NUM_BUFFS	64
 #define	VA_BUFFERLEN	1024
 
 static char *get_va_buffer (void)
@@ -1458,10 +1458,9 @@ static char *get_va_buffer (void)
 
 char *va (const char *format, ...)
 {
-	va_list		argptr;
-	char *va_buf;
+	va_list	argptr;
+	char *va_buf = get_va_buffer ();
 
-	va_buf = get_va_buffer ();
 	va_start (argptr, format);
 	q_vsnprintf (va_buf, VA_BUFFERLEN, format, argptr);
 	va_end (argptr);

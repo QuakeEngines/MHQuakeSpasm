@@ -92,16 +92,13 @@ Sky_LoadTexture
 A sky texture is 256*128, with the left side being a masked overlay
 ==============
 */
-void Sky_LoadTexture (texture_t *mt)
+void Sky_LoadTexture (texture_t *mt, byte *src)
 {
 	char		texturename[64];
 	int			i, j, p, r, g, b, count;
-	byte *src;
 	static byte	front_data[128 * 128]; // FIXME: Hunk_Alloc
 	static byte	back_data[128 * 128]; // FIXME: Hunk_Alloc
 	unsigned *rgba;
-
-	src = (byte *) mt + mt->offsets[0];
 
 	// extract back layer and upload
 	for (i = 0; i < 128; i++)
@@ -125,6 +122,7 @@ void Sky_LoadTexture (texture_t *mt)
 
 	// calculate r_fastsky color based on average of all opaque foreground colors
 	r = g = b = count = 0;
+
 	for (i = 0; i < 128; i++)
 		for (j = 0; j < 128; j++)
 		{
@@ -138,6 +136,7 @@ void Sky_LoadTexture (texture_t *mt)
 				count++;
 			}
 		}
+
 	skyflatcolor[0] = (float) r / (count * 255);
 	skyflatcolor[1] = (float) g / (count * 255);
 	skyflatcolor[2] = (float) b / (count * 255);

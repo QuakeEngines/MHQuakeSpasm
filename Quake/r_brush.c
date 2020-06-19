@@ -222,7 +222,6 @@ void R_DrawBrushModel_ShowTris (entity_t *e)
 	float		dot;
 	mplane_t *pplane;
 	qmodel_t *clmodel;
-	glpoly_t *p;
 
 	if (R_CullModelForEntity (e))
 		return;
