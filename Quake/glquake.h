@@ -145,9 +145,6 @@ extern	cvar_t	gl_nocolors;
 
 extern	cvar_t	gl_playermip;
 
-extern	cvar_t	gl_subdivide_size;
-extern	float	load_subdivide_size; // johnfitz -- remember what subdivide_size value was when this map was loaded
-
 extern int		gl_stencilbits;
 
 // Multitexture
@@ -368,7 +365,6 @@ void R_RebuildAllLightmaps (void);
 
 int R_LightPoint (vec3_t p);
 
-void GL_SubdivideSurface (msurface_t *surf);
 void R_BuildLightMap (msurface_t *surf, byte *dest, int stride);
 void R_RenderDynamicLightmaps (msurface_t *surf);
 void R_UploadLightmaps (void);

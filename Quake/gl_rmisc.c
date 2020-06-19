@@ -34,8 +34,6 @@ extern cvar_t gl_fullbrights;
 extern cvar_t gl_farclip;
 extern cvar_t gl_overbright;
 extern cvar_t gl_overbright_models;
-extern cvar_t r_waterquality;
-extern cvar_t r_oldwater;
 extern cvar_t r_waterwarp;
 extern cvar_t r_oldskyleaf;
 extern cvar_t r_drawworld;
@@ -199,8 +197,6 @@ void R_Init (void)
 	Cvar_RegisterVariable (&r_stereodepth);
 	Cvar_RegisterVariable (&r_clearcolor);
 	Cvar_SetCallback (&r_clearcolor, R_SetClearColor_f);
-	Cvar_RegisterVariable (&r_waterquality);
-	Cvar_RegisterVariable (&r_oldwater);
 	Cvar_RegisterVariable (&r_waterwarp);
 	Cvar_RegisterVariable (&r_drawflat);
 	Cvar_RegisterVariable (&r_flatlightstyles);
@@ -398,9 +394,8 @@ void R_NewMap (void)
 	Sky_NewMap (); // johnfitz -- skybox in worldspawn
 	Fog_NewMap (); // johnfitz -- global fog in worldspawn
 	R_ParseWorldspawn (); // ericw -- wateralpha, lavaalpha, telealpha, slimealpha in worldspawn
-
-	load_subdivide_size = gl_subdivide_size.value; // johnfitz -- is this the right place to set this?
 }
+
 
 /*
 ====================

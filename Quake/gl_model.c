@@ -56,7 +56,6 @@ Mod_Init
 */
 void Mod_Init (void)
 {
-	Cvar_RegisterVariable (&gl_subdivide_size);
 	Cvar_RegisterVariable (&external_ents);
 
 	// johnfitz -- create notexture miptex
@@ -408,6 +407,7 @@ void Mod_LoadTextures (lump_t *l)
 	texture_t *anims[10];
 	texture_t *altanims[10];
 	dmiptexlump_t *m;
+
 	// johnfitz -- more variables
 	char		texturename[64];
 	int			nummiptex;
@@ -439,16 +439,20 @@ void Mod_LoadTextures (lump_t *l)
 	for (i = 0; i < nummiptex; i++)
 	{
 		m->dataofs[i] = LittleLong (m->dataofs[i]);
+
 		if (m->dataofs[i] == -1)
 			continue;
+
 		mt = (miptex_t *) ((byte *) m + m->dataofs[i]);
 		mt->width = LittleLong (mt->width);
 		mt->height = LittleLong (mt->height);
+
 		for (j = 0; j < MIPLEVELS; j++)
 			mt->offsets[j] = LittleLong (mt->offsets[j]);
 
 		if ((mt->width & 15) || (mt->height & 15))
 			Sys_Error ("Texture %s is not 16 aligned", mt->name);
+
 		pixels = mt->width * mt->height / 64 * 85;
 		tx = (texture_t *) Hunk_AllocName (sizeof (texture_t) + pixels, loadname);
 		loadmodel->textures[i] = tx;
@@ -456,10 +460,11 @@ void Mod_LoadTextures (lump_t *l)
 		memcpy (tx->name, mt->name, sizeof (tx->name));
 		tx->width = mt->width;
 		tx->height = mt->height;
+
 		for (j = 0; j < MIPLEVELS; j++)
 			tx->offsets[j] = mt->offsets[j] + sizeof (texture_t) - sizeof (miptex_t);
-		// the pixels immediately follow the structures
 
+		// the pixels immediately follow the structures
 		// ericw -- check for pixels extending past the end of the lump.
 		// appears in the wild; e.g. jam2_tronyn.bsp (func_mapjam2),
 		// kellbase1.bsp (quoth), and can lead to a segfault if we read past
@@ -469,11 +474,13 @@ void Mod_LoadTextures (lump_t *l)
 			Con_DPrintf ("Texture %s extends past end of lump\n", mt->name);
 			pixels = q_max (0, (mod_base + l->fileofs + l->filelen) - (byte *) (mt + 1));
 		}
+
 		memcpy (tx + 1, mt + 1, pixels);
 
-		tx->update_warp = false; // johnfitz
-		tx->warpimage = NULL; // johnfitz
 		tx->fullbright = NULL; // johnfitz
+
+		// MH - moving this outside to here
+		mark = Hunk_LowMark ();
 
 		// johnfitz -- lots of changes
 		if (!isDedicated) // no texture uploading for dedicated server
@@ -483,10 +490,10 @@ void Mod_LoadTextures (lump_t *l)
 			else if (tx->name[0] == '*') // warping texture
 			{
 				// external textures -- first look in "textures/mapname/" then look in "textures/"
-				mark = Hunk_LowMark ();
 				COM_StripExtension (loadmodel->name + 5, mapname, sizeof (mapname));
 				q_snprintf (filename, sizeof (filename), "textures/%s/#%s", mapname, tx->name + 1); // this also replaces the '*' with a '#'
 				data = Image_LoadImage (filename, &fwidth, &fheight);
+
 				if (!data)
 				{
 					q_snprintf (filename, sizeof (filename), "textures/#%s", tx->name + 1);
@@ -497,40 +504,29 @@ void Mod_LoadTextures (lump_t *l)
 				if (data) // load external image
 				{
 					q_strlcpy (texturename, filename, sizeof (texturename));
-					tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, fwidth, fheight,
-						SRC_RGBA, data, filename, 0, TEXPREF_NONE);
+					tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, fwidth, fheight, SRC_RGBA, data, filename, 0, TEXPREF_MIPMAP);
 				}
 				else // use the texture from the bsp file
 				{
 					q_snprintf (texturename, sizeof (texturename), "%s:%s", loadmodel->name, tx->name);
 					offset = (src_offset_t) (mt + 1) - (src_offset_t) mod_base;
-					tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height,
-						SRC_INDEXED, (byte *) (tx + 1), loadmodel->name, offset, TEXPREF_NONE);
+					tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (tx + 1), loadmodel->name, offset, TEXPREF_MIPMAP);
 				}
-
-				// now create the warpimage, using dummy data from the hunk to create the initial image
-				Hunk_Alloc (gl_warpimagesize * gl_warpimagesize * 4); // make sure hunk is big enough so we don't reach an illegal address
-				Hunk_FreeToLowMark (mark);
-				q_snprintf (texturename, sizeof (texturename), "%s_warp", texturename);
-				tx->warpimage = TexMgr_LoadImage (loadmodel, texturename, gl_warpimagesize,
-					gl_warpimagesize, SRC_RGBA, hunk_base, "", (src_offset_t) hunk_base, TEXPREF_NOPICMIP | TEXPREF_WARPIMAGE);
-				tx->update_warp = true;
 			}
 			else // regular texture
 			{
 				// ericw -- fence textures
-				int	extraflags;
+				int	extraflags = 0;
 
-				extraflags = 0;
 				if (tx->name[0] == '{')
 					extraflags |= TEXPREF_ALPHA;
 				// ericw
 
 				// external textures -- first look in "textures/mapname/" then look in "textures/"
-				mark = Hunk_LowMark ();
 				COM_StripExtension (loadmodel->name + 5, mapname, sizeof (mapname));
 				q_snprintf (filename, sizeof (filename), "textures/%s/%s", mapname, tx->name);
 				data = Image_LoadImage (filename, &fwidth, &fheight);
+
 				if (!data)
 				{
 					q_snprintf (filename, sizeof (filename), "textures/%s", tx->name);
@@ -540,13 +536,13 @@ void Mod_LoadTextures (lump_t *l)
 				// now load whatever we found
 				if (data) // load external image
 				{
-					tx->gltexture = TexMgr_LoadImage (loadmodel, filename, fwidth, fheight,
-						SRC_RGBA, data, filename, 0, TEXPREF_MIPMAP | extraflags);
+					tx->gltexture = TexMgr_LoadImage (loadmodel, filename, fwidth, fheight, SRC_RGBA, data, filename, 0, TEXPREF_MIPMAP | extraflags);
 
 					// now try to load glow/luma image from the same place
 					Hunk_FreeToLowMark (mark);
 					q_snprintf (filename2, sizeof (filename2), "%s_glow", filename);
 					data = Image_LoadImage (filename2, &fwidth, &fheight);
+
 					if (!data)
 					{
 						q_snprintf (filename2, sizeof (filename2), "%s_luma", filename);
@@ -554,30 +550,28 @@ void Mod_LoadTextures (lump_t *l)
 					}
 
 					if (data)
-						tx->fullbright = TexMgr_LoadImage (loadmodel, filename2, fwidth, fheight,
-							SRC_RGBA, data, filename, 0, TEXPREF_MIPMAP | extraflags);
+						tx->fullbright = TexMgr_LoadImage (loadmodel, filename2, fwidth, fheight, SRC_RGBA, data, filename, 0, TEXPREF_MIPMAP | extraflags);
 				}
 				else // use the texture from the bsp file
 				{
 					q_snprintf (texturename, sizeof (texturename), "%s:%s", loadmodel->name, tx->name);
 					offset = (src_offset_t) (mt + 1) - (src_offset_t) mod_base;
+
 					if (Mod_CheckFullbrights ((byte *) (tx + 1), pixels))
 					{
-						tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height,
-							SRC_INDEXED, (byte *) (tx + 1), loadmodel->name, offset, TEXPREF_MIPMAP | extraflags);
+						tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (tx + 1), loadmodel->name, offset, TEXPREF_MIPMAP | extraflags);
 						q_snprintf (texturename, sizeof (texturename), "%s:%s_glow", loadmodel->name, tx->name);
-						tx->fullbright = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height,
-							SRC_INDEXED, (byte *) (tx + 1), loadmodel->name, offset, TEXPREF_MIPMAP | TEXPREF_FULLBRIGHT | extraflags);
+						tx->fullbright = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (tx + 1), loadmodel->name, offset, TEXPREF_MIPMAP | TEXPREF_FULLBRIGHT | extraflags);
 					}
 					else
 					{
-						tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height,
-							SRC_INDEXED, (byte *) (tx + 1), loadmodel->name, offset, TEXPREF_MIPMAP | extraflags);
+						tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (tx + 1), loadmodel->name, offset, TEXPREF_MIPMAP | extraflags);
 					}
 				}
-				Hunk_FreeToLowMark (mark);
 			}
 		}
+
+		Hunk_FreeToLowMark (mark);
 		// johnfitz
 	}
 
@@ -1051,15 +1045,10 @@ void Mod_PolyForUnlitSurface (msurface_t *surf)
 	int			numverts, i, lindex;
 	float *vec;
 	glpoly_t *poly;
-	float		texscale;
-
-	if (surf->flags & (SURF_DRAWTURB | SURF_DRAWSKY))
-		texscale = (1.0 / 128.0); // warp animation repeats every 128
-	else
-		texscale = (1.0 / 32.0); // to match r_notexture_mip
 
 	// convert edges back to a normal polygon
 	numverts = 0;
+
 	for (i = 0; i < surf->numedges; i++)
 	{
 		lindex = loadmodel->surfedges[surf->firstedge + i];
@@ -1074,16 +1063,31 @@ void Mod_PolyForUnlitSurface (msurface_t *surf)
 
 	// create the poly
 	poly = (glpoly_t *) Hunk_Alloc (sizeof (glpoly_t) + (numverts - 4) * VERTEXSIZE * sizeof (float));
-	poly->next = NULL;
 	surf->polys = poly;
 	poly->numverts = numverts;
+
 	for (i = 0, vec = (float *) verts; i < numverts; i++, vec += 3)
 	{
 		VectorCopy (vec, poly->verts[i]);
-		poly->verts[i][3] = DotProduct (vec, surf->texinfo->vecs[0]) * texscale;
-		poly->verts[i][4] = DotProduct (vec, surf->texinfo->vecs[1]) * texscale;
+
+		if (surf->flags & SURF_DRAWTURB)
+		{
+			poly->verts[i][3] = DotProduct (vec, surf->texinfo->vecs[0]) * (1.0 / 64.0);
+			poly->verts[i][4] = DotProduct (vec, surf->texinfo->vecs[1]) * (1.0 / 64.0);
+		}
+		else if (surf->flags & SURF_DRAWSKY)
+		{
+			poly->verts[i][3] = DotProduct (vec, surf->texinfo->vecs[0]) * (1.0 / 128.0);
+			poly->verts[i][4] = DotProduct (vec, surf->texinfo->vecs[1]) * (1.0 / 128.0);
+		}
+		else
+		{
+			poly->verts[i][3] = DotProduct (vec, surf->texinfo->vecs[0]) * (1.0 / 32.0);
+			poly->verts[i][4] = DotProduct (vec, surf->texinfo->vecs[1]) * (1.0 / 32.0);
+		}
 	}
 }
+
 
 /*
 =================
@@ -1226,8 +1230,7 @@ void Mod_LoadFaces (lump_t *l, qboolean bsp2)
 				out->flags |= SURF_DRAWTELE;
 			else out->flags |= SURF_DRAWWATER;
 
-			Mod_PolyForUnlitSurface (out);
-			GL_SubdivideSurface (out);
+			Mod_PolyForUnlitSurface (out); // no more subdivision
 		}
 		else if (out->texinfo->texture->name[0] == '{') // ericw -- fence textures
 		{

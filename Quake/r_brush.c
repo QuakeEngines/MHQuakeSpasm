@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern cvar_t gl_fullbrights, r_drawflat, gl_overbright, r_oldwater; // johnfitz
+extern cvar_t gl_fullbrights, r_drawflat, gl_overbright; // johnfitz
 extern cvar_t gl_zfix; // QuakeSpasm z-fighting fix
 
 int		gl_lightmap_format;
@@ -260,11 +260,7 @@ void R_DrawBrushModel_ShowTris (entity_t *e)
 		if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) ||
 			(!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
 		{
-			if ((psurf->flags & SURF_DRAWTURB) && r_oldwater.value)
-				for (p = psurf->polys->next; p; p = p->next)
-					DrawGLTriangleFan (p);
-			else
-				DrawGLTriangleFan (psurf->polys);
+			DrawGLTriangleFan (psurf->polys);
 		}
 	}
 
@@ -459,7 +455,6 @@ void BuildSurfaceDisplayList (msurface_t *surf)
 
 	// draw texture
 	poly = (glpoly_t *) Hunk_Alloc (sizeof (glpoly_t) + (lnumverts - 4) * VERTEXSIZE * sizeof (float));
-	poly->next = surf->polys;
 	surf->polys = poly;
 	poly->numverts = lnumverts;
 

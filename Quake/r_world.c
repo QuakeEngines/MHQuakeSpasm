@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern cvar_t gl_fullbrights, r_drawflat, gl_overbright, r_oldwater, r_oldskyleaf, r_showtris; // johnfitz
+extern cvar_t gl_fullbrights, r_drawflat, gl_overbright, r_oldskyleaf, r_showtris; // johnfitz
 
 byte *SV_FatPVS (vec3_t org, qmodel_t *worldmodel);
 
@@ -224,8 +224,6 @@ void R_CullSurfaces (void)
 			{
 				s->culled = false;
 				rs_brushpolys++; // count wpolys here
-				if (s->texinfo->texture->warpimage)
-					s->texinfo->texture->update_warp = true;
 			}
 		}
 	}
@@ -312,7 +310,6 @@ void R_DrawTextureChains_ShowTris (qmodel_t *model, texchain_t chain)
 	int			i;
 	msurface_t *s;
 	texture_t *t;
-	glpoly_t *p;
 
 	for (i = 0; i < model->numtextures; i++)
 	{
@@ -320,22 +317,12 @@ void R_DrawTextureChains_ShowTris (qmodel_t *model, texchain_t chain)
 		if (!t)
 			continue;
 
-		if (r_oldwater.value && t->texturechains[chain] && (t->texturechains[chain]->flags & SURF_DRAWTURB))
+		for (s = t->texturechains[chain]; s; s = s->texturechain)
 		{
-			for (s = t->texturechains[chain]; s; s = s->texturechain)
-				if (!s->culled)
-					for (p = s->polys->next; p; p = p->next)
-					{
-						DrawGLTriangleFan (p);
-					}
-		}
-		else
-		{
-			for (s = t->texturechains[chain]; s; s = s->texturechain)
-				if (!s->culled)
-				{
-					DrawGLTriangleFan (s->polys);
-				}
+			if (!s->culled)
+			{
+				DrawGLTriangleFan (s->polys);
+			}
 		}
 	}
 }
@@ -350,7 +337,6 @@ void R_DrawTextureChains_Drawflat (qmodel_t *model, texchain_t chain)
 	int			i;
 	msurface_t *s;
 	texture_t *t;
-	glpoly_t *p;
 
 	for (i = 0; i < model->numtextures; i++)
 	{
@@ -358,30 +344,18 @@ void R_DrawTextureChains_Drawflat (qmodel_t *model, texchain_t chain)
 		if (!t)
 			continue;
 
-		if (r_oldwater.value && t->texturechains[chain] && (t->texturechains[chain]->flags & SURF_DRAWTURB))
+		for (s = t->texturechains[chain]; s; s = s->texturechain)
 		{
-			for (s = t->texturechains[chain]; s; s = s->texturechain)
-				if (!s->culled)
-					for (p = s->polys->next; p; p = p->next)
-					{
-						srand ((unsigned int) (uintptr_t) p);
-						glColor3f (rand () % 256 / 255.0, rand () % 256 / 255.0, rand () % 256 / 255.0);
-						DrawGLPoly (p);
-						rs_brushpasses++;
-					}
-		}
-		else
-		{
-			for (s = t->texturechains[chain]; s; s = s->texturechain)
-				if (!s->culled)
-				{
-					srand ((unsigned int) (uintptr_t) s->polys);
-					glColor3f (rand () % 256 / 255.0, rand () % 256 / 255.0, rand () % 256 / 255.0);
-					DrawGLPoly (s->polys);
-					rs_brushpasses++;
-				}
+			if (!s->culled)
+			{
+				srand ((unsigned int) (uintptr_t) s->polys);
+				glColor3f (rand () % 256 / 255.0, rand () % 256 / 255.0, rand () % 256 / 255.0);
+				DrawGLPoly (s->polys);
+				rs_brushpasses++;
+			}
 		}
 	}
+
 	glColor3f (1, 1, 1);
 	srand ((int) (cl.time * 1000));
 }
@@ -576,74 +550,42 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 	int			i;
 	msurface_t *s;
 	texture_t *t;
-	glpoly_t *p;
 	qboolean	bound;
 	float entalpha;
 
 	if (r_drawflat_cheatsafe || r_lightmap_cheatsafe) // ericw -- !r_drawworld_cheatsafe check moved to R_DrawWorld_Water ()
 		return;
 
-	if (r_oldwater.value)
+	for (i = 0; i < model->numtextures; i++)
 	{
-		for (i = 0; i < model->numtextures; i++)
-		{
-			t = model->textures[i];
-			if (!t || !t->texturechains[chain] || !(t->texturechains[chain]->flags & SURF_DRAWTURB))
-				continue;
-			bound = false;
-			entalpha = 1.0f;
-			for (s = t->texturechains[chain]; s; s = s->texturechain)
-				if (!s->culled)
-				{
-					if (!bound) // only bind once we are sure we need this texture
-					{
-						entalpha = GL_WaterAlphaForEntitySurface (ent, s);
-						R_BeginTransparentDrawing (entalpha);
-						GL_Bind (t->gltexture);
-						bound = true;
-					}
-					for (p = s->polys->next; p; p = p->next)
-					{
-						DrawWaterPoly (p);
-						rs_brushpasses++;
-					}
-				}
-			R_EndTransparentDrawing (entalpha);
-		}
-	}
-	else
-	{
-		for (i = 0; i < model->numtextures; i++)
-		{
-			t = model->textures[i];
-			if (!t || !t->texturechains[chain] || !(t->texturechains[chain]->flags & SURF_DRAWTURB))
-				continue;
-			bound = false;
-			entalpha = 1.0f;
-			for (s = t->texturechains[chain]; s; s = s->texturechain)
-				if (!s->culled)
-				{
-					if (!bound) // only bind once we are sure we need this texture
-					{
-						entalpha = GL_WaterAlphaForEntitySurface (ent, s);
-						R_BeginTransparentDrawing (entalpha);
-						GL_Bind (t->warpimage);
+		t = model->textures[i];
 
-						if (model != cl.worldmodel)
-						{
-							// ericw -- this is copied from R_DrawSequentialPoly.
-							// If the poly is not part of the world we have to
-							// set this flag
-							t->update_warp = true; // FIXME: one frame too late!
-						}
+		if (!t || !t->texturechains[chain] || !(t->texturechains[chain]->flags & SURF_DRAWTURB))
+			continue;
 
-						bound = true;
-					}
-					DrawGLPoly (s->polys);
-					rs_brushpasses++;
+		bound = false;
+		entalpha = 1.0f;
+
+		for (s = t->texturechains[chain]; s; s = s->texturechain)
+		{
+			if (!s->culled)
+			{
+				if (!bound) // only bind once we are sure we need this texture
+				{
+					entalpha = GL_WaterAlphaForEntitySurface (ent, s);
+
+					R_BeginTransparentDrawing (entalpha);
+					GL_Bind (t->gltexture);
+
+					bound = true;
 				}
-			R_EndTransparentDrawing (entalpha);
+
+				DrawGLPoly (s->polys);
+				rs_brushpasses++;
+			}
 		}
+
+		R_EndTransparentDrawing (entalpha);
 	}
 }
 
