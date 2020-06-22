@@ -160,7 +160,25 @@ static char	cwd[1024];
 // MH
 void Sys_SetWorkingDirectory (void)
 {
-	SetCurrentDirectory ("D:\\Quake\\MHQS");
+	char *testdirs[] = {
+		"D:\\Quake\\MHQS",
+		"C:\\Games\\MHQS",
+		NULL
+	};
+
+	for (int i = 0; ; i++)
+	{
+		FILE *f;
+
+		if (!testdirs[i]) break;
+
+		if ((f = fopen (va ("%s\\ID1\\PAK0.PAK", testdirs[i]), "rb")) != NULL)
+		{
+			fclose (f);
+			SetCurrentDirectory (testdirs[i]);
+			return;
+		}
+	}
 }
 
 
