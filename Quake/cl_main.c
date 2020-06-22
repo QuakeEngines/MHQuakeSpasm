@@ -423,9 +423,7 @@ void CL_RelinkEntities (void)
 
 	cl_numvisedicts = 0;
 
-	//
 	// interpolate player info
-	//
 	for (i = 0; i < 3; i++)
 		cl.velocity[i] = cl.mvelocity[1][i] +
 		frac * (cl.mvelocity[0][i] - cl.mvelocity[1][i]);
@@ -662,9 +660,7 @@ int CL_ReadFromServer (double frametime)
 
 	// johnfitz
 
-	//
 	// bring the links up to date
-	//
 	return 0;
 }
 

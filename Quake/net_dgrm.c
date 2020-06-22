@@ -821,9 +821,7 @@ void Datagram_Shutdown (void)
 {
 	int i;
 
-	//
 	// shutdown the lan drivers
-	//
 	for (i = 0; i < net_numlandrivers; i++)
 	{
 		if (net_landrivers[i].initialized)

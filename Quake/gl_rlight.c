@@ -36,7 +36,6 @@ void R_AnimateLight (void)
 {
 	int			i, j, k;
 
-	//
 	// light animations
 	// 'm' is normal light, 'a' is no light, 'z' is double bright
 	i = (int) (cl.time * 10);

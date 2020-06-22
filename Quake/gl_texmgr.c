@@ -558,9 +558,7 @@ void TexMgr_RecalcWarpImageSize (void)
 	gltexture_t *glt;
 	byte *dummy;
 
-	//
 	// find the new correct size
-	//
 	gl_warpimagesize = TexMgr_SafeTextureSize (512);
 
 	while (gl_warpimagesize > vid.width)
@@ -573,9 +571,7 @@ void TexMgr_RecalcWarpImageSize (void)
 	// to tx->source_width/source_height, which might not match oldsize.
 	// fixes: https://sourceforge.net/p/quakespasm/bugs/13/
 
-	//
 	// resize the textures in opengl
-	//
 	mark = Hunk_LowMark ();
 	dummy = (byte *) Hunk_Alloc (gl_warpimagesize * gl_warpimagesize * 4);
 
@@ -1268,9 +1264,8 @@ void TexMgr_ReloadImage (gltexture_t *glt, int shirt, int pants)
 	byte	translation[256];
 	byte *src, *dst, *data = NULL, *translated;
 	int	mark, size, i;
-	//
+
 	// get source data
-	//
 	mark = Hunk_LowMark ();
 
 	if (glt->source_file[0] && glt->source_offset)
@@ -1307,9 +1302,8 @@ invalid:
 
 	glt->width = glt->source_width;
 	glt->height = glt->source_height;
-	//
+
 	// apply shirt and pants colors
-	//
 	// if shirt and pants are -1,-1, use existing shirt and pants colors
 	// if existing shirt and pants colors are -1,-1, don't bother colormapping
 	if (shirt > -1 && pants > -1)
@@ -1362,9 +1356,8 @@ invalid:
 
 		data = translated;
 	}
-	//
+
 	// upload it
-	//
 	switch (glt->source_format)
 	{
 	case SRC_INDEXED:

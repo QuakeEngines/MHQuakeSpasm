@@ -23,9 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef __CONSOLE_H
 #define __CONSOLE_H
 
-//
 // console
-//
 extern int con_totallines;
 extern int con_backscroll;
 extern	qboolean con_forcedup;	// because no entities to refresh
@@ -58,9 +56,7 @@ const char *Con_Quakebar (int len);
 void Con_TabComplete (void);
 void Con_LogCenterPrint (const char *str);
 
-//
 // debuglog
-//
 void LOG_Init (quakeparms_t *parms);
 void LOG_Close (void);
 void Con_DebugLog (const char *msg);

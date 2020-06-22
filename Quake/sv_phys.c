@@ -88,9 +88,7 @@ void SV_CheckVelocity (edict_t *ent)
 {
 	int		i;
 
-	//
 	// bound velocity
-	//
 	for (i = 0; i < 3; i++)
 	{
 		if (IS_NAN (ent->v.velocity[i]))
@@ -310,10 +308,9 @@ int SV_FlyMove (edict_t *ent, float time, trace_t *steptrace)
 				*steptrace = trace;	// save for player extrafriction
 		}
 
-		//
 		// run the impact function
-		//
 		SV_Impact (ent, trace.ent);
+
 		if (ent->free)
 			break;		// removed by the impact function
 
@@ -330,9 +327,7 @@ int SV_FlyMove (edict_t *ent, float time, trace_t *steptrace)
 		VectorCopy (trace.plane.normal, planes[numplanes]);
 		numplanes++;
 
-		//
 		// modify original_velocity so it parallels all of the clip planes
-		//
 		for (i = 0; i < numplanes; i++)
 		{
 			ClipVelocity (original_velocity, planes[i], new_velocity, 1);
@@ -363,10 +358,8 @@ int SV_FlyMove (edict_t *ent, float time, trace_t *steptrace)
 			VectorScale (dir, d, ent->v.velocity);
 		}
 
-		//
 		// if original velocity is against the original velocity, stop dead
 		// to avoid tiny occilations in sloping corners
-		//
 		if (DotProduct (ent->v.velocity, primal_velocity) <= 0)
 		{
 			VectorCopy (vec3_origin, ent->v.velocity);
@@ -811,9 +804,7 @@ void SV_WalkMove (edict_t *ent)
 	int			oldonground;
 	trace_t		steptrace, downtrace;
 
-	//
 	// do a regular slide move unless it looks like you ran into a step
-	//
 	oldonground = (int) ent->v.flags & FL_ONGROUND;
 	ent->v.flags = (int) ent->v.flags & ~FL_ONGROUND;
 
@@ -840,9 +831,7 @@ void SV_WalkMove (edict_t *ent)
 	VectorCopy (ent->v.origin, nosteporg);
 	VectorCopy (ent->v.velocity, nostepvel);
 
-	//
 	// try moving up and forward to go up a step
-	//
 	VectorCopy (oldorg, ent->v.origin);	// back to start pos
 
 	VectorCopy (vec3_origin, upmove);
@@ -908,21 +897,15 @@ void SV_Physics_Client (edict_t *ent, int num)
 	if (!svs.clients[num - 1].active)
 		return;		// unconnected slot
 
-//
-// call standard client pre-think
-//
+	// call standard client pre-think
 	pr_global_struct->time = sv.time;
 	pr_global_struct->self = EDICT_TO_PROG (ent);
 	PR_ExecuteProgram (pr_global_struct->PlayerPreThink);
 
-	//
 	// do a move
-	//
 	SV_CheckVelocity (ent);
 
-	//
 	// decide which move function to call
-	//
 	switch ((int) ent->v.movetype)
 	{
 	case MOVETYPE_NONE:
@@ -960,10 +943,10 @@ void SV_Physics_Client (edict_t *ent, int num)
 		Sys_Error ("SV_Physics_client: bad movetype %i", (int) ent->v.movetype);
 	}
 
-	//
 	// call standard player post-think
-	//
-	SV_LinkEdict (ent, true);
+	if (ent->v.movetype == MOVETYPE_NOCLIP)
+		SV_LinkEdict (ent, false);
+	else SV_LinkEdict (ent, true);
 
 	pr_global_struct->time = sv.time;
 	pr_global_struct->self = EDICT_TO_PROG (ent);

@@ -115,10 +115,8 @@ static void *Z_TagMalloc (int size, int tag)
 	if (!tag)
 		Sys_Error ("Z_TagMalloc: tried to use a 0 tag");
 
-	//
 	// scan through the block list looking for the first free block
 	// of sufficient size
-	//
 	size += sizeof (memblock_t);	// account for size of block header
 	size += 4;					// space for memory trash tester
 	size = (size + 7) & ~7;		// align to 8-byte boundary
@@ -136,9 +134,7 @@ static void *Z_TagMalloc (int size, int tag)
 			rover = rover->next;
 	} while (base->tag || base->size < size);
 
-	//
 	// found a block big enough
-	//
 	extra = base->size - size;
 	if (extra > MINFRAGMENT)
 	{	// there will be a free fragment after the allocated block
@@ -350,9 +346,7 @@ void Hunk_Print (qboolean all)
 
 	while (1)
 	{
-		//
 		// skip to the high hunk if done with low hunk
-		//
 		if (h == endlow)
 		{
 			Con_Printf ("-------------------------\n");
@@ -361,15 +355,11 @@ void Hunk_Print (qboolean all)
 			h = starthigh;
 		}
 
-		//
 		// if totally done, break
-		//
 		if (h == endhigh)
 			break;
 
-		//
 		// run consistancy checks
-		//
 		if (h->sentinal != HUNK_SENTINAL)
 			Sys_Error ("Hunk_Check: trahsed sentinal");
 		if (h->size < (int) sizeof (hunk_t) || h->size + (byte *) h - hunk_base > hunk_size)
@@ -380,16 +370,12 @@ void Hunk_Print (qboolean all)
 		totalblocks++;
 		sum += h->size;
 
-		//
 		// print the single block
-		//
 		memcpy (name, h->name, HUNKNAME_LEN);
 		if (all)
 			Con_Printf ("%8p :%8i %8s\n", h, h->size, name);
 
-		//
 		// print the total
-		//
 		if (next == endlow || next == endhigh ||
 			strncmp (h->name, next->name, HUNKNAME_LEN - 1))
 		{

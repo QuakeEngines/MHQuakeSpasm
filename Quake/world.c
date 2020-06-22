@@ -444,10 +444,8 @@ void SV_LinkEdict (edict_t *ent, qboolean touch_triggers)
 	VectorAdd (ent->v.origin, ent->v.mins, ent->v.absmin);
 	VectorAdd (ent->v.origin, ent->v.maxs, ent->v.absmax);
 
-	//
 	// to make items easier to pick up and allow them to be grabbed off
 	// of shelves, the abs sizes are expanded
-	//
 	if ((int) ent->v.flags & FL_ITEM)
 	{
 		ent->v.absmin[0] -= 15;
@@ -631,9 +629,7 @@ qboolean SV_RecursiveHullCheck (hull_t *hull, int num, float p1f, float p2f, vec
 	if (num < hull->firstclipnode || num > hull->lastclipnode)
 		Sys_Error ("SV_RecursiveHullCheck: bad node number");
 
-	//
 	// find the point distances
-	//
 	node = hull->clipnodes + num;
 	plane = hull->planes + node->planenum;
 

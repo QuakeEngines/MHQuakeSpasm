@@ -268,9 +268,7 @@ void CL_ParseServerInfo (void)
 	if (cls.demoplayback)
 		SCR_BeginLoadingPlaque ();
 
-	//
 	// wipe the client_state_t struct
-	//
 	CL_ClearState ();
 
 	// parse protocol version number
@@ -364,10 +362,7 @@ void CL_ParseServerInfo (void)
 		Con_DWarning ("%i sounds exceeds standard limit of 256 (max = %d).\n", numsounds, MAX_SOUNDS);
 	// johnfitz
 
-//
-// now we try to load everything else until a cache allocation fails
-//
-
+	// now we try to load everything else until a cache allocation fails
 	// copy the naked name of the map file to the cl structure -- O.S
 	COM_StripExtension (COM_SkipPath (model_precache[1]), cl.mapname, sizeof (cl.mapname));
 
@@ -407,7 +402,7 @@ void CL_ParseServerInfo (void)
 
 	warn_about_nehahra_protocol = true; // johnfitz -- warn about nehahra protocol hack once per server connection
 
-// johnfitz -- reset developer stats
+	// johnfitz -- reset developer stats
 	memset (&dev_stats, 0, sizeof (dev_stats));
 	memset (&dev_peakstats, 0, sizeof (dev_peakstats));
 	memset (&dev_overflows, 0, sizeof (dev_overflows));
@@ -945,18 +940,15 @@ void CL_ParseServerMessage (void)
 	const char *str; // johnfitz
 	int			total, j, lastcmd; // johnfitz
 
-//
-// if recording demos, copy the message out
-//
+	// if recording demos, copy the message out
 	if (cl_shownet.value == 1)
 		Con_Printf ("%i ", net_message.cursize);
 	else if (cl_shownet.value == 2)
 		Con_Printf ("------------------\n");
 
 	cl.onground = false;	// unless the server says otherwise
-//
-// parse the message
-//
+
+	// parse the message
 	MSG_BeginReading ();
 
 	lastcmd = 0;

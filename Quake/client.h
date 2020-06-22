@@ -54,9 +54,7 @@ typedef struct {
 #define	NAME_LENGTH	64
 
 
-//
 // client_state_t should hold all pieces of the client state
-//
 
 #define	SIGNONS		4			// signon messages to receive before connected
 
@@ -91,22 +89,20 @@ typedef enum {
 	ca_connected		// valid netcon, talking to a server
 } cactive_t;
 
-//
 // the client_static_t structure is persistant through an arbitrary number
 // of server connections
-//
 typedef struct {
 	cactive_t	state;
 
 	// personalization data sent to server
 	char		spawnparms[MAX_MAPSTRING];	// to restart a level
 
-// demo loop control
+	// demo loop control
 	int		demonum;		// -1 = don't play demos
 	char		demos[MAX_DEMOS][MAX_DEMONAME];	// when not playing
 
-// demo recording info must be here, because record is started before
-// entering a map (and clearing client_state_t)
+	// demo recording info must be here, because record is started before
+	// entering a map (and clearing client_state_t)
 	qboolean	demorecording;
 	qboolean	demoplayback;
 
@@ -130,10 +126,8 @@ typedef struct {
 
 extern client_static_t	cls;
 
-//
 // the client_state_t structure is wiped completely at every
 // server signon
-//
 typedef struct {
 	int			movemessages;	// since connecting to this server
 								// throw out the first couple, so the player
@@ -141,7 +135,7 @@ typedef struct {
 								// first frame
 	usercmd_t	cmd;			// last command sent to the server
 
-// information for local display
+	// information for local display
 	int			stats[MAX_CL_STATS];	// health, etc
 	int			items;			// inventory bit flags
 	float	item_gettime[32];	// cl.time of aquiring item, for blinking
@@ -150,10 +144,10 @@ typedef struct {
 	cshift_t	cshifts[NUM_CSHIFTS];	// color shifts for damage, powerups
 	cshift_t	prev_cshifts[NUM_CSHIFTS];	// and content types
 
-// the client maintains its own idea of view angles, which are
-// sent to the server each frame.  The server sets punchangle when
-// the view is temporarliy offset, and an angle reset commands at the start
-// of each level and after teleporting.
+	// the client maintains its own idea of view angles, which are
+	// sent to the server each frame.  The server sets punchangle when
+	// the view is temporarliy offset, and an angle reset commands at the start
+	// of each level and after teleporting.
 	vec3_t		mviewangles[2];	// during demo playback viewangles is lerped
 								// between these
 	vec3_t		viewangles;
@@ -191,9 +185,7 @@ typedef struct {
 
 	float		last_received_message;	// (realtime) for net trouble icon
 
-//
-// information that is static for the entire time connected to a server
-//
+	// information that is static for the entire time connected to a server
 	struct qmodel_s *model_precache[MAX_MODELS];
 	struct sfx_s *sound_precache[MAX_SOUNDS];
 
@@ -213,7 +205,7 @@ typedef struct {
 
 	int			cdtrack, looptrack;	// cd audio
 
-// frag scoreboard
+	// frag scoreboard
 	scoreboard_t *scores;		// [cl.maxclients]
 
 	unsigned	protocol; // johnfitz
@@ -221,9 +213,7 @@ typedef struct {
 } client_state_t;
 
 
-//
 // cvars
-//
 extern	cvar_t	cl_name;
 extern	cvar_t	cl_color;
 
@@ -279,9 +269,7 @@ extern	int				cl_max_edicts; // johnfitz -- only changes when new map loads
 
 // =============================================================================
 
-//
 // cl_main
-//
 dlight_t *CL_AllocDlight (int key);
 void	CL_DecayLights (void);
 
@@ -297,9 +285,7 @@ void CL_Disconnect (void);
 void CL_Disconnect_f (void);
 void CL_NextDemo (void);
 
-//
 // cl_input
-//
 typedef struct {
 	int		down[2];		// key nums holding it down
 	int		state;			// low bit is down state
@@ -320,9 +306,7 @@ void CL_UpdateTEnts (void);
 
 void CL_ClearState (void);
 
-//
 // cl_demo.c
-//
 void CL_StopPlayback (void);
 int CL_GetMessage (void);
 
@@ -331,33 +315,26 @@ void CL_Record_f (void);
 void CL_PlayDemo_f (void);
 void CL_TimeDemo_f (void);
 
-//
 // cl_parse.c
-//
 void CL_ParseServerMessage (void);
 void CL_NewTranslation (int slot);
 
-//
 // view
-//
 void V_StartPitchDrift (void);
 void V_StopPitchDrift (void);
 
 void V_RenderView (void);
+
 // void V_UpdatePalette (void); // johnfitz
 void V_Register (void);
 void V_ParseDamage (void);
 void V_SetContentsColor (int contents);
 
-//
 // cl_tent
-//
 void CL_InitTEnts (void);
 void CL_SignonReply (void);
 
-//
 // chase
-//
 extern	cvar_t	chase_active;
 
 void Chase_Init (void);

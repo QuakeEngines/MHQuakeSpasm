@@ -108,9 +108,7 @@ typedef struct {
 canvastype currentcanvas = CANVAS_NONE; // johnfitz -- for GL_SetCanvas
 
 // ==============================================================================
-//
 //  PIC CACHING
-//
 // ==============================================================================
 
 typedef struct cachepic_s {
@@ -237,6 +235,7 @@ qpic_t *Draw_PicFromWad (const char *name)
 				scrap_texels[texnum][(y + i) * BLOCK_WIDTH + x + j] = p->data[k];
 		}
 		gl.gltexture = scrap_textures[texnum]; // johnfitz -- changed to an array
+
 		// johnfitz -- no longer go from 0.01 to 0.99
 		gl.sl = x / (float) BLOCK_WIDTH;
 		gl.sh = (x + p->width) / (float) BLOCK_WIDTH;
@@ -285,9 +284,7 @@ qpic_t *Draw_CachePic (const char *path)
 	menu_numcachepics++;
 	strcpy (pic->name, path);
 
-	//
 	// load the pic from disk
-	//
 	dat = (qpic_t *) COM_LoadTempFile (path, NULL);
 	if (!dat)
 		Sys_Error ("Draw_CachePic: failed to load %s", path);
@@ -339,9 +336,7 @@ qpic_t *Draw_MakePic (const char *name, int width, int height, byte *data)
 }
 
 // ==============================================================================
-//
 //  INIT
-//
 // ==============================================================================
 
 /*
@@ -399,7 +394,8 @@ Draw_Init -- johnfitz -- rewritten
 */
 void Draw_Init (void)
 {
-	byte chbase[] = {
+	// this must be static so that the texture loader can grab a copy of the pointer for reloading
+	static byte chbase[] = {
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x5f, 0x5f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -438,9 +434,7 @@ void Draw_Init (void)
 
 
 // ==============================================================================
-//
 //  2D DRAWING
-//
 // ==============================================================================
 
 /*

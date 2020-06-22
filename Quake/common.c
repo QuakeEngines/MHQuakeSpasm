@@ -429,9 +429,7 @@ int Q_atoi (const char *str)
 
 	val = 0;
 
-	//
 	// check for hex
-	//
 	if (str[0] == '0' && (str[1] == 'x' || str[1] == 'X'))
 	{
 		str += 2;
@@ -449,17 +447,13 @@ int Q_atoi (const char *str)
 		}
 	}
 
-	//
 	// check for character
-	//
 	if (str[0] == '\'')
 	{
 		return sign * str[1];
 	}
 
-	//
 	// assume decimal
-	//
 	while (1)
 	{
 		c = *str++;
@@ -489,9 +483,7 @@ float Q_atof (const char *str)
 
 	val = 0;
 
-	//
 	// check for hex
-	//
 	if (str[0] == '0' && (str[1] == 'x' || str[1] == 'X'))
 	{
 		str += 2;
@@ -509,17 +501,13 @@ float Q_atof (const char *str)
 		}
 	}
 
-	//
 	// check for character
-	//
 	if (str[0] == '\'')
 	{
 		return sign * str[1];
 	}
 
-	//
 	// assume decimal
-	//
 	decimal = -1;
 	total = 0;
 	while (1)
@@ -626,10 +614,7 @@ Handles byte ordering and avoids alignment errors
 ==============================================================================
 */
 
-//
 // writing functions
-//
-
 void MSG_WriteChar (sizebuf_t *sb, int c)
 {
 	byte *buf;
@@ -750,9 +735,7 @@ void MSG_WriteAngle16 (sizebuf_t *sb, float f, unsigned int flags)
 }
 // johnfitz
 
-//
 // reading functions
-//
 int		msg_readcount;
 qboolean	msg_badread;
 
@@ -1479,9 +1462,7 @@ QUAKE FILESYSTEM
 int	com_filesize;
 
 
-//
 // on-disk pakfile
-//
 typedef struct {
 	char	name[56];
 	int		filepos, filelen;
@@ -1611,9 +1592,7 @@ static int COM_FindFile (const char *filename, int *handle, FILE **file,
 
 	file_from_pak = 0;
 
-	//
 	// search through the path, one element at a time
-	//
 	for (search = com_searchpaths; search; search = search->next)
 	{
 		if (search->pack)	/* look through all the pak file elements */

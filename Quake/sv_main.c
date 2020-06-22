@@ -584,7 +584,6 @@ void SV_WriteEntitiesToClient (edict_t *clent, sizebuf_t *msg)
 					break;
 
 			// ericw -- added ent->num_leafs < MAX_ENT_LEAFS condition.
-			//
 			// if ent->num_leafs == MAX_ENT_LEAFS, the ent is visible from too many leafs
 			// for us to say whether it's in the PVS, so don't try to vis cull it.
 			// this commonly happens with rotators, because they often have huge bboxes
@@ -678,9 +677,7 @@ void SV_WriteEntitiesToClient (edict_t *clent, sizebuf_t *msg)
 		if (bits >= 256)
 			bits |= U_MOREBITS;
 
-		//
 		// write the message
-		//
 		MSG_WriteByte (msg, bits | U_SIGNAL);
 
 		if (bits & U_MOREBITS)
@@ -774,9 +771,7 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 	int		items;
 	eval_t *val;
 
-	//
 	// send a damage message
-	//
 	if (ent->v.dmg_take || ent->v.dmg_save)
 	{
 		other = PROG_TO_EDICT (ent->v.dmg_inflictor);
@@ -790,12 +785,10 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 		ent->v.dmg_save = 0;
 	}
 
-	//
 	// send the current viewpos offset from the view entity
-	//
 	SV_SetIdealPitch ();		// how much to look up / down ideally
 
-// a fixangle might get lost in a dropped packet.  Oh well.
+	// a fixangle might get lost in a dropped packet.  Oh well.
 	if (ent->v.fixangle)
 	{
 		MSG_WriteByte (msg, svc_setangle);
@@ -1172,9 +1165,7 @@ void SV_CreateBaseline (void)
 		if (entnum > svs.maxclients && !svent->v.modelindex)
 			continue;
 
-		//
 		// create entity baseline
-		//
 		VectorCopy (svent->v.origin, svent->baseline.origin);
 		VectorCopy (svent->v.angles, svent->baseline.angles);
 		svent->baseline.frame = svent->v.frame;
@@ -1213,9 +1204,7 @@ void SV_CreateBaseline (void)
 		}
 		// johnfitz
 
-	//
-	// add to the message
-	//
+		// add to the message
 		// johnfitz -- PROTOCOL_FITZQUAKE
 		if (bits)
 			MSG_WriteByte (&sv.signon, svc_spawnbaseline2);
@@ -1331,17 +1320,13 @@ void SV_SpawnServer (const char *server)
 	Con_DPrintf ("SpawnServer: %s\n", server);
 	svs.changelevel_issued = false;		// now safe to issue another
 
-//
-// tell all connected clients that we are going to a new level
-//
+	// tell all connected clients that we are going to a new level
 	if (sv.active)
 	{
 		SV_SendReconnect ();
 	}
 
-	//
 	// make cvars consistant
-	//
 	if (coop.value)
 		Cvar_Set ("deathmatch", "0");
 	current_skill = (int) (skill.value + 0.5);
@@ -1352,10 +1337,8 @@ void SV_SpawnServer (const char *server)
 
 	Cvar_SetValue ("skill", (float) current_skill);
 
-	//
 	// set up the new server
-	//
-		// memset (&sv, 0, sizeof(sv));
+	// memset (&sv, 0, sizeof(sv));
 	Host_ClearMemory ();
 
 	q_strlcpy (sv.name, server, sizeof (sv.name));
@@ -1415,9 +1398,7 @@ void SV_SpawnServer (const char *server)
 	}
 	sv.models[1] = sv.worldmodel;
 
-	//
 	// clear world interaction links
-	//
 	SV_ClearWorld ();
 
 	sv.sound_precache[0] = dummy;
@@ -1429,9 +1410,7 @@ void SV_SpawnServer (const char *server)
 		sv.models[i + 1] = Mod_ForName (localmodels[i], false);
 	}
 
-	//
 	// load the rest of the entities
-	//
 	ent = EDICT_NUM (0);
 	memset (&ent->v, 0, progs->entityfields * 4);
 	ent->free = false;

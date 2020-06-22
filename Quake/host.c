@@ -519,9 +519,7 @@ void Host_ShutdownServer (qboolean crash)
 		if (host_client->active)
 			SV_DropClient (crash);
 
-	//
 	// clear structures
-	//
 	//	memset (&sv, 0, sizeof(sv)); // ServerSpawn already do this by Host_ClearMemory
 	memset (svs.clients, 0, svs.maxclientslimit * sizeof (client_t));
 }
@@ -550,9 +548,7 @@ void Host_ClearMemory (void)
 
 
 // ==============================================================================
-//
 // Host Frame
-//
 // ==============================================================================
 
 /*
@@ -701,9 +697,7 @@ void _Host_Frame (void)
 		CL_SendCmd ();
 
 	// -------------------
-	//
 	// server operations
-	//
 	// -------------------
 
 	// check for commands typed to the host
@@ -713,9 +707,7 @@ void _Host_Frame (void)
 		Host_ServerFrame (host_frametime);
 
 	// -------------------
-	//
 	// client operations
-	//
 	// -------------------
 
 	// if running the server remotely, send intentions now after

@@ -31,9 +31,7 @@ byte *SV_FatPVS (vec3_t org, qmodel_t *worldmodel);
 int vis_changed; // if true, force pvs to be refreshed
 
 // ==============================================================================
-//
 // SETUP CHAINS
-//
 // ==============================================================================
 
 /*
@@ -262,9 +260,7 @@ void R_BuildLightmapChains (qmodel_t *model, texchain_t chain)
 }
 
 // ==============================================================================
-//
 // DRAW CHAINS
-//
 // ==============================================================================
 
 /*
@@ -336,9 +332,7 @@ void R_DrawTextureChains_Drawflat (qmodel_t *model, texchain_t chain)
 
 
 // ==============================================================================
-//
 // VBO SUPPORT
-//
 // ==============================================================================
 
 static unsigned int R_NumTriangleIndicesForSurf (msurface_t *s)

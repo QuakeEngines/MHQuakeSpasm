@@ -43,6 +43,7 @@ usercmd_t	cmd;
 cvar_t	sv_idealpitchscale = { "sv_idealpitchscale", "0.8", CVAR_NONE };
 cvar_t	sv_altnoclip = { "sv_altnoclip", "1", CVAR_ARCHIVE }; // johnfitz
 
+
 /*
 ===============
 SV_SetIdealPitch
@@ -228,9 +229,7 @@ void SV_WaterMove (void)
 	vec3_t	wishvel;
 	float	speed, newspeed, wishspeed, addspeed, accelspeed;
 
-	//
 	// user intentions
-	//
 	AngleVectors (sv_player->v.v_angle, forward, right, up);
 
 	for (i = 0; i < 3; i++)
@@ -249,9 +248,7 @@ void SV_WaterMove (void)
 	}
 	wishspeed *= 0.7;
 
-	//
 	// water friction
-	//
 	speed = VectorLength (velocity);
 	if (speed)
 	{
@@ -263,9 +260,7 @@ void SV_WaterMove (void)
 	else
 		newspeed = 0;
 
-	//
 	// water acceleration
-	//
 	if (!wishspeed)
 		return;
 
@@ -391,13 +386,10 @@ void SV_ClientThink (void)
 
 	DropPunchAngle ();
 
-	//
 	// if dead, behave differently
-	//
 	if (sv_player->v.health <= 0)
 		return;
 
-	//
 	// angles
 	// show 1/3 the pitch angle and all the roll angle
 	cmd = host_client->cmd;
@@ -416,10 +408,9 @@ void SV_ClientThink (void)
 		SV_WaterJump ();
 		return;
 	}
-	//
+
 	// walk
-	//
-		// johnfitz -- alternate noclip
+	// johnfitz -- alternate noclip
 	if (sv_player->v.movetype == MOVETYPE_NOCLIP && sv_altnoclip.value)
 		SV_NoclipMove ();
 	else if (sv_player->v.waterlevel >= 2 && sv_player->v.movetype != MOVETYPE_NOCLIP)

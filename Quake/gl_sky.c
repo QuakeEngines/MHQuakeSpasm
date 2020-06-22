@@ -80,9 +80,7 @@ int	vec_to_st[6][3] =
 float	skyfog; // ericw
 
 // ==============================================================================
-//
 //  INIT
-//
 // ==============================================================================
 
 /*
@@ -218,17 +216,13 @@ void Sky_NewMap (void)
 	const char *data;
 	int		i;
 
-	//
 	// initially no sky
-	//
 	skybox_name[0] = 0;
 	for (i = 0; i < 6; i++)
 		skybox_textures[i] = NULL;
 	skyfog = r_skyfog.value;
 
-	//
 	// read worldspawn (this is so ugly, and shouldn't it be done on the server?)
-	//
 	data = cl.worldmodel->entities;
 	if (!data)
 		return; // FIXME: how could this possibly ever happen? -- if there's no
@@ -326,9 +320,7 @@ void Sky_Init (void)
 }
 
 // ==============================================================================
-//
 //  PROCESS SKY SURFS
-//
 // ==============================================================================
 
 /*
@@ -638,9 +630,7 @@ void Sky_ProcessEntities (void)
 }
 
 // ==============================================================================
-//
 //  RENDER SKYBOX
-//
 // ==============================================================================
 
 /*
@@ -743,9 +733,7 @@ void Sky_DrawSkyBox (void)
 }
 
 // ==============================================================================
-//
 //  RENDER CLOUDS
-//
 // ==============================================================================
 
 /*
@@ -985,18 +973,14 @@ void Sky_DrawSky (void)
 	if (r_drawflat_cheatsafe || r_lightmap_cheatsafe)
 		return;
 
-	//
 	// reset sky bounds
-	//
 	for (i = 0; i < 6; i++)
 	{
 		skymins[0][i] = skymins[1][i] = FLT_MAX;
 		skymaxs[0][i] = skymaxs[1][i] = -FLT_MAX;
 	}
 
-	//
 	// process world and bmodels: draw flat-shaded sky surfs, and update skybounds
-	//
 	Fog_DisableGFog ();
 	glDisable (GL_TEXTURE_2D);
 	if (Fog_GetDensity () > 0)
@@ -1008,9 +992,7 @@ void Sky_DrawSky (void)
 	glColor3f (1, 1, 1);
 	glEnable (GL_TEXTURE_2D);
 
-	//
 	// render slow sky: cloud layers or skybox
-	//
 	if (!r_fastsky.value && !(Fog_GetDensity () > 0 && skyfog >= 1))
 	{
 		glDepthFunc (GL_GEQUAL);

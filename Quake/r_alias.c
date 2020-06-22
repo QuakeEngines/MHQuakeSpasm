@@ -628,30 +628,22 @@ void R_DrawAliasModel (entity_t *e)
 	lerpdata_t	lerpdata;
 	qboolean	alphatest = !!(e->model->flags & MF_HOLEY);
 
-	//
 	// setup pose/lerp data -- do it first so we don't miss updates due to culling
-	//
 	paliashdr = (aliashdr_t *) Mod_Extradata (e->model);
 	R_SetupAliasFrame (paliashdr, e->frame, &lerpdata);
 	R_SetupEntityTransform (e, &lerpdata);
 
-	//
 	// cull it
-	//
 	if (R_CullModelForEntity (e))
 		return;
 
-	//
 	// transform it
-	//
 	glPushMatrix ();
 	R_RotateForEntity (lerpdata.origin, lerpdata.angles);
 	glTranslatef (paliashdr->scale_origin[0], paliashdr->scale_origin[1], paliashdr->scale_origin[2]);
 	glScalef (paliashdr->scale[0], paliashdr->scale[1], paliashdr->scale[2]);
 
-	//
 	// random stuff
-	//
 	if (gl_smoothmodels.value && !r_drawflat_cheatsafe)
 		glShadeModel (GL_SMOOTH);
 	if (gl_affinemodels.value)
@@ -659,9 +651,7 @@ void R_DrawAliasModel (entity_t *e)
 	overbright = gl_overbright_models.value;
 	shading = true;
 
-	//
 	// set up for alpha blending
-	//
 	if (r_drawflat_cheatsafe || r_lightmap_cheatsafe) // no alpha in drawflat or lightmap mode
 		entalpha = 1;
 	else
@@ -677,15 +667,11 @@ void R_DrawAliasModel (entity_t *e)
 	else if (alphatest)
 		glEnable (GL_ALPHA_TEST);
 
-	//
 	// set up lighting
-	//
 	rs_aliaspolys += paliashdr->numtris;
 	R_SetupAliasLighting (e);
 
-	//
 	// set up textures
-	//
 	GL_DisableMultitexture ();
 	anim = (int) (cl.time * 10) & 3;
 	skinnum = e->skinnum;
@@ -706,9 +692,7 @@ void R_DrawAliasModel (entity_t *e)
 	if (!gl_fullbrights.value)
 		fb = NULL;
 
-	//
 	// draw it
-	//
 	if (r_drawflat_cheatsafe)
 	{
 		glDisable (GL_TEXTURE_2D);

@@ -849,9 +849,7 @@ void NET_Shutdown (void)
 	for (sock = net_activeSockets; sock; sock = sock->next)
 		NET_Close (sock);
 
-	//
 	// shutdown the drivers
-	//
 	for (net_driverlevel = 0; net_driverlevel < net_numdrivers; net_driverlevel++)
 	{
 		if (net_drivers[net_driverlevel].initialized == true)

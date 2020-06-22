@@ -50,9 +50,7 @@ BRUSH MODELS
 */
 
 
-//
 // in memory representation
-//
 // !!! if this is changed, it must be changed in asm_draw.h too !!!
 typedef struct {
 	vec3_t		position;
@@ -360,9 +358,7 @@ extern	trivertx_t *poseverts[MAXALIASFRAMES];
 
 // ===================================================================
 
-//
 // Whole model
-//
 
 typedef enum { mod_brush, mod_sprite, mod_alias } modtype_t;
 
@@ -394,23 +390,17 @@ typedef struct qmodel_s {
 
 	int			flags;
 
-	//
 	// volume occupied by the model graphics
-	//
 	vec3_t		mins, maxs;
 	vec3_t		ymins, ymaxs; // johnfitz -- bounds for entities with nonzero yaw
 	vec3_t		rmins, rmaxs; // johnfitz -- bounds for entities with nonzero pitch or roll
 	// johnfitz -- removed float radius;
 
-//
-// solid volume for clipping
-//
+	// solid volume for clipping
 	qboolean	clipbox;
 	vec3_t		clipmins, clipmaxs;
 
-	//
 	// brush model
-	//
 	int			firstmodelsurface, nummodelsurfaces;
 
 	int			numsubmodels;
@@ -459,9 +449,7 @@ typedef struct qmodel_s {
 
 	int			bspversion;
 
-	//
 	// alias model
-	//
 
 	GLuint		meshvbo;
 	GLuint		meshindexesvbo;
@@ -469,9 +457,7 @@ typedef struct qmodel_s {
 	int			vboxyzofs;      // offset in vbo of hdr->numposes*hdr->numverts_vbo meshxyz_t
 	int			vbostofs;       // offset in vbo of hdr->numverts_vbo meshst_t
 
-//
-// additional model data
-//
+	// additional model data
 	cache_user_t	cache;		// only access through Mod_Extradata
 
 } qmodel_t;

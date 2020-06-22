@@ -48,9 +48,7 @@ extern enum m_state_e m_return_state;
 
 extern qboolean m_entersound;
 
-//
 // menus
-//
 void M_Init (void);
 void M_Keydown (int key);
 void M_Charinput (int key);

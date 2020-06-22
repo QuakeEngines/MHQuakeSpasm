@@ -822,11 +822,10 @@ void Key_Init (void)
 
 	key_blinktime = realtime; // johnfitz
 
-//
-// initialize consolekeys[]
-//
+	// initialize consolekeys[]
 	for (i = 32; i < 127; i++) // ascii characters
 		consolekeys[i] = true;
+
 	consolekeys['`'] = false;
 	consolekeys['~'] = false;
 	consolekeys[K_TAB] = true;
@@ -868,16 +867,12 @@ void Key_Init (void)
 	consolekeys[K_MWHEELUP] = true;
 	consolekeys[K_MWHEELDOWN] = true;
 
-	//
 	// initialize menubound[]
-	//
 	menubound[K_ESCAPE] = true;
 	for (i = 0; i < 12; i++)
 		menubound[K_F1 + i] = true;
 
-	//
 	// register our functions
-	//
 	Cmd_AddCommand ("bindlist", Key_Bindlist_f); // johnfitz
 	Cmd_AddCommand ("bind", Key_Bind_f);
 	Cmd_AddCommand ("unbind", Key_Unbind_f);

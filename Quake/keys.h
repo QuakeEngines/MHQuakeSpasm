@@ -23,16 +23,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef _QUAKE_KEYS_H
 #define _QUAKE_KEYS_H
 
-//
 // these are the key numbers that should be passed to Key_Event
-//
 #define	K_TAB			9
 #define	K_ENTER			13
 #define	K_ESCAPE		27
 #define	K_SPACE			32
 
 // normal keys should be passed as lowercased ascii
-
 #define	K_BACKSPACE		127
 #define	K_UPARROW		128
 #define	K_DOWNARROW		129
@@ -83,20 +80,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define K_PAUSE			255
 
-//
 // mouse buttons generate virtual keys
-//
 #define	K_MOUSE1		200
 #define	K_MOUSE2		201
 #define	K_MOUSE3		202
 
-//
 // joystick buttons
-//
 #define	K_JOY1			203
 #define	K_JOY2			204
 #define	K_JOY3			205
 #define	K_JOY4			206
+
 // aux keys are for multi-buttoned joysticks to generate so they can use
 // the normal binding process
 // aux29-32: reserved for the HAT (POV) switch motion

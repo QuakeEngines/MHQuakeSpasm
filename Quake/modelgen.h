@@ -22,9 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef _MODELGEN_H
 #define _MODELGEN_H
 
-//
 // modelgen.h: header file for model generation program
-//
 
 // *********************************************************
 // * This file must be identical in the modelgen directory *

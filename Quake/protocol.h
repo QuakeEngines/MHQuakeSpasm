@@ -149,9 +149,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // also related to svc_strings[] in cl_parse
 // ==================
 
-//
 // server to client
-//
 #define	svc_bad					0
 #define	svc_nop					1
 #define	svc_disconnect			2
@@ -201,18 +199,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	svc_spawnstaticsound2	44	// [coord3] [short] samp [byte] vol [byte] aten
 // johnfitz
 
-//
 // client to server
-//
 #define	clc_bad			0
 #define	clc_nop 		1
 #define	clc_disconnect	2
 #define	clc_move		3		// [usercmd_t]
 #define	clc_stringcmd	4		// [string] message
 
-//
 // temp entity events
-//
 #define	TE_SPIKE			0
 #define	TE_SUPERSPIKE		1
 #define	TE_GUNSHOT			2

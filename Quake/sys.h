@@ -26,9 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 void Sys_Init (void);
 
-//
 // file IO
-//
 
 // returns the file size or -1 if file is not present.
 // the file should be in BINARY mode for stupid OSs that care
@@ -42,9 +40,7 @@ int Sys_FileWrite (int handle, const void *data, int count);
 int Sys_FileTime (const char *path);
 void Sys_mkdir (const char *path);
 
-//
 // system IO
-//
 FUNC_NORETURN void Sys_Quit (void);
 FUNC_NORETURN void Sys_Error (const char *error, ...) FUNC_PRINTF (1, 2);
 // an error will cause the entire program to exit

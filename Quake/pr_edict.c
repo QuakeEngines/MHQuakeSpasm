@@ -1011,9 +1011,7 @@ void ED_LoadFromFile (const char *data)
 			continue;
 		}
 
-		//
 		// immediately call spawn function
-		//
 		if (!ent->v.classname)
 		{
 			Con_SafePrintf ("No classname for:\n"); // johnfitz -- was Con_Printf

@@ -121,6 +121,25 @@ void DrawGLTriangleFan (glpoly_t *p)
 =============================================================
 */
 
+void R_InverseTransform (float *out, float *in, float *origin, float *angles)
+{
+	VectorSubtract (in, origin, out);
+
+	if (angles[0] || angles[1] || angles[2])
+	{
+		vec3_t	temp;
+		vec3_t	forward, right, up;
+
+		VectorCopy (out, temp);
+		AngleVectors (angles, forward, right, up);
+
+		out[0] = DotProduct (temp, forward);
+		out[1] = -DotProduct (temp, right);
+		out[2] = DotProduct (temp, up);
+	}
+}
+
+
 /*
 =================
 R_DrawBrushModel
@@ -165,9 +184,7 @@ void R_DrawBrushModel (entity_t *e)
 				continue;
 
 			// MH - dlight transform
-			cl_dlights[k].transformed[0] = cl_dlights[k].origin[0] - e->origin[0];
-			cl_dlights[k].transformed[1] = cl_dlights[k].origin[1] - e->origin[1];
-			cl_dlights[k].transformed[2] = cl_dlights[k].origin[2] - e->origin[2];
+			R_InverseTransform (cl_dlights[k].transformed, cl_dlights[k].origin, e->origin, e->angles);
 
 			R_MarkLights (&cl_dlights[k], k, clmodel->nodes + clmodel->hulls[0].firstclipnode);
 		}
@@ -430,9 +447,7 @@ void BuildSurfaceDisplayList (msurface_t *surf)
 		poly->verts[i][3] = s;
 		poly->verts[i][4] = t;
 
-		//
 		// lightmap texture coordinates
-		//
 		s = DotProduct (vec, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3];
 		s -= surf->texturemins[0];
 		s += surf->light_s * 16;

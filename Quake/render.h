@@ -122,9 +122,7 @@ typedef struct {
 } refdef_t;
 
 
-//
 // refresh
-//
 extern	int		reinit_surfcache;
 
 
@@ -159,9 +157,7 @@ void R_TeleportSplash (vec3_t org);
 void R_PushDlights (void);
 
 
-//
 // surface cache related
-//
 extern	int		reinit_surfcache;	// if 1, surface cache is currently empty and
 extern qboolean	r_cache_thrash;	// set if thrashing the surface cache
 

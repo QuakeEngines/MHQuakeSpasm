@@ -38,9 +38,7 @@ int rs_brushpolys, rs_aliaspolys, rs_skypolys, rs_particles, rs_fogpolys;
 int rs_dynamiclightmaps, rs_brushpasses, rs_aliaspasses, rs_skypasses;
 float rs_megatexels;
 
-//
 // view origin
-//
 vec3_t	vup;
 vec3_t	vpn;
 vec3_t	vright;
@@ -48,9 +46,7 @@ vec3_t	r_origin;
 
 float r_fovx, r_fovy; // johnfitz -- rendering fov may be different becuase of r_waterwarp and r_stereo
 
-//
 // screen size info
-//
 refdef_t	r_refdef;
 
 mleaf_t *r_viewleaf, *r_oldviewleaf;
@@ -114,9 +110,7 @@ qboolean r_drawflat_cheatsafe, r_fullbright_cheatsafe, r_lightmap_cheatsafe, r_d
 cvar_t	r_scale = { "r_scale", "1", CVAR_ARCHIVE };
 
 // ==============================================================================
-//
 // GLSL GAMMA CORRECTION
-//
 // ==============================================================================
 
 static GLuint r_gamma_texture;
@@ -383,9 +377,7 @@ void GL_PolygonOffset (int offset)
 }
 
 // ==============================================================================
-//
 // SETUP FRAME
-//
 // ==============================================================================
 
 int SignbitsForPlane (mplane_t *out)
@@ -499,9 +491,7 @@ void R_SetupGL (void)
 	glRotatef (-r_refdef.viewangles[1], 0, 0, 1);
 	glTranslatef (-r_refdef.vieworg[0], -r_refdef.vieworg[1], -r_refdef.vieworg[2]);
 
-	//
 	// set drawing parms
-	//
 	if (gl_cull.value)
 		glEnable (GL_CULL_FACE);
 	else
@@ -605,9 +595,7 @@ void R_SetupView (void)
 }
 
 // ==============================================================================
-//
 // RENDER VIEW
-//
 // ==============================================================================
 
 /*

@@ -64,9 +64,8 @@ qboolean SV_CheckBottom (edict_t *ent)
 
 realcheck:
 	c_no++;
-	//
+
 	// check it for real...
-	//
 	start[2] = mins[2];
 
 	// the midpoint must be within 16 of the bottom
