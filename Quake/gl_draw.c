@@ -437,6 +437,43 @@ void Draw_Init (void)
 //  2D DRAWING
 // ==============================================================================
 
+
+typedef struct drawpolyvert_s {
+	float xy[2];
+	union {
+		unsigned colour;
+		byte rgba[4];
+	};
+	float st[2];
+} drawpolyvert_t;
+
+
+drawpolyvert_t r_drawverts[4];
+
+
+void Draw_TexturedVertex (drawpolyvert_t *vert, float x, float y, unsigned colour, float s, float t)
+{
+	vert->xy[0] = x;
+	vert->xy[1] = y;
+	vert->colour = colour;
+	vert->st[0] = s;
+	vert->st[1] = t;
+}
+
+
+void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h, unsigned colour, float sl, float sh, float tl, float th)
+{
+	GL_Bind (texture);
+
+	Draw_TexturedVertex (&r_drawverts[0], x, y, colour, sl, tl);
+	Draw_TexturedVertex (&r_drawverts[1], x + w, y, colour, sh, tl);
+	Draw_TexturedVertex (&r_drawverts[2], x + w, y + h, colour, sh, th);
+	Draw_TexturedVertex (&r_drawverts[3], x, y + h, colour, sl, th);
+
+	glDrawArrays (GL_QUADS, 0, 4);
+}
+
+
 /*
 ================
 Draw_CharacterQuad -- johnfitz -- seperate function to spit out verts
@@ -444,24 +481,14 @@ Draw_CharacterQuad -- johnfitz -- seperate function to spit out verts
 */
 void Draw_CharacterQuad (int x, int y, char num)
 {
-	int				row, col;
-	float			frow, fcol, size;
+	int row = num >> 4;
+	int col = num & 15;
 
-	row = num >> 4;
-	col = num & 15;
+	float frow = row * 0.0625;
+	float fcol = col * 0.0625;
+	float size = 0.0625;
 
-	frow = row * 0.0625;
-	fcol = col * 0.0625;
-	size = 0.0625;
-
-	glTexCoord2f (fcol, frow);
-	glVertex2f (x, y);
-	glTexCoord2f (fcol + size, frow);
-	glVertex2f (x + 8, y);
-	glTexCoord2f (fcol + size, frow + size);
-	glVertex2f (x + 8, y + 8);
-	glTexCoord2f (fcol, frow + size);
-	glVertex2f (x, y + 8);
+	Draw_TexturedQuad (char_texture, x, y, 8, 8, 0xffffffff, fcol, fcol + size, frow, frow + size);
 }
 
 /*
@@ -479,37 +506,26 @@ void Draw_Character (int x, int y, int num)
 	if (num == 32)
 		return; // don't waste verts on spaces
 
-	GL_Bind (char_texture);
-	glBegin (GL_QUADS);
-
 	Draw_CharacterQuad (x, y, (char) num);
-
-	glEnd ();
 }
+
 
 /*
 ================
-Draw_String -- johnfitz -- modified to call Draw_CharacterQuad
+Draw_String
 ================
 */
 void Draw_String (int x, int y, const char *str)
 {
-	if (y <= -8)
-		return;			// totally off screen
-
-	GL_Bind (char_texture);
-	glBegin (GL_QUADS);
-
 	while (*str)
 	{
 		if (*str != 32) // don't waste verts on spaces
-			Draw_CharacterQuad (x, y, *str);
+			Draw_Character (x, y, *str);
 		str++;
 		x += 8;
 	}
-
-	glEnd ();
 }
+
 
 /*
 =============
@@ -763,6 +779,7 @@ void GL_SetCanvas (canvastype newcanvas)
 	glLoadIdentity ();
 }
 
+
 /*
 ================
 GL_Set2D -- johnfitz -- rewritten
@@ -778,4 +795,29 @@ void GL_Set2D (void)
 	glDisable (GL_BLEND);
 	glEnable (GL_ALPHA_TEST);
 	glColor4f (1, 1, 1, 1);
+
+	// ensure that no buffer is bound when drawing 2D quads
+	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
+
+	// and now set up the vertex arrays
+	glEnableClientState (GL_VERTEX_ARRAY);
+	glVertexPointer (2, GL_FLOAT, sizeof (drawpolyvert_t), r_drawverts[0].xy);
+
+	glEnableClientState (GL_TEXTURE_COORD_ARRAY);
+	glTexCoordPointer (2, GL_FLOAT, sizeof (drawpolyvert_t), r_drawverts[0].st);
+
+	glEnableClientState (GL_COLOR_ARRAY);
+	glColorPointer (4, GL_UNSIGNED_BYTE, sizeof (drawpolyvert_t), r_drawverts[0].rgba);
 }
+
+
+void GL_End2D (void)
+{
+	glDisableClientState (GL_VERTEX_ARRAY);
+	glDisableClientState (GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState (GL_COLOR_ARRAY);
+
+	// current color is undefined after using GL_COLOR_ARRAY
+	glColor4f (1, 1, 1, 1);
+}
+

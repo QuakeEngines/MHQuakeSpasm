@@ -1057,6 +1057,8 @@ void SCR_UpdateScreen (void)
 
 	GLSLGamma_GammaCorrect ();
 
+	GL_End2D ();
+
 	GL_EndRendering ();
 }
 
