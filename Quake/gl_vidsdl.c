@@ -1266,23 +1266,29 @@ does all the stuff from GL_Init that needs to be done every time a new GL render
 static void GL_SetupState (void)
 {
 	glClearColor (0.15, 0.15, 0.15, 0); // johnfitz -- originally 1,0,0,0
+
 	glCullFace (GL_BACK); // johnfitz -- glquake used CCW with backwards culling -- let's do it right
 	glFrontFace (GL_CW); // johnfitz -- glquake used CCW with backwards culling -- let's do it right
+
 	glEnable (GL_TEXTURE_2D);
 	glEnable (GL_ALPHA_TEST);
 	glAlphaFunc (GL_GREATER, 0.666);
 	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-	glShadeModel (GL_FLAT);
+	glShadeModel (GL_SMOOTH);
 	glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST); // johnfitz
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+	// note: here, these only apply to texture object 0
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
 	glDepthRange (0, 1); // johnfitz -- moved here becuase gl_ztrick is gone.
 	glDepthFunc (GL_LEQUAL); // johnfitz -- moved here becuase gl_ztrick is gone.
 }
+
 
 /*
 ===============

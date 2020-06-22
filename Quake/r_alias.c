@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern cvar_t r_drawflat, gl_overbright_models, gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
+extern cvar_t gl_overbright_models, gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
 
 // up to 16 color translated skins
 gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz -- changed to an array of pointers
@@ -52,7 +52,7 @@ float	entalpha; // johnfitz
 
 qboolean	overbright; // johnfitz
 
-qboolean shading = true; // johnfitz -- if false, disable vertex shading for various reasons (fullbright, r_lightmap, etc)
+qboolean shading = true; // johnfitz -- if false, disable vertex shading for various reasons (fullbright, etc)
 
 // johnfitz -- struct for passing lerp information to drawing functions
 typedef struct {
@@ -292,7 +292,7 @@ void GL_DrawAliasFrame_GLSL (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltextu
 
 /*
 =============
-GL_DrawAliasFrame -- johnfitz -- rewritten to support colored light, lerping, entalpha, multitexture, and r_drawflat
+GL_DrawAliasFrame -- johnfitz -- rewritten to support colored light, lerping, entalpha, multitexture
 =============
 */
 void GL_DrawAliasFrame (aliashdr_t *paliashdr, lerpdata_t lerpdata)
@@ -359,12 +359,7 @@ void GL_DrawAliasFrame (aliashdr_t *paliashdr, lerpdata_t lerpdata)
 
 			if (shading)
 			{
-				if (r_drawflat_cheatsafe)
-				{
-					srand (count * (unsigned int) (src_offset_t) commands);
-					glColor3f (rand () % 256 / 255.0, rand () % 256 / 255.0, rand () % 256 / 255.0);
-				}
-				else if (lerping)
+				if (lerping)
 				{
 					vertcolor[0] = (shadedots[verts1->lightnormalindex] * iblend + shadedots[verts2->lightnormalindex] * blend) * lightcolor[0];
 					vertcolor[1] = (shadedots[verts1->lightnormalindex] * iblend + shadedots[verts2->lightnormalindex] * blend) * lightcolor[1];
@@ -643,21 +638,15 @@ void R_DrawAliasModel (entity_t *e)
 	glTranslatef (paliashdr->scale_origin[0], paliashdr->scale_origin[1], paliashdr->scale_origin[2]);
 	glScalef (paliashdr->scale[0], paliashdr->scale[1], paliashdr->scale[2]);
 
-	// random stuff
-	if (gl_smoothmodels.value && !r_drawflat_cheatsafe)
-		glShadeModel (GL_SMOOTH);
-	if (gl_affinemodels.value)
-		glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
 	overbright = gl_overbright_models.value;
 	shading = true;
 
 	// set up for alpha blending
-	if (r_drawflat_cheatsafe || r_lightmap_cheatsafe) // no alpha in drawflat or lightmap mode
-		entalpha = 1;
-	else
-		entalpha = ENTALPHA_DECODE (e->alpha);
+	entalpha = ENTALPHA_DECODE (e->alpha);
+
 	if (entalpha == 0)
 		goto cleanup;
+
 	if (entalpha < 1)
 	{
 		if (!gl_texture_env_combine) overbright = false; // overbright can't be done in a single pass without combiners
@@ -675,271 +664,46 @@ void R_DrawAliasModel (entity_t *e)
 	GL_DisableMultitexture ();
 	anim = (int) (cl.time * 10) & 3;
 	skinnum = e->skinnum;
+
 	if ((skinnum >= paliashdr->numskins) || (skinnum < 0))
 	{
 		Con_DPrintf ("R_DrawAliasModel: no such skin # %d for '%s'\n", skinnum, e->model->name);
 		// ericw -- display skin 0 for winquake compatibility
 		skinnum = 0;
 	}
+
 	tx = paliashdr->gltextures[skinnum][anim];
 	fb = paliashdr->fbtextures[skinnum][anim];
+
 	if (e->colormap != vid.colormap && !gl_nocolors.value)
 	{
 		i = e - cl_entities;
 		if (i >= 1 && i <= cl.maxclients /* && !strcmp (currententity->model->name, "progs/player.mdl") */)
 			tx = playertextures[i - 1];
 	}
+
 	if (!gl_fullbrights.value)
 		fb = NULL;
 
 	// draw it
-	if (r_drawflat_cheatsafe)
-	{
-		glDisable (GL_TEXTURE_2D);
-		GL_DrawAliasFrame (paliashdr, lerpdata);
-		glEnable (GL_TEXTURE_2D);
-		srand ((int) (cl.time * 1000)); // restore randomness
-	}
-	else if (r_fullbright_cheatsafe)
-	{
-		GL_Bind (tx);
-		shading = false;
-		glColor4f (1, 1, 1, entalpha);
-		GL_DrawAliasFrame (paliashdr, lerpdata);
-		if (fb)
-		{
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			GL_Bind (fb);
-			glEnable (GL_BLEND);
-			glBlendFunc (GL_ONE, GL_ONE);
-			glDepthMask (GL_FALSE);
-			glColor3f (entalpha, entalpha, entalpha);
-			Fog_StartAdditive ();
-			GL_DrawAliasFrame (paliashdr, lerpdata);
-			Fog_StopAdditive ();
-			glDepthMask (GL_TRUE);
-			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			glDisable (GL_BLEND);
-		}
-	}
-	else if (r_lightmap_cheatsafe)
-	{
-		glDisable (GL_TEXTURE_2D);
-		shading = false;
-		glColor3f (1, 1, 1);
-		GL_DrawAliasFrame (paliashdr, lerpdata);
-		glEnable (GL_TEXTURE_2D);
-	}
 	// call fast path if possible. if the shader compliation failed for some reason,
 	// r_alias_program will be 0.
-	else if (r_alias_program != 0)
+	if (r_alias_program != 0)
 	{
 		GL_DrawAliasFrame_GLSL (paliashdr, lerpdata, tx, fb);
-	}
-	else if (overbright)
-	{
-		if (gl_texture_env_combine && gl_mtexable && gl_texture_env_add && fb) // case 1: everything in one pass
-		{
-			GL_Bind (tx);
-			glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
-			glTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);
-			glTexEnvi (GL_TEXTURE_ENV, GL_SOURCE0_RGB_EXT, GL_TEXTURE);
-			glTexEnvi (GL_TEXTURE_ENV, GL_SOURCE1_RGB_EXT, GL_PRIMARY_COLOR_EXT);
-			glTexEnvf (GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 2.0f);
-			GL_EnableMultitexture (); // selects TEXTURE1
-			GL_Bind (fb);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
-			glEnable (GL_BLEND);
-			GL_DrawAliasFrame (paliashdr, lerpdata);
-			glDisable (GL_BLEND);
-			GL_DisableMultitexture ();
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		}
-		else if (gl_texture_env_combine) // case 2: overbright in one pass, then fullbright pass
-		{
-			// first pass
-			GL_Bind (tx);
-			glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);
-			glTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);
-			glTexEnvi (GL_TEXTURE_ENV, GL_SOURCE0_RGB_EXT, GL_TEXTURE);
-			glTexEnvi (GL_TEXTURE_ENV, GL_SOURCE1_RGB_EXT, GL_PRIMARY_COLOR_EXT);
-			glTexEnvf (GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 2.0f);
-			GL_DrawAliasFrame (paliashdr, lerpdata);
-			glTexEnvf (GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 1.0f);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-			// second pass
-			if (fb)
-			{
-				glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-				GL_Bind (fb);
-				glEnable (GL_BLEND);
-				glBlendFunc (GL_ONE, GL_ONE);
-				glDepthMask (GL_FALSE);
-				shading = false;
-				glColor3f (entalpha, entalpha, entalpha);
-				Fog_StartAdditive ();
-				GL_DrawAliasFrame (paliashdr, lerpdata);
-				Fog_StopAdditive ();
-				glDepthMask (GL_TRUE);
-				glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				glDisable (GL_BLEND);
-				glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-			}
-		}
-		else // case 3: overbright in two passes, then fullbright pass
-		{
-			// first pass
-			GL_Bind (tx);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			GL_DrawAliasFrame (paliashdr, lerpdata);
-			// second pass -- additive with black fog, to double the object colors but not the fog color
-			glEnable (GL_BLEND);
-			glBlendFunc (GL_ONE, GL_ONE);
-			glDepthMask (GL_FALSE);
-			Fog_StartAdditive ();
-			GL_DrawAliasFrame (paliashdr, lerpdata);
-			Fog_StopAdditive ();
-			glDepthMask (GL_TRUE);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-			glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			glDisable (GL_BLEND);
-			// third pass
-			if (fb)
-			{
-				glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-				GL_Bind (fb);
-				glEnable (GL_BLEND);
-				glBlendFunc (GL_ONE, GL_ONE);
-				glDepthMask (GL_FALSE);
-				shading = false;
-				glColor3f (entalpha, entalpha, entalpha);
-				Fog_StartAdditive ();
-				GL_DrawAliasFrame (paliashdr, lerpdata);
-				Fog_StopAdditive ();
-				glDepthMask (GL_TRUE);
-				glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				glDisable (GL_BLEND);
-				glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-			}
-		}
-	}
-	else
-	{
-		if (gl_mtexable && gl_texture_env_add && fb) // case 4: fullbright mask using multitexture
-		{
-			GL_DisableMultitexture (); // selects TEXTURE0
-			GL_Bind (tx);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			GL_EnableMultitexture (); // selects TEXTURE1
-			GL_Bind (fb);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
-			glEnable (GL_BLEND);
-			GL_DrawAliasFrame (paliashdr, lerpdata);
-			glDisable (GL_BLEND);
-			GL_DisableMultitexture ();
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		}
-		else // case 5: fullbright mask without multitexture
-		{
-			// first pass
-			GL_Bind (tx);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			GL_DrawAliasFrame (paliashdr, lerpdata);
-			// second pass
-			if (fb)
-			{
-				GL_Bind (fb);
-				glEnable (GL_BLEND);
-				glBlendFunc (GL_ONE, GL_ONE);
-				glDepthMask (GL_FALSE);
-				shading = false;
-				glColor3f (entalpha, entalpha, entalpha);
-				Fog_StartAdditive ();
-				GL_DrawAliasFrame (paliashdr, lerpdata);
-				Fog_StopAdditive ();
-				glDepthMask (GL_TRUE);
-				glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				glDisable (GL_BLEND);
-			}
-		}
 	}
 
 cleanup:
 	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-	glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	glShadeModel (GL_FLAT);
+	glShadeModel (GL_SMOOTH);
 	glDepthMask (GL_TRUE);
 	glDisable (GL_BLEND);
+
 	if (alphatest)
 		glDisable (GL_ALPHA_TEST);
+
 	glColor3f (1, 1, 1);
 	glPopMatrix ();
 }
 
-// johnfitz -- values for shadow matrix
-#define SHADOW_SKEW_X -0.7 // skew along x axis. -0.7 to mimic glquake shadows
-#define SHADOW_SKEW_Y 0 // skew along y axis. 0 to mimic glquake shadows
-#define SHADOW_VSCALE 0 // 0=completely flat
-#define SHADOW_HEIGHT 0.1 // how far above the floor to render the shadow
-// johnfitz
-
-/*
-=============
-GL_DrawAliasShadow -- johnfitz -- rewritten
-
-TODO: orient shadow onto "lightplane" (a global mplane_t*)
-=============
-*/
-void GL_DrawAliasShadow (entity_t *e)
-{
-	float	shadowmatrix[16] = { 1, 0, 0, 0,
-		0, 1, 0, 0,
-		SHADOW_SKEW_X, SHADOW_SKEW_Y, SHADOW_VSCALE, 0,
-		0, 0, SHADOW_HEIGHT, 1 };
-	float		lheight;
-	aliashdr_t *paliashdr;
-	lerpdata_t	lerpdata;
-
-	if (R_CullModelForEntity (e))
-		return;
-
-	if (e == &cl.viewent || e->model->flags & MOD_NOSHADOW)
-		return;
-
-	entalpha = ENTALPHA_DECODE (e->alpha);
-	if (entalpha == 0) return;
-
-	paliashdr = (aliashdr_t *) Mod_Extradata (e->model);
-	R_SetupAliasFrame (paliashdr, e->frame, &lerpdata);
-	R_SetupEntityTransform (e, &lerpdata);
-	R_LightPoint (e->origin);
-	lheight = currententity->origin[2] - lightspot[2];
-
-	// set up matrix
-	glPushMatrix ();
-	glTranslatef (lerpdata.origin[0], lerpdata.origin[1], lerpdata.origin[2]);
-	glTranslatef (0, 0, -lheight);
-	glMultMatrixf (shadowmatrix);
-	glTranslatef (0, 0, lheight);
-	glRotatef (lerpdata.angles[1], 0, 0, 1);
-	glRotatef (-lerpdata.angles[0], 0, 1, 0);
-	glRotatef (lerpdata.angles[2], 1, 0, 0);
-	glTranslatef (paliashdr->scale_origin[0], paliashdr->scale_origin[1], paliashdr->scale_origin[2]);
-	glScalef (paliashdr->scale[0], paliashdr->scale[1], paliashdr->scale[2]);
-
-	// draw it
-	glDepthMask (GL_FALSE);
-	glEnable (GL_BLEND);
-	GL_DisableMultitexture ();
-	glDisable (GL_TEXTURE_2D);
-	shading = false;
-	glColor4f (0, 0, 0, entalpha * 0.5);
-	GL_DrawAliasFrame (paliashdr, lerpdata);
-	glEnable (GL_TEXTURE_2D);
-	glDisable (GL_BLEND);
-	glDepthMask (GL_TRUE);
-
-	// clean up
-	glPopMatrix ();
-}
 

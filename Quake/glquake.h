@@ -119,14 +119,10 @@ extern	int		d_lightstylevalue[256];	// 8.8 fraction of base light value
 
 extern	cvar_t	r_norefresh;
 extern	cvar_t	r_drawentities;
-extern	cvar_t	r_drawworld;
 extern	cvar_t	r_drawviewmodel;
 extern	cvar_t	r_speeds;
 extern	cvar_t	r_pos;
 extern	cvar_t	r_waterwarp;
-extern	cvar_t	r_fullbright;
-extern	cvar_t	r_lightmap;
-extern	cvar_t	r_shadows;
 extern	cvar_t	r_wateralpha;
 extern	cvar_t	r_lavaalpha;
 extern	cvar_t	r_telealpha;
@@ -137,8 +133,6 @@ extern	cvar_t	r_scale;
 
 extern	cvar_t	gl_clear;
 extern	cvar_t	gl_cull;
-extern	cvar_t	gl_smoothmodels;
-extern	cvar_t	gl_affinemodels;
 extern	cvar_t	gl_polyblend;
 extern	cvar_t	gl_flashblend;
 extern	cvar_t	gl_nocolors;
@@ -307,7 +301,6 @@ extern int lightmap_count;	// allocated lightmaps
 
 extern int gl_warpimagesize; // johnfitz -- for water warp
 
-extern qboolean r_drawflat_cheatsafe, r_fullbright_cheatsafe, r_lightmap_cheatsafe, r_drawworld_cheatsafe; // johnfitz
 
 typedef struct glsl_attrib_binding_s {
 	const char *name;
@@ -376,7 +369,6 @@ void R_DeleteShaders (void);
 
 void GLWorld_CreateShaders (void);
 void GLAlias_CreateShaders (void);
-void GL_DrawAliasShadow (entity_t *e);
 void DrawGLTriangleFan (glpoly_t *p);
 void DrawGLPoly (glpoly_t *p);
 void DrawWaterPoly (glpoly_t *p);

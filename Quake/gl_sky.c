@@ -530,9 +530,6 @@ void Sky_ProcessTextureChains (void)
 	msurface_t *s;
 	texture_t *t;
 
-	if (!r_drawworld_cheatsafe)
-		return;
-
 	for (i = 0; i < cl.worldmodel->numtextures; i++)
 	{
 		t = cl.worldmodel->textures[i];
@@ -967,14 +964,8 @@ called once per frame before drawing anything else
 */
 void Sky_DrawSky (void)
 {
-	int				i;
-
-	// in these special render modes, the sky faces are handled in the normal world/brush renderer
-	if (r_drawflat_cheatsafe || r_lightmap_cheatsafe)
-		return;
-
 	// reset sky bounds
-	for (i = 0; i < 6; i++)
+	for (int i = 0; i < 6; i++)
 	{
 		skymins[0][i] = skymins[1][i] = FLT_MAX;
 		skymaxs[0][i] = skymaxs[1][i] = -FLT_MAX;
@@ -983,10 +974,12 @@ void Sky_DrawSky (void)
 	// process world and bmodels: draw flat-shaded sky surfs, and update skybounds
 	Fog_DisableGFog ();
 	glDisable (GL_TEXTURE_2D);
+
 	if (Fog_GetDensity () > 0)
 		glColor3fv (Fog_GetColor ());
 	else
 		glColor3fv (skyflatcolor);
+
 	Sky_ProcessTextureChains ();
 	Sky_ProcessEntities ();
 	glColor3f (1, 1, 1);

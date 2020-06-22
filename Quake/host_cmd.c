@@ -622,7 +622,7 @@ void Host_Noclip_f (void)
 ====================
 Host_SetPos_f
 
-adapted from fteqw, originally by Alex Shadowalker
+adapted from fteqw
 ====================
 */
 void Host_SetPos_f (void)

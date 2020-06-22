@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern cvar_t gl_fullbrights, r_drawflat, gl_overbright, r_oldskyleaf; // johnfitz
+extern cvar_t gl_fullbrights, gl_overbright, r_oldskyleaf; // johnfitz
 
 byte *SV_FatPVS (vec3_t org, qmodel_t *worldmodel);
 
@@ -202,9 +202,6 @@ void R_CullSurfaces (void)
 	int i;
 	texture_t *t;
 
-	if (!r_drawworld_cheatsafe)
-		return;
-
 	// ericw -- instead of testing (s->visframe == r_visframecount) on all world
 	// surfaces, use the chained surfaces, which is exactly the same set of sufaces
 	for (i = 0; i < cl.worldmodel->numtextures; i++)
@@ -229,7 +226,7 @@ void R_CullSurfaces (void)
 
 /*
 ================
-R_BuildLightmapChains -- johnfitz -- used for r_lightmap 1
+R_BuildLightmapChains
 
 ericw -- now always used at the start of R_DrawTextureChains for the
 mh dynamic lighting speedup
@@ -297,40 +294,6 @@ static void R_EndTransparentDrawing (float entalpha)
 }
 
 
-/*
-================
-R_DrawTextureChains_Drawflat -- johnfitz
-================
-*/
-void R_DrawTextureChains_Drawflat (qmodel_t *model, texchain_t chain)
-{
-	int			i;
-	msurface_t *s;
-	texture_t *t;
-
-	for (i = 0; i < model->numtextures; i++)
-	{
-		t = model->textures[i];
-		if (!t)
-			continue;
-
-		for (s = t->texturechains[chain]; s; s = s->texturechain)
-		{
-			if (!s->culled)
-			{
-				srand ((unsigned int) (uintptr_t) s->polys);
-				glColor3f (rand () % 256 / 255.0, rand () % 256 / 255.0, rand () % 256 / 255.0);
-				DrawGLPoly (s->polys);
-				rs_brushpasses++;
-			}
-		}
-	}
-
-	glColor3f (1, 1, 1);
-	srand ((int) (cl.time * 1000));
-}
-
-
 // ==============================================================================
 // VBO SUPPORT
 // ==============================================================================
@@ -339,6 +302,7 @@ static unsigned int R_NumTriangleIndicesForSurf (msurface_t *s)
 {
 	return 3 * (s->numedges - 2);
 }
+
 
 /*
 ================
@@ -359,7 +323,7 @@ static void R_TriangleIndicesForSurf (msurface_t *s, unsigned int *dest)
 }
 
 
-#define MAX_BATCH_SIZE 4096
+#define MAX_BATCH_SIZE 32768
 
 static unsigned int vbo_indices[MAX_BATCH_SIZE];
 static unsigned int num_vbo_indices;
@@ -521,9 +485,6 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 	qboolean	bound;
 	float entalpha;
 
-	if (r_drawflat_cheatsafe || r_lightmap_cheatsafe) // ericw -- !r_drawworld_cheatsafe check moved to R_DrawWorld_Water ()
-		return;
-
 	for (i = 0; i < model->numtextures; i++)
 	{
 		t = model->textures[i];
@@ -557,34 +518,6 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 	}
 }
 
-/*
-================
-R_DrawTextureChains_White -- johnfitz -- draw sky and water as white polys when r_lightmap is 1
-================
-*/
-void R_DrawTextureChains_White (qmodel_t *model, texchain_t chain)
-{
-	int			i;
-	msurface_t *s;
-	texture_t *t;
-
-	glDisable (GL_TEXTURE_2D);
-	for (i = 0; i < model->numtextures; i++)
-	{
-		t = model->textures[i];
-
-		if (!t || !t->texturechains[chain] || !(t->texturechains[chain]->flags & SURF_DRAWTILED))
-			continue;
-
-		for (s = t->texturechains[chain]; s; s = s->texturechain)
-			if (!s->culled)
-			{
-				DrawGLPoly (s->polys);
-				rs_brushpasses++;
-			}
-	}
-	glEnable (GL_TEXTURE_2D);
-}
 
 /*
 ================
@@ -859,44 +792,10 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, texchain_t chain)
 
 	// ericw -- the mh dynamic lightmap speedup: make a first pass through all
 	// surfaces we are going to draw, and rebuild any lightmaps that need it.
-	// this also chains surfaces by lightmap which is used by r_lightmap 1.
 	// the previous implementation of the speedup uploaded lightmaps one frame
 	// late which was visible under some conditions, this method avoids that.
 	R_BuildLightmapChains (model, chain);
 	R_UploadLightmaps ();
-
-	if (r_drawflat_cheatsafe)
-	{
-		glDisable (GL_TEXTURE_2D);
-		R_DrawTextureChains_Drawflat (model, chain);
-		glEnable (GL_TEXTURE_2D);
-		return;
-	}
-
-	if (r_fullbright_cheatsafe)
-	{
-		R_BeginTransparentDrawing (entalpha);
-		R_DrawTextureChains_TextureOnly (model, ent, chain);
-		R_EndTransparentDrawing (entalpha);
-		return;
-	}
-
-	if (r_lightmap_cheatsafe)
-	{
-		if (!gl_overbright.value)
-		{
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			glColor3f (0.5, 0.5, 0.5);
-		}
-		R_DrawLightmapChains ();
-		if (!gl_overbright.value)
-		{
-			glColor3f (1, 1, 1);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		}
-		R_DrawTextureChains_White (model, chain);
-		return;
-	}
 
 	R_BeginTransparentDrawing (entalpha);
 
@@ -919,9 +818,6 @@ R_DrawWorld -- ericw -- moved from R_DrawTextureChains, which is no longer speci
 */
 void R_DrawWorld (void)
 {
-	if (!r_drawworld_cheatsafe)
-		return;
-
 	R_DrawTextureChains (cl.worldmodel, NULL, chain_world);
 }
 
@@ -932,9 +828,6 @@ R_DrawWorld_Water -- ericw -- moved from R_DrawTextureChains_Water, which is no 
 */
 void R_DrawWorld_Water (void)
 {
-	if (!r_drawworld_cheatsafe)
-		return;
-
 	R_DrawTextureChains_Water (cl.worldmodel, NULL, chain_world);
 }
 
