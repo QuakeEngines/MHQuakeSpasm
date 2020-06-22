@@ -629,7 +629,12 @@ void R_DrawAliasModel (entity_t *e)
 
 	// transform it
 	glPushMatrix ();
-	R_RotateForEntity (lerpdata.origin, lerpdata.angles);
+
+	glTranslatef (lerpdata.origin[0], lerpdata.origin[1], lerpdata.origin[2]);
+	glRotatef (lerpdata.angles[1], 0, 0, 1);
+	glRotatef (-lerpdata.angles[0], 0, 1, 0);
+	glRotatef (lerpdata.angles[2], 1, 0, 0);
+
 	glTranslatef (paliashdr->scale_origin[0], paliashdr->scale_origin[1], paliashdr->scale_origin[2]);
 	glScalef (paliashdr->scale[0], paliashdr->scale[1], paliashdr->scale[2]);
 

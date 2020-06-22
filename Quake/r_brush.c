@@ -25,9 +25,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 
 extern cvar_t gl_fullbrights, gl_overbright; // johnfitz
-extern cvar_t gl_zfix; // QuakeSpasm z-fighting fix
 
 #define MAX_SANITY_LIGHTMAPS (1u<<20)
+
 struct lightmap_s *lightmap;
 int					lightmap_count;
 int					last_lightmap_allocated;
@@ -56,19 +56,19 @@ texture_t *R_TextureAnimation (texture_t *base, int frame)
 		return base;
 
 	relative = (int) (cl.time * 10) % base->anim_total;
-
 	count = 0;
+
 	while (base->anim_min > relative || base->anim_max <= relative)
 	{
 		base = base->anim_next;
-		if (!base)
-			Sys_Error ("R_TextureAnimation: broken cycle");
-		if (++count > 100)
-			Sys_Error ("R_TextureAnimation: infinite cycle");
+
+		if (!base) Sys_Error ("R_TextureAnimation: broken cycle");
+		if (++count > 100) Sys_Error ("R_TextureAnimation: infinite cycle");
 	}
 
 	return base;
 }
+
 
 /*
 ================
@@ -90,25 +90,6 @@ void DrawGLPoly (glpoly_t *p)
 	glEnd ();
 }
 
-
-/*
-================
-DrawGLTriangleFan
-================
-*/
-void DrawGLTriangleFan (glpoly_t *p)
-{
-	float *v;
-	int		i;
-
-	glBegin (GL_TRIANGLE_FAN);
-	v = p->verts[0];
-	for (i = 0; i < p->numverts; i++, v += VERTEXSIZE)
-	{
-		glVertex3fv (v);
-	}
-	glEnd ();
-}
 
 /*
 =============================================================
@@ -156,24 +137,12 @@ void R_DrawBrushModel (entity_t *e)
 	currententity = e;
 	clmodel = e->model;
 
-	VectorSubtract (r_refdef.vieworg, e->origin, modelorg);
-
-	if (e->angles[0] || e->angles[1] || e->angles[2])
-	{
-		vec3_t	temp;
-		vec3_t	forward, right, up;
-
-		VectorCopy (modelorg, temp);
-		AngleVectors (e->angles, forward, right, up);
-		modelorg[0] = DotProduct (temp, forward);
-		modelorg[1] = -DotProduct (temp, right);
-		modelorg[2] = DotProduct (temp, up);
-	}
+	R_InverseTransform (modelorg, r_refdef.vieworg, e->origin, e->angles);
 
 	psurf = &clmodel->surfaces[clmodel->firstmodelsurface];
 
 	// calculate dynamic lighting for bmodel if it's not an instanced model
-	if (clmodel->firstmodelsurface != 0 && !gl_flashblend.value)
+	if (clmodel->firstmodelsurface != 0)
 	{
 		for (k = 0; k < MAX_DLIGHTS; k++)
 		{
@@ -188,25 +157,11 @@ void R_DrawBrushModel (entity_t *e)
 	}
 
 	glPushMatrix ();
-	e->angles[0] = -e->angles[0];	// stupid quake bug
 
-	if (gl_zfix.value)
-	{
-		e->origin[0] -= DIST_EPSILON;
-		e->origin[1] -= DIST_EPSILON;
-		e->origin[2] -= DIST_EPSILON;
-	}
-
-	R_RotateForEntity (e->origin, e->angles);
-
-	if (gl_zfix.value)
-	{
-		e->origin[0] += DIST_EPSILON;
-		e->origin[1] += DIST_EPSILON;
-		e->origin[2] += DIST_EPSILON;
-	}
-
-	e->angles[0] = -e->angles[0];	// stupid quake bug
+	glTranslatef (e->origin[0], e->origin[1], e->origin[2]);
+	glRotatef (e->angles[1], 0, 0, 1);
+	glRotatef (e->angles[0], 0, 1, 0);
+	glRotatef (e->angles[2], 1, 0, 0);
 
 	R_ClearTextureChains (clmodel, chain_model);
 

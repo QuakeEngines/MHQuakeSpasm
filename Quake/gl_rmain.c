@@ -67,7 +67,6 @@ cvar_t	gl_finish = { "gl_finish", "0", CVAR_NONE };
 cvar_t	gl_clear = { "gl_clear", "1", CVAR_NONE };
 cvar_t	gl_cull = { "gl_cull", "1", CVAR_NONE };
 cvar_t	gl_polyblend = { "gl_polyblend", "1", CVAR_NONE };
-cvar_t	gl_flashblend = { "gl_flashblend", "0", CVAR_ARCHIVE };
 cvar_t	gl_playermip = { "gl_playermip", "0", CVAR_NONE };
 cvar_t	gl_nocolors = { "gl_nocolors", "0", CVAR_NONE };
 
@@ -88,8 +87,6 @@ cvar_t	r_nolerp_list = { "r_nolerp_list", "progs/flame.mdl,progs/flame2.mdl,prog
 
 extern cvar_t	r_vfog;
 // johnfitz
-
-cvar_t	gl_zfix = { "gl_zfix", "0", CVAR_NONE }; // QuakeSpasm z-fighting fix
 
 cvar_t	r_lavaalpha = { "r_lavaalpha", "0", CVAR_NONE };
 cvar_t	r_telealpha = { "r_telealpha", "0", CVAR_NONE };
@@ -321,18 +318,6 @@ qboolean R_CullModelForEntity (entity_t *e)
 	return R_CullBox (mins, maxs);
 }
 
-/*
-===============
-R_RotateForEntity -- johnfitz -- modified to take origin and angles instead of pointer to entity
-===============
-*/
-void R_RotateForEntity (vec3_t origin, vec3_t angles)
-{
-	glTranslatef (origin[0], origin[1], origin[2]);
-	glRotatef (angles[1], 0, 0, 1);
-	glRotatef (-angles[0], 0, 1, 0);
-	glRotatef (angles[2], 1, 0, 0);
-}
 
 /*
 =============
@@ -798,8 +783,6 @@ void R_RenderScene (void)
 	R_DrawWorld_Water (); // johnfitz -- drawn here since they might have transparency
 
 	R_DrawEntitiesOnList (true); // johnfitz -- true means this is the pass for alpha entities
-
-	R_RenderDlights (); // triangle fan dlights -- johnfitz -- moved after water
 
 	R_DrawParticles ();
 

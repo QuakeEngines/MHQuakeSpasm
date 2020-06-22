@@ -134,7 +134,6 @@ extern	cvar_t	r_scale;
 extern	cvar_t	gl_clear;
 extern	cvar_t	gl_cull;
 extern	cvar_t	gl_polyblend;
-extern	cvar_t	gl_flashblend;
 extern	cvar_t	gl_nocolors;
 
 extern	cvar_t	gl_playermip;
@@ -323,7 +322,6 @@ void R_CullSurfaces (void);
 qboolean R_CullBox (vec3_t emins, vec3_t emaxs);
 void R_StoreEfrags (efrag_t **ppefrag);
 qboolean R_CullModelForEntity (entity_t *e);
-void R_RotateForEntity (vec3_t origin, vec3_t angles);
 void R_MarkLights (dlight_t *light, int num, mnode_t *node);
 
 void R_InitParticles (void);
@@ -342,7 +340,6 @@ void R_DrawSpriteModel (entity_t *e);
 
 void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain);
 
-void R_RenderDlights (void);
 void GL_BuildLightmaps (void);
 void GL_DeleteBModelVertexBuffer (void);
 void GL_BuildBModelVertexBuffer (void);
@@ -362,7 +359,6 @@ void R_DeleteShaders (void);
 
 void GLWorld_CreateShaders (void);
 void GLAlias_CreateShaders (void);
-void DrawGLTriangleFan (glpoly_t *p);
 void DrawGLPoly (glpoly_t *p);
 void DrawWaterPoly (glpoly_t *p);
 void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr);
