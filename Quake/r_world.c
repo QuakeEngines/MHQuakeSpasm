@@ -634,12 +634,7 @@ void GLWorld_CreateShaders (void)
 		"	gl_FragColor = result;\n"
 		"}\n";
 
-	if (!gl_glsl_alias_able)
-		return;
-
-	r_world_program = GL_CreateProgram (vertSource, fragSource, sizeof (bindings) / sizeof (bindings[0]), bindings);
-
-	if (r_world_program != 0)
+	if ((r_world_program = GL_CreateProgram (vertSource, fragSource, sizeof (bindings) / sizeof (bindings[0]), bindings)) != 0)
 	{
 		// get uniform locations
 		texLoc = GL_GetUniformLocation (&r_world_program, "Tex");

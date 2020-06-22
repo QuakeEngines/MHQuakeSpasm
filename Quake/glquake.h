@@ -161,7 +161,6 @@ extern PFNGLBUFFERDATAARBPROC  GL_BufferDataFunc;
 extern PFNGLBUFFERSUBDATAARBPROC  GL_BufferSubDataFunc;
 extern PFNGLDELETEBUFFERSARBPROC  GL_DeleteBuffersFunc;
 extern PFNGLGENBUFFERSARBPROC  GL_GenBuffersFunc;
-extern	qboolean	gl_vbo_able;
 // ericw
 
 // ericw -- GLSL
@@ -214,9 +213,6 @@ extern QS_PFNGLUNIFORM1IPROC GL_Uniform1iFunc;
 extern QS_PFNGLUNIFORM1FPROC GL_Uniform1fFunc;
 extern QS_PFNGLUNIFORM3FPROC GL_Uniform3fFunc;
 extern QS_PFNGLUNIFORM4FPROC GL_Uniform4fFunc;
-extern	qboolean	gl_glsl_able;
-extern	qboolean	gl_glsl_gamma_able;
-extern	qboolean	gl_glsl_alias_able;
 // ericw --
 
 // ericw -- NPOT texture support
@@ -274,9 +270,6 @@ typedef struct {
 } overflowtimes_t;
 extern overflowtimes_t dev_overflows; // this stores the last time overflow messages were displayed, not the last time overflows occured
 #define CONSOLE_RESPAM_TIME 3 // seconds between repeated warning messages
-
-// johnfitz -- moved here from r_brush.c
-extern int gl_lightmap_format, lightmap_bytes;
 
 #define LMBLOCK_WIDTH	256	// FIXME: make dynamic. if we have a decent card there's no real reason not to use 4k or 16k (assuming there's no lightstyles/dynamics that need uploading...)
 #define LMBLOCK_HEIGHT	256 // Alternatively, use texture arrays, which would avoid the need to switch textures as often.

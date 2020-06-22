@@ -27,9 +27,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern cvar_t gl_fullbrights, gl_overbright; // johnfitz
 extern cvar_t gl_zfix; // QuakeSpasm z-fighting fix
 
-int		gl_lightmap_format;
-int		lightmap_bytes;
-
 #define MAX_SANITY_LIGHTMAPS (1u<<20)
 struct lightmap_s *lightmap;
 int					lightmap_count;
@@ -299,9 +296,9 @@ dynamic:
 				theRect->h = (surf->light_t - theRect->t) + tmax;
 
 			base = lm->data;
-			base += surf->light_t * LMBLOCK_WIDTH * lightmap_bytes + surf->light_s * lightmap_bytes;
+			base += surf->light_t * LMBLOCK_WIDTH * 4 + surf->light_s * 4;
 
-			R_BuildLightMap (surf, base, LMBLOCK_WIDTH * lightmap_bytes);
+			R_BuildLightMap (surf, base, LMBLOCK_WIDTH * 4);
 		}
 	}
 }
@@ -395,9 +392,9 @@ void GL_CreateSurfaceLightmap (msurface_t *surf)
 	surf->lightmaptexturenum = AllocBlock (smax, tmax, &surf->light_s, &surf->light_t);
 
 	base = lightmap[surf->lightmaptexturenum].data;
-	base += (surf->light_t * LMBLOCK_WIDTH + surf->light_s) * lightmap_bytes;
+	base += (surf->light_t * LMBLOCK_WIDTH + surf->light_s) * 4;
 
-	R_BuildLightMap (surf, base, LMBLOCK_WIDTH * lightmap_bytes);
+	R_BuildLightMap (surf, base, LMBLOCK_WIDTH * 4);
 }
 
 
@@ -489,34 +486,22 @@ void GL_BuildLightmaps (void)
 	// Spike -- wipe out all the lightmap data (johnfitz -- the gltexture objects were already freed by Mod_ClearAll)
 	for (i = 0; i < lightmap_count; i++)
 		free (lightmap[i].data);
+
 	free (lightmap);
 	lightmap = NULL;
 	last_lightmap_allocated = 0;
 	lightmap_count = 0;
 
-	gl_lightmap_format = GL_RGBA;// FIXME: hardcoded for now!
-
-	switch (gl_lightmap_format)
-	{
-	case GL_RGBA:
-		lightmap_bytes = 4;
-		break;
-	case GL_BGRA:
-		lightmap_bytes = 4;
-		break;
-	default:
-		Sys_Error ("GL_BuildLightmaps: bad lightmap format");
-	}
-
 	for (j = 1; j < MAX_MODELS; j++)
 	{
 		m = cl.model_precache[j];
-		if (!m)
-			break;
-		if (m->name[0] == '*')
-			continue;
+
+		if (!m) break;
+		if (m->name[0] == '*') continue;
+
 		r_pcurrentvertbase = m->vertexes;
 		currentmodel = m;
+
 		for (i = 0; i < m->numsurfaces; i++)
 		{
 			// johnfitz -- rewritten to use SURF_DRAWTILED instead of the sky/water flags
@@ -567,7 +552,7 @@ GLuint gl_bmodel_vbo = 0;
 
 void GL_DeleteBModelVertexBuffer (void)
 {
-	if (!(gl_vbo_able && gl_mtexable && gl_max_texture_units >= 3))
+	if (!(gl_mtexable && gl_max_texture_units >= 3))
 		return;
 
 	GL_DeleteBuffersFunc (1, &gl_bmodel_vbo);
@@ -592,7 +577,7 @@ void GL_BuildBModelVertexBuffer (void)
 	qmodel_t *m;
 	float *varray;
 
-	if (!(gl_vbo_able && gl_mtexable && gl_max_texture_units >= 3))
+	if (!(gl_mtexable && gl_max_texture_units >= 3))
 		return;
 
 	// ask GL for a name for our VBO
@@ -791,70 +776,34 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 
 	// bound, invert, and shift
 	// store:
-	switch (gl_lightmap_format)
+	stride -= smax * 4;
+	bl = blocklights;
+
+	for (i = 0; i < tmax; i++, dest += stride)
 	{
-	case GL_RGBA:
-		stride -= smax * 4;
-		bl = blocklights;
-		for (i = 0; i < tmax; i++, dest += stride)
+		for (j = 0; j < smax; j++)
 		{
-			for (j = 0; j < smax; j++)
+			if (gl_overbright.value)
 			{
-				if (gl_overbright.value)
-				{
-					r = *bl++ >> 8;
-					g = *bl++ >> 8;
-					b = *bl++ >> 8;
-				}
-				else
-				{
-					r = *bl++ >> 7;
-					g = *bl++ >> 7;
-					b = *bl++ >> 7;
-				}
-
-				*dest++ = (r > 255) ? 255 : r;
-				*dest++ = (g > 255) ? 255 : g;
-				*dest++ = (b > 255) ? 255 : b;
-				*dest++ = 255;
+				r = *bl++ >> 8;
+				g = *bl++ >> 8;
+				b = *bl++ >> 8;
 			}
-		}
-
-		break;
-
-	case GL_BGRA:
-		stride -= smax * 4;
-		bl = blocklights;
-		for (i = 0; i < tmax; i++, dest += stride)
-		{
-			for (j = 0; j < smax; j++)
+			else
 			{
-				if (gl_overbright.value)
-				{
-					r = *bl++ >> 8;
-					g = *bl++ >> 8;
-					b = *bl++ >> 8;
-				}
-				else
-				{
-					r = *bl++ >> 7;
-					g = *bl++ >> 7;
-					b = *bl++ >> 7;
-				}
-
-				*dest++ = (b > 255) ? 255 : b;
-				*dest++ = (g > 255) ? 255 : g;
-				*dest++ = (r > 255) ? 255 : r;
-				*dest++ = 255;
+				r = *bl++ >> 7;
+				g = *bl++ >> 7;
+				b = *bl++ >> 7;
 			}
+
+			*dest++ = (b > 255) ? 255 : b;
+			*dest++ = (g > 255) ? 255 : g;
+			*dest++ = (r > 255) ? 255 : r;
+			*dest++ = 255;
 		}
-
-		break;
-
-	default:
-		Sys_Error ("R_BuildLightMap: bad lightmap format");
 	}
 }
+
 
 /*
 ===============
@@ -872,8 +821,8 @@ static void R_UploadLightmap (int lmap)
 
 	lm->modified = false;
 
-	glTexSubImage2D (GL_TEXTURE_2D, 0, 0, lm->rectchange.t, LMBLOCK_WIDTH, lm->rectchange.h, gl_lightmap_format,
-		GL_UNSIGNED_BYTE, lm->data + lm->rectchange.t * LMBLOCK_WIDTH * lightmap_bytes);
+	glTexSubImage2D (GL_TEXTURE_2D, 0, 0, lm->rectchange.t, LMBLOCK_WIDTH, lm->rectchange.h, GL_BGRA,
+		GL_UNSIGNED_BYTE, lm->data + lm->rectchange.t * LMBLOCK_WIDTH * 4);
 
 	lm->rectchange.l = LMBLOCK_WIDTH;
 	lm->rectchange.t = LMBLOCK_HEIGHT;
@@ -928,9 +877,9 @@ void R_RebuildAllLightmaps (void)
 				continue;
 
 			base = lightmap[surf->lightmaptexturenum].data;
-			base += surf->light_t * LMBLOCK_WIDTH * lightmap_bytes + surf->light_s * lightmap_bytes;
+			base += surf->light_t * LMBLOCK_WIDTH * 4 + surf->light_s * 4;
 
-			R_BuildLightMap (surf, base, LMBLOCK_WIDTH * lightmap_bytes);
+			R_BuildLightMap (surf, base, LMBLOCK_WIDTH * 4);
 		}
 	}
 
@@ -938,6 +887,7 @@ void R_RebuildAllLightmaps (void)
 	for (i = 0; i < lightmap_count; i++)
 	{
 		GL_Bind (lightmap[i].texture);
-		glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, LMBLOCK_WIDTH, LMBLOCK_HEIGHT, gl_lightmap_format, GL_UNSIGNED_BYTE, lightmap[i].data);
+		glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, LMBLOCK_WIDTH, LMBLOCK_HEIGHT, GL_BGRA, GL_UNSIGNED_BYTE, lightmap[i].data);
 	}
 }
+

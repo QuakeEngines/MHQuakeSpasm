@@ -497,12 +497,10 @@ GLuint GL_CreateProgram (const GLchar *vertSource, const GLchar *fragSource, int
 	int i;
 	GLuint program, vertShader, fragShader;
 
-	if (!gl_glsl_able)
-		return 0;
-
 	vertShader = GL_CreateShaderFunc (GL_VERTEX_SHADER);
 	GL_ShaderSourceFunc (vertShader, 1, &vertSource, NULL);
 	GL_CompileShaderFunc (vertShader);
+
 	if (!GL_CheckShader (vertShader))
 	{
 		GL_DeleteShaderFunc (vertShader);
@@ -512,6 +510,7 @@ GLuint GL_CreateProgram (const GLchar *vertSource, const GLchar *fragSource, int
 	fragShader = GL_CreateShaderFunc (GL_FRAGMENT_SHADER);
 	GL_ShaderSourceFunc (fragShader, 1, &fragSource, NULL);
 	GL_CompileShaderFunc (fragShader);
+
 	if (!GL_CheckShader (fragShader))
 	{
 		GL_DeleteShaderFunc (vertShader);
@@ -558,18 +557,16 @@ Deletes any GLSL programs that have been created.
 */
 void R_DeleteShaders (void)
 {
-	int i;
-
-	if (!gl_glsl_able)
-		return;
-
-	for (i = 0; i < gl_num_programs; i++)
+	for (int i = 0; i < gl_num_programs; i++)
 	{
 		GL_DeleteProgramFunc (gl_programs[i]);
 		gl_programs[i] = 0;
 	}
+
 	gl_num_programs = 0;
 }
+
+
 GLuint current_array_buffer, current_element_array_buffer;
 
 /*
@@ -582,9 +579,6 @@ glBindBuffer wrapper
 void GL_BindBuffer (GLenum target, GLuint buffer)
 {
 	GLuint *cache;
-
-	if (!gl_vbo_able)
-		return;
 
 	switch (target)
 	{
@@ -616,11 +610,9 @@ invalid (e.g. manually binding, destroying the context).
 */
 void GL_ClearBufferBindings ()
 {
-	if (!gl_vbo_able)
-		return;
-
 	current_array_buffer = 0;
 	current_element_array_buffer = 0;
 	GL_BindBufferFunc (GL_ARRAY_BUFFER, 0);
 	GL_BindBufferFunc (GL_ELEMENT_ARRAY_BUFFER, 0);
 }
+

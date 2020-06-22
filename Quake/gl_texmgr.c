@@ -1166,7 +1166,7 @@ static void TexMgr_LoadLightmap (gltexture_t *glt, byte *data)
 {
 	// upload it
 	GL_Bind (glt);
-	glTexImage2D (GL_TEXTURE_2D, 0, lightmap_bytes, glt->width, glt->height, 0, gl_lightmap_format, GL_UNSIGNED_BYTE, data);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, glt->width, glt->height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
 
 	// set filter modes
 	TexMgr_SetFilterModes (glt);
@@ -1194,7 +1194,7 @@ gltexture_t *TexMgr_LoadImage (qmodel_t *owner, const char *name, int width, int
 		crc = CRC_Block (data, width * height);
 		break;
 	case SRC_LIGHTMAP:
-		crc = CRC_Block (data, width * height * lightmap_bytes);
+		crc = CRC_Block (data, width * height * 4);
 		break;
 	case SRC_RGBA:
 		crc = CRC_Block (data, width * height * 4);
@@ -1282,7 +1282,8 @@ void TexMgr_ReloadImage (gltexture_t *glt, int shirt, int pants)
 		if (glt->source_format == SRC_RGBA)
 			size *= 4;
 		else if (glt->source_format == SRC_LIGHTMAP)
-			size *= lightmap_bytes;
+			size *= 4;
+
 		data = (byte *) Hunk_Alloc (size);
 		fread (data, 1, size, f);
 		fclose (f);
@@ -1316,6 +1317,7 @@ invalid:
 		else
 			Con_Printf ("TexMgr_ReloadImage: can't colormap a non SRC_INDEXED texture: %s\n", glt->name);
 	}
+
 	if (glt->shirt > -1 && glt->pants > -1)
 	{
 		// create new translation table
@@ -1323,6 +1325,7 @@ invalid:
 			translation[i] = i;
 
 		shirt = glt->shirt * 16;
+
 		if (shirt < 128)
 		{
 			for (i = 0; i < 16; i++)
@@ -1335,6 +1338,7 @@ invalid:
 		}
 
 		pants = glt->pants * 16;
+
 		if (pants < 128)
 		{
 			for (i = 0; i < 16; i++)
@@ -1373,6 +1377,7 @@ invalid:
 
 	Hunk_FreeToLowMark (mark);
 }
+
 
 /*
 ================

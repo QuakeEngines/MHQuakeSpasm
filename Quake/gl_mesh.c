@@ -372,12 +372,10 @@ void GL_MakeAliasModelDisplayLists_VBO (void)
 	unsigned short *indexes;
 	aliasmesh_t *desc;
 
-	if (!gl_glsl_alias_able)
-		return;
-
 	// first, copy the verts onto the hunk
 	verts = (trivertx_t *) Hunk_Alloc (paliashdr->numposes * paliashdr->numverts * sizeof (trivertx_t));
 	paliashdr->vertexes = (byte *) verts - (byte *) paliashdr;
+
 	for (i = 0; i < paliashdr->numposes; i++)
 		for (j = 0; j < paliashdr->numverts; j++)
 			verts[i * paliashdr->numverts + j] = poseverts[i][j];
@@ -460,9 +458,6 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr)
 	const trivertx_t *trivertexes;
 	byte *vbodata;
 	int f;
-
-	if (!gl_glsl_alias_able)
-		return;
 
 	// count the sizes we need
 
@@ -567,9 +562,6 @@ void GLMesh_LoadVertexBuffers (void)
 	qmodel_t *m;
 	const aliashdr_t *hdr;
 
-	if (!gl_glsl_alias_able)
-		return;
-
 	for (j = 1; j < MAX_MODELS; j++)
 	{
 		if (!(m = cl.model_precache[j])) break;
@@ -592,9 +584,6 @@ void GLMesh_DeleteVertexBuffers (void)
 {
 	int j;
 	qmodel_t *m;
-
-	if (!gl_glsl_alias_able)
-		return;
 
 	for (j = 1; j < MAX_MODELS; j++)
 	{

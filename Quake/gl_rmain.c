@@ -152,16 +152,15 @@ static void GLSLGamma_CreateShaders (void)
 		"	  gl_FragColor = vec4(pow(frag.rgb, vec3(GammaValue)), 1.0);\n"
 		"}\n";
 
-	if (!gl_glsl_gamma_able)
-		return;
-
-	r_gamma_program = GL_CreateProgram (vertSource, fragSource, 0, NULL);
-
-	// get uniform locations
-	gammaLoc = GL_GetUniformLocation (&r_gamma_program, "GammaValue");
-	contrastLoc = GL_GetUniformLocation (&r_gamma_program, "ContrastValue");
-	textureLoc = GL_GetUniformLocation (&r_gamma_program, "GammaTexture");
+	if ((r_gamma_program = GL_CreateProgram (vertSource, fragSource, 0, NULL)) != 0)
+	{
+		// get uniform locations
+		gammaLoc = GL_GetUniformLocation (&r_gamma_program, "GammaValue");
+		contrastLoc = GL_GetUniformLocation (&r_gamma_program, "ContrastValue");
+		textureLoc = GL_GetUniformLocation (&r_gamma_program, "GammaTexture");
+	}
 }
+
 
 /*
 =============
@@ -171,9 +170,6 @@ GLSLGamma_GammaCorrect
 void GLSLGamma_GammaCorrect (void)
 {
 	float smax, tmax;
-
-	if (!gl_glsl_gamma_able)
-		return;
 
 	if (vid_gamma.value == 1 && vid_contrast.value == 1)
 		return;
