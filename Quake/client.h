@@ -158,13 +158,6 @@ typedef struct {
 
 	vec3_t		punchangle;		// temporary offset
 
-// pitch drifting vars
-	float		idealpitch;
-	float		pitchvel;
-	qboolean	nodrift;
-	float		driftmove;
-	double		laststop;
-
 	float		viewheight;
 	float		crouch;			// local amount for smoothing stepups
 

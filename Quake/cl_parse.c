@@ -682,10 +682,9 @@ void CL_ParseClientdata (void)
 	else
 		cl.viewheight = DEFAULT_VIEWHEIGHT;
 
+	// we must consume this char (even though we're not using it) for protocol compatibility
 	if (bits & SU_IDEALPITCH)
-		cl.idealpitch = MSG_ReadChar ();
-	else
-		cl.idealpitch = 0;
+		MSG_ReadChar ();
 
 	VectorCopy (cl.mvelocity[0], cl.mvelocity[1]);
 	for (i = 0; i < 3; i++)

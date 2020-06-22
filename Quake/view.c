@@ -169,25 +169,10 @@ cvar_t	v_centerspeed = { "v_centerspeed", "500", CVAR_NONE };
 
 void V_StartPitchDrift (void)
 {
-#if 1
-	if (cl.laststop == cl.time)
-	{
-		return;		// something else is keeping it from drifting
-	}
-#endif
-	if (cl.nodrift || !cl.pitchvel)
-	{
-		cl.pitchvel = v_centerspeed.value;
-		cl.nodrift = false;
-		cl.driftmove = 0;
-	}
 }
 
 void V_StopPitchDrift (void)
 {
-	cl.laststop = cl.time;
-	cl.nodrift = true;
-	cl.pitchvel = 0;
 }
 
 /*
@@ -205,64 +190,8 @@ lookspring is non 0, or when
 */
 void V_DriftPitch (void)
 {
-	float		delta, move;
-
-	if (noclip_anglehack || !cl.onground || cls.demoplayback)
-		// FIXME: noclip_anglehack is set on the server, so in a nonlocal game this won't work.
-	{
-		cl.driftmove = 0;
-		cl.pitchvel = 0;
-		return;
-	}
-
-	// don't count small mouse motion
-	if (cl.nodrift)
-	{
-		if (fabs (cl.cmd.forwardmove) < cl_forwardspeed.value)
-			cl.driftmove = 0;
-		else
-			cl.driftmove += host_frametime;
-
-		if (cl.driftmove > v_centermove.value)
-		{
-			if (lookspring.value)
-				V_StartPitchDrift ();
-		}
-		return;
-	}
-
-	delta = cl.idealpitch - cl.viewangles[PITCH];
-
-	if (!delta)
-	{
-		cl.pitchvel = 0;
-		return;
-	}
-
-	move = host_frametime * cl.pitchvel;
-	cl.pitchvel += host_frametime * v_centerspeed.value;
-
-	// Con_Printf ("move: %f (%f)\n", move, host_frametime);
-
-	if (delta > 0)
-	{
-		if (move > delta)
-		{
-			cl.pitchvel = 0;
-			move = delta;
-		}
-		cl.viewangles[PITCH] += move;
-	}
-	else if (delta < 0)
-	{
-		if (move > -delta)
-		{
-			cl.pitchvel = 0;
-			move = -delta;
-		}
-		cl.viewangles[PITCH] -= move;
-	}
 }
+
 
 /*
 ==============================================================================
