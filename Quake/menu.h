@@ -63,7 +63,6 @@ void M_Print (int cx, int cy, const char *str);
 void M_PrintWhite (int cx, int cy, const char *str);
 
 void M_Draw (void);
-void M_DrawCharacter (int cx, int line, int num);
 
 void M_DrawPic (int x, int y, qpic_t *pic);
 void M_DrawTransPic (int x, int y, qpic_t *pic);

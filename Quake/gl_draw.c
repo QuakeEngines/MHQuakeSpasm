@@ -448,7 +448,9 @@ typedef struct drawpolyvert_s {
 } drawpolyvert_t;
 
 
-drawpolyvert_t r_drawverts[4];
+// sufficient for a 1024 string
+drawpolyvert_t r_drawverts[4096];
+int r_numdrawverts;
 
 
 void Draw_TexturedVertex (drawpolyvert_t *vert, float x, float y, unsigned colour, float s, float t)
@@ -458,6 +460,14 @@ void Draw_TexturedVertex (drawpolyvert_t *vert, float x, float y, unsigned colou
 	vert->colour = colour;
 	vert->st[0] = s;
 	vert->st[1] = t;
+}
+
+
+void Draw_ColouredVertex (drawpolyvert_t *vert, float x, float y, unsigned colour)
+{
+	vert->xy[0] = x;
+	vert->xy[1] = y;
+	vert->colour = colour;
 }
 
 
@@ -471,6 +481,61 @@ void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h
 	Draw_TexturedVertex (&r_drawverts[3], x, y + h, colour, sl, th);
 
 	glDrawArrays (GL_QUADS, 0, 4);
+}
+
+
+void Draw_ColouredQuad (float x, float y, float w, float h, unsigned colour)
+{
+	Draw_ColouredVertex (&r_drawverts[0], x, y, colour);
+	Draw_ColouredVertex (&r_drawverts[1], x + w, y, colour);
+	Draw_ColouredVertex (&r_drawverts[2], x + w, y + h, colour);
+	Draw_ColouredVertex (&r_drawverts[3], x, y + h, colour);
+
+	glDrawArrays (GL_QUADS, 0, 4);
+}
+
+
+void Draw_BeginString (void)
+{
+	r_numdrawverts = 0;
+}
+
+
+void Draw_StringCharacter (int x, int y, int num)
+{
+	if (y <= -8)
+		return;			// totally off screen
+
+	num &= 255;
+
+	if (num == 32)
+		return; // don't waste verts on spaces
+
+	if (r_numdrawverts + 4 >= 4096)
+		Draw_EndString ();
+
+	int row = num >> 4;
+	int col = num & 15;
+
+	float frow = row * 0.0625;
+	float fcol = col * 0.0625;
+	float size = 0.0625;
+
+	Draw_TexturedVertex (&r_drawverts[r_numdrawverts++], x, y, 0xffffffff, fcol, frow);
+	Draw_TexturedVertex (&r_drawverts[r_numdrawverts++], x + 8, y, 0xffffffff, fcol + size, frow);
+	Draw_TexturedVertex (&r_drawverts[r_numdrawverts++], x + 8, y + 8, 0xffffffff, fcol + size, frow + size);
+	Draw_TexturedVertex (&r_drawverts[r_numdrawverts++], x, y + 8, 0xffffffff, fcol, frow + size);
+}
+
+
+void Draw_EndString (void)
+{
+	if (r_numdrawverts)
+	{
+		GL_Bind (char_texture);
+		glDrawArrays (GL_QUADS, 0, r_numdrawverts);
+		r_numdrawverts = 0;
+	}
 }
 
 
@@ -517,12 +582,43 @@ Draw_String
 */
 void Draw_String (int x, int y, const char *str)
 {
+	Draw_BeginString ();
+
 	while (*str)
 	{
 		if (*str != 32) // don't waste verts on spaces
-			Draw_Character (x, y, *str);
+			Draw_StringCharacter (x, y, *str);
 		str++;
 		x += 8;
+	}
+
+	Draw_EndString ();
+}
+
+
+void Draw_AlphaPic (int x, int y, qpic_t *pic, float alpha)
+{
+	glpic_t *gl;
+
+	if (scrap_dirty)
+		Scrap_Upload ();
+	gl = (glpic_t *) pic->data;
+
+	if (alpha > 0)
+	{
+		if (alpha < 1)
+		{
+			glEnable (GL_BLEND);
+			glDisable (GL_ALPHA_TEST);
+			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+			Draw_TexturedQuad (gl->gltexture, x, y, pic->width, pic->height, 0xffffff | (int) (alpha * 255) << 24, gl->sl, gl->sh, gl->tl, gl->th);
+
+			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+			glEnable (GL_ALPHA_TEST);
+			glDisable (GL_BLEND);
+		}
+		else Draw_TexturedQuad (gl->gltexture, x, y, pic->width, pic->height, 0xffffffff, gl->sl, gl->sh, gl->tl, gl->th);
 	}
 }
 
@@ -534,23 +630,9 @@ Draw_Pic -- johnfitz -- modified
 */
 void Draw_Pic (int x, int y, qpic_t *pic)
 {
-	glpic_t *gl;
-
-	if (scrap_dirty)
-		Scrap_Upload ();
-	gl = (glpic_t *) pic->data;
-	GL_Bind (gl->gltexture);
-	glBegin (GL_QUADS);
-	glTexCoord2f (gl->sl, gl->tl);
-	glVertex2f (x, y);
-	glTexCoord2f (gl->sh, gl->tl);
-	glVertex2f (x + pic->width, y);
-	glTexCoord2f (gl->sh, gl->th);
-	glVertex2f (x + pic->width, y + pic->height);
-	glTexCoord2f (gl->sl, gl->th);
-	glVertex2f (x, y + pic->height);
-	glEnd ();
+	Draw_AlphaPic (x, y, pic, 1);
 }
+
 
 /*
 =============
@@ -572,6 +654,7 @@ void Draw_TransPicTranslate (int x, int y, qpic_t *pic, int top, int bottom)
 		oldbottom = bottom;
 		TexMgr_ReloadImage (glt, top, bottom);
 	}
+
 	Draw_Pic (x, y, pic);
 }
 
@@ -592,27 +675,7 @@ void Draw_ConsoleBackground (void)
 	alpha = (con_forcedup) ? 1.0 : scr_conalpha.value;
 
 	GL_SetCanvas (CANVAS_CONSOLE); // in case this is called from weird places
-
-	if (alpha > 0.0)
-	{
-		if (alpha < 1.0)
-		{
-			glEnable (GL_BLEND);
-			glColor4f (1, 1, 1, alpha);
-			glDisable (GL_ALPHA_TEST);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		}
-
-		Draw_Pic (0, 0, pic);
-
-		if (alpha < 1.0)
-		{
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-			glEnable (GL_ALPHA_TEST);
-			glDisable (GL_BLEND);
-			glColor4f (1, 1, 1, 1);
-		}
-	}
+	Draw_AlphaPic (0, 0, pic, alpha);
 }
 
 
@@ -626,23 +689,10 @@ refresh window.
 */
 void Draw_TileClear (int x, int y, int w, int h)
 {
-	glpic_t *gl;
-
-	gl = (glpic_t *) draw_backtile->data;
-
-	glColor3f (1, 1, 1);
-	GL_Bind (gl->gltexture);
-	glBegin (GL_QUADS);
-	glTexCoord2f (x / 64.0, y / 64.0);
-	glVertex2f (x, y);
-	glTexCoord2f ((x + w) / 64.0, y / 64.0);
-	glVertex2f (x + w, y);
-	glTexCoord2f ((x + w) / 64.0, (y + h) / 64.0);
-	glVertex2f (x + w, y + h);
-	glTexCoord2f (x / 64.0, (y + h) / 64.0);
-	glVertex2f (x, y + h);
-	glEnd ();
+	glpic_t *gl = (glpic_t *) draw_backtile->data;
+	Draw_TexturedQuad (gl->gltexture, x, y, w, h, 0xffffffff, x / 64.0, (x + w) / 64.0, y / 64.0, (y + h) / 64.0);
 }
+
 
 /*
 =============
@@ -653,25 +703,28 @@ Fills a box of pixels with a single color
 */
 void Draw_Fill (int x, int y, int w, int h, int c, float alpha) // johnfitz -- added alpha
 {
-	byte *pal = (byte *) d_8to24table; // johnfitz -- use d_8to24table instead of host_basepal
+	if (alpha > 0)
+	{
+		unsigned rgba = d_8to24table[c]; // johnfitz -- use d_8to24table instead of host_basepal
 
-	glDisable (GL_TEXTURE_2D);
-	glEnable (GL_BLEND); // johnfitz -- for alpha
-	glDisable (GL_ALPHA_TEST); // johnfitz -- for alpha
-	glColor4f (pal[c * 4] / 255.0, pal[c * 4 + 1] / 255.0, pal[c * 4 + 2] / 255.0, alpha); // johnfitz -- added alpha
+		if (alpha < 1)
+		{
+			rgba &= 0x00ffffff;
+			rgba |= (int) (alpha * 255) << 24;
+		}
 
-	glBegin (GL_QUADS);
-	glVertex2f (x, y);
-	glVertex2f (x + w, y);
-	glVertex2f (x + w, y + h);
-	glVertex2f (x, y + h);
-	glEnd ();
+		glDisable (GL_TEXTURE_2D);
+		glEnable (GL_BLEND); // johnfitz -- for alpha
+		glDisable (GL_ALPHA_TEST); // johnfitz -- for alpha
 
-	glColor3f (1, 1, 1);
-	glDisable (GL_BLEND); // johnfitz -- for alpha
-	glEnable (GL_ALPHA_TEST); // johnfitz -- for alpha
-	glEnable (GL_TEXTURE_2D);
+		Draw_ColouredQuad (x, y, w, h, rgba);
+
+		glDisable (GL_BLEND); // johnfitz -- for alpha
+		glEnable (GL_ALPHA_TEST); // johnfitz -- for alpha
+		glEnable (GL_TEXTURE_2D);
+	}
 }
+
 
 /*
 ================
@@ -685,16 +738,9 @@ void Draw_FadeScreen (void)
 	glEnable (GL_BLEND);
 	glDisable (GL_ALPHA_TEST);
 	glDisable (GL_TEXTURE_2D);
-	glColor4f (0, 0, 0, 0.5);
-	glBegin (GL_QUADS);
 
-	glVertex2f (0, 0);
-	glVertex2f (glwidth, 0);
-	glVertex2f (glwidth, glheight);
-	glVertex2f (0, glheight);
+	Draw_ColouredQuad (0, 0, glwidth, glheight, 0x7f000000);
 
-	glEnd ();
-	glColor4f (1, 1, 1, 1);
 	glEnable (GL_TEXTURE_2D);
 	glEnable (GL_ALPHA_TEST);
 	glDisable (GL_BLEND);

@@ -206,6 +206,8 @@ void SCR_DrawCenterString (void) // actually do the drawing
 	else y = 100 - scr_center_lines * 4;
 #endif
 
+	Draw_BeginString ();
+
 	do
 	{
 		// scan the width of the line
@@ -213,11 +215,16 @@ void SCR_DrawCenterString (void) // actually do the drawing
 			if (start[l] == '\n' || !start[l])
 				break;
 		x = (320 - l * 8) / 2;	// johnfitz -- 320x200 coordinate system
+
 		for (j = 0; j < l; j++, x += 8)
 		{
-			Draw_Character (x, y, start[j]);	// johnfitz -- stretch overlays
+			Draw_StringCharacter (x, y, start[j]);	// johnfitz -- stretch overlays
+
 			if (!remaining--)
+			{
+				Draw_EndString ();
 				return;
+			}
 		}
 
 		y += 8;
@@ -229,6 +236,8 @@ void SCR_DrawCenterString (void) // actually do the drawing
 			break;
 		start++;		// skip the \n
 	} while (1);
+
+	Draw_EndString ();
 }
 
 
@@ -612,7 +621,6 @@ void SCR_DrawCrosshair (void)
 		return;
 
 	GL_SetCanvas (CANVAS_CROSSHAIR);
-	//	Draw_Character (-4, -4, '+'); // 0,0 is center of viewport
 	Draw_Pic ((-pic_crosshair->width) / 2, (-pic_crosshair->height) / 2, pic_crosshair); // johnfitz -- stretched menus
 }
 
@@ -854,6 +862,8 @@ void SCR_DrawNotifyString (void)
 
 	y = 200 * 0.35; // johnfitz -- stretched overlays
 
+	Draw_BeginString ();
+
 	do
 	{
 		// scan the width of the line
@@ -861,8 +871,9 @@ void SCR_DrawNotifyString (void)
 			if (start[l] == '\n' || !start[l])
 				break;
 		x = (320 - l * 8) / 2; // johnfitz -- stretched overlays
+
 		for (j = 0; j < l; j++, x += 8)
-			Draw_Character (x, y, start[j]);
+			Draw_StringCharacter (x, y, start[j]);
 
 		y += 8;
 
@@ -873,7 +884,10 @@ void SCR_DrawNotifyString (void)
 			break;
 		start++;		// skip the \n
 	} while (1);
+
+	Draw_EndString ();
 }
+
 
 /*
 ==================

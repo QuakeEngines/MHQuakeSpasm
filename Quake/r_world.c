@@ -519,38 +519,6 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 }
 
 
-/*
-================
-R_DrawLightmapChains -- johnfitz -- R_BlendLightmaps stripped down to almost nothing
-================
-*/
-void R_DrawLightmapChains (void)
-{
-	int			i, j;
-	glpoly_t *p;
-	float *v;
-
-	for (i = 0; i < lightmap_count; i++)
-	{
-		if (!lightmap[i].polys)
-			continue;
-
-		GL_Bind (lightmap[i].texture);
-		for (p = lightmap[i].polys; p; p = p->chain)
-		{
-			glBegin (GL_POLYGON);
-			v = p->verts[0];
-			for (j = 0; j < p->numverts; j++, v += VERTEXSIZE)
-			{
-				glTexCoord2f (v[5], v[6]);
-				glVertex3fv (v);
-			}
-			glEnd ();
-			rs_brushpasses++;
-		}
-	}
-}
-
 static GLuint r_world_program;
 
 // uniforms used in vert shader

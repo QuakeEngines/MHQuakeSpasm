@@ -95,37 +95,41 @@ char		m_return_reason[32];
 
 void M_ConfigureNetSubsystem (void);
 
-/*
-================
-M_DrawCharacter
-
-Draws one solid graphics character
-================
-*/
-void M_DrawCharacter (int cx, int line, int num)
-{
-	Draw_Character (cx, line, num);
-}
 
 void M_Print (int cx, int cy, const char *str)
 {
+	Draw_BeginString ();
+
 	while (*str)
 	{
-		M_DrawCharacter (cx, cy, (*str) + 128);
+		Draw_StringCharacter (cx, cy, (*str) + 128);
 		str++;
 		cx += 8;
 	}
+
+	Draw_EndString ();
 }
 
 void M_PrintWhite (int cx, int cy, const char *str)
 {
+	Draw_BeginString ();
+
 	while (*str)
 	{
-		M_DrawCharacter (cx, cy, *str);
+		Draw_StringCharacter (cx, cy, *str);
 		str++;
 		cx += 8;
 	}
+
+	Draw_EndString ();
 }
+
+
+void M_DrawSmallCursor (int cursor)
+{
+	Draw_Character (8, 32 + cursor * 8, 12 + ((int) (realtime * 4) & 1));
+}
+
 
 void M_DrawTransPic (int x, int y, qpic_t *pic)
 {
@@ -493,7 +497,7 @@ void M_Load_Draw (void)
 		M_Print (16, 32 + 8 * i, m_filenames[i]);
 
 	// line cursor
-	M_DrawCharacter (8, 32 + load_cursor * 8, 12 + ((int) (realtime * 4) & 1));
+	M_DrawSmallCursor (load_cursor);
 }
 
 
@@ -509,7 +513,7 @@ void M_Save_Draw (void)
 		M_Print (16, 32 + 8 * i, m_filenames[i]);
 
 	// line cursor
-	M_DrawCharacter (8, 32 + load_cursor * 8, 12 + ((int) (realtime * 4) & 1));
+	M_DrawSmallCursor (load_cursor);
 }
 
 
@@ -730,13 +734,13 @@ void M_Setup_Draw (void)
 	p = Draw_CachePic ("gfx/menuplyr.lmp");
 	M_DrawTransPicTranslate (172, 72, p, setup_top, setup_bottom);
 
-	M_DrawCharacter (56, setup_cursor_table[setup_cursor], 12 + ((int) (realtime * 4) & 1));
+	Draw_Character (56, setup_cursor_table[setup_cursor], 12 + ((int) (realtime * 4) & 1));
 
 	if (setup_cursor == 0)
-		M_DrawCharacter (168 + 8 * strlen (setup_hostname), setup_cursor_table[setup_cursor], 10 + ((int) (realtime * 4) & 1));
+		Draw_Character (168 + 8 * strlen (setup_hostname), setup_cursor_table[setup_cursor], 10 + ((int) (realtime * 4) & 1));
 
 	if (setup_cursor == 1)
-		M_DrawCharacter (168 + 8 * strlen (setup_myname), setup_cursor_table[setup_cursor], 10 + ((int) (realtime * 4) & 1));
+		Draw_Character (168 + 8 * strlen (setup_myname), setup_cursor_table[setup_cursor], 10 + ((int) (realtime * 4) & 1));
 }
 
 
@@ -1137,29 +1141,24 @@ void M_DrawSlider (int x, int y, float range)
 {
 	int	i;
 
-	if (range < 0)
-		range = 0;
-	if (range > 1)
-		range = 1;
-	M_DrawCharacter (x - 8, y, 128);
+	if (range < 0) range = 0;
+	if (range > 1) range = 1;
+
+	Draw_BeginString ();
+	Draw_StringCharacter (x - 8, y, 128);
 	for (i = 0; i < SLIDER_RANGE; i++)
-		M_DrawCharacter (x + i * 8, y, 129);
-	M_DrawCharacter (x + i * 8, y, 130);
-	M_DrawCharacter (x + (SLIDER_RANGE - 1) * 8 * range, y, 131);
+		Draw_StringCharacter (x + i * 8, y, 129);
+	Draw_StringCharacter (x + i * 8, y, 130);
+	Draw_StringCharacter (x + (SLIDER_RANGE - 1) * 8 * range, y, 131);
+	Draw_EndString ();
 }
 
 void M_DrawCheckbox (int x, int y, int on)
 {
-#if 0
 	if (on)
-		M_DrawCharacter (x, y, 131);
+		M_PrintWhite (x, y, "on");
 	else
-		M_DrawCharacter (x, y, 129);
-#endif
-	if (on)
-		M_Print (x, y, "on");
-	else
-		M_Print (x, y, "off");
+		M_PrintWhite (x, y, "off");
 }
 
 void M_Options_Draw (void)
@@ -1227,11 +1226,11 @@ void M_Options_Draw (void)
 	// OPT_ALWAYRUN:
 	M_Print (16, 32 + 8 * OPT_ALWAYRUN, "            Always Run");
 	if (cl_alwaysrun.value)
-		M_Print (220, 32 + 8 * OPT_ALWAYRUN, "quakespasm");
+		M_PrintWhite (220, 32 + 8 * OPT_ALWAYRUN, "quakespasm");
 	else if (cl_forwardspeed.value > 200.0)
-		M_Print (220, 32 + 8 * OPT_ALWAYRUN, "vanilla");
+		M_PrintWhite (220, 32 + 8 * OPT_ALWAYRUN, "vanilla");
 	else
-		M_Print (220, 32 + 8 * OPT_ALWAYRUN, "off");
+		M_PrintWhite (220, 32 + 8 * OPT_ALWAYRUN, "off");
 
 	// OPT_INVMOUSE:
 	M_Print (16, 32 + 8 * OPT_INVMOUSE, "          Invert Mouse");
@@ -1254,7 +1253,7 @@ void M_Options_Draw (void)
 		M_Print (16, 32 + 8 * OPT_VIDEO, "         Video Options");
 
 	// cursor
-	M_DrawCharacter (200, 32 + options_cursor * 8, 12 + ((int) (realtime * 4) & 1));
+	Draw_Character (200, 32 + options_cursor * 8, 12 + ((int) (realtime * 4) & 1));
 }
 
 
@@ -1464,9 +1463,9 @@ void M_Keys_Draw (void)
 	}
 
 	if (bind_grab)
-		M_DrawCharacter (130, 48 + keys_cursor * 8, '=');
+		Draw_Character (130, 48 + keys_cursor * 8, '=');
 	else
-		M_DrawCharacter (130, 48 + keys_cursor * 8, 12 + ((int) (realtime * 4) & 1));
+		Draw_Character (130, 48 + keys_cursor * 8, 12 + ((int) (realtime * 4) & 1));
 }
 
 
@@ -1790,13 +1789,13 @@ void M_LanConfig_Draw (void)
 		M_Print (basex + 8, lanConfig_cursor_table[1], "OK");
 	}
 
-	M_DrawCharacter (basex - 8, lanConfig_cursor_table[lanConfig_cursor], 12 + ((int) (realtime * 4) & 1));
+	Draw_Character (basex - 8, lanConfig_cursor_table[lanConfig_cursor], 12 + ((int) (realtime * 4) & 1));
 
 	if (lanConfig_cursor == 0)
-		M_DrawCharacter (basex + 9 * 8 + 8 * strlen (lanConfig_portname), lanConfig_cursor_table[0], 10 + ((int) (realtime * 4) & 1));
+		Draw_Character (basex + 9 * 8 + 8 * strlen (lanConfig_portname), lanConfig_cursor_table[0], 10 + ((int) (realtime * 4) & 1));
 
 	if (lanConfig_cursor == 2)
-		M_DrawCharacter (basex + 16 + 8 * strlen (lanConfig_joinname), lanConfig_cursor_table[2], 10 + ((int) (realtime * 4) & 1));
+		Draw_Character (basex + 16 + 8 * strlen (lanConfig_joinname), lanConfig_cursor_table[2], 10 + ((int) (realtime * 4) & 1));
 
 	if (*m_return_reason)
 		M_PrintWhite (basex, 148, m_return_reason);
@@ -2198,7 +2197,7 @@ void M_GameOptions_Draw (void)
 	}
 
 	// line cursor
-	M_DrawCharacter (144, gameoptions_cursor_table[gameoptions_cursor], 12 + ((int) (realtime * 4) & 1));
+	Draw_Character (144, gameoptions_cursor_table[gameoptions_cursor], 12 + ((int) (realtime * 4) & 1));
 
 	if (m_serverInfoMessage)
 	{
@@ -2474,7 +2473,7 @@ void M_ServerList_Draw (void)
 	M_DrawPic ((320 - p->width) / 2, 4, p);
 	for (n = 0; n < hostCacheCount; n++)
 		M_Print (16, 32 + 8 * n, NET_SlistPrintServer (n));
-	M_DrawCharacter (0, 32 + slist_cursor * 8, 12 + ((int) (realtime * 4) & 1));
+	Draw_Character (0, 32 + slist_cursor * 8, 12 + ((int) (realtime * 4) & 1));
 
 	if (*m_return_reason)
 		M_PrintWhite (16, 148, m_return_reason);

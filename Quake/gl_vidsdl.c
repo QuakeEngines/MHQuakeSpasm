@@ -2116,7 +2116,7 @@ static void VID_MenuDraw (void)
 		}
 
 		if (video_options_cursor == i)
-			M_DrawCharacter (168, y, 12 + ((int) (realtime * 4) & 1));
+			Draw_Character (168, y, 12 + ((int) (realtime * 4) & 1));
 
 		y += 8;
 	}

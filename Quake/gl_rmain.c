@@ -80,7 +80,6 @@ cvar_t	gl_farclip = { "gl_farclip", "16384", CVAR_ARCHIVE };
 cvar_t	gl_overbright = { "gl_overbright", "1", CVAR_ARCHIVE };
 cvar_t	gl_overbright_models = { "gl_overbright_models", "1", CVAR_ARCHIVE };
 cvar_t	r_oldskyleaf = { "r_oldskyleaf", "0", CVAR_NONE };
-cvar_t	r_showbboxes = { "r_showbboxes", "0", CVAR_NONE };
 cvar_t	r_lerpmodels = { "r_lerpmodels", "1", CVAR_NONE };
 cvar_t	r_lerpmove = { "r_lerpmove", "1", CVAR_NONE };
 cvar_t	r_nolerp_list = { "r_nolerp_list", "progs/flame.mdl,progs/flame2.mdl,progs/braztall.mdl,progs/brazshrt.mdl,progs/longtrch.mdl,progs/flame_pyre.mdl,progs/v_saw.mdl,progs/v_xfist.mdl,progs/h2stuff/newfire.mdl", CVAR_NONE };
@@ -627,100 +626,6 @@ void R_DrawViewModel (void)
 	glDepthRange (0, 1);
 }
 
-/*
-================
-R_EmitWirePoint -- johnfitz -- draws a wireframe cross shape for point entities
-================
-*/
-void R_EmitWirePoint (vec3_t origin)
-{
-	int size = 8;
-
-	glBegin (GL_LINES);
-	glVertex3f (origin[0] - size, origin[1], origin[2]);
-	glVertex3f (origin[0] + size, origin[1], origin[2]);
-	glVertex3f (origin[0], origin[1] - size, origin[2]);
-	glVertex3f (origin[0], origin[1] + size, origin[2]);
-	glVertex3f (origin[0], origin[1], origin[2] - size);
-	glVertex3f (origin[0], origin[1], origin[2] + size);
-	glEnd ();
-}
-
-/*
-================
-R_EmitWireBox -- johnfitz -- draws one axis aligned bounding box
-================
-*/
-void R_EmitWireBox (vec3_t mins, vec3_t maxs)
-{
-	glBegin (GL_QUAD_STRIP);
-	glVertex3f (mins[0], mins[1], mins[2]);
-	glVertex3f (mins[0], mins[1], maxs[2]);
-	glVertex3f (maxs[0], mins[1], mins[2]);
-	glVertex3f (maxs[0], mins[1], maxs[2]);
-	glVertex3f (maxs[0], maxs[1], mins[2]);
-	glVertex3f (maxs[0], maxs[1], maxs[2]);
-	glVertex3f (mins[0], maxs[1], mins[2]);
-	glVertex3f (mins[0], maxs[1], maxs[2]);
-	glVertex3f (mins[0], mins[1], mins[2]);
-	glVertex3f (mins[0], mins[1], maxs[2]);
-	glEnd ();
-}
-
-/*
-================
-R_ShowBoundingBoxes -- johnfitz
-
-draw bounding boxes -- the server-side boxes, not the renderer cullboxes
-================
-*/
-void R_ShowBoundingBoxes (void)
-{
-	extern		edict_t *sv_player;
-	vec3_t		mins, maxs;
-	edict_t *ed;
-	int			i;
-
-	if (!r_showbboxes.value || cl.maxclients > 1 || !r_drawentities.value || !sv.active)
-		return;
-
-	glDisable (GL_DEPTH_TEST);
-	glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
-	glDisable (GL_TEXTURE_2D);
-	glDisable (GL_CULL_FACE);
-	glColor3f (1, 1, 1);
-
-	for (i = 0, ed = NEXT_EDICT (sv.edicts); i < sv.num_edicts; i++, ed = NEXT_EDICT (ed))
-	{
-		if (ed == sv_player)
-			continue; // don't draw player's own bbox
-
-//		if (r_showbboxes.value != 2)
-//			if (!SV_VisibleToClient (sv_player, ed, sv.worldmodel))
-//				continue; // don't draw if not in pvs
-
-		if (ed->v.mins[0] == ed->v.maxs[0] && ed->v.mins[1] == ed->v.maxs[1] && ed->v.mins[2] == ed->v.maxs[2])
-		{
-			// point entity
-			R_EmitWirePoint (ed->v.origin);
-		}
-		else
-		{
-			// box entity
-			VectorAdd (ed->v.mins, ed->v.origin, mins);
-			VectorAdd (ed->v.maxs, ed->v.origin, maxs);
-			R_EmitWireBox (mins, maxs);
-		}
-	}
-
-	glColor3f (1, 1, 1);
-	glEnable (GL_TEXTURE_2D);
-	glEnable (GL_CULL_FACE);
-	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-	GL_PolygonOffset (OFFSET_NONE);
-	glEnable (GL_DEPTH_TEST);
-}
-
 
 /*
 ============
@@ -789,9 +694,8 @@ void R_RenderScene (void)
 	Fog_DisableGFog (); // johnfitz
 
 	R_DrawViewModel (); // johnfitz -- moved here from R_RenderView
-
-	R_ShowBoundingBoxes (); // johnfitz
 }
+
 
 static GLuint r_scaleview_texture;
 static int r_scaleview_texture_width, r_scaleview_texture_height;

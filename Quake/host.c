@@ -571,7 +571,15 @@ qboolean Host_FilterTime (void)
 	// johnfitz
 
 	host_frametime = realtime - oldrealtime;
-	oldrealtime = realtime;
+
+	// MH - if in the game, try to keep it at 72fps by running a fast frame if the previous one was slow
+	if (cls.timedemo)
+		oldrealtime = realtime;
+	else if (key_dest != key_game)
+		oldrealtime = realtime;
+	else if (host_frametime > 0.1)
+		oldrealtime = realtime;
+	else oldrealtime = realtime - (host_frametime - (1.0 / maxfps));
 
 	// johnfitz -- host_timescale is more intuitive than host_framerate
 	if (host_timescale.value > 0)

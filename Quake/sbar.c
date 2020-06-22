@@ -274,13 +274,8 @@ Sbar_DrawPicAlpha -- johnfitz
 */
 void Sbar_DrawPicAlpha (int x, int y, qpic_t *pic, float alpha)
 {
-	glDisable (GL_ALPHA_TEST);
-	glEnable (GL_BLEND);
-	glColor4f (1, 1, 1, alpha);
-	Draw_Pic (x, y + 24, pic);
-	glColor4f (1, 1, 1, 1);
-	glDisable (GL_BLEND);
-	glEnable (GL_ALPHA_TEST);
+	// MH - moved GL state stuff out of here!
+	Draw_AlphaPic (x, y + 24, pic, alpha);
 }
 
 
@@ -1114,13 +1109,15 @@ void Sbar_DeathmatchOverlay (void)
 		f = s->frags;
 		sprintf (num, "%3i", f);
 
-		Draw_Character (x + 8, y, num[0]); // johnfitz -- stretched overlays
-		Draw_Character (x + 16, y, num[1]); // johnfitz -- stretched overlays
-		Draw_Character (x + 24, y, num[2]); // johnfitz -- stretched overlays
+		Draw_BeginString ();
+		Draw_StringCharacter (x + 8, y, num[0]); // johnfitz -- stretched overlays
+		Draw_StringCharacter (x + 16, y, num[1]); // johnfitz -- stretched overlays
+		Draw_StringCharacter (x + 24, y, num[2]); // johnfitz -- stretched overlays
 
 		if (k == cl.viewentity - 1)
-			Draw_Character (x - 8, y, 12); // johnfitz -- stretched overlays
+			Draw_StringCharacter (x - 8, y, 12); // johnfitz -- stretched overlays
 
+		Draw_EndString ();
 #if 0
 		{
 			int				total;
@@ -1206,16 +1203,21 @@ void Sbar_MiniDeathmatchOverlay (void)
 		// number
 		f = s->frags;
 		sprintf (num, "%3i", f);
-		Draw_Character (x + 8, y, num[0]);
-		Draw_Character (x + 16, y, num[1]);
-		Draw_Character (x + 24, y, num[2]);
+
+		Draw_BeginString ();
+
+		Draw_StringCharacter (x + 8, y, num[0]);
+		Draw_StringCharacter (x + 16, y, num[1]);
+		Draw_StringCharacter (x + 24, y, num[2]);
 
 		// brackets
 		if (k == cl.viewentity - 1)
 		{
-			Draw_Character (x, y, 16);
-			Draw_Character (x + 32, y, 17);
+			Draw_StringCharacter (x, y, 16);
+			Draw_StringCharacter (x + 32, y, 17);
 		}
+
+		Draw_EndString ();
 
 		// name
 		Draw_String (x + 48, y, s->name);
