@@ -577,7 +577,9 @@ qboolean Host_FilterTime (void)
 		oldrealtime = realtime;
 	else if (key_dest != key_game)
 		oldrealtime = realtime;
-	else if (host_frametime > 0.1)
+	else if (host_frametime < 0.5 / maxfps)
+		oldrealtime = realtime;
+	else if (host_frametime > 2.0 / maxfps)
 		oldrealtime = realtime;
 	else oldrealtime = realtime - (host_frametime - (1.0 / maxfps));
 
@@ -732,8 +734,6 @@ void _Host_Frame (void)
 		time1 = Sys_DoubleTime ();
 
 	SCR_UpdateScreen ();
-
-	CL_RunParticles (); // johnfitz -- seperated from rendering
 
 	if (host_speeds.value)
 		time2 = Sys_DoubleTime ();

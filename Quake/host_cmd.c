@@ -1225,11 +1225,13 @@ void Host_Loadgame_f (void)
 		}
 
 		if (entnum == -1)
-		{	// parse the global vars
+		{
+			// parse the global vars
 			data = ED_ParseGlobals (data);
 		}
 		else
-		{	// parse an edict
+		{
+			// parse an edict
 			ent = EDICT_NUM (entnum);
 			if (entnum < sv.num_edicts)
 			{
@@ -1638,7 +1640,8 @@ void Host_Spawn_f (void)
 
 	// run the entrance script
 	if (sv.loadgame)
-	{	// loaded games are fully inited allready
+	{
+		// loaded games are fully inited allready
 		// if this is the last client to be connected, unpause
 		sv.paused = false;
 	}

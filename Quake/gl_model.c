@@ -146,7 +146,8 @@ byte *Mod_DecompressVis (byte *in, qmodel_t *model)
 	outend = mod_decompressed + row;
 
 	if (!in)
-	{	// no vis info, so make all visible
+	{
+		// no vis info, so make all visible
 		while (row)
 		{
 			*out++ = 0xff;
@@ -1886,7 +1887,8 @@ void Mod_LoadSubmodels (lump_t *l)
 	for (i = 0; i < count; i++, in++, out++)
 	{
 		for (j = 0; j < 3; j++)
-		{	// spread the mins / maxs by a pixel
+		{
+			// spread the mins / maxs by a pixel
 			out->mins[j] = LittleFloat (in->mins[j]) - 1;
 			out->maxs[j] = LittleFloat (in->maxs[j]) + 1;
 			out->origin[j] = LittleFloat (in->origin[j]);
@@ -2065,7 +2067,8 @@ void Mod_LoadBrushModel (qmodel_t *mod, void *buffer)
 		mod->numleafs = bm->visleafs;
 
 		if (i < mod->numsubmodels - 1)
-		{	// duplicate the basic information
+		{
+			// duplicate the basic information
 			char	name[10];
 
 			sprintf (name, "*%i", i + 1);
@@ -2287,6 +2290,9 @@ void *Mod_LoadAllSkins (int numskins, daliasskintype_t *pskintype)
 
 	if (loadmodel->flags & MF_HOLEY)
 		texflags |= TEXPREF_ALPHA;
+
+	// MH - the original Fitzquake code didn't mipmap alias models
+	texflags |= TEXPREF_MIPMAP;
 
 	for (i = 0; i < numskins; i++)
 	{

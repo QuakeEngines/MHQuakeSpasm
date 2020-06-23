@@ -137,7 +137,8 @@ hull_t *SV_HullForEntity (edict_t *ent, vec3_t mins, vec3_t maxs, vec3_t offset)
 
 	// decide which clipping hull to use, based on the size
 	if (ent->v.solid == SOLID_BSP)
-	{	// explicit hulls in the BSP model
+	{
+		// explicit hulls in the BSP model
 		if (ent->v.movetype != MOVETYPE_PUSH)
 			Host_Error ("SOLID_BSP without MOVETYPE_PUSH (%s at %f %f %f)",
 				PR_GetString (ent->v.classname), ent->v.origin[0], ent->v.origin[1], ent->v.origin[2]);
@@ -161,7 +162,8 @@ hull_t *SV_HullForEntity (edict_t *ent, vec3_t mins, vec3_t maxs, vec3_t offset)
 		VectorAdd (offset, ent->v.origin, offset);
 	}
 	else
-	{	// create a temp hull from bounding box sizes
+	{
+		// create a temp hull from bounding box sizes
 
 		VectorSubtract (ent->v.mins, maxs, hullmins);
 		VectorSubtract (ent->v.maxs, mins, hullmaxs);
@@ -454,7 +456,8 @@ void SV_LinkEdict (edict_t *ent, qboolean touch_triggers)
 		ent->v.absmax[1] += 15;
 	}
 	else
-	{	// because movement is clipped an epsilon away from an actual edge,
+	{
+		// because movement is clipped an epsilon away from an actual edge,
 		// we must fully check even when bounding boxes don't quite touch
 		ent->v.absmin[0] -= 1;
 		ent->v.absmin[1] -= 1;

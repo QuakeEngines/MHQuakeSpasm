@@ -672,7 +672,8 @@ void Sbar_DrawInventory (void)
 		{
 			time = cl.item_gettime[17 + i];
 			if (time && time > cl.time - 2 && flashon)
-			{	// flash frame
+			{
+				// flash frame
 			}
 			else
 			{
@@ -694,7 +695,8 @@ void Sbar_DrawInventory (void)
 			{
 				time = cl.item_gettime[24 + i];
 				if (time && time > cl.time - 2 && flashon)
-				{	// flash frame
+				{
+					// flash frame
 				}
 				else
 				{
@@ -713,7 +715,8 @@ void Sbar_DrawInventory (void)
 			{
 				time = cl.item_gettime[29 + i];
 				if (time && time > cl.time - 2 && flashon)
-				{	// flash frame
+				{
+					// flash frame
 				}
 				else
 				{
@@ -731,7 +734,8 @@ void Sbar_DrawInventory (void)
 			{
 				time = cl.item_gettime[28 + i];
 				if (time && time > cl.time - 2 && flashon)
-				{	// flash frame
+				{
+					// flash frame
 				}
 				else
 					Sbar_DrawPic (320 - 32 + i * 8, -16, sb_sigil[i]);

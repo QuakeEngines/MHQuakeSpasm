@@ -1475,7 +1475,8 @@ void M_Keys_Key (int k)
 	int		keys[3];
 
 	if (bind_grab)
-	{	// defining a key
+	{
+		// defining a key
 		S_LocalSound ("misc/menu1.wav");
 		if ((k != K_ESCAPE) && (k != '`'))
 		{

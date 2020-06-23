@@ -274,13 +274,15 @@ int SV_FlyMove (edict_t *ent, float time, trace_t *steptrace)
 		trace = SV_Move (ent->v.origin, ent->v.mins, ent->v.maxs, end, false, ent);
 
 		if (trace.allsolid)
-		{	// entity is trapped in another solid
+		{
+			// entity is trapped in another solid
 			VectorCopy (vec3_origin, ent->v.velocity);
 			return 3;
 		}
 
 		if (trace.fraction > 0)
-		{	// actually covered some distance
+		{
+			// actually covered some distance
 			VectorCopy (trace.endpos, ent->v.origin);
 			VectorCopy (ent->v.velocity, original_velocity);
 			numplanes = 0;
@@ -319,7 +321,8 @@ int SV_FlyMove (edict_t *ent, float time, trace_t *steptrace)
 
 		// cliped to another plane
 		if (numplanes >= MAX_CLIP_PLANES)
-		{	// this shouldn't really happen
+		{
+			// this shouldn't really happen
 			VectorCopy (vec3_origin, ent->v.velocity);
 			return 3;
 		}
@@ -342,11 +345,13 @@ int SV_FlyMove (edict_t *ent, float time, trace_t *steptrace)
 		}
 
 		if (i != numplanes)
-		{	// go along this plane
+		{
+			// go along this plane
 			VectorCopy (new_velocity, ent->v.velocity);
 		}
 		else
-		{	// go along the crease
+		{
+			// go along the crease
 			if (numplanes != 2)
 			{
 				//				Con_Printf ("clip velocity, numplanes == %i\n",numplanes);
@@ -521,11 +526,13 @@ void SV_PushMove (edict_t *pusher, float movetime)
 		// if it is still inside the pusher, block
 		block = SV_TestEntityPosition (check);
 		if (block)
-		{	// fail the move
+		{
+			// fail the move
 			if (check->v.mins[0] == check->v.maxs[0])
 				continue;
 			if (check->v.solid == SOLID_NOT || check->v.solid == SOLID_TRIGGER)
-			{	// corpse
+			{
+				// corpse
 				check->v.mins[0] = check->v.mins[1] = 0;
 				VectorCopy (check->v.mins, check->v.maxs);
 				continue;
@@ -854,7 +861,8 @@ void SV_WalkMove (edict_t *ent)
 	{
 		if (fabs (oldorg[1] - ent->v.origin[1]) < 0.03125
 			&& fabs (oldorg[0] - ent->v.origin[0]) < 0.03125)
-		{	// stepping up didn't make any progress
+		{
+			// stepping up didn't make any progress
 			clip = SV_TryUnstick (ent, oldvel);
 		}
 	}
@@ -1008,7 +1016,8 @@ void SV_CheckWaterTransition (edict_t *ent)
 	cont = SV_PointContents (ent->v.origin);
 
 	if (!ent->v.watertype)
-	{	// just spawned here
+	{
+		// just spawned here
 		ent->v.watertype = cont;
 		ent->v.waterlevel = 1;
 		return;
@@ -1017,7 +1026,8 @@ void SV_CheckWaterTransition (edict_t *ent)
 	if (cont <= CONTENTS_WATER)
 	{
 		if (ent->v.watertype == CONTENTS_EMPTY)
-		{	// just crossed into water
+		{
+			// just crossed into water
 			SV_StartSound (ent, 0, "misc/h2ohit1.wav", 255, 1);
 		}
 		ent->v.watertype = cont;
@@ -1026,7 +1036,8 @@ void SV_CheckWaterTransition (edict_t *ent)
 	else
 	{
 		if (ent->v.watertype != CONTENTS_EMPTY)
-		{	// just crossed into water
+		{
+			// just crossed into water
 			SV_StartSound (ent, 0, "misc/h2ohit1.wav", 255, 1);
 		}
 		ent->v.watertype = CONTENTS_EMPTY;

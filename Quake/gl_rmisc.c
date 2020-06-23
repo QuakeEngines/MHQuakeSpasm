@@ -517,9 +517,12 @@ GLuint GL_CreateProgram (const GLchar *vertSource, const GLchar *fragSource, int
 	GL_AttachShaderFunc (program, fragShader);
 	GL_DeleteShaderFunc (fragShader);
 
-	for (i = 0; i < numbindings; i++)
+	if (bindings)
 	{
-		GL_BindAttribLocationFunc (program, bindings[i].attrib, bindings[i].name);
+		for (i = 0; i < numbindings; i++)
+		{
+			GL_BindAttribLocationFunc (program, bindings[i].attrib, bindings[i].name);
+		}
 	}
 
 	GL_LinkProgramFunc (program);

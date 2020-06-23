@@ -1544,7 +1544,8 @@ void COM_CreatePath (char *path)
 	for (ofs = path + 1; *ofs; ofs++)
 	{
 		if (*ofs == '/')
-		{	// create the directory
+		{
+			// create the directory
 			*ofs = 0;
 			Sys_mkdir (path);
 			*ofs = '/';

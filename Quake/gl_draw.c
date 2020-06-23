@@ -166,7 +166,8 @@ int Scrap_AllocBlock (int w, int h, int *x, int *y)
 					best2 = scrap_allocated[texnum][i + j];
 			}
 			if (j == w)
-			{	// this is a valid spot
+			{
+				// this is a valid spot
 				*x = i;
 				*y = best = best2;
 			}
@@ -650,8 +651,10 @@ void Draw_TransPicTranslate (int x, int y, qpic_t *pic, int top, int bottom)
 	{
 		glpic_t *p = (glpic_t *) pic->data;
 		gltexture_t *glt = p->gltexture;
+
 		oldtop = top;
 		oldbottom = bottom;
+
 		TexMgr_ReloadImage (glt, top, bottom);
 	}
 

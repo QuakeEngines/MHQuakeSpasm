@@ -67,6 +67,10 @@ typedef struct entity_s {
 	int						visframe;		// last frame this entity was
 											//  found in an active leaf
 
+	// rockettrails
+	vec3_t					oldtrailorigin;
+	double					nexttrailtime;
+
 	int						dlightframe;	// dynamic lighting
 	int						dlightbits;
 

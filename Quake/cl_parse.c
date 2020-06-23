@@ -117,6 +117,7 @@ entity_t *CL_EntityNum (int num)
 		{
 			cl_entities[cl.num_entities].colormap = vid.colormap;
 			cl_entities[cl.num_entities].lerpflags |= LERP_RESETMOVE | LERP_RESETANIM; // johnfitz
+			CL_ClearRocketTrail (&cl_entities[cl.num_entities]);
 			cl.num_entities++;
 		}
 	}
@@ -428,7 +429,8 @@ void CL_ParseUpdate (int bits)
 	int		skin;
 
 	if (cls.signon == SIGNONS - 1)
-	{	// first update is the final signon stage
+	{
+		// first update is the final signon stage
 		cls.signon = SIGNONS;
 		CL_SignonReply ();
 	}
@@ -619,12 +621,14 @@ void CL_ParseUpdate (int bits)
 	// johnfitz
 
 	if (forcelink)
-	{	// didn't have an update last message
+	{
+		// didn't have an update last message
 		VectorCopy (ent->msg_origins[0], ent->msg_origins[1]);
 		VectorCopy (ent->msg_origins[0], ent->origin);
 		VectorCopy (ent->msg_angles[0], ent->msg_angles[1]);
 		VectorCopy (ent->msg_angles[0], ent->angles);
 		ent->forcelink = true;
+		CL_ClearRocketTrail (ent);
 	}
 }
 
@@ -653,6 +657,8 @@ void CL_ParseBaseline (entity_t *ent, int version) // johnfitz -- added argument
 	}
 
 	ent->baseline.alpha = (bits & B_ALPHA) ? MSG_ReadByte () : ENTALPHA_DEFAULT; // johnfitz -- PROTOCOL_FITZQUAKE
+
+	CL_ClearRocketTrail (ent);
 }
 
 
@@ -712,7 +718,8 @@ void CL_ParseClientdata (void)
 	i = MSG_ReadLong ();
 
 	if (cl.items != i)
-	{	// set flash times
+	{
+		// set flash times
 		Sbar_Changed ();
 		for (j = 0; j < 32; j++)
 			if ((i & (1 << j)) && !(cl.items & (1 << j)))
@@ -895,7 +902,10 @@ void CL_ParseStatic (int version) // johnfitz -- added a parameter
 	VectorCopy (ent->baseline.origin, ent->origin);
 	VectorCopy (ent->baseline.angles, ent->angles);
 	R_AddEfrags (ent);
+
+	CL_ClearRocketTrail (ent);
 }
+
 
 /*
 ===================

@@ -488,7 +488,8 @@ void SV_AddToFatPVS (vec3_t org, mnode_t *node, qmodel_t *worldmodel) // johnfit
 		else if (d < -8)
 			node = node->children[1];
 		else
-		{	// go down both
+		{
+			// go down both
 			SV_AddToFatPVS (org, node->children[0], worldmodel); // johnfitz -- worldmodel as a parameter
 			node = node->children[1];
 		}

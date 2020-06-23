@@ -446,7 +446,8 @@ void Sky_ClipPoly (int nump, vec3_t vecs, int stage)
 	}
 
 	if (!front || !back)
-	{	// not clipped
+	{
+		// not clipped
 		Sky_ClipPoly (nump, vecs, stage + 1);
 		return;
 	}

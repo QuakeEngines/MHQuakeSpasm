@@ -364,11 +364,9 @@ using VBOs.
 */
 static void R_BatchSurface (msurface_t *s)
 {
-	int num_surf_indices;
+	int num_surf_indices = R_NumTriangleIndicesForSurf (s);
 
-	num_surf_indices = R_NumTriangleIndicesForSurf (s);
-
-	if (num_vbo_indices + num_surf_indices > MAX_BATCH_SIZE)
+	if (num_vbo_indices + num_surf_indices >= MAX_BATCH_SIZE)
 		R_FlushBatch ();
 
 	R_TriangleIndicesForSurf (s, &vbo_indices[num_vbo_indices]);
@@ -413,47 +411,6 @@ void R_DrawTextureChains_NoTexture (qmodel_t *model, texchain_t chain)
 	}
 }
 
-/*
-================
-R_DrawTextureChains_TextureOnly -- johnfitz
-================
-*/
-void R_DrawTextureChains_TextureOnly (qmodel_t *model, entity_t *ent, texchain_t chain)
-{
-	int			i;
-	msurface_t *s;
-	texture_t *t;
-	qboolean	bound;
-
-	for (i = 0; i < model->numtextures; i++)
-	{
-		t = model->textures[i];
-
-		if (!t || !t->texturechains[chain] || t->texturechains[chain]->flags & (SURF_DRAWTURB | SURF_DRAWSKY))
-			continue;
-
-		bound = false;
-
-		for (s = t->texturechains[chain]; s; s = s->texturechain)
-			if (!s->culled)
-			{
-				if (!bound) // only bind once we are sure we need this texture
-				{
-					GL_Bind ((R_TextureAnimation (t, ent != NULL ? ent->frame : 0))->gltexture);
-
-					if (t->texturechains[chain]->flags & SURF_DRAWFENCE)
-						glEnable (GL_ALPHA_TEST); // Flip alpha test back on
-
-					bound = true;
-				}
-				DrawGLPoly (s->polys);
-				rs_brushpasses++;
-			}
-
-		if (bound && t->texturechains[chain]->flags & SURF_DRAWFENCE)
-			glDisable (GL_ALPHA_TEST); // Flip alpha test back off
-	}
-}
 
 /*
 ================
@@ -465,10 +422,12 @@ Returns the water alpha to use for the entity and surface combination.
 float GL_WaterAlphaForEntitySurface (entity_t *ent, msurface_t *s)
 {
 	float entalpha;
+
 	if (ent == NULL || ent->alpha == ENTALPHA_DEFAULT)
 		entalpha = GL_WaterAlphaForSurface (s);
 	else
 		entalpha = ENTALPHA_DECODE (ent->alpha);
+
 	return entalpha;
 }
 

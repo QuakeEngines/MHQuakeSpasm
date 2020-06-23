@@ -195,7 +195,8 @@ qboolean SV_movestep (edict_t *ent, vec3_t move, qboolean relink)
 	if (!SV_CheckBottom (ent))
 	{
 		if ((int) ent->v.flags & FL_PARTIALGROUND)
-		{	// entity had floor mostly pulled out from underneath it
+		{
+			// entity had floor mostly pulled out from underneath it
 			// and is trying to correct
 			if (relink)
 				SV_LinkEdict (ent, true);

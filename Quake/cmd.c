@@ -192,7 +192,8 @@ void Cbuf_Execute (void)
 		Cmd_ExecuteString (line, src_command);
 
 		if (cmd_wait)
-		{	// skip out while text still remains in buffer, leaving it
+		{
+			// skip out while text still remains in buffer, leaving it
 			// for next frame
 			cmd_wait = false;
 			break;
@@ -635,7 +636,8 @@ void Cmd_TokenizeString (const char *text)
 		}
 
 		if (*text == '\n')
-		{	// a newline seperates commands in the buffer
+		{
+			// a newline seperates commands in the buffer
 			text++;
 			break;
 		}

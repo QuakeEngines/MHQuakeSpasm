@@ -350,7 +350,8 @@ void SV_AirMove (void)
 	}
 
 	if (sv_player->v.movetype == MOVETYPE_NOCLIP)
-	{	// noclip
+	{
+		// noclip
 		VectorCopy (wishvel, velocity);
 	}
 	else if (onground)
@@ -359,7 +360,8 @@ void SV_AirMove (void)
 		SV_Accelerate (wishspeed, wishdir);
 	}
 	else
-	{	// not on ground, so little effect on velocity
+	{
+		// not on ground, so little effect on velocity
 		SV_AirAccelerate (wishspeed, wishvel);
 	}
 }

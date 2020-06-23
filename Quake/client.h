@@ -266,6 +266,19 @@ extern	int				cl_max_edicts; // johnfitz -- only changes when new map loads
 dlight_t *CL_AllocDlight (int key);
 void	CL_DecayLights (void);
 
+// trail types
+#define RT_ROCKETTRAIL		0
+#define RT_SMOKESMOKE		1
+#define RT_BLOOD			2
+#define RT_TRACER3			3
+#define RT_SLIGHTBLOOD		4
+#define RT_TRACER5			5
+#define RT_VOORTRAIL		6
+
+void CL_RocketTrail (entity_t *ent, int type);
+void CL_ClearRocketTrail (entity_t *ent);
+
+
 void CL_Init (void);
 
 void CL_EstablishConnection (const char *host);
