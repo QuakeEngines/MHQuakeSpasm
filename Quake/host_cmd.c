@@ -22,8 +22,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "quakedef.h"
+
 #ifndef _WIN32
 #include <dirent.h>
+#else
+// MH - this formerly relied on SDL_opengl.h to bring in the windows headers, which - since GLEW was added to the project - no longer happens
+#include <Windows.h>
 #endif
 
 extern cvar_t	pausable;

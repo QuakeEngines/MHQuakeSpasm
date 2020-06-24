@@ -2230,13 +2230,16 @@ void Mod_FloodFillSkin (byte *skin, int skinwidth, int skinheight)
 	if (filledcolor == -1)
 	{
 		filledcolor = 0;
+
 		// attempt to find opaque black
 		for (i = 0; i < 256; ++i)
+		{
 			if (d_8to24table[i] == (255 << 0)) // alpha 1.0
 			{
 				filledcolor = i;
 				break;
 			}
+		}
 	}
 
 	// can't fill to filled color or to transparent color (used as visited marker)

@@ -96,9 +96,6 @@ viddef_t	vid;				// global video state
 modestate_t	modestate = MS_UNINIT;
 qboolean	scr_skipupdate;
 
-qboolean gl_mtexable = false;
-qboolean gl_texture_env_combine = false; // johnfitz
-qboolean gl_texture_env_add = false; // johnfitz
 qboolean gl_swap_control = false; // johnfitz
 qboolean gl_anisotropy_able = false; // johnfitz
 float gl_max_anisotropy; // johnfitz
@@ -106,38 +103,6 @@ qboolean gl_texture_NPOT = false; // ericw
 GLint gl_max_texture_units = 0; // ericw
 int gl_stencilbits;
 
-PFNGLMULTITEXCOORD2FARBPROC GL_MTexCoord2fFunc = NULL; // johnfitz
-PFNGLACTIVETEXTUREARBPROC GL_SelectTextureFunc = NULL; // johnfitz
-PFNGLCLIENTACTIVETEXTUREARBPROC GL_ClientActiveTextureFunc = NULL; // ericw
-PFNGLBINDBUFFERARBPROC GL_BindBufferFunc = NULL; // ericw
-PFNGLBUFFERDATAARBPROC GL_BufferDataFunc = NULL; // ericw
-PFNGLBUFFERSUBDATAARBPROC GL_BufferSubDataFunc = NULL; // ericw
-PFNGLDELETEBUFFERSARBPROC GL_DeleteBuffersFunc = NULL; // ericw
-PFNGLGENBUFFERSARBPROC GL_GenBuffersFunc = NULL; // ericw
-
-QS_PFNGLCREATESHADERPROC GL_CreateShaderFunc = NULL; // ericw
-QS_PFNGLDELETESHADERPROC GL_DeleteShaderFunc = NULL; // ericw
-QS_PFNGLDELETEPROGRAMPROC GL_DeleteProgramFunc = NULL; // ericw
-QS_PFNGLSHADERSOURCEPROC GL_ShaderSourceFunc = NULL; // ericw
-QS_PFNGLCOMPILESHADERPROC GL_CompileShaderFunc = NULL; // ericw
-QS_PFNGLGETSHADERIVPROC GL_GetShaderivFunc = NULL; // ericw
-QS_PFNGLGETSHADERINFOLOGPROC GL_GetShaderInfoLogFunc = NULL; // ericw
-QS_PFNGLGETPROGRAMIVPROC GL_GetProgramivFunc = NULL; // ericw
-QS_PFNGLGETPROGRAMINFOLOGPROC GL_GetProgramInfoLogFunc = NULL; // ericw
-QS_PFNGLCREATEPROGRAMPROC GL_CreateProgramFunc = NULL; // ericw
-QS_PFNGLATTACHSHADERPROC GL_AttachShaderFunc = NULL; // ericw
-QS_PFNGLLINKPROGRAMPROC GL_LinkProgramFunc = NULL; // ericw
-QS_PFNGLBINDATTRIBLOCATIONFUNC GL_BindAttribLocationFunc = NULL; // ericw
-QS_PFNGLUSEPROGRAMPROC GL_UseProgramFunc = NULL; // ericw
-QS_PFNGLGETATTRIBLOCATIONPROC GL_GetAttribLocationFunc = NULL; // ericw
-QS_PFNGLVERTEXATTRIBPOINTERPROC GL_VertexAttribPointerFunc = NULL; // ericw
-QS_PFNGLENABLEVERTEXATTRIBARRAYPROC GL_EnableVertexAttribArrayFunc = NULL; // ericw
-QS_PFNGLDISABLEVERTEXATTRIBARRAYPROC GL_DisableVertexAttribArrayFunc = NULL; // ericw
-QS_PFNGLGETUNIFORMLOCATIONPROC GL_GetUniformLocationFunc = NULL; // ericw
-QS_PFNGLUNIFORM1IPROC GL_Uniform1iFunc = NULL; // ericw
-QS_PFNGLUNIFORM1FPROC GL_Uniform1fFunc = NULL; // ericw
-QS_PFNGLUNIFORM3FPROC GL_Uniform3fFunc = NULL; // ericw
-QS_PFNGLUNIFORM4FPROC GL_Uniform4fFunc = NULL; // ericw
 
 // ====================================
 
@@ -858,7 +823,6 @@ static void GL_Info_f (void)
 	Con_SafePrintf ("GL_VENDOR: %s\n", gl_vendor);
 	Con_SafePrintf ("GL_RENDERER: %s\n", gl_renderer);
 	Con_SafePrintf ("GL_VERSION: %s\n", gl_version);
-	Con_Printf ("GL_EXTENSIONS: %s\n", gl_extensions_nice);
 }
 
 /*
@@ -891,78 +855,18 @@ static qboolean GL_ParseExtensionList (const char *list, const char *name)
 	return false;
 }
 
+
 static void GL_CheckExtensions (void)
 {
 	int swap_control;
 
-	// ARB_vertex_buffer_object
-	GL_BindBufferFunc = (PFNGLBINDBUFFERARBPROC) SDL_GL_GetProcAddress ("glBindBufferARB");
-	GL_BufferDataFunc = (PFNGLBUFFERDATAARBPROC) SDL_GL_GetProcAddress ("glBufferDataARB");
-	GL_BufferSubDataFunc = (PFNGLBUFFERSUBDATAARBPROC) SDL_GL_GetProcAddress ("glBufferSubDataARB");
-	GL_DeleteBuffersFunc = (PFNGLDELETEBUFFERSARBPROC) SDL_GL_GetProcAddress ("glDeleteBuffersARB");
-	GL_GenBuffersFunc = (PFNGLGENBUFFERSARBPROC) SDL_GL_GetProcAddress ("glGenBuffersARB");
+	if (glewInit () != GLEW_NO_ERROR) Sys_Error ("Failed to initialize GLEW");
 
-	// multitexture
-	if (COM_CheckParm ("-nomtex"))
-		Con_Warning ("Mutitexture disabled at command line\n");
-	else if (GL_ParseExtensionList (gl_extensions, "GL_ARB_multitexture"))
-	{
-		GL_MTexCoord2fFunc = (PFNGLMULTITEXCOORD2FARBPROC) SDL_GL_GetProcAddress ("glMultiTexCoord2fARB");
-		GL_SelectTextureFunc = (PFNGLACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress ("glActiveTextureARB");
-		GL_ClientActiveTextureFunc = (PFNGLCLIENTACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress ("glClientActiveTextureARB");
-		if (GL_MTexCoord2fFunc && GL_SelectTextureFunc && GL_ClientActiveTextureFunc)
-		{
-			Con_Printf ("FOUND: ARB_multitexture\n");
-			gl_mtexable = true;
-
-			glGetIntegerv (GL_MAX_TEXTURE_UNITS, &gl_max_texture_units);
-			Con_Printf ("GL_MAX_TEXTURE_UNITS: %d\n", (int) gl_max_texture_units);
-		}
-		else
-		{
-			Con_Warning ("Couldn't link to multitexture functions\n");
-		}
-	}
-	else
-	{
-		Con_Warning ("multitexture not supported (extension not found)\n");
-	}
-
-	// texture_env_combine
-	if (COM_CheckParm ("-nocombine"))
-		Con_Warning ("texture_env_combine disabled at command line\n");
-	else if (GL_ParseExtensionList (gl_extensions, "GL_ARB_texture_env_combine"))
-	{
-		Con_Printf ("FOUND: ARB_texture_env_combine\n");
-		gl_texture_env_combine = true;
-	}
-	else if (GL_ParseExtensionList (gl_extensions, "GL_EXT_texture_env_combine"))
-	{
-		Con_Printf ("FOUND: EXT_texture_env_combine\n");
-		gl_texture_env_combine = true;
-	}
-	else
-	{
-		Con_Warning ("texture_env_combine not supported\n");
-	}
-
-	// texture_env_add
-	if (COM_CheckParm ("-noadd"))
-		Con_Warning ("texture_env_add disabled at command line\n");
-	else if (GL_ParseExtensionList (gl_extensions, "GL_ARB_texture_env_add"))
-	{
-		Con_Printf ("FOUND: ARB_texture_env_add\n");
-		gl_texture_env_add = true;
-	}
-	else if (GL_ParseExtensionList (gl_extensions, "GL_EXT_texture_env_add"))
-	{
-		Con_Printf ("FOUND: EXT_texture_env_add\n");
-		gl_texture_env_add = true;
-	}
-	else
-	{
-		Con_Warning ("texture_env_add not supported\n");
-	}
+	// extensions we must use
+	if (!GLEW_ARB_multitexture) Sys_Error ("GL_ARB_multitexture : not found");
+	if (!GLEW_ARB_vertex_buffer_object) Sys_Error ("GL_ARB_vertex_buffer_object : not found");
+	if (!GLEW_ARB_vertex_program) Sys_Error ("GL_ARB_vertex_program : not found");
+	if (!GLEW_ARB_fragment_program) Sys_Error ("GL_ARB_fragment_program : not found");
 
 	// swap control
 	if (!gl_swap_control)
@@ -1042,9 +946,7 @@ static void GL_CheckExtensions (void)
 	}
 
 	// texture_non_power_of_two
-	if (COM_CheckParm ("-notexturenpot"))
-		Con_Warning ("texture_non_power_of_two disabled at command line\n");
-	else if (GL_ParseExtensionList (gl_extensions, "GL_ARB_texture_non_power_of_two"))
+	if (GL_ParseExtensionList (gl_extensions, "GL_ARB_texture_non_power_of_two"))
 	{
 		Con_Printf ("FOUND: ARB_texture_non_power_of_two\n");
 		gl_texture_NPOT = true;
@@ -1053,31 +955,6 @@ static void GL_CheckExtensions (void)
 	{
 		Con_Warning ("texture_non_power_of_two not supported\n");
 	}
-
-	// GLSL
-	GL_CreateShaderFunc = (QS_PFNGLCREATESHADERPROC) SDL_GL_GetProcAddress ("glCreateShader");
-	GL_DeleteShaderFunc = (QS_PFNGLDELETESHADERPROC) SDL_GL_GetProcAddress ("glDeleteShader");
-	GL_DeleteProgramFunc = (QS_PFNGLDELETEPROGRAMPROC) SDL_GL_GetProcAddress ("glDeleteProgram");
-	GL_ShaderSourceFunc = (QS_PFNGLSHADERSOURCEPROC) SDL_GL_GetProcAddress ("glShaderSource");
-	GL_CompileShaderFunc = (QS_PFNGLCOMPILESHADERPROC) SDL_GL_GetProcAddress ("glCompileShader");
-	GL_GetShaderivFunc = (QS_PFNGLGETSHADERIVPROC) SDL_GL_GetProcAddress ("glGetShaderiv");
-	GL_GetShaderInfoLogFunc = (QS_PFNGLGETSHADERINFOLOGPROC) SDL_GL_GetProcAddress ("glGetShaderInfoLog");
-	GL_GetProgramivFunc = (QS_PFNGLGETPROGRAMIVPROC) SDL_GL_GetProcAddress ("glGetProgramiv");
-	GL_GetProgramInfoLogFunc = (QS_PFNGLGETPROGRAMINFOLOGPROC) SDL_GL_GetProcAddress ("glGetProgramInfoLog");
-	GL_CreateProgramFunc = (QS_PFNGLCREATEPROGRAMPROC) SDL_GL_GetProcAddress ("glCreateProgram");
-	GL_AttachShaderFunc = (QS_PFNGLATTACHSHADERPROC) SDL_GL_GetProcAddress ("glAttachShader");
-	GL_LinkProgramFunc = (QS_PFNGLLINKPROGRAMPROC) SDL_GL_GetProcAddress ("glLinkProgram");
-	GL_BindAttribLocationFunc = (QS_PFNGLBINDATTRIBLOCATIONFUNC) SDL_GL_GetProcAddress ("glBindAttribLocation");
-	GL_UseProgramFunc = (QS_PFNGLUSEPROGRAMPROC) SDL_GL_GetProcAddress ("glUseProgram");
-	GL_GetAttribLocationFunc = (QS_PFNGLGETATTRIBLOCATIONPROC) SDL_GL_GetProcAddress ("glGetAttribLocation");
-	GL_VertexAttribPointerFunc = (QS_PFNGLVERTEXATTRIBPOINTERPROC) SDL_GL_GetProcAddress ("glVertexAttribPointer");
-	GL_EnableVertexAttribArrayFunc = (QS_PFNGLENABLEVERTEXATTRIBARRAYPROC) SDL_GL_GetProcAddress ("glEnableVertexAttribArray");
-	GL_DisableVertexAttribArrayFunc = (QS_PFNGLDISABLEVERTEXATTRIBARRAYPROC) SDL_GL_GetProcAddress ("glDisableVertexAttribArray");
-	GL_GetUniformLocationFunc = (QS_PFNGLGETUNIFORMLOCATIONPROC) SDL_GL_GetProcAddress ("glGetUniformLocation");
-	GL_Uniform1iFunc = (QS_PFNGLUNIFORM1IPROC) SDL_GL_GetProcAddress ("glUniform1i");
-	GL_Uniform1fFunc = (QS_PFNGLUNIFORM1FPROC) SDL_GL_GetProcAddress ("glUniform1f");
-	GL_Uniform3fFunc = (QS_PFNGLUNIFORM3FPROC) SDL_GL_GetProcAddress ("glUniform3f");
-	GL_Uniform4fFunc = (QS_PFNGLUNIFORM4FPROC) SDL_GL_GetProcAddress ("glUniform4f");
 }
 
 

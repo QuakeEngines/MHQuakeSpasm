@@ -1430,9 +1430,10 @@ void GL_SelectTexture (GLenum target)
 	if (target == currenttarget)
 		return;
 
-	GL_SelectTextureFunc (target);
+	glActiveTexture (target);
 	currenttarget = target;
 }
+
 
 /*
 ================
@@ -1456,12 +1457,9 @@ GL_EnableMultitexture -- selects texture unit 1
 */
 void GL_EnableMultitexture (void)
 {
-	if (gl_mtexable)
-	{
-		GL_SelectTexture (GL_TEXTURE1_ARB);
-		glEnable (GL_TEXTURE_2D);
-		mtexenabled = true;
-	}
+	GL_SelectTexture (GL_TEXTURE1_ARB);
+	glEnable (GL_TEXTURE_2D);
+	mtexenabled = true;
 }
 
 /*

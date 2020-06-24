@@ -794,7 +794,7 @@ void Sky_DrawFaceQuad (glpoly_t *p)
 	float *v;
 	int		i;
 
-	if (gl_mtexable && r_skyalpha.value >= 1.0)
+	if (r_skyalpha.value >= 1.0)
 	{
 		GL_Bind (solidskytexture);
 		GL_EnableMultitexture ();
@@ -805,9 +805,9 @@ void Sky_DrawFaceQuad (glpoly_t *p)
 		for (i = 0, v = p->verts[0]; i < 4; i++, v += VERTEXSIZE)
 		{
 			Sky_GetTexCoord (v, 8, &s, &t);
-			GL_MTexCoord2fFunc (GL_TEXTURE0_ARB, s, t);
+			glMultiTexCoord2f (GL_TEXTURE0, s, t);
 			Sky_GetTexCoord (v, 16, &s, &t);
-			GL_MTexCoord2fFunc (GL_TEXTURE1_ARB, s, t);
+			glMultiTexCoord2f (GL_TEXTURE1, s, t);
 			glVertex3fv (v);
 		}
 		glEnd ();

@@ -422,14 +422,14 @@ static int gl_num_programs;
 static qboolean GL_CheckShader (GLuint shader)
 {
 	GLint status;
-	GL_GetShaderivFunc (shader, GL_COMPILE_STATUS, &status);
+	glGetShaderiv (shader, GL_COMPILE_STATUS, &status);
 
 	if (status != GL_TRUE)
 	{
 		char infolog[1024];
 
 		memset (infolog, 0, sizeof (infolog));
-		GL_GetShaderInfoLogFunc (shader, sizeof (infolog), NULL, infolog);
+		glGetShaderInfoLog (shader, sizeof (infolog), NULL, infolog);
 
 		Con_Warning ("GLSL program failed to compile: %s", infolog);
 
@@ -441,14 +441,14 @@ static qboolean GL_CheckShader (GLuint shader)
 static qboolean GL_CheckProgram (GLuint program)
 {
 	GLint status;
-	GL_GetProgramivFunc (program, GL_LINK_STATUS, &status);
+	glGetProgramiv (program, GL_LINK_STATUS, &status);
 
 	if (status != GL_TRUE)
 	{
 		char infolog[1024];
 
 		memset (infolog, 0, sizeof (infolog));
-		GL_GetProgramInfoLogFunc (program, sizeof (infolog), NULL, infolog);
+		glGetProgramInfoLog (program, sizeof (infolog), NULL, infolog);
 
 		Con_Warning ("GLSL program failed to link: %s", infolog);
 
@@ -469,10 +469,10 @@ GLint GL_GetUniformLocation (GLuint *programPtr, const char *name)
 	if (!programPtr)
 		return -1;
 
-	location = GL_GetUniformLocationFunc (*programPtr, name);
+	location = glGetUniformLocation (*programPtr, name);
 	if (location == -1)
 	{
-		Con_Warning ("GL_GetUniformLocationFunc %s failed\n", name);
+		Con_Warning ("glGetUniformLocation %s failed\n", name);
 		*programPtr = 0;
 	}
 	return location;
@@ -490,46 +490,46 @@ GLuint GL_CreateProgram (const GLchar *vertSource, const GLchar *fragSource, int
 	int i;
 	GLuint program, vertShader, fragShader;
 
-	vertShader = GL_CreateShaderFunc (GL_VERTEX_SHADER);
-	GL_ShaderSourceFunc (vertShader, 1, &vertSource, NULL);
-	GL_CompileShaderFunc (vertShader);
+	vertShader = glCreateShader (GL_VERTEX_SHADER);
+	glShaderSource (vertShader, 1, &vertSource, NULL);
+	glCompileShader (vertShader);
 
 	if (!GL_CheckShader (vertShader))
 	{
-		GL_DeleteShaderFunc (vertShader);
+		glDeleteShader (vertShader);
 		return 0;
 	}
 
-	fragShader = GL_CreateShaderFunc (GL_FRAGMENT_SHADER);
-	GL_ShaderSourceFunc (fragShader, 1, &fragSource, NULL);
-	GL_CompileShaderFunc (fragShader);
+	fragShader = glCreateShader (GL_FRAGMENT_SHADER);
+	glShaderSource (fragShader, 1, &fragSource, NULL);
+	glCompileShader (fragShader);
 
 	if (!GL_CheckShader (fragShader))
 	{
-		GL_DeleteShaderFunc (vertShader);
-		GL_DeleteShaderFunc (fragShader);
+		glDeleteShader (vertShader);
+		glDeleteShader (fragShader);
 		return 0;
 	}
 
-	program = GL_CreateProgramFunc ();
-	GL_AttachShaderFunc (program, vertShader);
-	GL_DeleteShaderFunc (vertShader);
-	GL_AttachShaderFunc (program, fragShader);
-	GL_DeleteShaderFunc (fragShader);
+	program = glCreateProgram ();
+	glAttachShader (program, vertShader);
+	glDeleteShader (vertShader);
+	glAttachShader (program, fragShader);
+	glDeleteShader (fragShader);
 
 	if (bindings)
 	{
 		for (i = 0; i < numbindings; i++)
 		{
-			GL_BindAttribLocationFunc (program, bindings[i].attrib, bindings[i].name);
+			glBindAttribLocation (program, bindings[i].attrib, bindings[i].name);
 		}
 	}
 
-	GL_LinkProgramFunc (program);
+	glLinkProgram (program);
 
 	if (!GL_CheckProgram (program))
 	{
-		GL_DeleteProgramFunc (program);
+		glDeleteProgram (program);
 		return 0;
 	}
 	else
@@ -555,7 +555,7 @@ void R_DeleteShaders (void)
 {
 	for (int i = 0; i < gl_num_programs; i++)
 	{
-		GL_DeleteProgramFunc (gl_programs[i]);
+		glDeleteProgram (gl_programs[i]);
 		gl_programs[i] = 0;
 	}
 
@@ -592,7 +592,7 @@ void GL_BindBuffer (GLenum target, GLuint buffer)
 	if (*cache != buffer)
 	{
 		*cache = buffer;
-		GL_BindBufferFunc (target, *cache);
+		glBindBuffer (target, *cache);
 	}
 }
 
@@ -608,7 +608,8 @@ void GL_ClearBufferBindings ()
 {
 	current_array_buffer = 0;
 	current_element_array_buffer = 0;
-	GL_BindBufferFunc (GL_ARRAY_BUFFER, 0);
-	GL_BindBufferFunc (GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	glBindBuffer (GL_ARRAY_BUFFER, 0);
+	glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 

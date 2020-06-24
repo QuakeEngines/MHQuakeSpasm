@@ -603,28 +603,28 @@ void R_DrawTextureChains_GLSL (qmodel_t *model, entity_t *ent, texchain_t chain)
 		glEnable (GL_BLEND);
 	}
 
-	GL_UseProgramFunc (r_world_program);
+	glUseProgram (r_world_program);
 
 	// Bind the buffers
 	GL_BindBuffer (GL_ARRAY_BUFFER, gl_bmodel_vbo);
 	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, 0); // indices come from client memory!
 
-	GL_EnableVertexAttribArrayFunc (vertAttrIndex);
-	GL_EnableVertexAttribArrayFunc (texCoordsAttrIndex);
-	GL_EnableVertexAttribArrayFunc (LMCoordsAttrIndex);
+	glEnableVertexAttribArray (vertAttrIndex);
+	glEnableVertexAttribArray (texCoordsAttrIndex);
+	glEnableVertexAttribArray (LMCoordsAttrIndex);
 
-	GL_VertexAttribPointerFunc (vertAttrIndex, 3, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof (float), ((float *) 0));
-	GL_VertexAttribPointerFunc (texCoordsAttrIndex, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof (float), ((float *) 0) + 3);
-	GL_VertexAttribPointerFunc (LMCoordsAttrIndex, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof (float), ((float *) 0) + 5);
+	glVertexAttribPointer (vertAttrIndex, 3, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof (float), ((float *) 0));
+	glVertexAttribPointer (texCoordsAttrIndex, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof (float), ((float *) 0) + 3);
+	glVertexAttribPointer (LMCoordsAttrIndex, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof (float), ((float *) 0) + 5);
 
 	// set uniforms
-	GL_Uniform1iFunc (texLoc, 0);
-	GL_Uniform1iFunc (LMTexLoc, 1);
-	GL_Uniform1iFunc (fullbrightTexLoc, 2);
-	GL_Uniform1iFunc (useFullbrightTexLoc, 0);
-	GL_Uniform1iFunc (useOverbrightLoc, (int) gl_overbright.value);
-	GL_Uniform1iFunc (useAlphaTestLoc, 0);
-	GL_Uniform1fFunc (alphaLoc, entalpha);
+	glUniform1i (texLoc, 0);
+	glUniform1i (LMTexLoc, 1);
+	glUniform1i (fullbrightTexLoc, 2);
+	glUniform1i (useFullbrightTexLoc, 0);
+	glUniform1i (useOverbrightLoc, (int) gl_overbright.value);
+	glUniform1i (useAlphaTestLoc, 0);
+	glUniform1f (alphaLoc, entalpha);
 
 	for (i = 0; i < model->numtextures; i++)
 	{
@@ -639,10 +639,10 @@ void R_DrawTextureChains_GLSL (qmodel_t *model, entity_t *ent, texchain_t chain)
 		{
 			GL_SelectTexture (GL_TEXTURE2);
 			GL_Bind (fullbright);
-			GL_Uniform1iFunc (useFullbrightTexLoc, 1);
+			glUniform1i (useFullbrightTexLoc, 1);
 		}
 		else
-			GL_Uniform1iFunc (useFullbrightTexLoc, 0);
+			glUniform1i (useFullbrightTexLoc, 0);
 
 		R_ClearBatch ();
 
@@ -659,7 +659,7 @@ void R_DrawTextureChains_GLSL (qmodel_t *model, entity_t *ent, texchain_t chain)
 					GL_Bind ((R_TextureAnimation (t, ent != NULL ? ent->frame : 0))->gltexture);
 
 					if (t->texturechains[chain]->flags & SURF_DRAWFENCE)
-						GL_Uniform1iFunc (useAlphaTestLoc, 1); // Flip alpha test back on
+						glUniform1i (useAlphaTestLoc, 1); // Flip alpha test back on
 
 					bound = true;
 					lastlightmap = s->lightmaptexturenum;
@@ -680,15 +680,15 @@ void R_DrawTextureChains_GLSL (qmodel_t *model, entity_t *ent, texchain_t chain)
 		R_FlushBatch ();
 
 		if (bound && t->texturechains[chain]->flags & SURF_DRAWFENCE)
-			GL_Uniform1iFunc (useAlphaTestLoc, 0); // Flip alpha test back off
+			glUniform1i (useAlphaTestLoc, 0); // Flip alpha test back off
 	}
 
 	// clean up
-	GL_DisableVertexAttribArrayFunc (vertAttrIndex);
-	GL_DisableVertexAttribArrayFunc (texCoordsAttrIndex);
-	GL_DisableVertexAttribArrayFunc (LMCoordsAttrIndex);
+	glDisableVertexAttribArray (vertAttrIndex);
+	glDisableVertexAttribArray (texCoordsAttrIndex);
+	glDisableVertexAttribArray (LMCoordsAttrIndex);
 
-	GL_UseProgramFunc (0);
+	glUseProgram (0);
 	GL_SelectTexture (GL_TEXTURE0);
 
 	if (entalpha < 1)

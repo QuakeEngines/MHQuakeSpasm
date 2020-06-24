@@ -231,33 +231,33 @@ void GL_DrawAliasFrame_GLSL (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltextu
 		blend = 0;
 	}
 
-	GL_UseProgramFunc (r_alias_program);
+	glUseProgram (r_alias_program);
 
 	GL_BindBuffer (GL_ARRAY_BUFFER, currententity->model->meshvbo);
 	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, currententity->model->meshindexesvbo);
 
-	GL_EnableVertexAttribArrayFunc (texCoordsAttrIndex);
-	GL_EnableVertexAttribArrayFunc (pose1VertexAttrIndex);
-	GL_EnableVertexAttribArrayFunc (pose2VertexAttrIndex);
-	GL_EnableVertexAttribArrayFunc (pose1NormalAttrIndex);
-	GL_EnableVertexAttribArrayFunc (pose2NormalAttrIndex);
+	glEnableVertexAttribArray (texCoordsAttrIndex);
+	glEnableVertexAttribArray (pose1VertexAttrIndex);
+	glEnableVertexAttribArray (pose2VertexAttrIndex);
+	glEnableVertexAttribArray (pose1NormalAttrIndex);
+	glEnableVertexAttribArray (pose2NormalAttrIndex);
 
-	GL_VertexAttribPointerFunc (texCoordsAttrIndex, 2, GL_FLOAT, GL_FALSE, 0, (void *) (intptr_t) currententity->model->vbostofs);
-	GL_VertexAttribPointerFunc (pose1VertexAttrIndex, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (paliashdr, lerpdata.pose1));
-	GL_VertexAttribPointerFunc (pose2VertexAttrIndex, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (paliashdr, lerpdata.pose2));
+	glVertexAttribPointer (texCoordsAttrIndex, 2, GL_FLOAT, GL_FALSE, 0, (void *) (intptr_t) currententity->model->vbostofs);
+	glVertexAttribPointer (pose1VertexAttrIndex, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (paliashdr, lerpdata.pose1));
+	glVertexAttribPointer (pose2VertexAttrIndex, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (paliashdr, lerpdata.pose2));
 	// GL_TRUE to normalize the signed bytes to [-1 .. 1]
-	GL_VertexAttribPointerFunc (pose1NormalAttrIndex, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (paliashdr, lerpdata.pose1));
-	GL_VertexAttribPointerFunc (pose2NormalAttrIndex, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (paliashdr, lerpdata.pose2));
+	glVertexAttribPointer (pose1NormalAttrIndex, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (paliashdr, lerpdata.pose1));
+	glVertexAttribPointer (pose2NormalAttrIndex, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (paliashdr, lerpdata.pose2));
 
 	// set uniforms
-	GL_Uniform1fFunc (blendLoc, blend);
-	GL_Uniform3fFunc (shadevectorLoc, shadevector[0], shadevector[1], shadevector[2]);
-	GL_Uniform4fFunc (lightColorLoc, lightcolor[0], lightcolor[1], lightcolor[2], entalpha);
-	GL_Uniform1iFunc (texLoc, 0);
-	GL_Uniform1iFunc (fullbrightTexLoc, 1);
-	GL_Uniform1iFunc (useFullbrightTexLoc, (fb != NULL) ? 1 : 0);
-	GL_Uniform1fFunc (useOverbrightLoc, overbright ? 1 : 0);
-	GL_Uniform1iFunc (useAlphaTestLoc, (currententity->model->flags & MF_HOLEY) ? 1 : 0);
+	glUniform1f (blendLoc, blend);
+	glUniform3f (shadevectorLoc, shadevector[0], shadevector[1], shadevector[2]);
+	glUniform4f (lightColorLoc, lightcolor[0], lightcolor[1], lightcolor[2], entalpha);
+	glUniform1i (texLoc, 0);
+	glUniform1i (fullbrightTexLoc, 1);
+	glUniform1i (useFullbrightTexLoc, (fb != NULL) ? 1 : 0);
+	glUniform1f (useOverbrightLoc, overbright ? 1 : 0);
+	glUniform1i (useAlphaTestLoc, (currententity->model->flags & MF_HOLEY) ? 1 : 0);
 
 	// set textures
 	GL_SelectTexture (GL_TEXTURE0);
@@ -273,13 +273,13 @@ void GL_DrawAliasFrame_GLSL (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltextu
 	glDrawElements (GL_TRIANGLES, paliashdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) currententity->model->vboindexofs);
 
 	// clean up
-	GL_DisableVertexAttribArrayFunc (texCoordsAttrIndex);
-	GL_DisableVertexAttribArrayFunc (pose1VertexAttrIndex);
-	GL_DisableVertexAttribArrayFunc (pose2VertexAttrIndex);
-	GL_DisableVertexAttribArrayFunc (pose1NormalAttrIndex);
-	GL_DisableVertexAttribArrayFunc (pose2NormalAttrIndex);
+	glDisableVertexAttribArray (texCoordsAttrIndex);
+	glDisableVertexAttribArray (pose1VertexAttrIndex);
+	glDisableVertexAttribArray (pose2VertexAttrIndex);
+	glDisableVertexAttribArray (pose1NormalAttrIndex);
+	glDisableVertexAttribArray (pose2NormalAttrIndex);
 
-	GL_UseProgramFunc (0);
+	glUseProgram (0);
 	GL_SelectTexture (GL_TEXTURE0);
 
 	rs_aliaspasses += paliashdr->numtris;
@@ -544,7 +544,6 @@ void R_DrawAliasModel (entity_t *e)
 
 	if (entalpha < 1)
 	{
-		if (!gl_texture_env_combine) overbright = false; // overbright can't be done in a single pass without combiners
 		glDepthMask (GL_FALSE);
 		glEnable (GL_BLEND);
 	}

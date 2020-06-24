@@ -507,10 +507,7 @@ GLuint gl_bmodel_vbo = 0;
 
 void GL_DeleteBModelVertexBuffer (void)
 {
-	if (!(gl_mtexable && gl_max_texture_units >= 3))
-		return;
-
-	GL_DeleteBuffersFunc (1, &gl_bmodel_vbo);
+	glDeleteBuffers (1, &gl_bmodel_vbo);
 	gl_bmodel_vbo = 0;
 
 	GL_ClearBufferBindings ();
@@ -532,12 +529,9 @@ void GL_BuildBModelVertexBuffer (void)
 	qmodel_t *m;
 	float *varray;
 
-	if (!(gl_mtexable && gl_max_texture_units >= 3))
-		return;
-
 	// ask GL for a name for our VBO
-	GL_DeleteBuffersFunc (1, &gl_bmodel_vbo);
-	GL_GenBuffersFunc (1, &gl_bmodel_vbo);
+	glDeleteBuffers (1, &gl_bmodel_vbo);
+	glGenBuffers (1, &gl_bmodel_vbo);
 
 	// count all verts in all models
 	numverts = 0;
@@ -574,8 +568,8 @@ void GL_BuildBModelVertexBuffer (void)
 	}
 
 	// upload to GPU
-	GL_BindBufferFunc (GL_ARRAY_BUFFER, gl_bmodel_vbo);
-	GL_BufferDataFunc (GL_ARRAY_BUFFER, varray_bytes, varray, GL_STATIC_DRAW);
+	glBindBuffer (GL_ARRAY_BUFFER, gl_bmodel_vbo);
+	glBufferData (GL_ARRAY_BUFFER, varray_bytes, varray, GL_STATIC_DRAW);
 	free (varray);
 
 	// invalidate the cached bindings
