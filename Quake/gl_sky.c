@@ -687,7 +687,7 @@ void Sky_DrawSkyBox (void)
 		if (skymins[0][i] >= skymaxs[0][i] || skymins[1][i] >= skymaxs[1][i])
 			continue;
 
-		GL_Bind (skybox_textures[skytexorder[i]]);
+		GL_BindTexture (GL_TEXTURE0, skybox_textures[skytexorder[i]]);
 
 #if 1 // FIXME: this is to avoid tjunctions until i can do it the right way
 		skymins[0][i] = -1;
@@ -796,9 +796,9 @@ void Sky_DrawFaceQuad (glpoly_t *p)
 
 	if (r_skyalpha.value >= 1.0)
 	{
-		GL_Bind (solidskytexture);
+		GL_BindTexture (GL_TEXTURE0, solidskytexture);
 		GL_EnableMultitexture ();
-		GL_Bind (alphaskytexture);
+		GL_BindTexture (GL_TEXTURE1, alphaskytexture);
 		glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
 
 		glBegin (GL_QUADS);
@@ -819,7 +819,7 @@ void Sky_DrawFaceQuad (glpoly_t *p)
 	}
 	else
 	{
-		GL_Bind (solidskytexture);
+		GL_BindTexture (GL_TEXTURE0, solidskytexture);
 
 		if (r_skyalpha.value < 1.0)
 			glColor3f (1, 1, 1);
@@ -833,7 +833,7 @@ void Sky_DrawFaceQuad (glpoly_t *p)
 		}
 		glEnd ();
 
-		GL_Bind (alphaskytexture);
+		GL_BindTexture (GL_TEXTURE0, alphaskytexture);
 		glEnable (GL_BLEND);
 
 		if (r_skyalpha.value < 1.0)

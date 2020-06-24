@@ -91,7 +91,7 @@ TexMgr_SetFilterModes
 */
 static void TexMgr_SetFilterModes (gltexture_t *glt)
 {
-	GL_Bind (glt);
+	GL_BindTexture (GL_TEXTURE0, glt);
 
 	if (glt->flags & TEXPREF_NEAREST)
 	{
@@ -183,7 +183,7 @@ static void TexMgr_Anisotropy_f (cvar_t *var)
 			/*  TexMgr_SetFilterModes (glt);*/
 			if (glt->flags & TEXPREF_MIPMAP)
 			{
-				GL_Bind (glt);
+				GL_BindTexture (GL_TEXTURE0, glt);
 				glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glmodes[glmode_idx].magfilter);
 				glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glmodes[glmode_idx].minfilter);
 				glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, gl_texture_anisotropy.value);
@@ -241,7 +241,7 @@ static void TexMgr_Imagedump_f (void)
 		while ((c = strchr (tempname, '*'))) *c = '_';
 		q_snprintf (tganame, sizeof (tganame), "imagedump/%s.tga", tempname);
 
-		GL_Bind (glt);
+		GL_BindTexture (GL_TEXTURE0, glt);
 		glPixelStorei (GL_PACK_ALIGNMENT, 1);/* for widths that aren't a multiple of 4 */
 
 		if (glt->flags & TEXPREF_ALPHA)
@@ -986,7 +986,7 @@ static void TexMgr_LoadImage32 (gltexture_t *glt, unsigned *data)
 	}
 
 	// upload
-	GL_Bind (glt);
+	GL_BindTexture (GL_TEXTURE0, glt);
 	internalformat = (glt->flags & TEXPREF_ALPHA) ? gl_alpha_format : gl_solid_format;
 	glTexImage2D (GL_TEXTURE_2D, 0, internalformat, glt->width, glt->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
@@ -1115,7 +1115,7 @@ TexMgr_LoadLightmap -- handles lightmap data
 static void TexMgr_LoadLightmap (gltexture_t *glt, byte *data)
 {
 	// upload it
-	GL_Bind (glt);
+	GL_BindTexture (GL_TEXTURE1, glt);
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, glt->width, glt->height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
 
 	// set filter modes
@@ -1368,15 +1368,16 @@ void TexMgr_ReloadImages (void)
 */
 
 static GLuint	currenttexture[3] = { GL_UNUSED_TEXTURE, GL_UNUSED_TEXTURE, GL_UNUSED_TEXTURE }; // to avoid unnecessary texture sets
-static GLenum	currenttarget = GL_TEXTURE0_ARB;
+static GLenum	currenttarget = GL_TEXTURE0;
 qboolean	mtexenabled = false;
+
 
 /*
 ================
-GL_SelectTexture -- johnfitz -- rewritten
+GL_ActiveTexture -- johnfitz -- rewritten
 ================
 */
-void GL_SelectTexture (GLenum target)
+void GL_ActiveTexture (GLenum target)
 {
 	if (target == currenttarget)
 		return;
@@ -1395,8 +1396,9 @@ void GL_DisableMultitexture (void)
 {
 	if (mtexenabled)
 	{
+		GL_ActiveTexture (GL_TEXTURE1);
 		glDisable (GL_TEXTURE_2D);
-		GL_SelectTexture (GL_TEXTURE0_ARB);
+		GL_ActiveTexture (GL_TEXTURE0);
 		mtexenabled = false;
 	}
 }
@@ -1408,28 +1410,33 @@ GL_EnableMultitexture -- selects texture unit 1
 */
 void GL_EnableMultitexture (void)
 {
-	GL_SelectTexture (GL_TEXTURE1_ARB);
+	GL_ActiveTexture (GL_TEXTURE1);
 	glEnable (GL_TEXTURE_2D);
 	mtexenabled = true;
 }
+
 
 /*
 ================
 GL_Bind -- johnfitz -- heavy revision
 ================
 */
-void GL_Bind (gltexture_t *texture)
+void GL_BindTexture (GLenum target, gltexture_t *texture)
 {
 	if (!texture)
 		texture = nulltexture;
 
-	if (texture->texnum != currenttexture[currenttarget - GL_TEXTURE0_ARB])
+	// with shaders we don't need to worry about enabling texture2d or crap like that
+	GL_ActiveTexture (target);
+
+	if (texture->texnum != currenttexture[currenttarget - GL_TEXTURE0])
 	{
-		currenttexture[currenttarget - GL_TEXTURE0_ARB] = texture->texnum;
+		currenttexture[currenttarget - GL_TEXTURE0] = texture->texnum;
 		glBindTexture (GL_TEXTURE_2D, texture->texnum);
 		texture->visframe = r_framecount;
 	}
 }
+
 
 /*
 ================
@@ -1461,8 +1468,7 @@ Call this after changing the binding outside of GL_Bind.
 */
 void GL_ClearBindings (void)
 {
-	int i;
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 	{
 		currenttexture[i] = GL_UNUSED_TEXTURE;
 	}

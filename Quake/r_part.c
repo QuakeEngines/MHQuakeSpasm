@@ -848,7 +848,7 @@ void R_DrawParticles (void)
 	VectorScale (vup, 1.5, up);
 	VectorScale (vright, 1.5, right);
 
-	GL_Bind (particletexture);
+	GL_BindTexture (GL_TEXTURE0, particletexture);
 	glEnable (GL_BLEND);
 	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glDepthMask (GL_FALSE); // johnfitz -- fix for particle z-buffer bug

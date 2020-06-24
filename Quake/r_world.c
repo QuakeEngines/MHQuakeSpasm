@@ -402,7 +402,7 @@ void R_DrawTextureChains_NoTexture (qmodel_t *model, texchain_t chain)
 			{
 				if (!bound) // only bind once we are sure we need this texture
 				{
-					GL_Bind (t->gltexture);
+					GL_BindTexture (GL_TEXTURE0, t->gltexture);
 					bound = true;
 				}
 				DrawGLPoly (s->polys);
@@ -463,7 +463,7 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 					entalpha = GL_WaterAlphaForEntitySurface (ent, s);
 
 					R_BeginTransparentDrawing (entalpha);
-					GL_Bind (t->gltexture);
+					GL_BindTexture (GL_TEXTURE0, t->gltexture);
 
 					bound = true;
 				}
@@ -478,8 +478,8 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 }
 
 
-static GLuint r_world_vp = 0;
-static GLuint r_world_fp[2] = { 0, 0 }; // luma, no luma
+static GLuint r_lightmapped_vp = 0;
+static GLuint r_lightmapped_fp[2] = { 0, 0 }; // luma, no luma
 
 /*
 =============
@@ -582,13 +582,66 @@ void GLWorld_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	r_world_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_source);
-	r_world_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source0);
-	r_world_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source1);
+	r_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_source);
+	r_lightmapped_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source0);
+	r_lightmapped_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source1);
 }
 
 
 extern GLuint gl_bmodel_vbo;
+
+
+void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
+{
+	int num_surfaces = 0;
+
+	// build lightmap chains from the surf; this also reverses the draw order so we get front-to-back for better z buffer performance
+	for (; s; s = s->texturechain)
+	{
+		if (s->culled) continue;
+
+		s->lightmapchain = lightmap[s->lightmaptexturenum].texturechain;
+		lightmap[s->lightmaptexturenum].texturechain = s;
+
+		rs_brushpasses++;
+		num_surfaces++;
+	}
+
+	// if no surfaces were added don't draw it
+	if (!num_surfaces) return;
+
+	// and now we can draw it
+	glBindProgramARB (GL_VERTEX_PROGRAM_ARB, r_lightmapped_vp);
+
+	GL_BindTexture (GL_TEXTURE0, t->gltexture);
+
+	// Enable/disable TMU 2 (fullbrights)
+	if (gl_fullbrights.value && t->fullbright)
+	{
+		GL_BindTexture (GL_TEXTURE2, t->fullbright);
+		glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, r_lightmapped_fp[1]);
+	}
+	else glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, r_lightmapped_fp[0]);
+
+	// and draw our batches in lightmap order
+	for (int i = 0; i < lightmap_count; i++)
+	{
+		if (!lightmap[i].texturechain) continue;
+
+		GL_BindTexture (GL_TEXTURE1, lightmap[i].texture);
+
+		R_ClearBatch ();
+
+		for (msurface_t *s2 = lightmap[i].texturechain; s2; s2 = s2->lightmapchain)
+			R_BatchSurface (s2);
+
+		R_FlushBatch ();
+
+		// clear the surfaces used by this lightmap
+		lightmap[i].texturechain = NULL;
+	}
+}
+
 
 /*
 ================
@@ -600,18 +653,11 @@ Requires 3 TMUs, OpenGL 2.0
 */
 void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 {
-	int			i;
-	msurface_t *s;
-	texture_t *t;
-	qboolean	bound;
-	int		lastlightmap;
-	gltexture_t *fullbright = NULL;
-	float		entalpha;
+	// entity alpha
+	float		entalpha = (ent != NULL) ? ENTALPHA_DECODE (ent->alpha) : 1.0f;
 
 	// MH - variable overbright
 	float		overbright = (float) (1 << (int) gl_overbright.value);
-
-	entalpha = (ent != NULL) ? ENTALPHA_DECODE (ent->alpha) : 1.0f;
 
 	// enable blending / disable depth writes
 	if (entalpha < 1)
@@ -622,9 +668,6 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 
 	glEnable (GL_VERTEX_PROGRAM_ARB);
 	glEnable (GL_FRAGMENT_PROGRAM_ARB);
-
-	// setting the vertex program here; the fragment program will be set later
-	glBindProgramARB (GL_VERTEX_PROGRAM_ARB, r_world_vp);
 
 	// overbright
 	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, overbright, overbright, overbright, entalpha);
@@ -641,54 +684,44 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof (float), ((float *) 0) + 3);
 	glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof (float), ((float *) 0) + 5);
 
-	for (i = 0; i < model->numtextures; i++)
+	for (int i = 0; i < model->numtextures; i++)
 	{
-		t = model->textures[i];
+		// fixme - make this never happen!!!
+		if (!model->textures[i]) continue;
+
+		texture_t *t = model->textures[i];
+		msurface_t *s = t->texturechains[chain];
+		texture_t *anim = R_TextureAnimation (t, ent != NULL ? ent->frame : 0);
 
 		if (!t || !t->texturechains[chain] || t->texturechains[chain]->flags & (SURF_DRAWTILED | SURF_NOTEXTURE))
 			continue;
 
-		// Enable/disable TMU 2 (fullbrights)
-		// FIXME: Move below to where we bind GL_TEXTURE0
-		if (gl_fullbrights.value && (fullbright = R_TextureAnimation (t, ent != NULL ? ent->frame : 0)->fullbright))
+		// select the proper shaders
+		if (!s)
 		{
-			GL_SelectTexture (GL_TEXTURE2);
-			GL_Bind (fullbright);
-			glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, r_world_fp[1]);
+			// nothing was chained
+			continue;
 		}
-		else glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, r_world_fp[0]);
-
-		R_ClearBatch ();
-
-		bound = false;
-		lastlightmap = 0; // avoid compiler warning
-
-		for (s = t->texturechains[chain]; s; s = s->texturechain)
+		else if (s->flags & SURF_NOTEXTURE)
 		{
-			if (!s->culled)
-			{
-				if (!bound) // only bind once we are sure we need this texture
-				{
-					GL_SelectTexture (GL_TEXTURE0);
-					GL_Bind ((R_TextureAnimation (t, ent != NULL ? ent->frame : 0))->gltexture);
-
-					bound = true;
-					lastlightmap = s->lightmaptexturenum;
-				}
-
-				if (s->lightmaptexturenum != lastlightmap)
-					R_FlushBatch ();
-
-				GL_SelectTexture (GL_TEXTURE1);
-				GL_Bind (lightmap[s->lightmaptexturenum].texture);
-				lastlightmap = s->lightmaptexturenum;
-				R_BatchSurface (s);
-
-				rs_brushpasses++;
-			}
+			// to do
+			continue;
 		}
-
-		R_FlushBatch ();
+		else if (s->flags & SURF_DRAWSKY)
+		{
+			// to do
+			continue;
+		}
+		else if (s->flags & SURF_DRAWTURB)
+		{
+			// to do
+			continue;
+		}
+		else
+		{
+			// normal lightmapped surface
+			R_DrawLightmappedChain (s, R_TextureAnimation (t, ent != NULL ? ent->frame : 0));
+		}
 	}
 
 	// clean up
@@ -701,8 +734,6 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 
 	glDisable (GL_VERTEX_PROGRAM_ARB);
 	glDisable (GL_FRAGMENT_PROGRAM_ARB);
-
-	GL_SelectTexture (GL_TEXTURE0);
 
 	if (entalpha < 1)
 	{

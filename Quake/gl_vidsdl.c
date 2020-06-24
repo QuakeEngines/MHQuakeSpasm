@@ -1015,6 +1015,7 @@ static void GL_Init (void)
 	}
 #endif
 
+	GLDraw_CreateShaders ();
 	GLAlias_CreateShaders ();
 	GLWorld_CreateShaders ();
 	GL_ClearBufferBindings ();

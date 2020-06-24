@@ -260,13 +260,11 @@ void GL_DrawAliasFrame_GLSL (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltextu
 	glUniform1i (useAlphaTestLoc, (currententity->model->flags & MF_HOLEY) ? 1 : 0);
 
 	// set textures
-	GL_SelectTexture (GL_TEXTURE0);
-	GL_Bind (tx);
+	GL_BindTexture (GL_TEXTURE0, tx);
 
 	if (fb)
 	{
-		GL_SelectTexture (GL_TEXTURE1);
-		GL_Bind (fb);
+		GL_BindTexture (GL_TEXTURE1, fb);
 	}
 
 	// draw
@@ -280,7 +278,6 @@ void GL_DrawAliasFrame_GLSL (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltextu
 	glDisableVertexAttribArray (pose2NormalAttrIndex);
 
 	glUseProgram (0);
-	GL_SelectTexture (GL_TEXTURE0);
 
 	rs_aliaspasses += paliashdr->numtris;
 }

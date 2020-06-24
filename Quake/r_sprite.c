@@ -148,7 +148,7 @@ void R_DrawSpriteModel (entity_t *e)
 
 	GL_DisableMultitexture ();
 
-	GL_Bind (frame->gltexture);
+	GL_BindTexture (GL_TEXTURE0, frame->gltexture);
 
 	glEnable (GL_ALPHA_TEST);
 	glBegin (GL_QUADS);
@@ -180,3 +180,4 @@ void R_DrawSpriteModel (entity_t *e)
 	if (psprite->type == SPR_ORIENTED)
 		GL_PolygonOffset (OFFSET_NONE);
 }
+

@@ -434,6 +434,80 @@ void Draw_Init (void)
 }
 
 
+static GLuint draw_textured_vp = 0;
+static GLuint draw_textured_fp = 0;
+static GLuint draw_coloured_vp = 0;
+static GLuint draw_coloured_fp = 0;
+
+void GLDraw_CreateShaders (void)
+{
+	const GLchar *vp_textured_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"# transform position to output\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.position;\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.position;\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.position;\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.position;\n"
+		"\n"
+		"# copy over texcoord\n"
+		"MOV result.texcoord[0], vertex.texcoord[0];\n"
+		"\n"
+		"# copy over colour\n"
+		"MOV result.color, vertex.color;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *fp_textured_source = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"TEMP diff;\n"
+		"\n"
+		"# perform the texturing\n"
+		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
+		"\n"
+		"# blend with the colour to output\n"
+		"MUL result.color, diff, fragment.color;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *vp_coloured_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"# transform position to output\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.position;\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.position;\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.position;\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.position;\n"
+		"\n"
+		"# copy over colour\n"
+		"MOV result.color, vertex.color;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *fp_coloured_source = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"# move the colour to output\n"
+		"MOV result.color, fragment.color;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	draw_textured_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_textured_source);
+	draw_textured_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_textured_source);
+	draw_coloured_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_coloured_source);
+	draw_coloured_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_coloured_source);
+}
+
+
 // ==============================================================================
 //  2D DRAWING
 // ==============================================================================
@@ -474,7 +548,10 @@ void Draw_ColouredVertex (drawpolyvert_t *vert, float x, float y, unsigned colou
 
 void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h, unsigned colour, float sl, float sh, float tl, float th)
 {
-	GL_Bind (texture);
+	glBindProgramARB (GL_VERTEX_PROGRAM_ARB, draw_textured_vp);
+	glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, draw_textured_fp);
+
+	GL_BindTexture (GL_TEXTURE0, texture);
 
 	Draw_TexturedVertex (&r_drawverts[0], x, y, colour, sl, tl);
 	Draw_TexturedVertex (&r_drawverts[1], x + w, y, colour, sh, tl);
@@ -487,6 +564,9 @@ void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h
 
 void Draw_ColouredQuad (float x, float y, float w, float h, unsigned colour)
 {
+	glBindProgramARB (GL_VERTEX_PROGRAM_ARB, draw_coloured_vp);
+	glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, draw_coloured_fp);
+
 	Draw_ColouredVertex (&r_drawverts[0], x, y, colour);
 	Draw_ColouredVertex (&r_drawverts[1], x + w, y, colour);
 	Draw_ColouredVertex (&r_drawverts[2], x + w, y + h, colour);
@@ -533,7 +613,9 @@ void Draw_EndString (void)
 {
 	if (r_numdrawverts)
 	{
-		GL_Bind (char_texture);
+		glBindProgramARB (GL_VERTEX_PROGRAM_ARB, draw_textured_vp);
+		glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, draw_textured_fp);
+		GL_BindTexture (GL_TEXTURE0, char_texture);
 		glDrawArrays (GL_QUADS, 0, r_numdrawverts);
 		r_numdrawverts = 0;
 	}
@@ -611,11 +693,9 @@ void Draw_AlphaPic (int x, int y, qpic_t *pic, float alpha)
 		{
 			glEnable (GL_BLEND);
 			glDisable (GL_ALPHA_TEST);
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 			Draw_TexturedQuad (gl->gltexture, x, y, pic->width, pic->height, 0xffffff | (int) (alpha * 255) << 24, gl->sl, gl->sh, gl->tl, gl->th);
 
-			glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 			glEnable (GL_ALPHA_TEST);
 			glDisable (GL_BLEND);
 		}
@@ -716,7 +796,6 @@ void Draw_Fill (int x, int y, int w, int h, int c, float alpha) // johnfitz -- a
 			rgba |= (int) (alpha * 255) << 24;
 		}
 
-		glDisable (GL_TEXTURE_2D);
 		glEnable (GL_BLEND); // johnfitz -- for alpha
 		glDisable (GL_ALPHA_TEST); // johnfitz -- for alpha
 
@@ -724,7 +803,6 @@ void Draw_Fill (int x, int y, int w, int h, int c, float alpha) // johnfitz -- a
 
 		glDisable (GL_BLEND); // johnfitz -- for alpha
 		glEnable (GL_ALPHA_TEST); // johnfitz -- for alpha
-		glEnable (GL_TEXTURE_2D);
 	}
 }
 
@@ -740,11 +818,9 @@ void Draw_FadeScreen (void)
 
 	glEnable (GL_BLEND);
 	glDisable (GL_ALPHA_TEST);
-	glDisable (GL_TEXTURE_2D);
 
 	Draw_ColouredQuad (0, 0, glwidth, glheight, 0x7f000000);
 
-	glEnable (GL_TEXTURE_2D);
 	glEnable (GL_ALPHA_TEST);
 	glDisable (GL_BLEND);
 }
@@ -857,6 +933,9 @@ void GL_Set2D (void)
 
 	glEnableClientState (GL_COLOR_ARRAY);
 	glColorPointer (4, GL_UNSIGNED_BYTE, sizeof (drawpolyvert_t), r_drawverts[0].rgba);
+
+	glEnable (GL_VERTEX_PROGRAM_ARB);
+	glEnable (GL_FRAGMENT_PROGRAM_ARB);
 }
 
 
@@ -865,6 +944,9 @@ void GL_End2D (void)
 	glDisableClientState (GL_VERTEX_ARRAY);
 	glDisableClientState (GL_TEXTURE_COORD_ARRAY);
 	glDisableClientState (GL_COLOR_ARRAY);
+
+	glDisable (GL_VERTEX_PROGRAM_ARB);
+	glDisable (GL_FRAGMENT_PROGRAM_ARB);
 
 	// current color is undefined after using GL_COLOR_ARRAY
 	glColor4f (1, 1, 1, 1);

@@ -761,7 +761,7 @@ void R_UploadLightmaps (void)
 		if (!lm->modified)
 			continue;
 
-		GL_Bind (lm->texture);
+		GL_BindTexture (GL_TEXTURE1, lm->texture);
 
 		// doing the proper subrect here
 		glTexSubImage2D (
@@ -826,7 +826,7 @@ void R_RebuildAllLightmaps (void)
 	// for each lightmap, upload it
 	for (i = 0; i < lightmap_count; i++)
 	{
-		GL_Bind (lightmap[i].texture);
+		GL_BindTexture (GL_TEXTURE1, lightmap[i].texture);
 		glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, LMBLOCK_WIDTH, LMBLOCK_HEIGHT, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, lightmap[i].data);
 	}
 }

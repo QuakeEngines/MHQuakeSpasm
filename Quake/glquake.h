@@ -179,6 +179,8 @@ struct lightmap_s {
 	qboolean	modified;
 	gl_rect_t	dirtyrect;
 
+	struct msurface_s *texturechain;
+
 	// the lightmap texture data needs to be kept in
 	// main memory so texsubimage can update properly
 	byte *data; // [4*LMBLOCK_WIDTH*LMBLOCK_HEIGHT];
@@ -255,6 +257,7 @@ void R_DeleteShaders (void);
 GLuint GL_CreateARBProgram (GLenum mode, const GLchar *progstr);
 
 
+void GLDraw_CreateShaders (void);
 void GLWorld_CreateShaders (void);
 void GLAlias_CreateShaders (void);
 void DrawGLPoly (glpoly_t *p);
