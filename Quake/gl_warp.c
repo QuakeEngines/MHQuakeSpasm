@@ -24,7 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 cvar_t r_waterwarp = { "r_waterwarp", "1", CVAR_NONE };
 
-int gl_warpimagesize;
 
 void DrawWaterPoly (glpoly_t *p)
 {

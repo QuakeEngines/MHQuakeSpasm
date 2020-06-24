@@ -200,7 +200,7 @@ void Scrap_Upload (void)
 	{
 		sprintf (name, "scrap%i", i);
 		scrap_textures[i] = TexMgr_LoadImage (NULL, name, BLOCK_WIDTH, BLOCK_HEIGHT, SRC_INDEXED, scrap_texels[i],
-			"", (src_offset_t) scrap_texels[i], TEXPREF_ALPHA | TEXPREF_OVERWRITE | TEXPREF_NOPICMIP);
+			"", (src_offset_t) scrap_texels[i], TEXPREF_ALPHA | TEXPREF_OVERWRITE);
 	}
 
 	scrap_dirty = false;
@@ -251,7 +251,7 @@ qpic_t *Draw_PicFromWad (const char *name)
 		offset = (src_offset_t) p - (src_offset_t) wad_base + sizeof (int) * 2; // johnfitz
 
 		gl.gltexture = TexMgr_LoadImage (NULL, texturename, p->width, p->height, SRC_INDEXED, p->data, WADFILENAME,
-			offset, TEXPREF_ALPHA | TEXPREF_PAD | TEXPREF_NOPICMIP); // johnfitz -- TexMgr
+			offset, TEXPREF_ALPHA | TEXPREF_PAD); // johnfitz -- TexMgr
 		gl.sl = 0;
 		gl.sh = (float) p->width / (float) TexMgr_PadConditional (p->width); // johnfitz
 		gl.tl = 0;
@@ -301,7 +301,7 @@ qpic_t *Draw_CachePic (const char *path)
 	pic->pic.height = dat->height;
 
 	gl.gltexture = TexMgr_LoadImage (NULL, path, dat->width, dat->height, SRC_INDEXED, dat->data, path,
-		sizeof (int) * 2, TEXPREF_ALPHA | TEXPREF_PAD | TEXPREF_NOPICMIP); // johnfitz -- TexMgr
+		sizeof (int) * 2, TEXPREF_ALPHA | TEXPREF_PAD); // johnfitz -- TexMgr
 	gl.sl = 0;
 	gl.sh = (float) dat->width / (float) TexMgr_PadConditional (dat->width); // johnfitz
 	gl.tl = 0;
@@ -318,7 +318,7 @@ Draw_MakePic -- johnfitz -- generate pics from internal data
 */
 qpic_t *Draw_MakePic (const char *name, int width, int height, byte *data)
 {
-	int flags = TEXPREF_NEAREST | TEXPREF_ALPHA | TEXPREF_PERSIST | TEXPREF_NOPICMIP | TEXPREF_PAD;
+	int flags = TEXPREF_NEAREST | TEXPREF_ALPHA | TEXPREF_PERSIST | TEXPREF_PAD;
 	qpic_t *pic;
 	glpic_t		gl;
 
@@ -354,7 +354,7 @@ void Draw_LoadPics (void)
 	if (!data) Sys_Error ("Draw_LoadPics: couldn't load conchars");
 	offset = (src_offset_t) data - (src_offset_t) wad_base;
 	char_texture = TexMgr_LoadImage (NULL, WADFILENAME":conchars", 128, 128, SRC_INDEXED, data,
-		WADFILENAME, offset, TEXPREF_ALPHA | TEXPREF_NEAREST | TEXPREF_NOPICMIP | TEXPREF_CONCHARS);
+		WADFILENAME, offset, TEXPREF_ALPHA | TEXPREF_NEAREST | TEXPREF_CONCHARS);
 
 	draw_disc = Draw_PicFromWad ("disc");
 	draw_backtile = Draw_PicFromWad ("backtile");

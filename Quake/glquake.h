@@ -119,8 +119,6 @@ extern	cvar_t	gl_cull;
 extern	cvar_t	gl_polyblend;
 extern	cvar_t	gl_nocolors;
 
-extern	cvar_t	gl_playermip;
-
 extern int		gl_stencilbits;
 
 // Multitexture
@@ -133,9 +131,6 @@ extern GLint		gl_max_texture_units; // ericw
 extern	float		gl_max_anisotropy;
 extern	qboolean	gl_anisotropy_able;
 
-
-// ericw -- NPOT texture support
-extern	qboolean	gl_texture_NPOT;
 
 // johnfitz -- polygon offset
 #define OFFSET_BMODEL 1
@@ -194,8 +189,6 @@ struct lightmap_s {
 
 extern struct lightmap_s *lightmap;
 extern int lightmap_count;	// allocated lightmaps
-
-extern int gl_warpimagesize; // johnfitz -- for water warp
 
 
 typedef struct glsl_attrib_binding_s {
@@ -276,8 +269,6 @@ void Sky_DrawSky (void);
 void Sky_NewMap (void);
 void Sky_LoadTexture (texture_t *mt, byte *src);
 void Sky_LoadSkyBox (const char *name);
-
-void TexMgr_RecalcWarpImageSize (void);
 
 void R_ClearTextureChains (qmodel_t *mod, texchain_t chain);
 void R_ChainSurface (msurface_t *surf, texchain_t chain);

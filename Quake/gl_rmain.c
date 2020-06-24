@@ -64,10 +64,9 @@ cvar_t	r_dynamic = { "r_dynamic", "1", CVAR_ARCHIVE };
 cvar_t	r_novis = { "r_novis", "0", CVAR_ARCHIVE };
 
 cvar_t	gl_finish = { "gl_finish", "0", CVAR_NONE };
-cvar_t	gl_clear = { "gl_clear", "1", CVAR_NONE };
+cvar_t	gl_clear = { "gl_clear", "0", CVAR_NONE }; // MH - reverted Quake default
 cvar_t	gl_cull = { "gl_cull", "1", CVAR_NONE };
 cvar_t	gl_polyblend = { "gl_polyblend", "1", CVAR_NONE };
-cvar_t	gl_playermip = { "gl_playermip", "0", CVAR_NONE };
 cvar_t	gl_nocolors = { "gl_nocolors", "0", CVAR_NONE };
 
 // johnfitz -- new cvars
@@ -179,7 +178,7 @@ void GLSLGamma_GammaCorrect (void)
 		r_gamma_texture_width = glwidth;
 		r_gamma_texture_height = glheight;
 
-		if (!gl_texture_NPOT)
+		if (!GLEW_ARB_texture_non_power_of_two)
 		{
 			r_gamma_texture_width = TexMgr_Pad (r_gamma_texture_width);
 			r_gamma_texture_height = TexMgr_Pad (r_gamma_texture_height);
@@ -757,7 +756,7 @@ void R_ScaleView (void)
 		r_scaleview_texture_width = srcw;
 		r_scaleview_texture_height = srch;
 
-		if (!gl_texture_NPOT)
+		if (!GLEW_ARB_texture_non_power_of_two)
 		{
 			r_scaleview_texture_width = TexMgr_Pad (r_scaleview_texture_width);
 			r_scaleview_texture_height = TexMgr_Pad (r_scaleview_texture_height);

@@ -29,8 +29,6 @@ const int	gl_alpha_format = 4;
 
 static cvar_t	gl_texturemode = { "gl_texturemode", "", CVAR_ARCHIVE };
 static cvar_t	gl_texture_anisotropy = { "gl_texture_anisotropy", "1", CVAR_ARCHIVE };
-static cvar_t	gl_max_size = { "gl_max_size", "0", CVAR_NONE };
-static cvar_t	gl_picmip = { "gl_picmip", "0", CVAR_NONE };
 static GLint	gl_hardware_maxsize;
 
 #define	MAX_GLTEXTURES	2048
@@ -137,7 +135,6 @@ static void TexMgr_TextureMode_f (cvar_t *var)
 				glmode_idx = i;
 				for (glt = active_gltextures; glt; glt = glt->next)
 					TexMgr_SetFilterModes (glt);
-				// FIXME: warpimages need to be redrawn, too.
 			}
 			return;
 		}
@@ -544,49 +541,6 @@ void TexMgr_NewGame (void)
 	TexMgr_LoadPalette ();
 }
 
-/*
-=============
-TexMgr_RecalcWarpImageSize -- called during init, and after a vid_restart
-
-choose safe warpimage size and resize existing warpimage textures
-=============
-*/
-void TexMgr_RecalcWarpImageSize (void)
-{
-	//	int	oldsize = gl_warpimagesize;
-	int	mark;
-	gltexture_t *glt;
-	byte *dummy;
-
-	// find the new correct size
-	gl_warpimagesize = TexMgr_SafeTextureSize (512);
-
-	while (gl_warpimagesize > vid.width)
-		gl_warpimagesize >>= 1;
-	while (gl_warpimagesize > vid.height)
-		gl_warpimagesize >>= 1;
-
-	// ericw -- removed early exit if (gl_warpimagesize == oldsize).
-	// after vid_restart TexMgr_ReloadImage reloads textures
-	// to tx->source_width/source_height, which might not match oldsize.
-	// fixes: https://sourceforge.net/p/quakespasm/bugs/13/
-
-	// resize the textures in opengl
-	mark = Hunk_LowMark ();
-	dummy = (byte *) Hunk_Alloc (gl_warpimagesize * gl_warpimagesize * 4);
-
-	for (glt = active_gltextures; glt; glt = glt->next)
-	{
-		if (glt->flags & TEXPREF_WARPIMAGE)
-		{
-			GL_Bind (glt);
-			glTexImage2D (GL_TEXTURE_2D, 0, gl_solid_format, gl_warpimagesize, gl_warpimagesize, 0, GL_RGBA, GL_UNSIGNED_BYTE, dummy);
-			glt->width = glt->height = gl_warpimagesize;
-		}
-	}
-
-	Hunk_FreeToLowMark (mark);
-}
 
 /*
 ================
@@ -613,8 +567,6 @@ void TexMgr_Init (void)
 	// palette
 	TexMgr_LoadPalette ();
 
-	Cvar_RegisterVariable (&gl_max_size);
-	Cvar_RegisterVariable (&gl_picmip);
 	Cvar_RegisterVariable (&gl_texture_anisotropy);
 	Cvar_SetCallback (&gl_texture_anisotropy, &TexMgr_Anisotropy_f);
 	gl_texturemode.string = glmodes[glmode_idx].name;
@@ -628,16 +580,13 @@ void TexMgr_Init (void)
 	glGetIntegerv (GL_MAX_TEXTURE_SIZE, &gl_hardware_maxsize);
 
 	// load notexture images
-	notexture = TexMgr_LoadImage (NULL, "notexture", 2, 2, SRC_RGBA, notexture_data, "", (src_offset_t) notexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST | TEXPREF_NOPICMIP);
-	nulltexture = TexMgr_LoadImage (NULL, "nulltexture", 2, 2, SRC_RGBA, nulltexture_data, "", (src_offset_t) nulltexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST | TEXPREF_NOPICMIP);
+	notexture = TexMgr_LoadImage (NULL, "notexture", 2, 2, SRC_RGBA, notexture_data, "", (src_offset_t) notexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST);
+	nulltexture = TexMgr_LoadImage (NULL, "nulltexture", 2, 2, SRC_RGBA, nulltexture_data, "", (src_offset_t) nulltexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST);
 
 	// have to assign these here becuase Mod_Init is called before TexMgr_Init
 	r_notexture_mip->gltexture = r_notexture_mip2->gltexture = notexture;
-
-	// set safe size for warpimages
-	gl_warpimagesize = 0;
-	TexMgr_RecalcWarpImageSize ();
 }
+
 
 /*
 ================================================================================
@@ -667,10 +616,8 @@ TexMgr_SafeTextureSize -- return a size with hardware and user prefs in mind
 */
 int TexMgr_SafeTextureSize (int s)
 {
-	if (!gl_texture_NPOT)
+	if (!GLEW_ARB_texture_non_power_of_two)
 		s = TexMgr_Pad (s);
-	if ((int) gl_max_size.value > 0)
-		s = q_min (TexMgr_Pad ((int) gl_max_size.value), s);
 	s = q_min (gl_hardware_maxsize, s);
 	return s;
 }
@@ -1008,9 +955,9 @@ TexMgr_LoadImage32 -- handles 32bit source data
 */
 static void TexMgr_LoadImage32 (gltexture_t *glt, unsigned *data)
 {
-	int	internalformat, miplevel, mipwidth, mipheight, picmip;
+	int	internalformat, miplevel, mipwidth, mipheight;
 
-	if (!gl_texture_NPOT)
+	if (!GLEW_ARB_texture_non_power_of_two)
 	{
 		// resample up
 		data = TexMgr_ResampleTexture (data, glt->width, glt->height, glt->flags & TEXPREF_ALPHA);
@@ -1019,9 +966,9 @@ static void TexMgr_LoadImage32 (gltexture_t *glt, unsigned *data)
 	}
 
 	// mipmap down
-	picmip = (glt->flags & TEXPREF_NOPICMIP) ? 0 : q_max ((int) gl_picmip.value, 0);
-	mipwidth = TexMgr_SafeTextureSize (glt->width >> picmip);
-	mipheight = TexMgr_SafeTextureSize (glt->height >> picmip);
+	mipwidth = TexMgr_SafeTextureSize (glt->width);
+	mipheight = TexMgr_SafeTextureSize (glt->height);
+
 	while ((int) glt->width > mipwidth)
 	{
 		TexMgr_MipMapW (data, glt->width, glt->height);
@@ -1029,6 +976,7 @@ static void TexMgr_LoadImage32 (gltexture_t *glt, unsigned *data)
 		if (glt->flags & TEXPREF_ALPHA)
 			TexMgr_AlphaEdgeFix ((byte *) data, glt->width, glt->height);
 	}
+
 	while ((int) glt->height > mipheight)
 	{
 		TexMgr_MipMapH (data, glt->width, glt->height);
@@ -1055,11 +1003,13 @@ static void TexMgr_LoadImage32 (gltexture_t *glt, unsigned *data)
 				TexMgr_MipMapW (data, mipwidth, mipheight);
 				mipwidth >>= 1;
 			}
+
 			if (mipheight > 1)
 			{
 				TexMgr_MipMapH (data, mipwidth, mipheight);
 				mipheight >>= 1;
 			}
+
 			glTexImage2D (GL_TEXTURE_2D, miplevel, internalformat, mipwidth, mipheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		}
 	}
@@ -1093,13 +1043,13 @@ static void TexMgr_LoadImage8 (gltexture_t *glt, byte *data)
 	}
 
 	// detect false alpha cases
-	if (glt->flags & TEXPREF_ALPHA && !(glt->flags & TEXPREF_CONCHARS))
+	if ((glt->flags & TEXPREF_ALPHA) && !(glt->flags & TEXPREF_CONCHARS))
 	{
 		for (i = 0; i < (int) (glt->width * glt->height); i++)
 			if (data[i] == 255) // transparent index
 				break;
 		if (i == (int) (glt->width * glt->height))
-			glt->flags -= TEXPREF_ALPHA;
+			glt->flags &= ~TEXPREF_ALPHA;
 	}
 
 	// choose palette and padbyte
@@ -1166,11 +1116,12 @@ static void TexMgr_LoadLightmap (gltexture_t *glt, byte *data)
 {
 	// upload it
 	GL_Bind (glt);
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, glt->width, glt->height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, glt->width, glt->height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
 
 	// set filter modes
 	TexMgr_SetFilterModes (glt);
 }
+
 
 /*
 ================

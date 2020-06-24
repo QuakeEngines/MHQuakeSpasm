@@ -2679,7 +2679,7 @@ void *Mod_LoadSpriteFrame (void *pin, mspriteframe_t **ppframe, int framenum)
 	pspriteframe->gltexture =
 		TexMgr_LoadImage (loadmodel, name, width, height, SRC_INDEXED,
 			(byte *) (pinframe + 1), loadmodel->name, offset,
-			TEXPREF_PAD | TEXPREF_ALPHA | TEXPREF_NOPICMIP); // johnfitz -- TexMgr
+			TEXPREF_PAD | TEXPREF_ALPHA); // johnfitz -- TexMgr
 
 	return (void *) ((byte *) pinframe + sizeof (dspriteframe_t) + size);
 }

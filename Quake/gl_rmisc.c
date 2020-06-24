@@ -178,7 +178,6 @@ void R_Init (void)
 	Cvar_RegisterVariable (&gl_clear);
 	Cvar_RegisterVariable (&gl_cull);
 	Cvar_RegisterVariable (&gl_polyblend);
-	Cvar_RegisterVariable (&gl_playermip);
 	Cvar_RegisterVariable (&gl_nocolors);
 
 	// johnfitz -- new cvars

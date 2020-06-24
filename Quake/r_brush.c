@@ -22,6 +22,66 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // r_brush.c: brush model rendering. renamed from r_surf.c
 
+/*
+
+========================================================================================================================================================================================================
+
+Lightmap Rectangle Updates
+--------------------------
+
+GLQuake updates the full width of a dynamic lightmap, which can be a lot more of the lightmap than actually needs to be updated.  We can do better than that by supplying it with a proper subrectangle.
+
+The following replacement structure for glRect_t will define a proper rectangle for use in the rest of this discussion:
+
+typedef struct gl_rect_s
+{
+	// use a proper rect
+	int left, top, right, bottom;
+} gl_rect_t;
+
+You'll need one of these for each lightmap (which we'll call the "dirtyrect" and one for each surface (which we'll call the "lightrect"; you may as well store it in the msurface_t struct too).
+
+surf->lightrect.left is equal to smax, surf->lightrect.right is equal to smax + surf->light_s, and I bet you can guess how the rest of them are calculated.
+
+The dirtyrects are initialized similar to the current rectchange, with left set to BLOCK_WIDTH, right to 0, etc.
+
+When a lightmap is modified you can then mark out the changed region with code similar to this:
+
+if (surf->lightrect.left < dirtyrect->left) dirtyrect->left = surf->lightrect.left;
+if (surf->lightrect.right > dirtyrect->right) dirtyrect->right = surf->lightrect.right;
+if (surf->lightrect.top < dirtyrect->top) dirtyrect->top = surf->lightrect.top;
+if (surf->lightrect.bottom > dirtyrect->bottom) dirtyrect->bottom = surf->lightrect.bottom;
+
+Now to update the lightmap.
+
+The first thing we need is to tell OpenGL some information about the texture you're updating by calling glPixelStorei (GL_UNPACK_ROW_LENGTH, BLOCK_WIDTH).
+This lets OpenGL know the length of each row in the texture, so that when you do a partial update of a row it will skip to the start of the next one each time.
+Otherwise we'll get corrupted lightmap updates as it will most likely append data intended for the start of the next row to the end of the current update region.
+Call glPixelStorei (GL_UNPACK_ROW_LENGTH, 0) to set it back to default behaviour when done.
+
+Finally we have our glTexSubImage2D call; an example might look something like this:
+
+glTexSubImage2D (
+	GL_TEXTURE_2D,
+	0,
+	dirtyrect->left,
+	dirtyrect->top,
+	(dirtyrect->right - dirtyrect->left),
+	(dirtyrect->bottom - dirtyrect->top),
+	GL_BGRA,
+	GL_UNSIGNED_INT_8_8_8_8_REV,
+	gl_lightmaps[i].data + (dirtyrect->top * BLOCK_WIDTH + dirtyrect->left) * LIGHTMAP_BYTES
+);
+
+And we've just cut down on bandwidth usage for lightmap updating by a potentially significant amount.
+
+Note that this technique is useless on it's own.  You need to stop syncing the GPU with the CPU by following the techniques I've outlined up above first.
+Use this in addition to the above to get more speed, not instead of it.
+
+========================================================================================================================================================================================================
+
+*/
+
 #include "quakedef.h"
 
 extern cvar_t gl_fullbrights, gl_overbright; // johnfitz
@@ -481,7 +541,7 @@ void GL_BuildLightmaps (void)
 		// johnfitz -- use texture manager
 		sprintf (name, "lightmap%07i", i);
 		lm->texture = TexMgr_LoadImage (cl.worldmodel, name, LMBLOCK_WIDTH, LMBLOCK_HEIGHT,
-			SRC_LIGHTMAP, lm->data, "", (src_offset_t) lm->data, TEXPREF_LINEAR | TEXPREF_NOPICMIP);
+			SRC_LIGHTMAP, lm->data, "", (src_offset_t) lm->data, TEXPREF_LINEAR);
 		// johnfitz
 	}
 
@@ -756,43 +816,35 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 
 /*
 ===============
-R_UploadLightmap -- johnfitz -- uploads the modified lightmap to opengl if necessary
+R_UploadLightmaps -- johnfitz -- uploads the modified lightmap to opengl if necessary
 
 assumes lightmap texture is already bound
 ===============
 */
-static void R_UploadLightmap (int lmap)
-{
-	struct lightmap_s *lm = &lightmap[lmap];
-
-	if (!lm->modified)
-		return;
-
-	lm->modified = false;
-
-	glTexSubImage2D (GL_TEXTURE_2D, 0, 0, lm->rectchange.t, LMBLOCK_WIDTH, lm->rectchange.h, GL_BGRA,
-		GL_UNSIGNED_BYTE, lm->data + lm->rectchange.t * LMBLOCK_WIDTH * 4);
-
-	lm->rectchange.l = LMBLOCK_WIDTH;
-	lm->rectchange.t = LMBLOCK_HEIGHT;
-	lm->rectchange.h = 0;
-	lm->rectchange.w = 0;
-
-	rs_dynamiclightmaps++;
-}
-
-
 void R_UploadLightmaps (void)
 {
 	int lmap;
 
 	for (lmap = 0; lmap < lightmap_count; lmap++)
 	{
-		if (!lightmap[lmap].modified)
+		struct lightmap_s *lm = &lightmap[lmap];
+
+		if (!lm->modified)
 			continue;
 
-		GL_Bind (lightmap[lmap].texture);
-		R_UploadLightmap (lmap);
+		GL_Bind (lm->texture);
+
+		// fixme - do the proper rect here
+		glTexSubImage2D (GL_TEXTURE_2D, 0, 0, lm->rectchange.t, LMBLOCK_WIDTH, lm->rectchange.h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, lm->data + lm->rectchange.t * LMBLOCK_WIDTH * 4);
+
+		lm->rectchange.l = LMBLOCK_WIDTH;
+		lm->rectchange.t = LMBLOCK_HEIGHT;
+		lm->rectchange.h = 0;
+		lm->rectchange.w = 0;
+
+		rs_dynamiclightmaps++;
+
+		lm->modified = false;
 	}
 }
 
@@ -836,7 +888,7 @@ void R_RebuildAllLightmaps (void)
 	for (i = 0; i < lightmap_count; i++)
 	{
 		GL_Bind (lightmap[i].texture);
-		glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, LMBLOCK_WIDTH, LMBLOCK_HEIGHT, GL_BGRA, GL_UNSIGNED_BYTE, lightmap[i].data);
+		glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, LMBLOCK_WIDTH, LMBLOCK_HEIGHT, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, lightmap[i].data);
 	}
 }
 
