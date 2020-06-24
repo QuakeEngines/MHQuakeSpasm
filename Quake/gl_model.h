@@ -127,6 +127,20 @@ typedef struct glpoly_s {
 	float	verts[4][VERTEXSIZE];	// variable sized (xyz s1t1 s2t2)
 } glpoly_t;
 
+
+typedef struct gl_rect_s {
+	// use a proper rect
+	int left, top, right, bottom;
+} gl_rect_t;
+
+
+typedef struct brushpolyvert_s {
+	float xyz[3];
+	float st[2];
+	float lm[2];
+} brushpolyvert_t;
+
+
 typedef struct msurface_s {
 	int			visframe;		// should be drawn when node is crossed
 	qboolean	culled;			// johnfitz -- for frustum culling
@@ -143,6 +157,7 @@ typedef struct msurface_s {
 	short		extents[2];
 
 	int			light_s, light_t;	// gl lightmap coordinates
+	gl_rect_t	lightrect;
 
 	glpoly_t *polys;				// multiple if warped
 	struct	msurface_s *texturechain;

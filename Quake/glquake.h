@@ -172,15 +172,12 @@ extern overflowtimes_t dev_overflows; // this stores the last time overflow mess
 #define LMBLOCK_WIDTH	256	// FIXME: make dynamic. if we have a decent card there's no real reason not to use 4k or 16k (assuming there's no lightstyles/dynamics that need uploading...)
 #define LMBLOCK_HEIGHT	256 // Alternatively, use texture arrays, which would avoid the need to switch textures as often.
 
-typedef struct glRect_s {
-	unsigned short l, t, w, h;
-} glRect_t;
 
 struct lightmap_s {
 	gltexture_t *texture;
 	glpoly_t *polys;
 	qboolean	modified;
-	glRect_t	rectchange;
+	gl_rect_t	dirtyrect;
 
 	// the lightmap texture data needs to be kept in
 	// main memory so texsubimage can update properly

@@ -608,6 +608,9 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 	gltexture_t *fullbright = NULL;
 	float		entalpha;
 
+	// MH - variable overbright
+	float		overbright = (float) (1 << (int) gl_overbright.value);
+
 	entalpha = (ent != NULL) ? ENTALPHA_DECODE (ent->alpha) : 1.0f;
 
 	// enable blending / disable depth writes
@@ -624,7 +627,7 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 	glBindProgramARB (GL_VERTEX_PROGRAM_ARB, r_world_vp);
 
 	// overbright
-	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, gl_overbright.value + 1.0f, gl_overbright.value + 1.0f, gl_overbright.value + 1.0f, entalpha);
+	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, overbright, overbright, overbright, entalpha);
 
 	// Bind the buffers
 	GL_BindBuffer (GL_ARRAY_BUFFER, gl_bmodel_vbo);
