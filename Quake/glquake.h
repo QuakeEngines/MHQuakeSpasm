@@ -261,6 +261,10 @@ GLint GL_GetUniformLocation (GLuint *programPtr, const char *name);
 GLuint GL_CreateProgram (const GLchar *vertSource, const GLchar *fragSource, int numbindings, const glsl_attrib_binding_t *bindings);
 void R_DeleteShaders (void);
 
+// MH - ARB programs
+GLuint GL_CreateARBProgram (GLenum mode, const GLchar *progstr);
+
+
 void GLWorld_CreateShaders (void);
 void GLAlias_CreateShaders (void);
 void DrawGLPoly (glpoly_t *p);

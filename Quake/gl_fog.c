@@ -402,3 +402,5 @@ void Fog_SetupState (void)
 {
 	glFogi (GL_FOG_MODE, GL_EXP2);
 }
+
+

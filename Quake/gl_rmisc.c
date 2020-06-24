@@ -419,6 +419,9 @@ void D_FlushCaches (void)
 static GLuint gl_programs[16];
 static int gl_num_programs;
 
+static GLuint gl_arb_programs[128];
+static int gl_num_arb_programs;
+
 static qboolean GL_CheckShader (GLuint shader)
 {
 	GLint status;
@@ -544,6 +547,7 @@ GLuint GL_CreateProgram (const GLchar *vertSource, const GLchar *fragSource, int
 	}
 }
 
+
 /*
 ====================
 R_DeleteShaders
@@ -553,6 +557,7 @@ Deletes any GLSL programs that have been created.
 */
 void R_DeleteShaders (void)
 {
+	// GLSL
 	for (int i = 0; i < gl_num_programs; i++)
 	{
 		glDeleteProgram (gl_programs[i]);
@@ -560,6 +565,35 @@ void R_DeleteShaders (void)
 	}
 
 	gl_num_programs = 0;
+
+	// ARB
+	glDeleteProgramsARB (gl_num_arb_programs, gl_arb_programs);
+	gl_num_arb_programs = 0;
+}
+
+
+GLuint GL_CreateARBProgram (GLenum mode, const GLchar *progstr)
+{
+	GLuint progid = 0;
+
+	glGenProgramsARB (1, &progid);
+	glBindProgramARB (mode, progid);
+	glProgramStringARB (mode, GL_PROGRAM_FORMAT_ASCII_ARB, strlen (progstr), progstr);
+
+	const GLubyte *err = glGetString (GL_PROGRAM_ERROR_STRING_ARB);
+
+	if (err && err[0])
+		Con_SafePrintf ("Program compilation error : %s\n", err);
+
+	glBindProgramARB (mode, 0);
+
+	if (gl_num_arb_programs == (sizeof (gl_arb_programs) / sizeof (gl_arb_programs[0])))
+		Host_Error ("gl_arb_programs overflow");
+
+	gl_arb_programs[gl_num_arb_programs] = progid;
+	gl_num_arb_programs++;
+
+	return progid;
 }
 
 
