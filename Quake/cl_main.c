@@ -404,8 +404,8 @@ float	CL_LerpPoint (void)
 }
 
 
-// update trails at half the standard FPS
-static const double cl_traildelta = (2.0 / 72.0);
+// update trails at a consistent fixed rate
+static const double cl_traildelta = 0.025;
 
 void CL_RocketTrail (entity_t *ent, int type)
 {

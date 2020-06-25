@@ -90,10 +90,10 @@ extern	int		r_framecount;
 extern	mplane_t	frustum[4];
 
 // view origin
-extern	vec3_t	vup;
-extern	vec3_t	vpn;
-extern	vec3_t	vright;
-extern	vec3_t	r_origin;
+extern	float	vup[4];
+extern	float	vpn[4];
+extern	float	vright[4];
+extern	float	r_origin[4];
 
 // screen size info
 extern	refdef_t	r_refdef;
@@ -175,7 +175,6 @@ extern overflowtimes_t dev_overflows; // this stores the last time overflow mess
 
 struct lightmap_s {
 	gltexture_t *texture;
-	glpoly_t *polys;
 	qboolean	modified;
 	gl_rect_t	dirtyrect;
 
@@ -222,12 +221,12 @@ void R_MarkLights (dlight_t *light, int num, mnode_t *node);
 
 void R_InitParticles (void);
 void R_DrawParticles (void);
+void R_DrawParticlesARB (void);
 void CL_RunParticles (void);
 void R_ClearParticles (void);
 
 void R_TranslatePlayerSkin (int playernum);
 void R_TranslateNewPlayerSkin (int playernum); // johnfitz -- this handles cases when the actual texture changes
-void R_UpdateWarpTextures (void);
 
 void R_DrawWorld (void);
 void R_DrawAliasModel (entity_t *e);
@@ -260,8 +259,8 @@ GLuint GL_CreateARBProgram (GLenum mode, const GLchar *progstr);
 void GLDraw_CreateShaders (void);
 void GLWorld_CreateShaders (void);
 void GLAlias_CreateShaders (void);
-void DrawGLPoly (glpoly_t *p);
-void DrawWaterPoly (glpoly_t *p);
+void GLParticles_CreateShaders (void);
+void GLWarp_CreateShaders (void);
 void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr);
 
 void Sky_Init (void);
@@ -284,6 +283,51 @@ void GLSLGamma_GammaCorrect (void);
 void R_ScaleView_DeleteTexture (void);
 
 float GL_WaterAlphaForSurface (msurface_t *surf);
+
+// array is enabled
+#define VAA0 (1 << 0)
+#define VAA1 (1 << 1)
+#define VAA2 (1 << 2)
+#define VAA3 (1 << 3)
+#define VAA4 (1 << 4)
+#define VAA5 (1 << 5)
+#define VAA6 (1 << 6)
+#define VAA7 (1 << 7)
+#define VAA8 (1 << 8)
+#define VAA9 (1 << 9)
+#define VAA10 (1 << 10)
+#define VAA11 (1 << 11)
+#define VAA12 (1 << 12)
+#define VAA13 (1 << 13)
+#define VAA14 (1 << 14)
+#define VAA15 (1 << 15)
+
+// array has a divisor of 1
+#define VDIV0 (1 << 16)
+#define VDIV1 (1 << 17)
+#define VDIV2 (1 << 18)
+#define VDIV3 (1 << 19)
+#define VDIV4 (1 << 20)
+#define VDIV5 (1 << 21)
+#define VDIV6 (1 << 22)
+#define VDIV7 (1 << 23)
+#define VDIV8 (1 << 24)
+#define VDIV9 (1 << 25)
+#define VDIV10 (1 << 26)
+#define VDIV11 (1 << 27)
+#define VDIV12 (1 << 28)
+#define VDIV13 (1 << 29)
+#define VDIV14 (1 << 30)
+#define VDIV15 (1 << 31)
+
+void GL_EnableVertexAttribArrays (int arrays);
+void GL_BindPrograms (GLuint vp, GLuint fp);
+
+void R_ClearBatch ();
+void R_BatchSurface (msurface_t *s);
+void R_FlushBatch ();
+
+void R_SetupWorldVBOState (void);
 
 #endif	/* __GLQUAKE_H */
 

@@ -131,7 +131,7 @@ extern	int		reinit_surfcache;
 
 
 extern	refdef_t	r_refdef;
-extern vec3_t	r_origin, vpn, vright, vup;
+extern float	r_origin[4], vpn[4], vright[4], vup[4];
 
 
 void R_Init (void);

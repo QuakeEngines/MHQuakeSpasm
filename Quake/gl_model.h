@@ -119,14 +119,6 @@ typedef struct {
 	int			flags;
 } mtexinfo_t;
 
-#define	VERTEXSIZE	7
-
-typedef struct glpoly_s {
-	struct	glpoly_s *chain;
-	int		numverts;
-	float	verts[4][VERTEXSIZE];	// variable sized (xyz s1t1 s2t2)
-} glpoly_t;
-
 
 typedef struct gl_rect_s {
 	// use a proper rect
@@ -159,15 +151,15 @@ typedef struct msurface_s {
 	int			light_s, light_t;	// gl lightmap coordinates
 	gl_rect_t	lightrect;
 
-	glpoly_t *polys;				// multiple if warped
 	struct	msurface_s *texturechain;
 	struct	msurface_s *lightmapchain;
 
 	mtexinfo_t *texinfo;
 
-	int		vbo_firstvert;		// index of this surface's first vert in the VBO
+	int		firstvertex;		// index of this surface's first vert in the VBO
+	int		numindexes;			// number of indexes used in the index buffer
 
-// lighting info
+	// lighting info
 	int			dlightframe;
 	unsigned int		dlightbits[(MAX_DLIGHTS + 31) >> 5];
 	// int is 32 bits, need an array for MAX_DLIGHTS > 32
@@ -178,6 +170,7 @@ typedef struct msurface_s {
 	qboolean	cached_dlight;				// true if dynamic light in cache
 	byte *samples;		// [numstyles*surfsize]
 } msurface_t;
+
 
 typedef struct mnode_s {
 	// common with leaf

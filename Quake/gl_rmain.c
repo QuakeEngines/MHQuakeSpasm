@@ -38,11 +38,11 @@ int rs_brushpolys, rs_aliaspolys, rs_skypolys, rs_particles, rs_fogpolys;
 int rs_dynamiclightmaps, rs_brushpasses, rs_aliaspasses, rs_skypasses;
 float rs_megatexels;
 
-// view origin
-vec3_t	vup;
-vec3_t	vpn;
-vec3_t	vright;
-vec3_t	r_origin;
+// view origin (expanded to 4 component for shader uniforms)
+float	vup[4];
+float	vpn[4];
+float	vright[4];
+float	r_origin[4];
 
 float r_fovx, r_fovy; // johnfitz -- rendering fov may be different becuase of r_waterwarp and r_stereo
 
@@ -549,8 +549,6 @@ void R_SetupView (void)
 
 	R_CullSurfaces (); // johnfitz -- do after R_SetFrustum and R_MarkSurfaces
 
-	R_UpdateWarpTextures (); // johnfitz -- do this before R_Clear
-
 	R_Clear ();
 }
 
@@ -692,7 +690,8 @@ void R_RenderScene (void)
 
 	R_DrawEntitiesOnList (true); // johnfitz -- true means this is the pass for alpha entities
 
-	R_DrawParticles ();
+	// R_DrawParticles ();
+	R_DrawParticlesARB ();
 
 	Fog_DisableGFog (); // johnfitz
 

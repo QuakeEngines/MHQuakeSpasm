@@ -323,6 +323,7 @@ void Sky_Init (void)
 //  PROCESS SKY SURFS
 // ==============================================================================
 
+#if 0
 /*
 =================
 Sky_ProjectPoly
@@ -543,6 +544,7 @@ void Sky_ProcessTextureChains (void)
 				Sky_ProcessPoly (s->polys);
 	}
 }
+#endif
 
 /*
 ================
@@ -551,6 +553,7 @@ Sky_ProcessEntities -- handles sky polys on brush models
 */
 void Sky_ProcessEntities (void)
 {
+#if 0
 	entity_t *e;
 	msurface_t *s;
 	glpoly_t *p;
@@ -625,6 +628,7 @@ void Sky_ProcessEntities (void)
 			}
 		}
 	}
+#endif
 }
 
 // ==============================================================================
@@ -638,6 +642,7 @@ Sky_EmitSkyBoxVertex
 */
 void Sky_EmitSkyBoxVertex (float s, float t, int axis)
 {
+#if 0
 	vec3_t		v, b;
 	int			j, k;
 	float		w, h;
@@ -669,6 +674,7 @@ void Sky_EmitSkyBoxVertex (float s, float t, int axis)
 	t = 1.0 - t;
 	glTexCoord2f (s, t);
 	glVertex3fv (v);
+#endif
 }
 
 /*
@@ -680,6 +686,7 @@ FIXME: eliminate cracks by adding an extra vert on tjuncs
 */
 void Sky_DrawSkyBox (void)
 {
+#if 0
 	int		i;
 
 	for (i = 0; i < 6; i++)
@@ -728,6 +735,7 @@ void Sky_DrawSkyBox (void)
 			rs_skypasses++;
 		}
 	}
+#endif
 }
 
 // ==============================================================================
@@ -741,6 +749,7 @@ Sky_SetBoxVert
 */
 void Sky_SetBoxVert (float s, float t, int axis, vec3_t v)
 {
+#if 0
 	vec3_t		b;
 	int			j, k;
 
@@ -757,6 +766,7 @@ void Sky_SetBoxVert (float s, float t, int axis, vec3_t v)
 			v[j] = b[k - 1];
 		v[j] += r_origin[j];
 	}
+#endif
 }
 
 /*
@@ -766,6 +776,7 @@ Sky_GetTexCoord
 */
 void Sky_GetTexCoord (vec3_t v, float speed, float *s, float *t)
 {
+#if 0
 	vec3_t	dir;
 	float	length, scroll;
 
@@ -781,6 +792,7 @@ void Sky_GetTexCoord (vec3_t v, float speed, float *s, float *t)
 
 	*s = (scroll + dir[0] * length) * (1.0 / 128);
 	*t = (scroll + dir[1] * length) * (1.0 / 128);
+#endif
 }
 
 /*
@@ -788,6 +800,7 @@ void Sky_GetTexCoord (vec3_t v, float speed, float *s, float *t)
 Sky_DrawFaceQuad
 ===============
 */
+#if 0
 void Sky_DrawFaceQuad (glpoly_t *p)
 {
 	float	s, t;
@@ -875,6 +888,7 @@ void Sky_DrawFaceQuad (glpoly_t *p)
 		rs_skypasses++;
 	}
 }
+#endif
 
 /*
 ==============
@@ -884,6 +898,7 @@ Sky_DrawFace
 
 void Sky_DrawFace (int axis)
 {
+#if 0
 	glpoly_t *p;
 	vec3_t		verts[4];
 	int			i, j, start;
@@ -932,6 +947,7 @@ void Sky_DrawFace (int axis)
 		}
 	}
 	Hunk_FreeToLowMark (start);
+#endif
 }
 
 /*
@@ -943,6 +959,7 @@ draws the old-style scrolling cloud layers
 */
 void Sky_DrawSkyLayers (void)
 {
+#if 0
 	int i;
 
 	if (r_skyalpha.value < 1.0)
@@ -954,6 +971,7 @@ void Sky_DrawSkyLayers (void)
 
 	if (r_skyalpha.value < 1.0)
 		glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+#endif
 }
 
 /*
@@ -965,6 +983,7 @@ called once per frame before drawing anything else
 */
 void Sky_DrawSky (void)
 {
+#if 0
 	// reset sky bounds
 	for (int i = 0; i < 6; i++)
 	{
@@ -1002,4 +1021,5 @@ void Sky_DrawSky (void)
 	}
 
 	Fog_EnableGFog ();
+#endif
 }

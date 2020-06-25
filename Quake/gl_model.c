@@ -1020,62 +1020,6 @@ void CalcSurfaceExtents (msurface_t *s)
 	}
 }
 
-/*
-================
-Mod_PolyForUnlitSurface -- johnfitz -- creates polys for unlightmapped surfaces (sky and water)
-
-TODO: merge this into BuildSurfaceDisplayList?
-================
-*/
-void Mod_PolyForUnlitSurface (msurface_t *surf)
-{
-	vec3_t		verts[64];
-	int			numverts, i, lindex;
-	float *vec;
-	glpoly_t *poly;
-
-	// convert edges back to a normal polygon
-	numverts = 0;
-
-	for (i = 0; i < surf->numedges; i++)
-	{
-		lindex = loadmodel->surfedges[surf->firstedge + i];
-
-		if (lindex > 0)
-			vec = loadmodel->vertexes[loadmodel->edges[lindex].v[0]].position;
-		else
-			vec = loadmodel->vertexes[loadmodel->edges[-lindex].v[1]].position;
-		VectorCopy (vec, verts[numverts]);
-		numverts++;
-	}
-
-	// create the poly
-	poly = (glpoly_t *) Hunk_Alloc (sizeof (glpoly_t) + (numverts - 4) * VERTEXSIZE * sizeof (float));
-	surf->polys = poly;
-	poly->numverts = numverts;
-
-	for (i = 0, vec = (float *) verts; i < numverts; i++, vec += 3)
-	{
-		VectorCopy (vec, poly->verts[i]);
-
-		if (surf->flags & SURF_DRAWTURB)
-		{
-			poly->verts[i][3] = DotProduct (vec, surf->texinfo->vecs[0]) * (1.0 / 64.0);
-			poly->verts[i][4] = DotProduct (vec, surf->texinfo->vecs[1]) * (1.0 / 64.0);
-		}
-		else if (surf->flags & SURF_DRAWSKY)
-		{
-			poly->verts[i][3] = DotProduct (vec, surf->texinfo->vecs[0]) * (1.0 / 128.0);
-			poly->verts[i][4] = DotProduct (vec, surf->texinfo->vecs[1]) * (1.0 / 128.0);
-		}
-		else
-		{
-			poly->verts[i][3] = DotProduct (vec, surf->texinfo->vecs[0]) * (1.0 / 32.0);
-			poly->verts[i][4] = DotProduct (vec, surf->texinfo->vecs[1]) * (1.0 / 32.0);
-		}
-	}
-}
-
 
 /*
 =================
@@ -1203,7 +1147,6 @@ void Mod_LoadFaces (lump_t *l, qboolean bsp2)
 		if (!q_strncasecmp (out->texinfo->texture->name, "sky", 3)) // sky surface // also note -- was Q_strncmp, changed to match qbsp
 		{
 			out->flags |= (SURF_DRAWSKY | SURF_DRAWTILED);
-			Mod_PolyForUnlitSurface (out); // no more subdivision
 		}
 		else if (out->texinfo->texture->name[0] == '*') // warp surface
 		{
@@ -1217,8 +1160,6 @@ void Mod_LoadFaces (lump_t *l, qboolean bsp2)
 			else if (!strncmp (out->texinfo->texture->name, "*tele", 5))
 				out->flags |= SURF_DRAWTELE;
 			else out->flags |= SURF_DRAWWATER;
-
-			Mod_PolyForUnlitSurface (out); // no more subdivision
 		}
 		else if (out->texinfo->texture->name[0] == '{') // ericw -- fence textures
 		{
@@ -1233,7 +1174,6 @@ void Mod_LoadFaces (lump_t *l, qboolean bsp2)
 			else // not lightmapped
 			{
 				out->flags |= (SURF_NOTEXTURE | SURF_DRAWTILED);
-				Mod_PolyForUnlitSurface (out);
 			}
 		}
 		// johnfitz

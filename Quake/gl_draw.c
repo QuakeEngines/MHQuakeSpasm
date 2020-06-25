@@ -445,16 +445,16 @@ void GLDraw_CreateShaders (void)
 		"!!ARBvp1.0\n"
 		"\n"
 		"# transform position to output\n"
-		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.position;\n"
-		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.position;\n"
-		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.position;\n"
-		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.position;\n"
-		"\n"
-		"# copy over texcoord\n"
-		"MOV result.texcoord[0], vertex.texcoord[0];\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.attrib[0];\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.attrib[0];\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.attrib[0];\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.attrib[0];\n"
 		"\n"
 		"# copy over colour\n"
-		"MOV result.color, vertex.color;\n"
+		"MOV result.color, vertex.attrib[1];\n"
+		"\n"
+		"# copy over texcoord\n"
+		"MOV result.texcoord[0], vertex.attrib[2];\n"
 		"\n"
 		"# done\n"
 		"END\n"
@@ -479,13 +479,13 @@ void GLDraw_CreateShaders (void)
 		"!!ARBvp1.0\n"
 		"\n"
 		"# transform position to output\n"
-		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.position;\n"
-		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.position;\n"
-		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.position;\n"
-		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.position;\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.attrib[0];\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.attrib[0];\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.attrib[0];\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.attrib[0];\n"
 		"\n"
 		"# copy over colour\n"
-		"MOV result.color, vertex.color;\n"
+		"MOV result.color, vertex.attrib[1];\n"
 		"\n"
 		"# done\n"
 		"END\n"
@@ -515,10 +515,12 @@ void GLDraw_CreateShaders (void)
 
 typedef struct drawpolyvert_s {
 	float xy[2];
+
 	union {
 		unsigned colour;
 		byte rgba[4];
 	};
+
 	float st[2];
 } drawpolyvert_t;
 
@@ -548,9 +550,7 @@ void Draw_ColouredVertex (drawpolyvert_t *vert, float x, float y, unsigned colou
 
 void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h, unsigned colour, float sl, float sh, float tl, float th)
 {
-	glBindProgramARB (GL_VERTEX_PROGRAM_ARB, draw_textured_vp);
-	glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, draw_textured_fp);
-
+	GL_BindPrograms (draw_textured_vp, draw_textured_fp);
 	GL_BindTexture (GL_TEXTURE0, texture);
 
 	Draw_TexturedVertex (&r_drawverts[0], x, y, colour, sl, tl);
@@ -564,8 +564,7 @@ void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h
 
 void Draw_ColouredQuad (float x, float y, float w, float h, unsigned colour)
 {
-	glBindProgramARB (GL_VERTEX_PROGRAM_ARB, draw_coloured_vp);
-	glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, draw_coloured_fp);
+	GL_BindPrograms (draw_coloured_vp, draw_coloured_fp);
 
 	Draw_ColouredVertex (&r_drawverts[0], x, y, colour);
 	Draw_ColouredVertex (&r_drawverts[1], x + w, y, colour);
@@ -613,9 +612,9 @@ void Draw_EndString (void)
 {
 	if (r_numdrawverts)
 	{
-		glBindProgramARB (GL_VERTEX_PROGRAM_ARB, draw_textured_vp);
-		glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, draw_textured_fp);
+		GL_BindPrograms (draw_textured_vp, draw_textured_fp);
 		GL_BindTexture (GL_TEXTURE0, char_texture);
+
 		glDrawArrays (GL_QUADS, 0, r_numdrawverts);
 		r_numdrawverts = 0;
 	}
@@ -919,30 +918,20 @@ void GL_Set2D (void)
 	glDisable (GL_CULL_FACE);
 	glDisable (GL_BLEND);
 	glEnable (GL_ALPHA_TEST);
-	glColor4f (1, 1, 1, 1);
 
 	// ensure that no buffer is bound when drawing 2D quads
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
 
 	// and now set up the vertex arrays
-	glEnableClientState (GL_VERTEX_ARRAY);
-	glVertexPointer (2, GL_FLOAT, sizeof (drawpolyvert_t), r_drawverts[0].xy);
+	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2);
 
-	glEnableClientState (GL_TEXTURE_COORD_ARRAY);
-	glTexCoordPointer (2, GL_FLOAT, sizeof (drawpolyvert_t), r_drawverts[0].st);
-
-	glEnableClientState (GL_COLOR_ARRAY);
-	glColorPointer (4, GL_UNSIGNED_BYTE, sizeof (drawpolyvert_t), r_drawverts[0].rgba);
+	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, sizeof (drawpolyvert_t), r_drawverts->xy);
+	glVertexAttribPointer (1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof (drawpolyvert_t), r_drawverts->rgba);
+	glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, sizeof (drawpolyvert_t), r_drawverts->st);
 }
 
 
 void GL_End2D (void)
 {
-	glDisableClientState (GL_VERTEX_ARRAY);
-	glDisableClientState (GL_TEXTURE_COORD_ARRAY);
-	glDisableClientState (GL_COLOR_ARRAY);
-
-	// current color is undefined after using GL_COLOR_ARRAY
-	glColor4f (1, 1, 1, 1);
 }
 

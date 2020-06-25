@@ -121,7 +121,7 @@ void GLAlias_CreateShaders (void)
 		"MAD result.texcoord[1], lerpfactor, normal, vertex.attrib[3];\n"
 		"\n"
 		"# set up fog coordinate\n"
-		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
+		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], position;\n"
 		"\n"
 		"# done\n"
 		"END\n"
@@ -254,11 +254,7 @@ void GL_DrawAliasFrame_ARB (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltextur
 	GL_BindBuffer (GL_ARRAY_BUFFER, currententity->model->meshvbo);
 	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, currententity->model->meshindexesvbo);
 
-	glEnableVertexAttribArray (0);
-	glEnableVertexAttribArray (1);
-	glEnableVertexAttribArray (2);
-	glEnableVertexAttribArray (3);
-	glEnableVertexAttribArray (4);
+	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3 | VAA4);
 
 	glVertexAttribPointer (0, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (paliashdr, lerpdata.pose1));
 	glVertexAttribPointer (1, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (paliashdr, lerpdata.pose1));
@@ -266,18 +262,15 @@ void GL_DrawAliasFrame_ARB (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltextur
 	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (paliashdr, lerpdata.pose2));
 	glVertexAttribPointer (4, 2, GL_FLOAT, GL_FALSE, 0, (void *) (intptr_t) currententity->model->vbostofs);
 
-	// vertex program is common to all types
-	glBindProgramARB (GL_VERTEX_PROGRAM_ARB, r_alias_vp);
-
 	// set textures
 	GL_BindTexture (GL_TEXTURE0, tx);
 
 	if (fb)
 	{
 		GL_BindTexture (GL_TEXTURE1, fb);
-		glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, r_alias_fp[1]);
+		GL_BindPrograms (r_alias_vp, r_alias_fp[1]);
 	}
-	else glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, r_alias_fp[0]);
+	else GL_BindPrograms (r_alias_vp, r_alias_fp[0]);
 
 	// set uniforms
 	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, blend, blend, blend, 0);
@@ -290,13 +283,6 @@ void GL_DrawAliasFrame_ARB (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltextur
 
 	// draw
 	glDrawElements (GL_TRIANGLES, paliashdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) currententity->model->vboindexofs);
-
-	// clean up
-	glDisableVertexAttribArray (0);
-	glDisableVertexAttribArray (1);
-	glDisableVertexAttribArray (2);
-	glDisableVertexAttribArray (3);
-	glDisableVertexAttribArray (4);
 
 	rs_aliaspasses += paliashdr->numtris;
 }

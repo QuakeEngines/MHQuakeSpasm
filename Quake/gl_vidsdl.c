@@ -863,6 +863,7 @@ static void GL_CheckExtensions (void)
 	if (!GLEW_ARB_vertex_buffer_object) Sys_Error ("GL_ARB_vertex_buffer_object : not found");
 	if (!GLEW_ARB_vertex_program) Sys_Error ("GL_ARB_vertex_program : not found");
 	if (!GLEW_ARB_fragment_program) Sys_Error ("GL_ARB_fragment_program : not found");
+	if (!GLEW_ARB_instanced_arrays) Sys_Error ("GL_ARB_instanced_arrays : not found");
 
 	// swap control
 	if (!gl_swap_control)
@@ -1015,9 +1016,13 @@ static void GL_Init (void)
 	}
 #endif
 
+	// create all of our shaders
 	GLDraw_CreateShaders ();
 	GLAlias_CreateShaders ();
 	GLWorld_CreateShaders ();
+	GLParticles_CreateShaders ();
+	GLWarp_CreateShaders ();
+
 	GL_ClearBufferBindings ();
 }
 
@@ -1042,6 +1047,10 @@ void GL_BeginRendering (int *x, int *y, int *width, int *height)
 	// set up any state that we want to ensure is set at the start of each frame
 	glEnable (GL_VERTEX_PROGRAM_ARB);
 	glEnable (GL_FRAGMENT_PROGRAM_ARB);
+
+	GL_EnableVertexAttribArrays (0);
+	GL_ClearBufferBindings ();
+	GL_BindPrograms (0, 0);
 }
 
 

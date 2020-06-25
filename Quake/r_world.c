@@ -48,10 +48,6 @@ void R_ClearTextureChains (qmodel_t *mod, texchain_t chain)
 	for (int i = 0; i < mod->numtextures; i++)
 		if (mod->textures[i])
 			mod->textures[i]->texturechains[chain] = NULL;
-
-	// clear lightmap chains
-	for (int i = 0; i < lightmap_count; i++)
-		lightmap[i].polys = NULL;
 }
 
 /*
@@ -78,10 +74,6 @@ void R_MarkSurfaces (void)
 	msurface_t *surf, **mark;
 	int			i, j;
 	qboolean	nearwaterportal;
-
-	// clear lightmap chains
-	for (i = 0; i < lightmap_count; i++)
-		lightmap[i].polys = NULL;
 
 	// check this leaf for water portals
 	// TODO: loop through all water surfs and use distance to leaf cullbox
@@ -238,10 +230,6 @@ void R_BuildLightmapChains (qmodel_t *model, texchain_t chain)
 	msurface_t *s;
 	int i;
 
-	// clear lightmap chains (already done in r_marksurfaces, but clearing them here to be safe becuase of r_stereo)
-	for (i = 0; i < lightmap_count; i++)
-		lightmap[i].polys = NULL;
-
 	// now rebuild them
 	for (i = 0; i < model->numtextures; i++)
 	{
@@ -260,48 +248,10 @@ void R_BuildLightmapChains (qmodel_t *model, texchain_t chain)
 // DRAW CHAINS
 // ==============================================================================
 
-/*
-=============
-R_BeginTransparentDrawing -- ericw
-=============
-*/
-static void R_BeginTransparentDrawing (float entalpha)
-{
-	if (entalpha < 1.0f)
-	{
-		glDepthMask (GL_FALSE);
-		glEnable (GL_BLEND);
-		glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		glColor4f (1, 1, 1, entalpha);
-	}
-}
-
-
-/*
-=============
-R_EndTransparentDrawing -- ericw
-=============
-*/
-static void R_EndTransparentDrawing (float entalpha)
-{
-	if (entalpha < 1.0f)
-	{
-		glDepthMask (GL_TRUE);
-		glDisable (GL_BLEND);
-		glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		glColor3f (1, 1, 1);
-	}
-}
-
 
 // ==============================================================================
 // VBO SUPPORT
 // ==============================================================================
-
-static unsigned int R_NumTriangleIndicesForSurf (msurface_t *s)
-{
-	return 3 * (s->numedges - 2);
-}
 
 
 /*
@@ -309,16 +259,15 @@ static unsigned int R_NumTriangleIndicesForSurf (msurface_t *s)
 R_TriangleIndicesForSurf
 
 Writes out the triangle indices needed to draw s as a triangle list.
-The number of indices it will write is given by R_NumTriangleIndicesForSurf.
 ================
 */
 static void R_TriangleIndicesForSurf (msurface_t *s, unsigned int *dest)
 {
 	for (int i = 2; i < s->numedges; i++, dest += 3)
 	{
-		dest[0] = s->vbo_firstvert;
-		dest[1] = s->vbo_firstvert + i - 1;
-		dest[2] = s->vbo_firstvert + i;
+		dest[0] = s->firstvertex;
+		dest[1] = s->firstvertex + i - 1;
+		dest[2] = s->firstvertex + i;
 	}
 }
 
@@ -333,7 +282,7 @@ static unsigned int num_vbo_indices;
 R_ClearBatch
 ================
 */
-static void R_ClearBatch ()
+void R_ClearBatch ()
 {
 	num_vbo_indices = 0;
 }
@@ -345,7 +294,7 @@ R_FlushBatch
 Draw the current batch if non-empty and clears it, ready for more R_BatchSurface calls.
 ================
 */
-static void R_FlushBatch ()
+void R_FlushBatch ()
 {
 	if (num_vbo_indices > 0)
 	{
@@ -362,15 +311,13 @@ Add the surface to the current batch, or just draw it immediately if we're not
 using VBOs.
 ================
 */
-static void R_BatchSurface (msurface_t *s)
+void R_BatchSurface (msurface_t *s)
 {
-	int num_surf_indices = R_NumTriangleIndicesForSurf (s);
-
-	if (num_vbo_indices + num_surf_indices >= MAX_BATCH_SIZE)
+	if (num_vbo_indices + s->numindexes >= MAX_BATCH_SIZE)
 		R_FlushBatch ();
 
 	R_TriangleIndicesForSurf (s, &vbo_indices[num_vbo_indices]);
-	num_vbo_indices += num_surf_indices;
+	num_vbo_indices += s->numindexes;
 }
 
 
@@ -383,6 +330,7 @@ draws surfs whose textures were missing from the BSP
 */
 void R_DrawTextureChains_NoTexture (qmodel_t *model, texchain_t chain)
 {
+#if 0
 	int			i;
 	msurface_t *s;
 	texture_t *t;
@@ -409,72 +357,7 @@ void R_DrawTextureChains_NoTexture (qmodel_t *model, texchain_t chain)
 				rs_brushpasses++;
 			}
 	}
-}
-
-
-/*
-================
-GL_WaterAlphaForEntitySurface -- ericw
-
-Returns the water alpha to use for the entity and surface combination.
-================
-*/
-float GL_WaterAlphaForEntitySurface (entity_t *ent, msurface_t *s)
-{
-	float entalpha;
-
-	if (ent == NULL || ent->alpha == ENTALPHA_DEFAULT)
-		entalpha = GL_WaterAlphaForSurface (s);
-	else
-		entalpha = ENTALPHA_DECODE (ent->alpha);
-
-	return entalpha;
-}
-
-/*
-================
-R_DrawTextureChains_Water -- johnfitz
-================
-*/
-void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain)
-{
-	int			i;
-	msurface_t *s;
-	texture_t *t;
-	qboolean	bound;
-	float entalpha;
-
-	for (i = 0; i < model->numtextures; i++)
-	{
-		t = model->textures[i];
-
-		if (!t || !t->texturechains[chain] || !(t->texturechains[chain]->flags & SURF_DRAWTURB))
-			continue;
-
-		bound = false;
-		entalpha = 1.0f;
-
-		for (s = t->texturechains[chain]; s; s = s->texturechain)
-		{
-			if (!s->culled)
-			{
-				if (!bound) // only bind once we are sure we need this texture
-				{
-					entalpha = GL_WaterAlphaForEntitySurface (ent, s);
-
-					R_BeginTransparentDrawing (entalpha);
-					GL_BindTexture (GL_TEXTURE0, t->gltexture);
-
-					bound = true;
-				}
-
-				DrawGLPoly (s->polys);
-				rs_brushpasses++;
-			}
-		}
-
-		R_EndTransparentDrawing (entalpha);
-	}
+#endif
 }
 
 
@@ -588,7 +471,7 @@ void GLWorld_CreateShaders (void)
 }
 
 
-extern GLuint gl_bmodel_vbo;
+extern GLuint r_surfaces_vbo;
 
 
 void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
@@ -611,17 +494,15 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 	if (!num_surfaces) return;
 
 	// and now we can draw it
-	glBindProgramARB (GL_VERTEX_PROGRAM_ARB, r_lightmapped_vp);
-
 	GL_BindTexture (GL_TEXTURE0, t->gltexture);
 
 	// Enable/disable TMU 2 (fullbrights)
 	if (gl_fullbrights.value && t->fullbright)
 	{
 		GL_BindTexture (GL_TEXTURE2, t->fullbright);
-		glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, r_lightmapped_fp[1]);
+		GL_BindPrograms (r_lightmapped_vp, r_lightmapped_fp[1]);
 	}
-	else glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, r_lightmapped_fp[0]);
+	else GL_BindPrograms (r_lightmapped_vp, r_lightmapped_fp[0]);
 
 	// and draw our batches in lightmap order
 	for (int i = 0; i < lightmap_count; i++)
@@ -640,6 +521,20 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 		// clear the surfaces used by this lightmap
 		lightmap[i].texturechain = NULL;
 	}
+}
+
+
+void R_SetupWorldVBOState (void)
+{
+	// Bind the buffers
+	GL_BindBuffer (GL_ARRAY_BUFFER, r_surfaces_vbo);
+	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, 0); // indices come from client memory!
+
+	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2);
+
+	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), offsetof (brushpolyvert_t, xyz));
+	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), offsetof (brushpolyvert_t, st));
+	glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), offsetof (brushpolyvert_t, lm));
 }
 
 
@@ -669,17 +564,7 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 	// overbright
 	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, overbright, overbright, overbright, entalpha);
 
-	// Bind the buffers
-	GL_BindBuffer (GL_ARRAY_BUFFER, gl_bmodel_vbo);
-	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, 0); // indices come from client memory!
-
-	glEnableVertexAttribArray (0);
-	glEnableVertexAttribArray (1);
-	glEnableVertexAttribArray (2);
-
-	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof (float), ((float *) 0));
-	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof (float), ((float *) 0) + 3);
-	glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, VERTEXSIZE * sizeof (float), ((float *) 0) + 5);
+	R_SetupWorldVBOState ();
 
 	for (int i = 0; i < model->numtextures; i++)
 	{
@@ -688,10 +573,6 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 
 		texture_t *t = model->textures[i];
 		msurface_t *s = t->texturechains[chain];
-		texture_t *anim = R_TextureAnimation (t, ent != NULL ? ent->frame : 0);
-
-		if (!t || !t->texturechains[chain] || t->texturechains[chain]->flags & (SURF_DRAWTILED | SURF_NOTEXTURE))
-			continue;
 
 		// select the proper shaders
 		if (!s)
@@ -709,25 +590,12 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 			// to do
 			continue;
 		}
-		else if (s->flags & SURF_DRAWTURB)
+		else if (!(s->flags & SURF_DRAWTURB))
 		{
-			// to do
-			continue;
-		}
-		else
-		{
-			// normal lightmapped surface
+			// normal lightmapped surface - turbs are drawn separately because of alpha
 			R_DrawLightmappedChain (s, R_TextureAnimation (t, ent != NULL ? ent->frame : 0));
 		}
 	}
-
-	// clean up
-	glDisableVertexAttribArray (0);
-	glDisableVertexAttribArray (1);
-	glDisableVertexAttribArray (2);
-
-	glBindProgramARB (GL_VERTEX_PROGRAM_ARB, 0);
-	glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, 0);
 
 	if (entalpha < 1)
 	{
@@ -744,13 +612,6 @@ R_DrawWorld -- johnfitz -- rewritten
 */
 void R_DrawTextureChains (qmodel_t *model, entity_t *ent, texchain_t chain)
 {
-	float entalpha;
-
-	if (ent != NULL)
-		entalpha = ENTALPHA_DECODE (ent->alpha);
-	else
-		entalpha = 1;
-
 	// ericw -- the mh dynamic lightmap speedup: make a first pass through all
 	// surfaces we are going to draw, and rebuild any lightmaps that need it.
 	// the previous implementation of the speedup uploaded lightmaps one frame
@@ -758,12 +619,7 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, texchain_t chain)
 	R_BuildLightmapChains (model, chain);
 	R_UploadLightmaps ();
 
-	R_BeginTransparentDrawing (entalpha);
-
-	R_DrawTextureChains_NoTexture (model, chain);
-
 	// OpenGL 2 fast path
-	R_EndTransparentDrawing (entalpha);
 	R_DrawTextureChains_ARB (model, ent, chain);
 }
 

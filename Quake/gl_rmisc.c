@@ -60,13 +60,10 @@ R_SetClearColor_f -- johnfitz
 */
 static void R_SetClearColor_f (cvar_t *var)
 {
-	byte *rgb;
-	int		s;
-
-	s = (int) r_clearcolor.value & 0xFF;
-	rgb = (byte *) (d_8to24table + s);
+	byte *rgb = (byte *) &d_8to24table[(int) r_clearcolor.value & 255];
 	glClearColor (rgb[0] / 255.0, rgb[1] / 255.0, rgb[2] / 255.0, 0);
 }
+
 
 /*
 ====================
@@ -637,7 +634,7 @@ This must be called if you do anything that could make the cached bindings
 invalid (e.g. manually binding, destroying the context).
 ====================
 */
-void GL_ClearBufferBindings ()
+void GL_ClearBufferBindings (void)
 {
 	current_array_buffer = 0;
 	current_element_array_buffer = 0;
@@ -645,4 +642,46 @@ void GL_ClearBufferBindings ()
 	glBindBuffer (GL_ARRAY_BUFFER, 0);
 	glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, 0);
 }
+
+
+void GL_EnableVertexAttribArrays (int arrays)
+{
+	static int oldarrays = 0;
+
+	if (arrays != oldarrays)
+	{
+		for (int i = 0, j = 16; i < 16; i++, j++)
+		{
+			// enable/disable as required
+			if ((arrays & (1 << i)) && !(oldarrays & (1 << i))) glEnableVertexAttribArray (i);
+			if (!(arrays & (1 << i)) && (oldarrays & (1 << i))) glDisableVertexAttribArray (i);
+
+			// using the extension version for compatibility with older Intels
+			if ((arrays & (1 << j)) && !(oldarrays & (1 << j))) glVertexAttribDivisorARB (i, 1);
+			if (!(arrays & (1 << j)) && (oldarrays & (1 << j))) glVertexAttribDivisorARB (i, 0);
+		}
+
+		oldarrays = arrays;
+	}
+}
+
+
+void GL_BindPrograms (GLuint vp, GLuint fp)
+{
+	static GLuint currentvp = 0;
+	static GLuint currentfp = 0;
+
+	if (currentvp != vp)
+	{
+		glBindProgramARB (GL_VERTEX_PROGRAM_ARB, vp);
+		currentvp = vp;
+	}
+
+	if (currentfp != fp)
+	{
+		glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, fp);
+		currentfp = fp;
+	}
+}
+
 

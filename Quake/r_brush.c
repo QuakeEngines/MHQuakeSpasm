@@ -71,27 +71,6 @@ texture_t *R_TextureAnimation (texture_t *base, int frame)
 
 
 /*
-================
-DrawGLPoly
-================
-*/
-void DrawGLPoly (glpoly_t *p)
-{
-	float *v;
-	int		i;
-
-	glBegin (GL_POLYGON);
-	v = p->verts[0];
-	for (i = 0; i < p->numverts; i++, v += VERTEXSIZE)
-	{
-		glTexCoord2f (v[3], v[4]);
-		glVertex3fv (v);
-	}
-	glEnd ();
-}
-
-
-/*
 =============================================================
 
 	BRUSH MODELS
@@ -215,10 +194,6 @@ void R_RenderDynamicLightmaps (msurface_t *surf)
 	if (surf->flags & SURF_DRAWTILED) // johnfitz -- not a lightmapped surface
 		return;
 
-	// add to lightmap chain
-	surf->polys->chain = lightmap[surf->lightmaptexturenum].polys;
-	lightmap[surf->lightmaptexturenum].polys = surf->polys;
-
 	// check for lightmap modification
 	for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
 		if (d_lightstylevalue[surf->styles[maps]] != surf->cached_light[maps])
@@ -316,11 +291,6 @@ int AllocBlock (int w, int h, int *x, int *y)
 }
 
 
-mvertex_t *r_pcurrentvertbase;
-qmodel_t *currentmodel;
-
-int	nColinElim;
-
 /*
 ========================
 GL_CreateSurfaceLightmap
@@ -330,6 +300,9 @@ void GL_CreateSurfaceLightmap (msurface_t *surf)
 {
 	int		smax, tmax;
 	byte *base;
+
+	if (surf->flags & SURF_DRAWTILED)
+		return;
 
 	smax = (surf->extents[0] >> 4) + 1;
 	tmax = (surf->extents[1] >> 4) + 1;
@@ -349,73 +322,65 @@ void GL_CreateSurfaceLightmap (msurface_t *surf)
 }
 
 
+GLuint r_surfaces_vbo = 0;
+
+
 /*
 ================
-BuildSurfaceDisplayList -- called at level load time
+GL_BuildPolygonForSurface -- called at level load time
 ================
 */
-void BuildSurfaceDisplayList (msurface_t *surf)
+void GL_BuildPolygonForSurface (qmodel_t *mod, msurface_t *surf, brushpolyvert_t *verts)
 {
-	int			i, lindex, lnumverts;
-	medge_t *pedges, *r_pedge;
-	float *vec;
-	float		s, t;
-	glpoly_t *poly;
-
 	// reconstruct the polygon
-	pedges = currentmodel->edges;
-	lnumverts = surf->numedges;
-
-	// draw texture
-	poly = (glpoly_t *) Hunk_Alloc (sizeof (glpoly_t) + (lnumverts - 4) * VERTEXSIZE * sizeof (float));
-	surf->polys = poly;
-	poly->numverts = lnumverts;
-
-	for (i = 0; i < lnumverts; i++)
+	for (int i = 0; i < surf->numedges; i++, verts++)
 	{
-		lindex = currentmodel->surfedges[surf->firstedge + i];
+		int lindex = mod->surfedges[surf->firstedge + i];
 
+		// position
 		if (lindex > 0)
 		{
-			r_pedge = &pedges[lindex];
-			vec = r_pcurrentvertbase[r_pedge->v[0]].position;
+			medge_t *r_pedge = &mod->edges[lindex];
+			VectorCopy (mod->vertexes[r_pedge->v[0]].position, verts->xyz);
 		}
 		else
 		{
-			r_pedge = &pedges[-lindex];
-			vec = r_pcurrentvertbase[r_pedge->v[1]].position;
+			medge_t *r_pedge = &mod->edges[-lindex];
+			VectorCopy (mod->vertexes[r_pedge->v[1]].position, verts->xyz);
 		}
-		s = DotProduct (vec, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3];
-		s /= surf->texinfo->texture->width;
 
-		t = DotProduct (vec, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3];
-		t /= surf->texinfo->texture->height;
+		if (surf->flags & SURF_DRAWTURB)
+		{
+			// diffuse texture coordinates
+			verts->st[0] = DotProduct (verts->xyz, surf->texinfo->vecs[0]) * 0.015625f;
+			verts->st[1] = DotProduct (verts->xyz, surf->texinfo->vecs[1]) * 0.015625f;
 
-		VectorCopy (vec, poly->verts[i]);
-		poly->verts[i][3] = s;
-		poly->verts[i][4] = t;
+			// warp texture coordinates
+			verts->lm[0] = DotProduct (verts->xyz, surf->texinfo->vecs[1]) * M_PI / 64.0f;
+			verts->lm[1] = DotProduct (verts->xyz, surf->texinfo->vecs[0]) * M_PI / 64.0f;
+		}
+		else if (!(surf->flags & SURF_DRAWSKY))
+		{
+			// diffuse texture coordinates
+			verts->st[0] = (DotProduct (verts->xyz, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3]) / surf->texinfo->texture->width;
+			verts->st[1] = (DotProduct (verts->xyz, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3]) / surf->texinfo->texture->height;
 
-		// lightmap texture coordinates
-		s = DotProduct (vec, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3];
-		s -= surf->texturemins[0];
-		s += surf->light_s * 16;
-		s += 8;
-		s /= LMBLOCK_WIDTH * 16; // surf->texinfo->texture->width;
+			// lightmap texture coordinates
+			verts->lm[0] = DotProduct (verts->xyz, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3];
+			verts->lm[0] -= surf->texturemins[0];
+			verts->lm[0] += surf->light_s * 16;
+			verts->lm[0] += 8;
+			verts->lm[0] /= LMBLOCK_WIDTH * 16; // surf->texinfo->texture->width;
 
-		t = DotProduct (vec, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3];
-		t -= surf->texturemins[1];
-		t += surf->light_t * 16;
-		t += 8;
-		t /= LMBLOCK_HEIGHT * 16; // surf->texinfo->texture->height;
-
-		poly->verts[i][5] = s;
-		poly->verts[i][6] = t;
+			verts->lm[1] = DotProduct (verts->xyz, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3];
+			verts->lm[1] -= surf->texturemins[1];
+			verts->lm[1] += surf->light_t * 16;
+			verts->lm[1] += 8;
+			verts->lm[1] /= LMBLOCK_HEIGHT * 16; // surf->texinfo->texture->height;
+		}
 	}
-
-	// johnfitz -- removed gl_keeptjunctions code
-
-	poly->numverts = lnumverts;
 }
+
 
 /*
 ==================
@@ -427,15 +392,10 @@ with all the surfaces from all brush models
 */
 void GL_BuildLightmaps (void)
 {
-	char	name[24];
-	int		i, j;
-	struct lightmap_s *lm;
-	qmodel_t *m;
-
 	r_framecount = 1; // no dlightcache
 
 	// Spike -- wipe out all the lightmap data (johnfitz -- the gltexture objects were already freed by Mod_ClearAll)
-	for (i = 0; i < lightmap_count; i++)
+	for (int i = 0; i < lightmap_count; i++)
 		free (lightmap[i].data);
 
 	free (lightmap);
@@ -443,129 +403,87 @@ void GL_BuildLightmaps (void)
 	last_lightmap_allocated = 0;
 	lightmap_count = 0;
 
-	for (j = 1; j < MAX_MODELS; j++)
+	for (int j = 1; j < MAX_MODELS; j++)
 	{
-		m = cl.model_precache[j];
+		qmodel_t *m = cl.model_precache[j];
 
 		if (!m) break;
 		if (m->name[0] == '*') continue;
 
-		r_pcurrentvertbase = m->vertexes;
-		currentmodel = m;
-
-		for (i = 0; i < m->numsurfaces; i++)
+		for (int i = 0; i < m->numsurfaces; i++)
 		{
-			// johnfitz -- rewritten to use SURF_DRAWTILED instead of the sky/water flags
-			if (m->surfaces[i].flags & SURF_DRAWTILED)
-				continue;
 			GL_CreateSurfaceLightmap (m->surfaces + i);
-			BuildSurfaceDisplayList (m->surfaces + i);
-			// johnfitz
 		}
 	}
 
 	// upload all lightmaps that were filled
-	for (i = 0; i < lightmap_count; i++)
+	for (int i = 0; i < lightmap_count; i++)
 	{
-		lm = &lightmap[i];
-		lm->modified = false;
+		char	name[24];
+		struct lightmap_s *lm = &lightmap[i];
+
 		LM_ClearDirtyRect (&lm->dirtyrect);
+		lm->modified = false;
 
-		// johnfitz -- use texture manager
 		sprintf (name, "lightmap%07i", i);
-		lm->texture = TexMgr_LoadImage (cl.worldmodel, name, LMBLOCK_WIDTH, LMBLOCK_HEIGHT,
-			SRC_LIGHTMAP, lm->data, "", (src_offset_t) lm->data, TEXPREF_LINEAR);
-		// johnfitz
+		lm->texture = TexMgr_LoadImage (cl.worldmodel, name, LMBLOCK_WIDTH, LMBLOCK_HEIGHT, SRC_LIGHTMAP, lm->data, "", (src_offset_t) lm->data, TEXPREF_LINEAR);
 	}
-
-	// johnfitz -- warn about exceeding old limits
-	// GLQuake limit was 64 textures of 128x128. Estimate how many 128x128 textures we would need
-	// given that we are using lightmap_count of LMBLOCK_WIDTH x LMBLOCK_HEIGHT
-	i = lightmap_count * ((LMBLOCK_WIDTH / 128) * (LMBLOCK_HEIGHT / 128));
-	if (i > 64)
-		Con_DWarning ("%i lightmaps exceeds standard limit of 64.\n", i);
-	// johnfitz
 }
 
 
-/*
-=============================================================
-
-	VBO support
-
-=============================================================
-*/
-
-GLuint gl_bmodel_vbo = 0;
-
-void GL_DeleteBModelVertexBuffer (void)
+void GL_BuildBModelVertexBuffer (void)
 {
-	glDeleteBuffers (1, &gl_bmodel_vbo);
-	gl_bmodel_vbo = 0;
+	int r_numsurfaceverts = 0;
 
+	// alloc some hunk space to build the verts into
+	int mark = Hunk_LowMark ();
+	brushpolyvert_t *verts = (brushpolyvert_t *) Hunk_Alloc (sizeof (brushpolyvert_t)); // make an initial allocation as a baseline for these
+
+	for (int j = 1; j < MAX_MODELS; j++)
+	{
+		qmodel_t *m = cl.model_precache[j];
+
+		if (!m) break;
+		if (m->name[0] == '*') continue;
+
+		for (int i = 0; i < m->numsurfaces; i++)
+		{
+			msurface_t *surf = &m->surfaces[i];
+
+			// set it up
+			surf->numindexes = (surf->numedges - 2) * 3;
+			surf->firstvertex = r_numsurfaceverts;
+			r_numsurfaceverts += surf->numedges;
+
+			// expand the hunk to ensure there is space for this surface
+			Hunk_Alloc (surf->numedges * sizeof (brushpolyvert_t));
+
+			// and create it
+			GL_BuildPolygonForSurface (m, surf, &verts[surf->firstvertex]);
+		}
+	}
+
+	// now delete and recreate the buffer
+	glDeleteBuffers (1, &r_surfaces_vbo);
+	glGenBuffers (1, &r_surfaces_vbo);
+
+	glBindBuffer (GL_ARRAY_BUFFER, r_surfaces_vbo);
+	glBufferData (GL_ARRAY_BUFFER, r_numsurfaceverts * sizeof (brushpolyvert_t), verts, GL_STATIC_DRAW);
+
+	// hand back the hunk space used for surface building
+	Hunk_FreeToLowMark (mark);
+
+	// clean up/etc
+	glBindBuffer (GL_ARRAY_BUFFER, 0);
 	GL_ClearBufferBindings ();
 }
 
 
-/*
-==================
-GL_BuildBModelVertexBuffer
-
-Deletes gl_bmodel_vbo if it already exists, then rebuilds it with all
-surfaces from world + all brush models
-==================
-*/
-void GL_BuildBModelVertexBuffer (void)
+void GL_DeleteBModelVertexBuffer (void)
 {
-	unsigned int	numverts, varray_bytes, varray_index;
-	int		i, j;
-	qmodel_t *m;
-	float *varray;
+	glDeleteBuffers (1, &r_surfaces_vbo);
+	r_surfaces_vbo = 0;
 
-	// ask GL for a name for our VBO
-	glDeleteBuffers (1, &gl_bmodel_vbo);
-	glGenBuffers (1, &gl_bmodel_vbo);
-
-	// count all verts in all models
-	numverts = 0;
-	for (j = 1; j < MAX_MODELS; j++)
-	{
-		m = cl.model_precache[j];
-		if (!m || m->name[0] == '*' || m->type != mod_brush)
-			continue;
-
-		for (i = 0; i < m->numsurfaces; i++)
-		{
-			numverts += m->surfaces[i].numedges;
-		}
-	}
-
-	// build vertex array
-	varray_bytes = VERTEXSIZE * sizeof (float) * numverts;
-	varray = (float *) malloc (varray_bytes);
-	varray_index = 0;
-
-	for (j = 1; j < MAX_MODELS; j++)
-	{
-		m = cl.model_precache[j];
-		if (!m || m->name[0] == '*' || m->type != mod_brush)
-			continue;
-
-		for (i = 0; i < m->numsurfaces; i++)
-		{
-			msurface_t *s = &m->surfaces[i];
-			s->vbo_firstvert = varray_index;
-			memcpy (&varray[VERTEXSIZE * varray_index], s->polys->verts, VERTEXSIZE * sizeof (float) * s->numedges);
-			varray_index += s->numedges;
-		}
-	}
-
-	// upload to GPU
-	glBindBuffer (GL_ARRAY_BUFFER, gl_bmodel_vbo);
-	glBufferData (GL_ARRAY_BUFFER, varray_bytes, varray, GL_STATIC_DRAW);
-	free (varray);
-
-	// invalidate the cached bindings
 	GL_ClearBufferBindings ();
 }
 

@@ -79,109 +79,118 @@ typedef struct particle_s {
 particle_t *active_particles;
 particle_t *free_particles;
 
-vec3_t		r_pright, r_pup, r_ppn;
-
-gltexture_t *particletexture, *particletexture1, *particletexture2, *particletexture3, *particletexture4; // johnfitz
-float texturescalefactor; // johnfitz -- compensate for apparent size of different particle textures
 
 cvar_t	r_particles = { "r_particles", "1", CVAR_ARCHIVE }; // johnfitz
 
-/*
-===============
-R_ParticleTextureLookup -- johnfitz -- generate nice antialiased 32x32 circle for particles
-===============
-*/
-int R_ParticleTextureLookup (int x, int y, int sharpness)
-{
-	int r; // distance from point x,y to circle origin, squared
-	int a; // alpha value to return
 
-	x -= 16;
-	y -= 16;
-	r = x * x + y * y;
-	r = r > 255 ? 255 : r;
-	a = sharpness * (255 - r);
-	a = q_min (a, 255);
-	return a;
+GLuint r_particle_vp = 0;
+GLuint r_particle_fp_circle = 0;
+GLuint r_particle_fp_square = 0;
+
+void GLParticles_CreateShaders (void)
+{
+	const GLchar *vp_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"# pick friendly names for the params\n"
+		"PARAM r_origin = program.local[1];\n"
+		"PARAM vpn = program.local[2];\n"
+		"PARAM vup = program.local[3];\n"
+		"PARAM vright = program.local[4];\n"
+		"PARAM scales = program.local[5];\n"
+		"PARAM grav = program.local[6];\n"
+		"\n"
+		"# pick friendly names for the attribs\n"
+		"ATTRIB offsets = vertex.attrib[0];\n"
+		"ATTRIB colour = vertex.attrib[1];\n"
+		"ATTRIB origin = vertex.attrib[2];\n"
+		"\n"
+		"TEMP pscale, NewPosition, accel;\n"
+		"\n"
+		"# hack a scale up to prevent particles from disappearing\n"
+		"SUB pscale, origin, r_origin;\n"
+		"DP3 pscale.x, pscale, vpn;\n"
+		"MAD pscale.x, pscale.x, scales.y, scales.z;\n"
+		"MUL pscale, offsets, pscale.x;\n"
+		"\n"
+		"# scale down for large quad size\n"
+		"MUL pscale, pscale, scales.x;\n"
+		"\n"
+		"# compute new particle origin\n"
+		"MAD NewPosition, vright, pscale.x, origin;\n"
+		"MAD NewPosition, vup, pscale.y, NewPosition;\n"
+		"\n"
+		"# ensure\n"
+		"MOV NewPosition.w, 1.0;\n"
+		"\n"
+		"# transform input position to output position\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], NewPosition;\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], NewPosition;\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], NewPosition;\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], NewPosition;\n"
+		"\n"
+		"# move colour and texcoords to output\n"
+		"MOV result.texcoord[0], offsets;\n"
+		"MOV result.color, colour;\n"
+		"\n"
+		"# set up fog coordinate\n"
+		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], NewPosition;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *fp_source_circle = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"TEMP diff, offset;\n"
+		"\n"
+		"# initialize the particle\n"
+		"MOV offset, { 1.0, 1.0, 1.0, 1.0 };\n"
+		"\n"
+		"# make a circle\n"
+		"DP3 offset.a, fragment.texcoord[0], fragment.texcoord[0];\n"
+		"SUB offset.a, 1.0, offset.a;\n"
+		"MUL offset.a, 1.5, offset.a;\n"
+		"\n"
+		"# clamp the circle\n"
+		"MIN offset.a, offset.a, 1.0;\n"
+		"\n"
+		"# blend to output\n"
+		"MUL diff, fragment.color, offset;\n"
+		"\n"
+		"# perform the fogging\n"
+		"TEMP fogFactor;\n"
+		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
+		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
+		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
+		"LRP result.color, fogFactor.x, diff, state.fog.color;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *fp_source_square = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"# square particles for the authentic crunchy look\n"
+		"\n"
+		"# perform the fogging\n"
+		"TEMP fogFactor;\n"
+		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
+		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
+		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
+		"LRP result.color, fogFactor.x, fragment.color, state.fog.color;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	r_particle_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_source);
+	r_particle_fp_circle = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source_circle);
+	r_particle_fp_square = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source_square);
 }
 
-/*
-===============
-R_InitParticleTextures -- johnfitz -- rewritten
-===============
-*/
-void R_InitParticleTextures (void)
-{
-	int			x, y;
-	static byte	particle1_data[64 * 64 * 4];
-	static byte	particle2_data[2 * 2 * 4];
-	static byte	particle3_data[64 * 64 * 4];
-	byte *dst;
-
-	// particle texture 1 -- circle
-	dst = particle1_data;
-	for (x = 0; x < 64; x++)
-		for (y = 0; y < 64; y++)
-		{
-			*dst++ = 255;
-			*dst++ = 255;
-			*dst++ = 255;
-			*dst++ = R_ParticleTextureLookup (x, y, 8);
-		}
-	particletexture1 = TexMgr_LoadImage (NULL, "particle1", 64, 64, SRC_RGBA, particle1_data, "", (src_offset_t) particle1_data, TEXPREF_PERSIST | TEXPREF_ALPHA | TEXPREF_LINEAR);
-
-	// particle texture 2 -- square
-	dst = particle2_data;
-	for (x = 0; x < 2; x++)
-		for (y = 0; y < 2; y++)
-		{
-			*dst++ = 255;
-			*dst++ = 255;
-			*dst++ = 255;
-			*dst++ = x || y ? 0 : 255;
-		}
-	particletexture2 = TexMgr_LoadImage (NULL, "particle2", 2, 2, SRC_RGBA, particle2_data, "", (src_offset_t) particle2_data, TEXPREF_PERSIST | TEXPREF_ALPHA | TEXPREF_NEAREST);
-
-	// particle texture 3 -- blob
-	dst = particle3_data;
-	for (x = 0; x < 64; x++)
-		for (y = 0; y < 64; y++)
-		{
-			*dst++ = 255;
-			*dst++ = 255;
-			*dst++ = 255;
-			*dst++ = R_ParticleTextureLookup (x, y, 2);
-		}
-	particletexture3 = TexMgr_LoadImage (NULL, "particle3", 64, 64, SRC_RGBA, particle3_data, "", (src_offset_t) particle3_data, TEXPREF_PERSIST | TEXPREF_ALPHA | TEXPREF_LINEAR);
-
-	// set default
-	particletexture = particletexture1;
-	texturescalefactor = 1.27;
-}
-
-/*
-===============
-R_SetParticleTexture_f -- johnfitz
-===============
-*/
-static void R_SetParticleTexture_f (cvar_t *var)
-{
-	switch ((int) (r_particles.value))
-	{
-	case 1:
-		particletexture = particletexture1;
-		texturescalefactor = 1.27;
-		break;
-	case 2:
-		particletexture = particletexture2;
-		texturescalefactor = 1.0;
-		break;
-		//	case 3:
-		//		particletexture = particletexture3;
-		//		texturescalefactor = 1.5;
-		//		break;
-	}
-}
 
 /*
 ===============
@@ -191,9 +200,6 @@ R_InitParticles
 void R_InitParticles (void)
 {
 	Cvar_RegisterVariable (&r_particles); // johnfitz
-	Cvar_SetCallback (&r_particles, R_SetParticleTexture_f);
-
-	R_InitParticleTextures (); // johnfitz
 }
 
 
@@ -716,20 +722,6 @@ CL_RunParticles -- johnfitz -- all the particle behavior, separated from R_DrawP
 */
 void CL_RunParticles (void)
 {
-	// update particle accelerations
-	for (int i = 0; i < MAX_PARTICLE_TYPES; i++)
-	{
-		extern cvar_t sv_gravity;
-		ptypedef_t *pt = &p_typedefs[i];
-		float grav = sv_gravity.value * 0.05;
-
-		// in theory this could be calced once and never again, but in practice mods may change sv_gravity from frame-to-frame
-		// so we need to recalc it each frame too....
-		pt->accel[0] = pt->dvel[0] + (pt->grav[0] * grav);
-		pt->accel[1] = pt->dvel[1] + (pt->grav[1] * grav);
-		pt->accel[2] = pt->dvel[2] + (pt->grav[2] * grav);
-	}
-
 	// remove expired particles from the front of the list
 	for (;; )
 	{
@@ -764,16 +756,102 @@ void CL_RunParticles (void)
 
 			break;
 		}
+	}
+}
 
-		// update this particle
+/*
+===============
+R_DrawParticles -- johnfitz -- moved all non-drawing code to CL_RunParticles
+===============
+*/
+typedef struct partpolyvert_s {
+	float move[3];
+
+	union {
+		unsigned color;
+		byte rgba[4];
+	};
+} partpolyvert_t;
+
+
+void R_DrawParticlesARB (void)
+{
+	static const float r_particleoffsets[] = { -1, -1, -1, 1, 1, 1, 1, -1 };
+	static partpolyvert_t r_particleverts[MAX_PARTICLES];
+	int r_numparticleverts = 0;
+
+	if (!r_particles.value)
+		return;
+
+	// ericw -- avoid empty glBegin(),glEnd() pair below; causes issues on AMD
+	// MH - no longer using glBegin/glEnd but still useful for avoiding unnecessary state sets
+	if (!active_particles)
+		return;
+
+	// update particle accelerations
+	for (int i = 0; i < MAX_PARTICLE_TYPES; i++)
+	{
+		extern cvar_t sv_gravity;
+		ptypedef_t *pt = &p_typedefs[i];
+		float grav = sv_gravity.value * 0.05;
+
+		// in theory this could be calced once and never again, but in practice mods may change sv_gravity from frame-to-frame
+		// so we need to recalc it each frame too....
+		pt->accel[0] = pt->dvel[0] + (pt->grav[0] * grav);
+		pt->accel[1] = pt->dvel[1] + (pt->grav[1] * grav);
+		pt->accel[2] = pt->dvel[2] + (pt->grav[2] * grav);
+	}
+
+	// set programs and particle size adjusted for type
+	switch ((int) r_particles.value)
+	{
+	case 1:
+		GL_BindPrograms (r_particle_vp, r_particle_fp_circle);
+		glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 5, 0.666f, 0.002f, 1.0f, 0.0f);
+		break;
+
+	default:
+		GL_BindPrograms (r_particle_vp, r_particle_fp_square);
+		glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 5, 0.5f, 0.002f, 1.0f, 0.0f);
+		break;
+	}
+
+	// set uniforms
+	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 1, r_origin);
+	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 2, vpn);
+	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 3, vup);
+	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 4, vright);
+
+	glEnable (GL_BLEND);
+	glDepthMask (GL_FALSE); // johnfitz -- fix for particle z-buffer bug
+
+	// ensure that no buffer is bound when drawing particles
+	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
+	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VDIV1 | VDIV2);
+
+	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, r_particleoffsets);
+	glVertexAttribPointer (1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof (partpolyvert_t), r_particleverts->rgba);
+	glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, sizeof (partpolyvert_t), r_particleverts->move);
+
+	// initially no particles
+	r_numparticleverts = 0;
+
+	for (particle_t *p = active_particles; p; p = p->next)
+	{
+		// particle may have been removed
+		if (p->die < cl.time) continue;
+
+		// check this batch
+		if (r_numparticleverts + 1 >= MAX_PARTICLES)
+		{
+			// flush this batch
+			glDrawArraysInstancedARB (GL_QUADS, 0, 4, r_numparticleverts);
+			r_numparticleverts = 0;
+		}
+
 		// get the emitter properties for this particle
 		ptypedef_t *pt = &p_typedefs[p->type];
 		float etime = cl.time - p->time;
-
-		// move the particle in a framerate-independent manner
-		p->move[0] = p->org[0] + (p->vel[0] + (pt->accel[0] * etime)) * etime;
-		p->move[1] = p->org[1] + (p->vel[1] + (pt->accel[1] * etime)) * etime;
-		p->move[2] = p->org[2] + (p->vel[2] + (pt->accel[2] * etime)) * etime;
 
 		// update colour ramps
 		if (pt->ramp)
@@ -792,135 +870,25 @@ void CL_RunParticles (void)
 				continue;
 			}
 		}
-	}
-}
 
-/*
-===============
-R_DrawParticles -- johnfitz -- moved all non-drawing code to CL_RunParticles
-===============
-*/
-typedef struct partpolyvert_s {
-	float move[3];
+		// move the particle in a framerate-independent manner
+		r_particleverts[r_numparticleverts].move[0] = p->org[0] + (p->vel[0] + (pt->accel[0] * etime)) * etime;
+		r_particleverts[r_numparticleverts].move[1] = p->org[1] + (p->vel[1] + (pt->accel[1] * etime)) * etime;
+		r_particleverts[r_numparticleverts].move[2] = p->org[2] + (p->vel[2] + (pt->accel[2] * etime)) * etime;
 
-	union {
-		unsigned color;
-		byte rgba[4];
-	};
+		// colour
+		r_particleverts[r_numparticleverts].color = d_8to24table[p->color & 255];
 
-	float st[2];
-} partpolyvert_t;
-
-
-#define MAX_PARTICLE_VERTS		8192
-
-partpolyvert_t r_particleverts[MAX_PARTICLE_VERTS];
-int r_numparticleverts = 0;
-
-
-void R_ParticleVertex (partpolyvert_t *vert, float *move, unsigned color, float s, float t)
-{
-	vert->move[0] = move[0];
-	vert->move[1] = move[1];
-	vert->move[2] = move[2];
-
-	vert->color = color;
-
-	vert->st[0] = s;
-	vert->st[1] = t;
-}
-
-
-void R_DrawParticles (void)
-{
-	float			scale;
-	vec3_t			up, right, p_up, p_right, p_upright; // johnfitz -- p_ vectors
-	extern	cvar_t	r_particles; // johnfitz
-
-	if (!r_particles.value)
-		return;
-
-	// ericw -- avoid empty glBegin(),glEnd() pair below; causes issues on AMD
-	// MH - no longer using glBegin/glEnd but still useful for avoiding unnecessary state sets
-	if (!active_particles)
-		return;
-
-	VectorScale (vup, 1.5, up);
-	VectorScale (vright, 1.5, right);
-
-	GL_BindTexture (GL_TEXTURE0, particletexture);
-	glEnable (GL_BLEND);
-	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glDepthMask (GL_FALSE); // johnfitz -- fix for particle z-buffer bug
-
-	// ensure that no buffer is bound when drawing particles
-	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
-
-	// and now set up the vertex arrays
-	glEnableClientState (GL_VERTEX_ARRAY);
-	glVertexPointer (3, GL_FLOAT, sizeof (partpolyvert_t), r_particleverts[0].move);
-
-	glEnableClientState (GL_COLOR_ARRAY);
-	glColorPointer (4, GL_UNSIGNED_BYTE, sizeof (partpolyvert_t), r_particleverts[0].rgba);
-
-	glEnableClientState (GL_TEXTURE_COORD_ARRAY);
-	glTexCoordPointer (2, GL_FLOAT, sizeof (partpolyvert_t), r_particleverts[0].st);
-
-	// initially no particles
-	r_numparticleverts = 0;
-
-	for (particle_t *p = active_particles; p; p = p->next)
-	{
-		// particle may have been removed if it's ramp expired
-		if (p->die < cl.time) continue;
-
-		// hack a scale up to keep particles from disapearing
-		scale = (p->move[0] - r_origin[0]) * vpn[0]
-			+ (p->move[1] - r_origin[1]) * vpn[1]
-			+ (p->move[2] - r_origin[2]) * vpn[2];
-
-		if (scale < 20)
-			scale = 1 + 0.08; // johnfitz -- added .08 to be consistent
-		else
-			scale = 1 + scale * 0.004;
-
-		scale /= 2.0; // quad is half the size of triangle
-		scale *= texturescalefactor; // johnfitz -- compensate for apparent size of different particle textures
-
-		VectorMA (p->move, scale, up, p_up);
-		VectorMA (p_up, scale, right, p_upright);
-		VectorMA (p->move, scale, right, p_right);
-
-		// check this batch
-		if (r_numparticleverts + 4 >= MAX_PARTICLE_VERTS)
-		{
-			// flush this batch
-			glDrawArrays (GL_QUADS, 0, r_numparticleverts);
-			r_numparticleverts = 0;
-		}
-
-		R_ParticleVertex (&r_particleverts[r_numparticleverts++], p->move, d_8to24table[p->color], 0, 0);
-		R_ParticleVertex (&r_particleverts[r_numparticleverts++], p_up, d_8to24table[p->color], 0.5, 0);
-		R_ParticleVertex (&r_particleverts[r_numparticleverts++], p_upright, d_8to24table[p->color], 0.5, 0.5);
-		R_ParticleVertex (&r_particleverts[r_numparticleverts++], p_right, d_8to24table[p->color], 0, 0.5);
-
+		r_numparticleverts++;
 		rs_particles++; // johnfitz // FIXME: just use r_numparticles
 	}
 
 	// draw anything left over
 	if (r_numparticleverts)
-		glDrawArrays (GL_QUADS, 0, r_numparticleverts);
-
-	glDisableClientState (GL_VERTEX_ARRAY);
-	glDisableClientState (GL_TEXTURE_COORD_ARRAY);
-	glDisableClientState (GL_COLOR_ARRAY);
-
-	// current color is undefined after using GL_COLOR_ARRAY
-	glColor4f (1, 1, 1, 1);
+		glDrawArraysInstancedARB (GL_QUADS, 0, 4, r_numparticleverts);
 
 	glDepthMask (GL_TRUE); // johnfitz -- fix for particle z-buffer bug
 	glDisable (GL_BLEND);
-	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 }
 
 
