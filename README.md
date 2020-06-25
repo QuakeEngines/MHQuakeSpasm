@@ -29,7 +29,16 @@ The GLSL C interface at this API level sucks.  The main problems with it are:
  - No standalone shared uniforms, uniforms are part of per-program state.
  - Everything needs to be queried rather than explicitly set.
  
-True, most of these problems are solved in newer GL versions, but that would entail reaching beyond the API level I'm targetting.  ARB assembly programs, on the other hand, don't have these problems at all (which does make the claimed advantages of these problems seems more like an attempt to retroactively justify a bad initial design).  While they do have some shortcomings (the ones most relevant to me being lack of the texGrad instruction and no array texture support) on balance they are just a more productive tool.
+True, most of these problems are solved in newer GL versions, but that would entail reaching beyond the API level I'm targetting.  ARB assembly programs, on the other hand, don't have these problems at all (which does make the claimed advantages of GLSL seem more like an attempt to retroactively justify a bad initial design).  While they do have some shortcomings (the ones most relevant to me being lack of the texGrad instruction and no array texture support) on balance they are just a more productive tool.
 
 ### Where's r_drawflat? Your engine sucks! I hate you forever!
 Relax.  Like I said above, this is work in progress and features are sometimes temporarily removed to allow for simplification of the key drawing routines before adding them back.  r_drawflat just happens to be one of those features.
+
+### How do you compile this?
+On Windows, MHQuakeSpasm is a Visual Studio 2019 project.  It has been built and tested with a stock Visual Studio 2019 Community Edition installation, with no other tools or components being required.  So the build procedure is:
+ - Download and install Visual Studio 2019 Community.
+ - Download the source code.
+ - Build it.
+
+### What about Linux?  Mac OSX?  Other platforms?
+I consider the Visual Studio project to be the "master" version and I haven't bothered keeping makefiles/etc for other platforms up to date.  The only real change made to the project was the addition of the GLEW header and source files; aside from that I haven't knowingly done anything to explicitly break a build on any other platform, so you should be able to manually edit the makefiles and get a build.  To be honest, if you can't do this kind of thing yourself, you probably have no business building on Linux anyway.
