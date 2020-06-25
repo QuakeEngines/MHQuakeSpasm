@@ -933,9 +933,6 @@ void GL_Set2D (void)
 
 	glEnableClientState (GL_COLOR_ARRAY);
 	glColorPointer (4, GL_UNSIGNED_BYTE, sizeof (drawpolyvert_t), r_drawverts[0].rgba);
-
-	glEnable (GL_VERTEX_PROGRAM_ARB);
-	glEnable (GL_FRAGMENT_PROGRAM_ARB);
 }
 
 
@@ -944,9 +941,6 @@ void GL_End2D (void)
 	glDisableClientState (GL_VERTEX_ARRAY);
 	glDisableClientState (GL_TEXTURE_COORD_ARRAY);
 	glDisableClientState (GL_COLOR_ARRAY);
-
-	glDisable (GL_VERTEX_PROGRAM_ARB);
-	glDisable (GL_FRAGMENT_PROGRAM_ARB);
 
 	// current color is undefined after using GL_COLOR_ARRAY
 	glColor4f (1, 1, 1, 1);

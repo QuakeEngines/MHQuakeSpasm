@@ -177,7 +177,7 @@ LIGHT SAMPLING
 
 mplane_t *lightplane;
 vec3_t			lightspot;
-vec3_t			lightcolor; // johnfitz -- lit support via lordhavoc
+float			shadelight[4]; // johnfitz -- lit support via lordhavoc
 
 /*
 =============
@@ -293,7 +293,7 @@ int R_LightPoint (vec3_t p)
 
 	if (!cl.worldmodel->lightdata)
 	{
-		lightcolor[0] = lightcolor[1] = lightcolor[2] = 255;
+		shadelight[0] = shadelight[1] = shadelight[2] = 255;
 		return 255;
 	}
 
@@ -301,7 +301,7 @@ int R_LightPoint (vec3_t p)
 	end[1] = p[1];
 	end[2] = p[2] - 8192; // johnfitz -- was 2048
 
-	lightcolor[0] = lightcolor[1] = lightcolor[2] = 0;
-	RecursiveLightPoint (lightcolor, cl.worldmodel->nodes, p, end);
-	return ((lightcolor[0] + lightcolor[1] + lightcolor[2]) * (1.0f / 3.0f));
+	shadelight[0] = shadelight[1] = shadelight[2] = 0;
+	RecursiveLightPoint (shadelight, cl.worldmodel->nodes, p, end);
+	return ((shadelight[0] + shadelight[1] + shadelight[2]) * (1.0f / 3.0f));
 }

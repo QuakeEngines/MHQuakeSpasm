@@ -666,9 +666,6 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 		glEnable (GL_BLEND);
 	}
 
-	glEnable (GL_VERTEX_PROGRAM_ARB);
-	glEnable (GL_FRAGMENT_PROGRAM_ARB);
-
 	// overbright
 	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, overbright, overbright, overbright, entalpha);
 
@@ -731,9 +728,6 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 
 	glBindProgramARB (GL_VERTEX_PROGRAM_ARB, 0);
 	glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, 0);
-
-	glDisable (GL_VERTEX_PROGRAM_ARB);
-	glDisable (GL_FRAGMENT_PROGRAM_ARB);
 
 	if (entalpha < 1)
 	{

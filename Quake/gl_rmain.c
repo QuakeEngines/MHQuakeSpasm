@@ -126,6 +126,7 @@ GLSLGamma_CreateShaders
 */
 static void GLSLGamma_CreateShaders (void)
 {
+#if 0
 	const GLchar *vertSource = \
 		"#version 110\n"
 		"\n"
@@ -154,6 +155,7 @@ static void GLSLGamma_CreateShaders (void)
 		contrastLoc = GL_GetUniformLocation (&r_gamma_program, "ContrastValue");
 		textureLoc = GL_GetUniformLocation (&r_gamma_program, "GammaTexture");
 	}
+#endif
 }
 
 
@@ -164,6 +166,7 @@ GLSLGamma_GammaCorrect
 */
 void GLSLGamma_GammaCorrect (void)
 {
+#if 0
 	float smax, tmax;
 
 	if (vid_gamma.value == 1 && vid_contrast.value == 1)
@@ -233,6 +236,7 @@ void GLSLGamma_GammaCorrect (void)
 
 	// clear cached binding
 	GL_ClearBindings ();
+#endif
 }
 
 /*

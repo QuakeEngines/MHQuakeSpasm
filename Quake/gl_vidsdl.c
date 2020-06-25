@@ -1038,6 +1038,10 @@ void GL_BeginRendering (int *x, int *y, int *width, int *height)
 	*width = draw_context->w;
 	*height = draw_context->h;
 #endif
+
+	// set up any state that we want to ensure is set at the start of each frame
+	glEnable (GL_VERTEX_PROGRAM_ARB);
+	glEnable (GL_FRAGMENT_PROGRAM_ARB);
 }
 
 

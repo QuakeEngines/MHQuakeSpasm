@@ -35,18 +35,11 @@ float	r_avertexnormals[NUMVERTEXNORMALS][3] = {
 #include "anorms.h"
 };
 
-extern vec3_t	lightcolor; // johnfitz -- replaces "float shadelight" for lit support
-
-// precalculated dot products for quantized angles
-#define SHADEDOT_QUANT 16
-float	r_avertexnormal_dots[SHADEDOT_QUANT][256] = {
-#include "anorm_dots.h"
-};
+extern float	shadelight[4];
 
 extern	vec3_t			lightspot;
 
-float *shadedots = r_avertexnormal_dots[0];
-vec3_t	shadevector;
+float	shadevector[4]; // padded for shader uniforms
 
 float	entalpha; // johnfitz
 
@@ -55,7 +48,7 @@ qboolean	overbright; // johnfitz
 qboolean shading = true; // johnfitz -- if false, disable vertex shading for various reasons (fullbright, etc)
 
 // johnfitz -- struct for passing lerp information to drawing functions
-typedef struct {
+typedef struct lerpdata_s {
 	short pose1;
 	short pose2;
 	float blend;
@@ -64,25 +57,6 @@ typedef struct {
 } lerpdata_t;
 // johnfitz
 
-static GLuint r_alias_program;
-
-// uniforms used in vert shader
-static GLuint blendLoc;
-static GLuint shadevectorLoc;
-static GLuint lightColorLoc;
-
-// uniforms used in frag shader
-static GLuint texLoc;
-static GLuint fullbrightTexLoc;
-static GLuint useFullbrightTexLoc;
-static GLuint useOverbrightLoc;
-static GLuint useAlphaTestLoc;
-
-#define pose1VertexAttrIndex 0
-#define pose1NormalAttrIndex 1
-#define pose2VertexAttrIndex 2
-#define pose2NormalAttrIndex 3
-#define texCoordsAttrIndex 4
 
 /*
 =============
@@ -112,6 +86,10 @@ static void *GLARB_GetNormalOffset (aliashdr_t *hdr, int pose)
 	return (void *) (currententity->model->vboxyzofs + (hdr->numverts_vbo * pose * sizeof (meshxyz_t)) + normaloffs);
 }
 
+
+GLuint r_alias_vp = 0;
+GLuint r_alias_fp[2] = { 0, 0 }; // luma, no luma
+
 /*
 =============
 GLAlias_CreateShaders
@@ -119,145 +97,177 @@ GLAlias_CreateShaders
 */
 void GLAlias_CreateShaders (void)
 {
-	const glsl_attrib_binding_t bindings[] = {
-		{ "TexCoords", texCoordsAttrIndex },
-		{ "Pose1Vert", pose1VertexAttrIndex },
-		{ "Pose1Normal", pose1NormalAttrIndex },
-		{ "Pose2Vert", pose2VertexAttrIndex },
-		{ "Pose2Normal", pose2NormalAttrIndex }
-	};
+	const GLchar *vp_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"TEMP position, normal;\n"
+		"PARAM lerpfactor = program.local[0];\n"
+		"\n"
+		"# interpolate the position\n"
+		"SUB position, vertex.attrib[0], vertex.attrib[2];\n"
+		"MAD position, lerpfactor, position, vertex.attrib[2];\n"
+		"\n"
+		"# transform interpolated position to output position\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], position;\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], position;\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], position;\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], position;\n"
+		"\n"
+		"# copy over texcoord\n"
+		"MOV result.texcoord[0], vertex.attrib[4];\n"
+		"\n"
+		"# interpolate the normal and store in texcoord[1] so that we can do per-fragment lighting for better quality\n"
+		"SUB normal, vertex.attrib[1], vertex.attrib[3];\n"
+		"MAD result.texcoord[1], lerpfactor, normal, vertex.attrib[3];\n"
+		"\n"
+		"# set up fog coordinate\n"
+		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
 
-	const GLchar *vertSource = \
-		"#version 110\n"
+	const GLchar *fp_source0 = \
+		"!!ARBfp1.0\n"
 		"\n"
-		"uniform float Blend;\n"
-		"uniform vec3 ShadeVector;\n"
-		"uniform vec4 LightColor;\n"
-		"attribute vec4 TexCoords; // only xy are used \n"
-		"attribute vec4 Pose1Vert;\n"
-		"attribute vec3 Pose1Normal;\n"
-		"attribute vec4 Pose2Vert;\n"
-		"attribute vec3 Pose2Normal;\n"
+		"PARAM shadelight = program.local[0];\n"
+		"PARAM shadevector = program.local[1];\n"
 		"\n"
-		"varying float FogFragCoord;\n"
+		"TEMP diff, fence;\n"
+		"TEMP normal, shadedot, dothi, dotlo;\n"
 		"\n"
-		"float r_avertexnormal_dot(vec3 vertexnormal) // from MH \n"
-		"{\n"
-		"        float dot = dot(vertexnormal, ShadeVector);\n"
-		"        // wtf - this reproduces anorm_dots within as reasonable a degree of tolerance as the >= 0 case\n"
-		"        if (dot < 0.0)\n"
-		"            return 1.0 + dot * (13.0 / 44.0);\n"
-		"        else\n"
-		"            return 1.0 + dot;\n"
-		"}\n"
-		"void main()\n"
-		"{\n"
-		"	gl_TexCoord[0] = TexCoords;\n"
-		"	vec4 lerpedVert = mix(vec4(Pose1Vert.xyz, 1.0), vec4(Pose2Vert.xyz, 1.0), Blend);\n"
-		"	gl_Position = gl_ModelViewProjectionMatrix * lerpedVert;\n"
-		"	FogFragCoord = gl_Position.w;\n"
-		"	float dot1 = r_avertexnormal_dot(Pose1Normal);\n"
-		"	float dot2 = r_avertexnormal_dot(Pose2Normal);\n"
-		"	gl_FrontColor = LightColor * vec4(vec3(mix(dot1, dot2, Blend)), 1.0);\n"
-		"}\n";
+		"# normalize incoming normal\n"
+		"DP3 normal.w, fragment.texcoord[1], fragment.texcoord[1];\n"
+		"RSQ normal.w, normal.w;\n"
+		"MUL normal.xyz, normal.w, fragment.texcoord[1];\n"
+		"\n"
+		"# perform the texturing\n"
+		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
+		"\n"
+		"# fence texture test\n"
+		"SUB fence, diff, 0.666;\n"
+		"KIL fence.a;\n"
+		"\n"
+		"# perform the lighting\n"
+		"DP3 shadedot, normal, shadevector;\n"
+		"ADD dothi, shadedot, 1.0;\n"
+		"MAD dotlo, shadedot, 0.2954545, 1.0;\n"
+		"MAX shadedot, dothi, dotlo;\n"
+		"\n"
+		"# perform the lightmapping to output\n"
+		"MUL diff.rgb, diff, shadedot;\n"
+		"MUL diff.rgb, diff, shadelight;\n"
+		"MUL diff.rgb, diff, program.env[0]; # overbright factor\n"
+		"\n"
+		"# perform the fogging\n"
+		"TEMP fogFactor;\n"
+		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
+		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
+		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
+		"LRP diff.rgb, fogFactor.x, diff, state.fog.color;\n"
+		"\n"
+		"# copy over the result\n"
+		"MOV result.color.rgb, diff;\n"
+		"\n"
+		"# set the alpha channel correctly\n"
+		"MOV result.color.a, program.env[0].a;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
 
-	const GLchar *fragSource = \
-		"#version 110\n"
+	const GLchar *fp_source1 = \
+		"!!ARBfp1.0\n"
 		"\n"
-		"uniform sampler2D Tex;\n"
-		"uniform sampler2D FullbrightTex;\n"
-		"uniform bool UseFullbrightTex;\n"
-		"uniform bool UseOverbright;\n"
-		"uniform bool UseAlphaTest;\n"
+		"PARAM shadelight = program.local[0];\n"
+		"PARAM shadevector = program.local[1];\n"
 		"\n"
-		"varying float FogFragCoord;\n"
+		"TEMP diff, fence, luma;\n"
+		"TEMP normal, shadedot, dothi, dotlo;\n"
 		"\n"
-		"void main()\n"
-		"{\n"
-		"	vec4 result = texture2D(Tex, gl_TexCoord[0].xy);\n"
-		"	if (UseAlphaTest && (result.a < 0.666))\n"
-		"		discard;\n"
-		"	result *= gl_Color;\n"
-		"	if (UseOverbright)\n"
-		"		result.rgb *= 2.0;\n"
-		"	if (UseFullbrightTex)\n"
-		"		result = max (result, texture2D(FullbrightTex, gl_TexCoord[0].xy));\n"
-		"	result = clamp(result, 0.0, 1.0);\n"
-		"	float fog = exp(-gl_Fog.density * gl_Fog.density * FogFragCoord * FogFragCoord);\n"
-		"	fog = clamp(fog, 0.0, 1.0);\n"
-		"	result = mix(gl_Fog.color, result, fog);\n"
-		"	result.a = gl_Color.a;\n" // FIXME: This will make almost transparent things cut holes though heavy fog
-		"	gl_FragColor = result;\n"
-		"}\n";
+		"# normalize incoming normal\n"
+		"DP3 normal.w, fragment.texcoord[1], fragment.texcoord[1];\n"
+		"RSQ normal.w, normal.w;\n"
+		"MUL normal.xyz, normal.w, fragment.texcoord[1];\n"
+		"\n"
+		"# perform the texturing\n"
+		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
+		"TEX luma, fragment.texcoord[0], texture[1], 2D;\n"
+		"\n"
+		"# fence texture test\n"
+		"SUB fence, diff, 0.666;\n"
+		"KIL fence.a;\n"
+		"\n"
+		"# perform the lighting\n"
+		"DP3 shadedot, normal, shadevector;\n"
+		"ADD dothi, shadedot, 1.0;\n"
+		"MAD dotlo, shadedot, 0.2954545, 1.0;\n"
+		"MAX shadedot, dothi, dotlo;\n"
+		"\n"
+		"# perform the lightmapping to output\n"
+		"MUL diff.rgb, diff, shadedot;\n"
+		"MUL diff.rgb, diff, shadelight;\n"
+		"MUL diff.rgb, diff, program.env[0]; # overbright factor\n"
+		"\n"
+		"# perform the luma masking\n"
+		"MAX diff, diff, luma;\n"
+		"\n"
+		"# perform the fogging\n"
+		"TEMP fogFactor;\n"
+		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
+		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
+		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
+		"LRP diff.rgb, fogFactor.x, diff, state.fog.color;\n"
+		"\n"
+		"# copy over the result\n"
+		"MOV result.color.rgb, diff;\n"
+		"\n"
+		"# set the alpha channel correctly\n"
+		"MOV result.color.a, program.env[0].a;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
 
-	if ((r_alias_program = GL_CreateProgram (vertSource, fragSource, sizeof (bindings) / sizeof (bindings[0]), bindings)) != 0)
-	{
-		// get uniform locations
-		blendLoc = GL_GetUniformLocation (&r_alias_program, "Blend");
-		shadevectorLoc = GL_GetUniformLocation (&r_alias_program, "ShadeVector");
-		lightColorLoc = GL_GetUniformLocation (&r_alias_program, "LightColor");
-		texLoc = GL_GetUniformLocation (&r_alias_program, "Tex");
-		fullbrightTexLoc = GL_GetUniformLocation (&r_alias_program, "FullbrightTex");
-		useFullbrightTexLoc = GL_GetUniformLocation (&r_alias_program, "UseFullbrightTex");
-		useOverbrightLoc = GL_GetUniformLocation (&r_alias_program, "UseOverbright");
-		useAlphaTestLoc = GL_GetUniformLocation (&r_alias_program, "UseAlphaTest");
-	}
+	r_alias_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_source);
+	r_alias_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source0);
+	r_alias_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source1);
 }
 
-/*
-=============
-GL_DrawAliasFrame_GLSL -- ericw
 
-Optimized alias model drawing codepath.
-Compared to the original GL_DrawAliasFrame, this makes 1 draw call,
-no vertex data is uploaded (it's already in the r_meshvbo and r_meshindexesvbo
-static VBOs), and lerping and lighting is done in the vertex shader.
-
-Supports optional overbright, optional fullbright pixels.
-
-Based on code by MH from RMQEngine
-=============
-*/
-void GL_DrawAliasFrame_GLSL (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltexture_t *tx, gltexture_t *fb)
+void GL_DrawAliasFrame_ARB (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltexture_t *tx, gltexture_t *fb)
 {
 	float	blend;
 
+	// MH - variable overbright
+	float	overbright = (float) (1 << (int) gl_overbright_models.value);
+
 	if (lerpdata.pose1 != lerpdata.pose2)
 	{
-		blend = lerpdata.blend;
+		blend = 1.0f - lerpdata.blend;
 	}
 	else // poses the same means either 1. the entity has paused its animation, or 2. r_lerpmodels is disabled
 	{
-		blend = 0;
+		blend = 1;
 	}
-
-	glUseProgram (r_alias_program);
 
 	GL_BindBuffer (GL_ARRAY_BUFFER, currententity->model->meshvbo);
 	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, currententity->model->meshindexesvbo);
 
-	glEnableVertexAttribArray (texCoordsAttrIndex);
-	glEnableVertexAttribArray (pose1VertexAttrIndex);
-	glEnableVertexAttribArray (pose2VertexAttrIndex);
-	glEnableVertexAttribArray (pose1NormalAttrIndex);
-	glEnableVertexAttribArray (pose2NormalAttrIndex);
+	glEnableVertexAttribArray (0);
+	glEnableVertexAttribArray (1);
+	glEnableVertexAttribArray (2);
+	glEnableVertexAttribArray (3);
+	glEnableVertexAttribArray (4);
 
-	glVertexAttribPointer (texCoordsAttrIndex, 2, GL_FLOAT, GL_FALSE, 0, (void *) (intptr_t) currententity->model->vbostofs);
-	glVertexAttribPointer (pose1VertexAttrIndex, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (paliashdr, lerpdata.pose1));
-	glVertexAttribPointer (pose2VertexAttrIndex, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (paliashdr, lerpdata.pose2));
-	// GL_TRUE to normalize the signed bytes to [-1 .. 1]
-	glVertexAttribPointer (pose1NormalAttrIndex, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (paliashdr, lerpdata.pose1));
-	glVertexAttribPointer (pose2NormalAttrIndex, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (paliashdr, lerpdata.pose2));
+	glVertexAttribPointer (0, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (paliashdr, lerpdata.pose1));
+	glVertexAttribPointer (1, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (paliashdr, lerpdata.pose1));
+	glVertexAttribPointer (2, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (paliashdr, lerpdata.pose2));
+	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (paliashdr, lerpdata.pose2));
+	glVertexAttribPointer (4, 2, GL_FLOAT, GL_FALSE, 0, (void *) (intptr_t) currententity->model->vbostofs);
 
-	// set uniforms
-	glUniform1f (blendLoc, blend);
-	glUniform3f (shadevectorLoc, shadevector[0], shadevector[1], shadevector[2]);
-	glUniform4f (lightColorLoc, lightcolor[0], lightcolor[1], lightcolor[2], entalpha);
-	glUniform1i (texLoc, 0);
-	glUniform1i (fullbrightTexLoc, 1);
-	glUniform1i (useFullbrightTexLoc, (fb != NULL) ? 1 : 0);
-	glUniform1f (useOverbrightLoc, overbright ? 1 : 0);
-	glUniform1i (useAlphaTestLoc, (currententity->model->flags & MF_HOLEY) ? 1 : 0);
+	// vertex program is common to all types
+	glBindProgramARB (GL_VERTEX_PROGRAM_ARB, r_alias_vp);
 
 	// set textures
 	GL_BindTexture (GL_TEXTURE0, tx);
@@ -265,19 +275,28 @@ void GL_DrawAliasFrame_GLSL (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltextu
 	if (fb)
 	{
 		GL_BindTexture (GL_TEXTURE1, fb);
+		glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, r_alias_fp[1]);
 	}
+	else glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, r_alias_fp[0]);
+
+	// set uniforms
+	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, blend, blend, blend, 0);
+
+	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, shadelight);
+	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, shadevector);
+
+	// overbright
+	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, overbright, overbright, overbright, entalpha);
 
 	// draw
 	glDrawElements (GL_TRIANGLES, paliashdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) currententity->model->vboindexofs);
 
 	// clean up
-	glDisableVertexAttribArray (texCoordsAttrIndex);
-	glDisableVertexAttribArray (pose1VertexAttrIndex);
-	glDisableVertexAttribArray (pose2VertexAttrIndex);
-	glDisableVertexAttribArray (pose1NormalAttrIndex);
-	glDisableVertexAttribArray (pose2NormalAttrIndex);
-
-	glUseProgram (0);
+	glDisableVertexAttribArray (0);
+	glDisableVertexAttribArray (1);
+	glDisableVertexAttribArray (2);
+	glDisableVertexAttribArray (3);
+	glDisableVertexAttribArray (4);
 
 	rs_aliaspasses += paliashdr->numtris;
 }
@@ -424,8 +443,6 @@ void R_SetupAliasLighting (entity_t *e)
 	vec3_t		dist;
 	float		add;
 	int			i;
-	int		quantizedangle;
-	float		radiansangle;
 
 	R_LightPoint (e->origin);
 
@@ -437,64 +454,65 @@ void R_SetupAliasLighting (entity_t *e)
 			VectorSubtract (currententity->origin, cl_dlights[i].origin, dist);
 			add = cl_dlights[i].radius - VectorLength (dist);
 			if (add > 0)
-				VectorMA (lightcolor, add, cl_dlights[i].color, lightcolor);
+				VectorMA (shadelight, add, cl_dlights[i].color, shadelight);
 		}
 	}
 
 	// minimum light value on gun (24)
 	if (e == &cl.viewent)
 	{
-		add = 72.0f - (lightcolor[0] + lightcolor[1] + lightcolor[2]);
+		add = 72.0f - (shadelight[0] + shadelight[1] + shadelight[2]);
 		if (add > 0.0f)
 		{
-			lightcolor[0] += add / 3.0f;
-			lightcolor[1] += add / 3.0f;
-			lightcolor[2] += add / 3.0f;
+			shadelight[0] += add / 3.0f;
+			shadelight[1] += add / 3.0f;
+			shadelight[2] += add / 3.0f;
 		}
 	}
 
 	// minimum light value on players (8)
 	if (currententity > cl_entities && currententity <= cl_entities + cl.maxclients)
 	{
-		add = 24.0f - (lightcolor[0] + lightcolor[1] + lightcolor[2]);
+		add = 24.0f - (shadelight[0] + shadelight[1] + shadelight[2]);
 		if (add > 0.0f)
 		{
-			lightcolor[0] += add / 3.0f;
-			lightcolor[1] += add / 3.0f;
-			lightcolor[2] += add / 3.0f;
+			shadelight[0] += add / 3.0f;
+			shadelight[1] += add / 3.0f;
+			shadelight[2] += add / 3.0f;
 		}
 	}
 
 	// clamp lighting so it doesn't overbright as much (96)
 	if (overbright)
 	{
-		add = 288.0f / (lightcolor[0] + lightcolor[1] + lightcolor[2]);
+		add = 288.0f / (shadelight[0] + shadelight[1] + shadelight[2]);
 		if (add < 1.0f)
-			VectorScale (lightcolor, add, lightcolor);
+			VectorScale (shadelight, add, shadelight);
 	}
 
 	// hack up the brightness when fullbrights but no overbrights (256)
 	if (gl_fullbrights.value && !gl_overbright_models.value)
+	{
 		if (e->model->flags & MOD_FBRIGHTHACK)
 		{
-			lightcolor[0] = 256.0f;
-			lightcolor[1] = 256.0f;
-			lightcolor[2] = 256.0f;
+			shadelight[0] = 256.0f;
+			shadelight[1] = 256.0f;
+			shadelight[2] = 256.0f;
 		}
-
-	quantizedangle = ((int) (e->angles[1] * (SHADEDOT_QUANT / 360.0))) & (SHADEDOT_QUANT - 1);
+	}
 
 	// ericw -- shadevector is passed to the shader to compute shadedots inside the
 	// shader, see GLAlias_CreateShaders()
-	radiansangle = (quantizedangle / 16.0) * 2.0 * 3.14159;
-	shadevector[0] = cos (-radiansangle);
-	shadevector[1] = sin (-radiansangle);
+	float an = e->angles[1] / 180 * M_PI;
+
+	shadevector[0] = cos (-an);
+	shadevector[1] = sin (-an);
 	shadevector[2] = 1;
+
 	VectorNormalize (shadevector);
 	// ericw --
 
-	shadedots = r_avertexnormal_dots[quantizedangle];
-	VectorScale (lightcolor, 1.0f / 200.0f, lightcolor);
+	VectorScale (shadelight, 1.0f / 200.0f, shadelight);
 }
 
 /*
@@ -504,14 +522,12 @@ R_DrawAliasModel -- johnfitz -- almost completely rewritten
 */
 void R_DrawAliasModel (entity_t *e)
 {
-	aliashdr_t *paliashdr;
+	aliashdr_t *paliashdr = (aliashdr_t *) Mod_Extradata (e->model);
 	int			i, anim, skinnum;
 	gltexture_t *tx, *fb;
 	lerpdata_t	lerpdata;
-	qboolean	alphatest = !!(e->model->flags & MF_HOLEY);
 
 	// setup pose/lerp data -- do it first so we don't miss updates due to culling
-	paliashdr = (aliashdr_t *) Mod_Extradata (e->model);
 	R_SetupAliasFrame (paliashdr, e->frame, &lerpdata);
 	R_SetupEntityTransform (e, &lerpdata);
 
@@ -544,15 +560,12 @@ void R_DrawAliasModel (entity_t *e)
 		glDepthMask (GL_FALSE);
 		glEnable (GL_BLEND);
 	}
-	else if (alphatest)
-		glEnable (GL_ALPHA_TEST);
 
 	// set up lighting
 	rs_aliaspolys += paliashdr->numtris;
 	R_SetupAliasLighting (e);
 
 	// set up textures
-	GL_DisableMultitexture ();
 	anim = (int) (cl.time * 10) & 3;
 	skinnum = e->skinnum;
 
@@ -577,21 +590,12 @@ void R_DrawAliasModel (entity_t *e)
 		fb = NULL;
 
 	// draw it
-	// call fast path if possible. if the shader compliation failed for some reason,
-	// r_alias_program will be 0.
-	if (r_alias_program != 0)
-	{
-		GL_DrawAliasFrame_GLSL (paliashdr, lerpdata, tx, fb);
-	}
+	GL_DrawAliasFrame_ARB (paliashdr, lerpdata, tx, fb);
 
 cleanup:
-	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 	glShadeModel (GL_SMOOTH);
 	glDepthMask (GL_TRUE);
 	glDisable (GL_BLEND);
-
-	if (alphatest)
-		glDisable (GL_ALPHA_TEST);
 
 	glColor3f (1, 1, 1);
 	glPopMatrix ();
