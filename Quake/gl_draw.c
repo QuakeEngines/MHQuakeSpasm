@@ -463,10 +463,14 @@ void GLDraw_CreateShaders (void)
 	const GLchar *fp_textured_source = \
 		"!!ARBfp1.0\n"
 		"\n"
-		"TEMP diff;\n"
+		"TEMP diff, fence;\n"
 		"\n"
 		"# perform the texturing\n"
 		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
+		"\n"
+		"# fence texture test\n"
+		"SUB fence, diff, 0.666;\n"
+		"KIL fence.a;\n"
 		"\n"
 		"# blend with the colour to output\n"
 		"MUL result.color, diff, fragment.color;\n"
@@ -691,11 +695,9 @@ void Draw_AlphaPic (int x, int y, qpic_t *pic, float alpha)
 		if (alpha < 1)
 		{
 			glEnable (GL_BLEND);
-			glDisable (GL_ALPHA_TEST);
 
 			Draw_TexturedQuad (gl->gltexture, x, y, pic->width, pic->height, 0xffffff | (int) (alpha * 255) << 24, gl->sl, gl->sh, gl->tl, gl->th);
 
-			glEnable (GL_ALPHA_TEST);
 			glDisable (GL_BLEND);
 		}
 		else Draw_TexturedQuad (gl->gltexture, x, y, pic->width, pic->height, 0xffffffff, gl->sl, gl->sh, gl->tl, gl->th);
@@ -796,12 +798,10 @@ void Draw_Fill (int x, int y, int w, int h, int c, float alpha) // johnfitz -- a
 		}
 
 		glEnable (GL_BLEND); // johnfitz -- for alpha
-		glDisable (GL_ALPHA_TEST); // johnfitz -- for alpha
 
 		Draw_ColouredQuad (x, y, w, h, rgba);
 
 		glDisable (GL_BLEND); // johnfitz -- for alpha
-		glEnable (GL_ALPHA_TEST); // johnfitz -- for alpha
 	}
 }
 
@@ -816,11 +816,9 @@ void Draw_FadeScreen (void)
 	GL_SetCanvas (CANVAS_DEFAULT);
 
 	glEnable (GL_BLEND);
-	glDisable (GL_ALPHA_TEST);
 
 	Draw_ColouredQuad (0, 0, glwidth, glheight, 0x7f000000);
 
-	glEnable (GL_ALPHA_TEST);
 	glDisable (GL_BLEND);
 }
 
@@ -917,7 +915,6 @@ void GL_Set2D (void)
 	glDisable (GL_DEPTH_TEST);
 	glDisable (GL_CULL_FACE);
 	glDisable (GL_BLEND);
-	glEnable (GL_ALPHA_TEST);
 
 	// ensure that no buffer is bound when drawing 2D quads
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);

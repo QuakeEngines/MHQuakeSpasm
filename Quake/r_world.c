@@ -532,9 +532,9 @@ void R_SetupWorldVBOState (void)
 
 	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2);
 
-	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), offsetof (brushpolyvert_t, xyz));
-	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), offsetof (brushpolyvert_t, st));
-	glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), offsetof (brushpolyvert_t, lm));
+	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, xyz));
+	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, st));
+	glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, lm));
 }
 
 
@@ -587,8 +587,8 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 		}
 		else if (s->flags & SURF_DRAWSKY)
 		{
-			// to do
-			continue;
+			// sky; either layers or cubemap
+			R_DrawSkychain_ARB (s);
 		}
 		else if (!(s->flags & SURF_DRAWTURB))
 		{

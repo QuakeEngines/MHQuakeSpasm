@@ -1367,8 +1367,8 @@ void TexMgr_ReloadImages (void)
 ================================================================================
 */
 
-static GLuint	currenttexture[3] = { GL_UNUSED_TEXTURE, GL_UNUSED_TEXTURE, GL_UNUSED_TEXTURE }; // to avoid unnecessary texture sets
-static GLenum	currenttarget = GL_TEXTURE0;
+static GLuint	currenttexture[3] = { GL_INVALID_VALUE, GL_INVALID_VALUE, GL_INVALID_VALUE }; // to avoid unnecessary texture sets
+static GLenum	currenttarget = GL_INVALID_VALUE;
 qboolean	mtexenabled = false;
 
 
@@ -1450,26 +1450,29 @@ static void GL_DeleteTexture (gltexture_t *texture)
 {
 	glDeleteTextures (1, &texture->texnum);
 
-	if (texture->texnum == currenttexture[0]) currenttexture[0] = GL_UNUSED_TEXTURE;
-	if (texture->texnum == currenttexture[1]) currenttexture[1] = GL_UNUSED_TEXTURE;
-	if (texture->texnum == currenttexture[2]) currenttexture[2] = GL_UNUSED_TEXTURE;
+	if (texture->texnum == currenttexture[0]) currenttexture[0] = GL_INVALID_VALUE;
+	if (texture->texnum == currenttexture[1]) currenttexture[1] = GL_INVALID_VALUE;
+	if (texture->texnum == currenttexture[2]) currenttexture[2] = GL_INVALID_VALUE;
 
 	texture->texnum = 0;
 }
 
 /*
 ================
-GL_ClearBindings -- ericw
+GL_ClearTextureBindings -- ericw
 
 Invalidates cached bindings, so the next GL_Bind calls for each TMU will
 make real glBindTexture calls.
 Call this after changing the binding outside of GL_Bind.
+
+MH - also invalidates the current TMU so the next binding will explicitly activate it's TMU
 ================
 */
-void GL_ClearBindings (void)
+void GL_ClearTextureBindings (void)
 {
 	for (int i = 0; i < 3; i++)
-	{
-		currenttexture[i] = GL_UNUSED_TEXTURE;
-	}
+		currenttexture[i] = GL_INVALID_VALUE;
+
+	currenttarget = GL_INVALID_VALUE;
 }
+

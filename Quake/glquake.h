@@ -31,8 +31,6 @@ void GL_End2D (void);
 
 extern	int glx, gly, glwidth, glheight;
 
-#define	GL_UNUSED_TEXTURE	(~(GLuint)0)
-
 // r_local.h -- private refresh defs
 
 #define ALIAS_BASE_SIZE_RATIO		(1.0 / 11.0)
@@ -262,10 +260,11 @@ void GLAlias_CreateShaders (void);
 void GLParticles_CreateShaders (void);
 void GLWarp_CreateShaders (void);
 void GLSky_CreateShaders (void);
+void GLSprite_CreateShaders (void);
+void GLMain_CreateShaders (void);
 void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr);
 
 void Sky_Init (void);
-void Sky_DrawSky (void);
 void Sky_NewMap (void);
 void Sky_LoadTexture (texture_t *mt, byte *src);
 void Sky_LoadSkyBox (const char *name);
@@ -329,6 +328,8 @@ void R_BatchSurface (msurface_t *s);
 void R_FlushBatch ();
 
 void R_SetupWorldVBOState (void);
+
+void R_DrawSkychain_ARB (msurface_t *s);
 
 #endif	/* __GLQUAKE_H */
 

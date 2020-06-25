@@ -101,7 +101,7 @@ int TexMgr_PadConditional (int s);
 void GL_DisableMultitexture (void); // selects texture unit 0
 void GL_EnableMultitexture (void); // selects texture unit 1
 void GL_BindTexture (GLenum target, gltexture_t *texture);
-void GL_ClearBindings (void);
+void GL_ClearTextureBindings (void);
 
 #endif	/* _GL_TEXMAN_H */
 

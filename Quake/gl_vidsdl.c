@@ -959,8 +959,6 @@ static void GL_SetupState (void)
 	glFrontFace (GL_CW); // johnfitz -- glquake used CCW with backwards culling -- let's do it right
 
 	glEnable (GL_TEXTURE_2D);
-	glEnable (GL_ALPHA_TEST);
-	glAlphaFunc (GL_GREATER, 0.666);
 	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 	glShadeModel (GL_SMOOTH);
 	glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST); // johnfitz
@@ -1023,6 +1021,8 @@ static void GL_Init (void)
 	GLParticles_CreateShaders ();
 	GLWarp_CreateShaders ();
 	GLSky_CreateShaders ();
+	GLSprite_CreateShaders ();
+	GLMain_CreateShaders ();
 
 	GL_ClearBufferBindings ();
 }
@@ -1052,6 +1052,9 @@ void GL_BeginRendering (int *x, int *y, int *width, int *height)
 	GL_EnableVertexAttribArrays (0);
 	GL_ClearBufferBindings ();
 	GL_BindPrograms (0, 0);
+	GL_ClearTextureBindings ();
+
+	glDisable (GL_ALPHA_TEST);
 }
 
 

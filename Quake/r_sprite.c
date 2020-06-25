@@ -23,6 +23,69 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
+
+GLuint r_sprite_vp = 0;
+GLuint r_sprite_fp = 0;
+
+
+typedef struct spritepolyvert_s {
+	float point[3];
+	float st[2];
+} spritepolyvert_t;
+
+
+void GLSprite_CreateShaders (void)
+{
+	const GLchar *vp_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"# transform position to output\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.attrib[0];\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.attrib[0];\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.attrib[0];\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.attrib[0];\n"
+		"\n"
+		"# copy over texcoord\n"
+		"MOV result.texcoord[0], vertex.attrib[1];\n"
+		"\n"
+		"# set up fog coordinate\n"
+		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *fp_source = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"TEMP diff, fence;\n"
+		"\n"
+		"# perform the texturing\n"
+		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
+		"\n"
+		"# fence texture test\n"
+		"SUB fence, diff, 0.666;\n"
+		"KIL fence.a;\n"
+		"\n"
+		"# perform the fogging\n"
+		"TEMP fogFactor;\n"
+		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
+		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
+		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
+		"LRP result.color.rgb, fogFactor.x, diff, state.fog.color;\n"
+		"\n"
+		"# set the alpha channel\n"
+		"MOV result.color.a, 1.0;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	r_sprite_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_source);
+	r_sprite_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source);
+}
+
+
 /*
 ================
 R_GetSpriteFrame
@@ -74,6 +137,17 @@ mspriteframe_t *R_GetSpriteFrame (entity_t *currentent)
 	return pspriteframe;
 }
 
+
+void R_EmitSpriteVertex (spritepolyvert_t *vert, float *origin, float a, float b, float *up, float *right, float s, float t)
+{
+	VectorMA (origin, a, up, vert->point);
+	VectorMA (vert->point, b, right, vert->point);
+
+	vert->st[0] = s;
+	vert->st[1] = t;
+}
+
+
 /*
 =================
 R_DrawSpriteModel -- johnfitz -- rewritten: now supports all orientations
@@ -81,11 +155,12 @@ R_DrawSpriteModel -- johnfitz -- rewritten: now supports all orientations
 */
 void R_DrawSpriteModel (entity_t *e)
 {
-	vec3_t			point, v_forward, v_right, v_up;
+	vec3_t			v_forward, v_right, v_up;
 	msprite_t *psprite;
 	mspriteframe_t *frame;
 	float *s_up, *s_right;
 	float			angle, sr, cr;
+	spritepolyvert_t verts[4];
 
 	// TODO: frustum cull it?
 
@@ -144,37 +219,21 @@ void R_DrawSpriteModel (entity_t *e)
 	if (psprite->type == SPR_ORIENTED)
 		GL_PolygonOffset (OFFSET_DECAL);
 
-	glColor3f (1, 1, 1);
-
-	GL_DisableMultitexture ();
-
 	GL_BindTexture (GL_TEXTURE0, frame->gltexture);
+	GL_BindPrograms (r_sprite_vp, r_sprite_fp);
+	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
 
-	glEnable (GL_ALPHA_TEST);
-	glBegin (GL_QUADS);
+	GL_EnableVertexAttribArrays (VAA0 | VAA1);
 
-	glTexCoord2f (0, frame->tmax);
-	VectorMA (e->origin, frame->down, s_up, point);
-	VectorMA (point, frame->left, s_right, point);
-	glVertex3fv (point);
+	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), verts->point);
+	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), verts->st);
 
-	glTexCoord2f (0, 0);
-	VectorMA (e->origin, frame->up, s_up, point);
-	VectorMA (point, frame->left, s_right, point);
-	glVertex3fv (point);
+	R_EmitSpriteVertex (&verts[0], e->origin, frame->down, frame->left, s_up, s_right, 0, frame->tmax);
+	R_EmitSpriteVertex (&verts[1], e->origin, frame->up, frame->left, s_up, s_right, 0, 0);
+	R_EmitSpriteVertex (&verts[2], e->origin, frame->up, frame->right, s_up, s_right, frame->smax, 0);
+	R_EmitSpriteVertex (&verts[3], e->origin, frame->down, frame->right, s_up, s_right, frame->smax, frame->tmax);
 
-	glTexCoord2f (frame->smax, 0);
-	VectorMA (e->origin, frame->up, s_up, point);
-	VectorMA (point, frame->right, s_right, point);
-	glVertex3fv (point);
-
-	glTexCoord2f (frame->smax, frame->tmax);
-	VectorMA (e->origin, frame->down, s_up, point);
-	VectorMA (point, frame->right, s_right, point);
-	glVertex3fv (point);
-
-	glEnd ();
-	glDisable (GL_ALPHA_TEST);
+	glDrawArrays (GL_QUADS, 0, 4);
 
 	// johnfitz: offset decals
 	if (psprite->type == SPR_ORIENTED)

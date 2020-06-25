@@ -99,13 +99,8 @@ cvar_t	r_scale = { "r_scale", "1", CVAR_ARCHIVE };
 // ==============================================================================
 
 static GLuint r_gamma_texture;
-static GLuint r_gamma_program;
 static int r_gamma_texture_width, r_gamma_texture_height;
 
-// uniforms used in gamma shader
-static GLuint gammaLoc;
-static GLuint contrastLoc;
-static GLuint textureLoc;
 
 /*
 =============
@@ -116,46 +111,112 @@ void GLSLGamma_DeleteTexture (void)
 {
 	glDeleteTextures (1, &r_gamma_texture);
 	r_gamma_texture = 0;
-	r_gamma_program = 0; // deleted in R_DeleteShaders
 }
+
+
+GLuint r_polyblend_vp = 0;
+GLuint r_polyblend_fp = 0;
+
+GLuint r_scaleview_vp = 0;
+GLuint r_scaleview_fp = 0;
+
+GLuint r_gamma_vp = 0;
+GLuint r_gamma_fp = 0;
 
 /*
 =============
-GLSLGamma_CreateShaders
+GLMain_CreateShaders
 =============
 */
-static void GLSLGamma_CreateShaders (void)
+void GLMain_CreateShaders (void)
 {
-#if 0
-	const GLchar *vertSource = \
-		"#version 110\n"
+	const GLchar *vp_polyblend_source = \
+		"!!ARBvp1.0\n"
 		"\n"
-		"void main(void) {\n"
-		"	gl_Position = vec4(gl_Vertex.xy, 0.0, 1.0);\n"
-		"	gl_TexCoord[0] = gl_MultiTexCoord0;\n"
-		"}\n";
+		"# copy over position\n"
+		"MOV result.position, vertex.attrib[0];\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
 
-	const GLchar *fragSource = \
-		"#version 110\n"
+	const GLchar *fp_polyblend_source = \
+		"!!ARBfp1.0\n"
 		"\n"
-		"uniform sampler2D GammaTexture;\n"
-		"uniform float GammaValue;\n"
-		"uniform float ContrastValue;\n"
+		"# write the colour to output\n"
+		"MOV result.color, program.local[0];\n"
 		"\n"
-		"void main(void) {\n"
-		"	  vec4 frag = texture2D(GammaTexture, gl_TexCoord[0].xy);\n"
-		"	  frag.rgb = frag.rgb * ContrastValue;\n"
-		"	  gl_FragColor = vec4(pow(frag.rgb, vec3(GammaValue)), 1.0);\n"
-		"}\n";
+		"# done\n"
+		"END\n"
+		"\n";
 
-	if ((r_gamma_program = GL_CreateProgram (vertSource, fragSource, 0, NULL)) != 0)
-	{
-		// get uniform locations
-		gammaLoc = GL_GetUniformLocation (&r_gamma_program, "GammaValue");
-		contrastLoc = GL_GetUniformLocation (&r_gamma_program, "ContrastValue");
-		textureLoc = GL_GetUniformLocation (&r_gamma_program, "GammaTexture");
-	}
-#endif
+	const GLchar *vp_scaleview_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"# copy over position\n"
+		"MOV result.position, vertex.attrib[0];\n"
+		"\n"
+		"# copy over texcoord\n"
+		"MOV result.texcoord[0], vertex.attrib[1];\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *fp_scaleview_source = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"# perform the texturing direct to output\n"
+		"TEX result.color, fragment.texcoord[0], texture[0], 2D;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *vp_gamma_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"# copy over position\n"
+		"MOV result.position, vertex.attrib[0];\n"
+		"\n"
+		"# copy over texcoord\n"
+		"MOV result.texcoord[0], vertex.attrib[1];\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *fp_gamma_source = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"TEMP diff;\n"
+		"\n"
+		"# perform the texturing direct to output\n"
+		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
+		"\n"
+		"# apply the contrast\n"
+		"MUL diff.rgb, diff, program.local[0].x;\n"
+		"\n"
+		"# apply the gamma (POW only operates on scalars)\n"
+		"POW diff.r, diff.r, program.local[0].y;\n"
+		"POW diff.g, diff.g, program.local[0].y;\n"
+		"POW diff.b, diff.b, program.local[0].y;\n"
+		"\n"
+		"# move to output\n"
+		"MOV result.color, diff;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	r_polyblend_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_polyblend_source);
+	r_polyblend_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_polyblend_source);
+
+	r_scaleview_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_scaleview_source);
+	r_scaleview_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_scaleview_source);
+
+	r_gamma_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_gamma_source);
+	r_gamma_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_gamma_source);
 }
 
 
@@ -166,11 +227,14 @@ GLSLGamma_GammaCorrect
 */
 void GLSLGamma_GammaCorrect (void)
 {
-#if 0
-	float smax, tmax;
+	float contrastval = q_min (2.0, q_max (1.0, vid_contrast.value));
+	float gammaval = q_min (1.0, q_max (0.25, vid_gamma.value));
 
-	if (vid_gamma.value == 1 && vid_contrast.value == 1)
+	if (gammaval == 1 && contrastval == 1)
 		return;
+
+	// make sure texture unit 0 is selected
+	glActiveTexture (GL_TEXTURE0);
 
 	// create render-to-texture texture if needed
 	if (!r_gamma_texture)
@@ -191,52 +255,37 @@ void GLSLGamma_GammaCorrect (void)
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	}
-
-	// create shader if needed
-	if (!r_gamma_program)
-	{
-		GLSLGamma_CreateShaders ();
-		if (!r_gamma_program)
-		{
-			Sys_Error ("GLSLGamma_CreateShaders failed");
-		}
-	}
+	else glBindTexture (GL_TEXTURE_2D, r_gamma_texture);
 
 	// copy the framebuffer to the texture
-	GL_DisableMultitexture ();
-	glBindTexture (GL_TEXTURE_2D, r_gamma_texture);
 	glCopyTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, glx, gly, glwidth, glheight);
 
-	// draw the texture back to the framebuffer with a fragment shader
-	glUseProgram (r_gamma_program);
-	glUniform1f (gammaLoc, vid_gamma.value);
-	glUniform1f (contrastLoc, q_min (2.0, q_max (1.0, vid_contrast.value)));
-	glUniform1i (textureLoc, 0); // use texture unit 0
-
-	glDisable (GL_ALPHA_TEST);
+	// draw the texture back to the framebuffer
 	glDisable (GL_DEPTH_TEST);
+	glDisable (GL_CULL_FACE);
+	glDisable (GL_BLEND);
 
 	glViewport (glx, gly, glwidth, glheight);
 
-	smax = glwidth / (float) r_gamma_texture_width;
-	tmax = glheight / (float) r_gamma_texture_height;
+	float smax = glwidth / (float) r_gamma_texture_width;
+	float tmax = glheight / (float) r_gamma_texture_height;
 
-	glBegin (GL_QUADS);
-	glTexCoord2f (0, 0);
-	glVertex2f (-1, -1);
-	glTexCoord2f (smax, 0);
-	glVertex2f (1, -1);
-	glTexCoord2f (smax, tmax);
-	glVertex2f (1, 1);
-	glTexCoord2f (0, tmax);
-	glVertex2f (-1, 1);
-	glEnd ();
+	float positions[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
+	float texcoords[] = { 0, 0, smax, 0, smax, tmax, 0, tmax };
 
-	glUseProgram (0);
+	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
+	GL_EnableVertexAttribArrays (VAA0 | VAA1);
+	GL_BindPrograms (r_gamma_vp, r_gamma_fp);
+
+	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, positions);
+	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 0, texcoords);
+
+	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, contrastval, gammaval, 0, 0);
+
+	glDrawArrays (GL_QUADS, 0, 4);
 
 	// clear cached binding
-	GL_ClearBindings ();
-#endif
+	GL_ClearTextureBindings ();
 }
 
 /*
@@ -471,7 +520,6 @@ void R_SetupGL (void)
 		glDisable (GL_CULL_FACE);
 
 	glDisable (GL_BLEND);
-	glDisable (GL_ALPHA_TEST);
 	glEnable (GL_DEPTH_TEST);
 }
 
@@ -635,35 +683,27 @@ R_DrawPolyBlend -- johnfitz -- moved here from gl_rmain.c, and rewritten to use 
 */
 void R_DrawPolyBlend (void)
 {
+	float verts[] = { -1.0, -1.0, -1.0, 3.0, 3.0, -1.0 };
+
 	if (!gl_polyblend.value || !v_blend[3])
 		return;
 
-	GL_DisableMultitexture ();
+	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
+	GL_EnableVertexAttribArrays (VAA0);
+	GL_BindPrograms (r_polyblend_vp, r_polyblend_fp);
 
-	glDisable (GL_ALPHA_TEST);
-	glDisable (GL_TEXTURE_2D);
+	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, verts);
+	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, v_blend);
+
 	glDisable (GL_DEPTH_TEST);
 	glDepthMask (GL_FALSE);
 	glEnable (GL_BLEND);
 
-	glMatrixMode (GL_PROJECTION);
-	glLoadIdentity ();
-	glMatrixMode (GL_MODELVIEW);
-	glLoadIdentity ();
-
-	glColor4fv (v_blend);
-
-	glBegin (GL_TRIANGLES);
-	glVertex2f (-1.000000, -1.000000);
-	glVertex2f (-1.000000, 3.000000);
-	glVertex2f (3.000000, -1.000000);
-	glEnd ();
+	glDrawArrays (GL_TRIANGLES, 0, 3);
 
 	glDisable (GL_BLEND);
 	glDepthMask (GL_TRUE);
 	glEnable (GL_DEPTH_TEST);
-	glEnable (GL_TEXTURE_2D);
-	glEnable (GL_ALPHA_TEST);
 }
 
 
@@ -678,8 +718,6 @@ void R_RenderScene (void)
 
 	Fog_EnableGFog (); // johnfitz
 
-	Sky_DrawSky (); // johnfitz
-
 	R_DrawWorld ();
 
 	S_ExtraUpdate (); // don't let sound get messed up if going slow
@@ -690,10 +728,7 @@ void R_RenderScene (void)
 
 	R_DrawEntitiesOnList (true); // johnfitz -- true means this is the pass for alpha entities
 
-	// R_DrawParticles ();
 	R_DrawParticlesARB ();
-
-	Fog_DisableGFog (); // johnfitz
 
 	R_DrawViewModel (); // johnfitz -- moved here from R_RenderView
 }
@@ -725,22 +760,18 @@ or possibly as a perforance boost on slow graphics cards.
 */
 void R_ScaleView (void)
 {
-	float smax, tmax;
-	int scale;
-	int srcx, srcy, srcw, srch;
-
 	// copied from R_SetupGL()
-	scale = CLAMP (1, (int) r_scale.value, 4);
-	srcx = glx + r_refdef.vrect.x;
-	srcy = gly + glheight - r_refdef.vrect.y - r_refdef.vrect.height;
-	srcw = r_refdef.vrect.width / scale;
-	srch = r_refdef.vrect.height / scale;
+	int scale = CLAMP (1, (int) r_scale.value, 4);
+	int srcx = glx + r_refdef.vrect.x;
+	int srcy = gly + glheight - r_refdef.vrect.y - r_refdef.vrect.height;
+	int srcw = r_refdef.vrect.width / scale;
+	int srch = r_refdef.vrect.height / scale;
 
 	if (scale == 1)
 		return;
 
 	// make sure texture unit 0 is selected
-	GL_DisableMultitexture ();
+	glActiveTexture (GL_TEXTURE0);
 
 	// create (if needed) and bind the render-to-texture texture
 	if (!r_scaleview_texture)
@@ -750,11 +781,11 @@ void R_ScaleView (void)
 		r_scaleview_texture_width = 0;
 		r_scaleview_texture_height = 0;
 	}
+
 	glBindTexture (GL_TEXTURE_2D, r_scaleview_texture);
 
 	// resize render-to-texture texture if needed
-	if (r_scaleview_texture_width < srcw
-		|| r_scaleview_texture_height < srch)
+	if (r_scaleview_texture_width < srcw || r_scaleview_texture_height < srch)
 	{
 		r_scaleview_texture_width = srcw;
 		r_scaleview_texture_height = srch;
@@ -771,39 +802,33 @@ void R_ScaleView (void)
 	}
 
 	// copy the framebuffer to the texture
-	glBindTexture (GL_TEXTURE_2D, r_scaleview_texture);
 	glCopyTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, srcx, srcy, srcw, srch);
 
 	// draw the texture back to the framebuffer
-	glDisable (GL_ALPHA_TEST);
 	glDisable (GL_DEPTH_TEST);
 	glDisable (GL_CULL_FACE);
 	glDisable (GL_BLEND);
 
 	glViewport (srcx, srcy, r_refdef.vrect.width, r_refdef.vrect.height);
 
-	glMatrixMode (GL_PROJECTION);
-	glLoadIdentity ();
-	glMatrixMode (GL_MODELVIEW);
-	glLoadIdentity ();
-
 	// correction factor if we lack NPOT textures, normally these are 1.0f
-	smax = srcw / (float) r_scaleview_texture_width;
-	tmax = srch / (float) r_scaleview_texture_height;
+	float smax = srcw / (float) r_scaleview_texture_width;
+	float tmax = srch / (float) r_scaleview_texture_height;
 
-	glBegin (GL_QUADS);
-	glTexCoord2f (0, 0);
-	glVertex2f (-1, -1);
-	glTexCoord2f (smax, 0);
-	glVertex2f (1, -1);
-	glTexCoord2f (smax, tmax);
-	glVertex2f (1, 1);
-	glTexCoord2f (0, tmax);
-	glVertex2f (-1, 1);
-	glEnd ();
+	float positions[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
+	float texcoords[] = { 0, 0, smax, 0, smax, tmax, 0, tmax };
+
+	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
+	GL_EnableVertexAttribArrays (VAA0 | VAA1);
+	GL_BindPrograms (r_scaleview_vp, r_scaleview_fp);
+
+	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, positions);
+	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 0, texcoords);
+
+	glDrawArrays (GL_QUADS, 0, 4);
 
 	// clear cached binding
-	GL_ClearBindings ();
+	GL_ClearTextureBindings ();
 }
 
 /*
