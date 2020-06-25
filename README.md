@@ -28,6 +28,7 @@ The GLSL C interface at this API level sucks.  The main problems with it are:
  - No separate shaders, vertex and fragment shaders need to be linked to a single program object.
  - No standalone shared uniforms, uniforms are part of per-program state.
  - Everything needs to be queried rather than explicitly set.
+ 
 True, most of these problems are solved in newer GL versions, but that would entail reaching beyond the API level I'm targetting.  ARB assembly programs, on the other hand, don't have these problems at all (which does make the claimed advantages of these problems seems more like an attempt to retroactively justify a bad initial design).  While they do have some shortcomings (the ones most relevant to me being lack of the texGrad instruction and no array texture support) on balance they are just a more productive tool.
 
 ### Where's r_drawflat? Your engine sucks! I hate you forever!
