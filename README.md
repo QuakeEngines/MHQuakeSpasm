@@ -20,6 +20,8 @@ MHQuakeSpasm is built around an approximate OpenGL 1.5 level; in it's current in
  - GL_ARB_vertex_program
  - GL_ARB_fragment_program
 
+This is roughly equivalent to what Doom 3 uses, so as a general rule if you can run Doom 3, you can probably run this too. Bear in mind that Doom 3 is now a 16-year-old game so what it does should no longer be considered high-end. 
+
 ### Can you switch off interpolation?
 Yes.
 
