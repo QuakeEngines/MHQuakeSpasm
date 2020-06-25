@@ -1022,6 +1022,7 @@ static void GL_Init (void)
 	GLWorld_CreateShaders ();
 	GLParticles_CreateShaders ();
 	GLWarp_CreateShaders ();
+	GLSky_CreateShaders ();
 
 	GL_ClearBufferBindings ();
 }

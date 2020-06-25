@@ -1023,3 +1023,108 @@ void Sky_DrawSky (void)
 	Fog_EnableGFog ();
 #endif
 }
+
+
+GLuint r_skywarp_vp = 0;
+GLuint r_skywarp_fp = 0;
+
+GLuint r_skycube_vp = 0;
+GLuint r_skycube_fp = 0;
+
+void GLSky_CreateShaders (void)
+{
+	const GLchar *vp_warp_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"# transform position to output\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.attrib[0];\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.attrib[0];\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.attrib[0];\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.attrib[0];\n"
+		"\n"
+		"# transform input position to texcoord\n"
+		"DP4 result.texcoord[0].x, state.matrix.program[0].row[0], vertex.attrib[0];\n"
+		"DP4 result.texcoord[0].y, state.matrix.program[0].row[1], vertex.attrib[0];\n"
+		"DP4 result.texcoord[0].z, state.matrix.program[0].row[2], vertex.attrib[0];\n"
+		"DP4 result.texcoord[0].w, state.matrix.program[0].row[3], vertex.attrib[0];\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *fp_warp_source = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"TEMP alphacolor, solidcolor, texcoord;\n"
+		"TEMP alphacoord, solidcoord;\n"
+		"\n"
+		"# normalize incoming texcoord\n"
+		"DP3 texcoord.w, fragment.texcoord[0], fragment.texcoord[0];\n"
+		"RSQ texcoord.w, texcoord.w;\n"
+		"MUL texcoord.xyz, texcoord.w, fragment.texcoord[0];\n"
+		"\n"
+		"# scale it down\n"
+		"MUL texcoord, texcoord, 2.953125;\n"
+		"\n"
+		"# scroll the sky\n"
+		"ADD solidcoord, texcoord, program.env[0].x;\n"
+		"ADD alphacoord, texcoord, program.env[0].y;\n"
+		"\n"
+		"# perform the texturing\n"
+		"TEX solidcolor, solidcoord, texture[0], 2D;\n"
+		"TEX alphacolor, alphacoord, texture[1], 2D;\n"
+		"\n"
+		"# blend to output\n"
+		"LRP result.color, alphacolor.a, alphacolor, solidcolor;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *vp_cube_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"# transform position to output\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.attrib[0];\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.attrib[0];\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.attrib[0];\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.attrib[0];\n"
+		"\n"
+		"# transform input position to texcoord\n"
+		"DP4 result.texcoord[0].x, state.matrix.program[0].row[0], vertex.attrib[0];\n"
+		"DP4 result.texcoord[0].y, state.matrix.program[0].row[1], vertex.attrib[0];\n"
+		"DP4 result.texcoord[0].z, state.matrix.program[0].row[2], vertex.attrib[0];\n"
+		"DP4 result.texcoord[0].w, state.matrix.program[0].row[3], vertex.attrib[0];\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *fp_cube_source = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"# perform the texturing to output\n"
+		"TEX result.color, fragment.texcoord[0], texture[3], CUBE;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	r_skywarp_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_warp_source);
+	r_skywarp_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_warp_source);
+
+	r_skycube_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_cube_source);
+	r_skycube_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_cube_source);
+}
+
+
+void R_DrawSkychain_ARB (msurface_t *s)
+{
+	// scrolling or cubemapped sky
+	// the cubemap is a replacement for the more traditional skybox
+	// because the FitzQuake texture manager assumes GL_TEXTURE_2D everywhere, we bypass it and call the various routines directly for the cubemap
+	// we also bind it in GL_TEXTURE3 so that it bypasses the texture bind cache
+	// state.matrix.program[0] contains a local matrix for correctly positioning sky on moving brush models.  it can be identity for the world.
+}
+
+

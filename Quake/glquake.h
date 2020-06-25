@@ -261,6 +261,7 @@ void GLWorld_CreateShaders (void);
 void GLAlias_CreateShaders (void);
 void GLParticles_CreateShaders (void);
 void GLWarp_CreateShaders (void);
+void GLSky_CreateShaders (void);
 void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr);
 
 void Sky_Init (void);
