@@ -76,7 +76,6 @@ cvar_t	r_flatlightstyles = { "r_flatlightstyles", "0", CVAR_NONE };
 cvar_t	gl_fullbrights = { "gl_fullbrights", "1", CVAR_ARCHIVE };
 cvar_t	gl_farclip = { "gl_farclip", "16384", CVAR_ARCHIVE };
 cvar_t	gl_overbright = { "gl_overbright", "1", CVAR_ARCHIVE };
-cvar_t	gl_overbright_models = { "gl_overbright_models", "1", CVAR_ARCHIVE };
 cvar_t	r_oldskyleaf = { "r_oldskyleaf", "0", CVAR_NONE };
 cvar_t	r_lerpmodels = { "r_lerpmodels", "1", CVAR_NONE };
 cvar_t	r_lerpmove = { "r_lerpmove", "1", CVAR_NONE };
@@ -93,25 +92,6 @@ float	map_wateralpha, map_lavaalpha, map_telealpha, map_slimealpha;
 
 cvar_t	r_scale = { "r_scale", "1", CVAR_ARCHIVE };
 
-// ==============================================================================
-// GLSL GAMMA CORRECTION
-// ==============================================================================
-
-static GLuint r_gamma_texture;
-static int r_gamma_texture_width, r_gamma_texture_height;
-
-
-/*
-=============
-GLSLGamma_DeleteTexture
-=============
-*/
-void GLSLGamma_DeleteTexture (void)
-{
-	glDeleteTextures (1, &r_gamma_texture);
-	r_gamma_texture = 0;
-}
-
 
 GLuint r_polyblend_vp = 0;
 GLuint r_polyblend_fp = 0;
@@ -119,8 +99,6 @@ GLuint r_polyblend_fp = 0;
 GLuint r_scaleview_vp = 0;
 GLuint r_scaleview_fp = 0;
 
-GLuint r_gamma_vp = 0;
-GLuint r_gamma_fp = 0;
 
 /*
 =============
@@ -142,8 +120,16 @@ void GLMain_CreateShaders (void)
 	const GLchar *fp_polyblend_source = \
 		"!!ARBfp1.0\n"
 		"\n"
-		"# write the colour to output\n"
-		"MOV result.color, program.local[0];\n"
+		"TEMP diff;\n"
+		"\n"
+		"# apply the contrast\n"
+		"MUL diff, program.local[0], program.env[10].x;\n"
+		"\n"
+		"# apply the gamma (POW only operates on scalars)\n"
+		"POW result.color.r, diff.r, program.env[10].y;\n"
+		"POW result.color.g, diff.g, program.env[10].y;\n"
+		"POW result.color.b, diff.b, program.env[10].y;\n"
+		"MOV result.color.a, diff.a;\n"
 		"\n"
 		"# done\n"
 		"END\n"
@@ -162,6 +148,7 @@ void GLMain_CreateShaders (void)
 		"END\n"
 		"\n";
 
+	// this is a post-process so the input has already had gamma applied
 	const GLchar *fp_scaleview_source = \
 		"!!ARBfp1.0\n"
 		"\n"
@@ -172,120 +159,13 @@ void GLMain_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	const GLchar *vp_gamma_source = \
-		"!!ARBvp1.0\n"
-		"\n"
-		"# copy over position\n"
-		"MOV result.position, vertex.attrib[0];\n"
-		"\n"
-		"# copy over texcoord\n"
-		"MOV result.texcoord[0], vertex.attrib[1];\n"
-		"\n"
-		"# done\n"
-		"END\n"
-		"\n";
-
-	const GLchar *fp_gamma_source = \
-		"!!ARBfp1.0\n"
-		"\n"
-		"TEMP diff;\n"
-		"\n"
-		"# perform the texturing direct to output\n"
-		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
-		"\n"
-		"# apply the contrast\n"
-		"MUL diff.rgb, diff, program.local[0].x;\n"
-		"\n"
-		"# apply the gamma (POW only operates on scalars)\n"
-		"POW diff.r, diff.r, program.local[0].y;\n"
-		"POW diff.g, diff.g, program.local[0].y;\n"
-		"POW diff.b, diff.b, program.local[0].y;\n"
-		"\n"
-		"# move to output\n"
-		"MOV result.color, diff;\n"
-		"\n"
-		"# done\n"
-		"END\n"
-		"\n";
-
 	r_polyblend_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_polyblend_source);
 	r_polyblend_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_polyblend_source);
 
 	r_scaleview_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_scaleview_source);
 	r_scaleview_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_scaleview_source);
-
-	r_gamma_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_gamma_source);
-	r_gamma_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_gamma_source);
 }
 
-
-/*
-=============
-GLSLGamma_GammaCorrect
-=============
-*/
-void GLSLGamma_GammaCorrect (void)
-{
-	float contrastval = q_min (2.0, q_max (1.0, vid_contrast.value));
-	float gammaval = q_min (1.0, q_max (0.25, vid_gamma.value));
-
-	if (gammaval == 1 && contrastval == 1)
-		return;
-
-	// make sure texture unit 0 is selected
-	glActiveTexture (GL_TEXTURE0);
-
-	// create render-to-texture texture if needed
-	if (!r_gamma_texture)
-	{
-		glGenTextures (1, &r_gamma_texture);
-		glBindTexture (GL_TEXTURE_2D, r_gamma_texture);
-
-		r_gamma_texture_width = glwidth;
-		r_gamma_texture_height = glheight;
-
-		if (!GLEW_ARB_texture_non_power_of_two)
-		{
-			r_gamma_texture_width = TexMgr_Pad (r_gamma_texture_width);
-			r_gamma_texture_height = TexMgr_Pad (r_gamma_texture_height);
-		}
-
-		glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, r_gamma_texture_width, r_gamma_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	}
-	else glBindTexture (GL_TEXTURE_2D, r_gamma_texture);
-
-	// copy the framebuffer to the texture
-	glCopyTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, glx, gly, glwidth, glheight);
-
-	// draw the texture back to the framebuffer
-	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
-	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
-	glDisable (GL_CULL_FACE);
-
-	glViewport (glx, gly, glwidth, glheight);
-
-	float smax = glwidth / (float) r_gamma_texture_width;
-	float tmax = glheight / (float) r_gamma_texture_height;
-
-	float positions[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
-	float texcoords[] = { 0, 0, smax, 0, smax, tmax, 0, tmax };
-
-	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
-	GL_EnableVertexAttribArrays (VAA0 | VAA1);
-	GL_BindPrograms (r_gamma_vp, r_gamma_fp);
-
-	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, positions);
-	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 0, texcoords);
-
-	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, contrastval, gammaval, 0, 0);
-
-	glDrawArrays (GL_QUADS, 0, 4);
-
-	// clear cached binding
-	GL_ClearTextureBindings ();
-}
 
 /*
 =================

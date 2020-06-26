@@ -26,6 +26,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 int	r_dlightframecount;
 
 extern cvar_t r_flatlightstyles; // johnfitz
+extern cvar_t gl_fullbrights, gl_overbright; // johnfitz
+
 
 /*
 ==================
@@ -196,7 +198,7 @@ loc0:
 	if (node->contents < 0)
 		return false;		// didn't hit anything
 
-// calculate mid point
+	// calculate mid point
 	if (node->plane->type < 3)
 	{
 		front = start[node->plane->type] - node->plane->dist;
@@ -210,7 +212,6 @@ loc0:
 
 	// LordHavoc: optimized recursion
 	if ((back < 0) == (front < 0))
-		//		return RecursiveLightPoint (color, node->children[front < 0], start, end);
 	{
 		node = node->children[front < 0];
 		goto loc0;
@@ -228,19 +229,21 @@ loc0:
 	{
 		int i, ds, dt;
 		msurface_t *surf;
+
 		// check for impact on this node
 		VectorCopy (mid, lightspot);
 		lightplane = node->plane;
 
 		surf = cl.worldmodel->surfaces + node->firstsurface;
+
 		for (i = 0; i < node->numsurfaces; i++, surf++)
 		{
 			if (surf->flags & SURF_DRAWTILED)
 				continue;	// no lightmaps
 
-		// ericw -- added double casts to force 64-bit precision.
-		// Without them the zombie at the start of jam3_ericw.bsp was
-		// incorrectly being lit up in SSE builds.
+			// ericw -- added double casts to force 64-bit precision.
+			// Without them the zombie at the start of jam3_ericw.bsp was
+			// incorrectly being lit up in SSE builds.
 			ds = (int) ((double) DoublePrecisionDotProduct (mid, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3]);
 			dt = (int) ((double) DoublePrecisionDotProduct (mid, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3]);
 
@@ -253,30 +256,28 @@ loc0:
 			if (ds > surf->extents[0] || dt > surf->extents[1])
 				continue;
 
+			// clear to no light
+			color[0] = 0;
+			color[1] = 0;
+			color[2] = 0;
+
 			if (surf->samples)
 			{
-				// LordHavoc: enhanced to interpolate lighting
-				byte *lightmap;
-				int maps, line3, dsfrac = ds & 15, dtfrac = dt & 15, r00 = 0, g00 = 0, b00 = 0, r01 = 0, g01 = 0, b01 = 0, r10 = 0, g10 = 0, b10 = 0, r11 = 0, g11 = 0, b11 = 0;
-				float scale;
-				line3 = ((surf->extents[0] >> 4) + 1) * 3;
+				// MH - changed this over to use the same lightiing calc as R_BuildLightmap for consistency
+				byte *lightmap = surf->samples + ((dt >> 4) * ((surf->extents[0] >> 4) + 1) + (ds >> 4)) * 3; // LordHavoc: *3 for color
 
-				lightmap = surf->samples + ((dt >> 4) * ((surf->extents[0] >> 4) + 1) + (ds >> 4)) * 3; // LordHavoc: *3 for color
-
-				for (maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
+				for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
 				{
-					scale = (float) d_lightstylevalue[surf->styles[maps]] * 1.0 / 256.0;
-					r00 += (float) lightmap[0] * scale; g00 += (float) lightmap[1] * scale; b00 += (float) lightmap[2] * scale;
-					r01 += (float) lightmap[3] * scale; g01 += (float) lightmap[4] * scale; b01 += (float) lightmap[5] * scale;
-					r10 += (float) lightmap[line3 + 0] * scale; g10 += (float) lightmap[line3 + 1] * scale; b10 += (float) lightmap[line3 + 2] * scale;
-					r11 += (float) lightmap[line3 + 3] * scale; g11 += (float) lightmap[line3 + 4] * scale; b11 += (float) lightmap[line3 + 5] * scale;
+					unsigned scale = d_lightstylevalue[surf->styles[maps]];
+
+					color[0] += lightmap[0] * scale;
+					color[1] += lightmap[1] * scale;
+					color[2] += lightmap[2] * scale;
+
 					lightmap += ((surf->extents[0] >> 4) + 1) * ((surf->extents[1] >> 4) + 1) * 3; // LordHavoc: *3 for colored lighting
 				}
-
-				color[0] += (float) ((int) ((((((((r11 - r10) * dsfrac) >> 4) + r10) - ((((r01 - r00) * dsfrac) >> 4) + r00)) * dtfrac) >> 4) + ((((r01 - r00) * dsfrac) >> 4) + r00)));
-				color[1] += (float) ((int) ((((((((g11 - g10) * dsfrac) >> 4) + g10) - ((((g01 - g00) * dsfrac) >> 4) + g00)) * dtfrac) >> 4) + ((((g01 - g00) * dsfrac) >> 4) + g00)));
-				color[2] += (float) ((int) ((((((((b11 - b10) * dsfrac) >> 4) + b10) - ((((b01 - b00) * dsfrac) >> 4) + b00)) * dtfrac) >> 4) + ((((b01 - b00) * dsfrac) >> 4) + b00)));
 			}
+
 			return true; // success
 		}
 
@@ -285,6 +286,7 @@ loc0:
 	}
 }
 
+
 /*
 =============
 R_LightPoint -- johnfitz -- replaced entire function for lit support via lordhavoc
@@ -292,19 +294,49 @@ R_LightPoint -- johnfitz -- replaced entire function for lit support via lordhav
 */
 int R_LightPoint (vec3_t p)
 {
-	vec3_t		end;
-
-	if (!cl.worldmodel->lightdata)
+	if (r_fullbright.value || !cl.worldmodel->lightdata)
 	{
-		shadelight[0] = shadelight[1] = shadelight[2] = 255;
-		return 255;
+		shadelight[0] = 255 * 128;
+		shadelight[1] = 255 * 128;
+		shadelight[2] = 255 * 128;
+	}
+	else
+	{
+		vec3_t		end;
+
+		end[0] = p[0];
+		end[1] = p[1];
+		end[2] = cl.worldmodel->mins[2] - 10.0f;	// MH - trace the full worldmodel
+
+		shadelight[0] = shadelight[1] = shadelight[2] = 0;
+		RecursiveLightPoint (shadelight, cl.worldmodel->nodes, p, end);
+
+		// add dlights
+		for (int i = 0; i < MAX_DLIGHTS; i++)
+		{
+			if (cl_dlights[i].die >= cl.time)
+			{
+				float dist[3], add;
+
+				VectorSubtract (p, cl_dlights[i].origin, dist);
+				add = cl_dlights[i].radius - VectorLength (dist);
+
+				if (add > 0)
+				{
+					// bring the dlight colour up to the range as in R_AddDynamicLights
+					shadelight[0] += cl_dlights[i].color[0] * add * 256.0f;
+					shadelight[1] += cl_dlights[i].color[1] * add * 256.0f;
+					shadelight[2] += cl_dlights[i].color[2] * add * 256.0f;
+				}
+			}
+		}
 	}
 
-	end[0] = p[0];
-	end[1] = p[1];
-	end[2] = p[2] - 8192; // johnfitz -- was 2048
+	// shift down for overbrighting range
+	if ((shadelight[0] = (int) shadelight[0] >> (7 + (int) gl_overbright.value)) > 255) shadelight[0] = 255;
+	if ((shadelight[1] = (int) shadelight[1] >> (7 + (int) gl_overbright.value)) > 255) shadelight[1] = 255;
+	if ((shadelight[2] = (int) shadelight[2] >> (7 + (int) gl_overbright.value)) > 255) shadelight[2] = 255;
 
-	shadelight[0] = shadelight[1] = shadelight[2] = 0;
-	RecursiveLightPoint (shadelight, cl.worldmodel->nodes, p, end);
 	return ((shadelight[0] + shadelight[1] + shadelight[2]) * (1.0f / 3.0f));
 }
+

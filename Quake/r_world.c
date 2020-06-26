@@ -417,10 +417,13 @@ void GLWorld_CreateShaders (void)
 		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
 		"LRP diff.rgb, fogFactor.x, diff, state.fog.color;\n"
 		"\n"
-		"# copy over the result\n"
-		"MOV result.color.rgb, diff;\n"
+		"# apply the contrast\n"
+		"MUL diff.rgb, diff, program.env[10].x;\n"
 		"\n"
-		"# set the alpha channel correctly\n"
+		"# apply the gamma (POW only operates on scalars)\n"
+		"POW result.color.r, diff.r, program.env[10].y;\n"
+		"POW result.color.g, diff.g, program.env[10].y;\n"
+		"POW result.color.b, diff.b, program.env[10].y;\n"
 		"MOV result.color.a, program.env[0].a;\n"
 		"\n"
 		"# done\n"
@@ -455,10 +458,13 @@ void GLWorld_CreateShaders (void)
 		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
 		"LRP diff.rgb, fogFactor.x, diff, state.fog.color;\n"
 		"\n"
-		"# copy over the result\n"
-		"MOV result.color.rgb, diff;\n"
+		"# apply the contrast\n"
+		"MUL diff.rgb, diff, program.env[10].x;\n"
 		"\n"
-		"# set the alpha channel correctly\n"
+		"# apply the gamma (POW only operates on scalars)\n"
+		"POW result.color.r, diff.r, program.env[10].y;\n"
+		"POW result.color.g, diff.g, program.env[10].y;\n"
+		"POW result.color.b, diff.b, program.env[10].y;\n"
 		"MOV result.color.a, program.env[0].a;\n"
 		"\n"
 		"# done\n"
@@ -530,11 +536,12 @@ void R_SetupWorldVBOState (void)
 	GL_BindBuffer (GL_ARRAY_BUFFER, r_surfaces_vbo);
 	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, 0); // indices come from client memory!
 
-	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2);
+	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3);
 
 	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, xyz));
 	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, st));
 	glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, lm));
+	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, normal));
 }
 
 

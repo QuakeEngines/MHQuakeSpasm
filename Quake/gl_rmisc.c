@@ -30,7 +30,6 @@ extern cvar_t r_flatlightstyles;
 extern cvar_t gl_fullbrights;
 extern cvar_t gl_farclip;
 extern cvar_t gl_overbright;
-extern cvar_t gl_overbright_models;
 extern cvar_t r_waterwarp;
 extern cvar_t r_oldskyleaf;
 extern cvar_t r_lerpmodels;
@@ -189,7 +188,6 @@ void R_Init (void)
 	Cvar_SetCallback (&gl_fullbrights, NULL);
 	Cvar_SetCallback (&gl_overbright, GL_Overbright_f);
 	Cvar_SetCallback (&r_fullbright, GL_Overbright_f);
-	Cvar_RegisterVariable (&gl_overbright_models);
 	Cvar_RegisterVariable (&r_lerpmodels);
 	Cvar_RegisterVariable (&r_lerpmove);
 	Cvar_RegisterVariable (&r_nolerp_list);

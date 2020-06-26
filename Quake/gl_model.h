@@ -130,6 +130,7 @@ typedef struct brushpolyvert_s {
 	float xyz[3];
 	float st[2];
 	float lm[2];
+	char normal[4]; // for dynamic lighting; brings vertex size to a nice 32 bytes
 } brushpolyvert_t;
 
 
@@ -350,9 +351,6 @@ typedef struct {
 	// ericw --
 
 	int					numposes;
-	int					poseverts;
-	int					posedata;	// numposes*poseverts trivert_t
-	int					commands;	// gl command list with embedded s/t
 	struct gltexture_s *gltextures[MAX_SKINS][4]; // johnfitz
 	struct gltexture_s *fbtextures[MAX_SKINS][4]; // johnfitz
 	int					texels[MAX_SKINS];	// only for player skins

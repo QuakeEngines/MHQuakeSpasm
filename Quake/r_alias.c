@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern cvar_t gl_overbright_models, gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
+extern cvar_t gl_overbright, gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
 
 // up to 16 color translated skins
 gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz -- changed to an array of pointers
@@ -42,8 +42,6 @@ extern	vec3_t			lightspot;
 float	shadevector[4]; // padded for shader uniforms
 
 float	entalpha; // johnfitz
-
-qboolean	overbright; // johnfitz
 
 qboolean shading = true; // johnfitz -- if false, disable vertex shading for various reasons (fullbright, etc)
 
@@ -166,10 +164,13 @@ void GLAlias_CreateShaders (void)
 		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
 		"LRP diff.rgb, fogFactor.x, diff, state.fog.color;\n"
 		"\n"
-		"# copy over the result\n"
-		"MOV result.color.rgb, diff;\n"
+		"# apply the contrast\n"
+		"MUL diff.rgb, diff, program.env[10].x;\n"
 		"\n"
-		"# set the alpha channel correctly\n"
+		"# apply the gamma (POW only operates on scalars)\n"
+		"POW result.color.r, diff.r, program.env[10].y;\n"
+		"POW result.color.g, diff.g, program.env[10].y;\n"
+		"POW result.color.b, diff.b, program.env[10].y;\n"
 		"MOV result.color.a, program.env[0].a;\n"
 		"\n"
 		"# done\n"
@@ -219,10 +220,13 @@ void GLAlias_CreateShaders (void)
 		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
 		"LRP diff.rgb, fogFactor.x, diff, state.fog.color;\n"
 		"\n"
-		"# copy over the result\n"
-		"MOV result.color.rgb, diff;\n"
+		"# apply the contrast\n"
+		"MUL diff.rgb, diff, program.env[10].x;\n"
 		"\n"
-		"# set the alpha channel correctly\n"
+		"# apply the gamma (POW only operates on scalars)\n"
+		"POW result.color.r, diff.r, program.env[10].y;\n"
+		"POW result.color.g, diff.g, program.env[10].y;\n"
+		"POW result.color.b, diff.b, program.env[10].y;\n"
 		"MOV result.color.a, program.env[0].a;\n"
 		"\n"
 		"# done\n"
@@ -240,7 +244,7 @@ void GL_DrawAliasFrame_ARB (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltextur
 	float	blend;
 
 	// MH - variable overbright
-	float	overbright = (float) (1 << (int) gl_overbright_models.value);
+	float	overbright = (float) (1 << (int) gl_overbright.value);
 
 	if (lerpdata.pose1 != lerpdata.pose2)
 	{
@@ -426,28 +430,13 @@ R_SetupAliasLighting -- johnfitz -- broken out from R_DrawAliasModel and rewritt
 */
 void R_SetupAliasLighting (entity_t *e)
 {
-	vec3_t		dist;
-	float		add;
-	int			i;
-
 	R_LightPoint (e->origin);
-
-	// add dlights
-	for (i = 0; i < MAX_DLIGHTS; i++)
-	{
-		if (cl_dlights[i].die >= cl.time)
-		{
-			VectorSubtract (currententity->origin, cl_dlights[i].origin, dist);
-			add = cl_dlights[i].radius - VectorLength (dist);
-			if (add > 0)
-				VectorMA (shadelight, add, cl_dlights[i].color, shadelight);
-		}
-	}
 
 	// minimum light value on gun (24)
 	if (e == &cl.viewent)
 	{
-		add = 72.0f - (shadelight[0] + shadelight[1] + shadelight[2]);
+		float add = 72.0f - (shadelight[0] + shadelight[1] + shadelight[2]);
+
 		if (add > 0.0f)
 		{
 			shadelight[0] += add / 3.0f;
@@ -457,9 +446,10 @@ void R_SetupAliasLighting (entity_t *e)
 	}
 
 	// minimum light value on players (8)
-	if (currententity > cl_entities && currententity <= cl_entities + cl.maxclients)
+	if (e > cl_entities && e <= cl_entities + cl.maxclients)
 	{
-		add = 24.0f - (shadelight[0] + shadelight[1] + shadelight[2]);
+		float add = 24.0f - (shadelight[0] + shadelight[1] + shadelight[2]);
+
 		if (add > 0.0f)
 		{
 			shadelight[0] += add / 3.0f;
@@ -468,24 +458,8 @@ void R_SetupAliasLighting (entity_t *e)
 		}
 	}
 
-	// clamp lighting so it doesn't overbright as much (96)
-	if (overbright)
-	{
-		add = 288.0f / (shadelight[0] + shadelight[1] + shadelight[2]);
-		if (add < 1.0f)
-			VectorScale (shadelight, add, shadelight);
-	}
-
 	// hack up the brightness when fullbrights but no overbrights (256)
-	if (gl_fullbrights.value && !gl_overbright_models.value)
-	{
-		if (e->model->flags & MOD_FBRIGHTHACK)
-		{
-			shadelight[0] = 256.0f;
-			shadelight[1] = 256.0f;
-			shadelight[2] = 256.0f;
-		}
-	}
+	// MH - the new "max-blending" removes the need for this
 
 	// ericw -- shadevector is passed to the shader to compute shadedots inside the
 	// shader, see GLAlias_CreateShaders()
@@ -498,7 +472,9 @@ void R_SetupAliasLighting (entity_t *e)
 	VectorNormalize (shadevector);
 	// ericw --
 
-	VectorScale (shadelight, 1.0f / 200.0f, shadelight);
+	// take the final colour down to 0..1 range
+	// note: our DotProducts will potentially scale this up to 2*, so reduce the range a little further to compensate
+	VectorScale (shadelight, 1.0f / 384.0f, shadelight);
 }
 
 /*
@@ -532,7 +508,6 @@ void R_DrawAliasModel (entity_t *e)
 	glTranslatef (paliashdr->scale_origin[0], paliashdr->scale_origin[1], paliashdr->scale_origin[2]);
 	glScalef (paliashdr->scale[0], paliashdr->scale[1], paliashdr->scale[2]);
 
-	overbright = gl_overbright_models.value;
 	shading = true;
 
 	// set up for alpha blending
@@ -573,7 +548,7 @@ void R_DrawAliasModel (entity_t *e)
 	if (e->colormap != vid.colormap && !gl_nocolors.value)
 	{
 		i = e - cl_entities;
-		if (i >= 1 && i <= cl.maxclients /* && !strcmp (currententity->model->name, "progs/player.mdl") */)
+		if (i >= 1 && i <= cl.maxclients /* && !strcmp (e->model->name, "progs/player.mdl") */)
 			tx = playertextures[i - 1];
 	}
 

@@ -1069,8 +1069,6 @@ void SCR_UpdateScreen (void)
 
 	V_UpdateBlend (); // johnfitz -- V_UpdatePalette cleaned up and renamed
 
-	GLSLGamma_GammaCorrect ();
-
 	GL_End2D ();
 
 	GL_EndRendering ();
