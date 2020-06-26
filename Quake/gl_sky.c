@@ -496,6 +496,9 @@ void R_DrawSkychain_ARB (msurface_t *s)
 			Fog_GetDensity () > 0 ? skyfog : 0);
 	}
 
+	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
+	GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
+
 	R_ClearBatch ();
 
 	for (; s; s = s->texturechain)

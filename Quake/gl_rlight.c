@@ -32,13 +32,14 @@ extern cvar_t r_flatlightstyles; // johnfitz
 R_AnimateLight
 ==================
 */
-void R_AnimateLight (void)
+void R_AnimateLight (double time)
 {
 	int			i, j, k;
 
 	// light animations
 	// 'm' is normal light, 'a' is no light, 'z' is double bright
-	i = (int) (cl.time * 10);
+	i = (int) (time * 10);
+
 	for (j = 0; j < MAX_LIGHTSTYLES; j++)
 	{
 		if (!cl_lightstyle[j].length)
@@ -46,6 +47,7 @@ void R_AnimateLight (void)
 			d_lightstylevalue[j] = 256;
 			continue;
 		}
+
 		// johnfitz -- r_flatlightstyles
 		if (r_flatlightstyles.value == 2)
 			k = cl_lightstyle[j].peak - 'a';
@@ -56,6 +58,7 @@ void R_AnimateLight (void)
 			k = i % cl_lightstyle[j].length;
 			k = cl_lightstyle[j].map[k] - 'a';
 		}
+
 		d_lightstylevalue[j] = k * 22;
 		// johnfitz
 	}

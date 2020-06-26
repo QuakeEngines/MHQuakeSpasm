@@ -554,6 +554,11 @@ void Draw_ColouredVertex (drawpolyvert_t *vert, float x, float y, unsigned colou
 
 void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h, unsigned colour, float sl, float sh, float tl, float th)
 {
+	if (((byte *) &colour)[3] < 255)
+		GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	else GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
+
+	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
 	GL_BindPrograms (draw_textured_vp, draw_textured_fp);
 	GL_BindTexture (GL_TEXTURE0, texture);
 
@@ -568,6 +573,11 @@ void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h
 
 void Draw_ColouredQuad (float x, float y, float w, float h, unsigned colour)
 {
+	if (((byte *) &colour)[3] < 255)
+		GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	else GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
+
+	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
 	GL_BindPrograms (draw_coloured_vp, draw_coloured_fp);
 
 	Draw_ColouredVertex (&r_drawverts[0], x, y, colour);
@@ -616,6 +626,8 @@ void Draw_EndString (void)
 {
 	if (r_numdrawverts)
 	{
+		GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
+		GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
 		GL_BindPrograms (draw_textured_vp, draw_textured_fp);
 		GL_BindTexture (GL_TEXTURE0, char_texture);
 
@@ -641,6 +653,7 @@ void Draw_CharacterQuad (int x, int y, char num)
 
 	Draw_TexturedQuad (char_texture, x, y, 8, 8, 0xffffffff, fcol, fcol + size, frow, frow + size);
 }
+
 
 /*
 ================
@@ -693,13 +706,7 @@ void Draw_AlphaPic (int x, int y, qpic_t *pic, float alpha)
 	if (alpha > 0)
 	{
 		if (alpha < 1)
-		{
-			glEnable (GL_BLEND);
-
 			Draw_TexturedQuad (gl->gltexture, x, y, pic->width, pic->height, 0xffffff | (int) (alpha * 255) << 24, gl->sl, gl->sh, gl->tl, gl->th);
-
-			glDisable (GL_BLEND);
-		}
 		else Draw_TexturedQuad (gl->gltexture, x, y, pic->width, pic->height, 0xffffffff, gl->sl, gl->sh, gl->tl, gl->th);
 	}
 }
@@ -797,11 +804,7 @@ void Draw_Fill (int x, int y, int w, int h, int c, float alpha) // johnfitz -- a
 			rgba |= (int) (alpha * 255) << 24;
 		}
 
-		glEnable (GL_BLEND); // johnfitz -- for alpha
-
 		Draw_ColouredQuad (x, y, w, h, rgba);
-
-		glDisable (GL_BLEND); // johnfitz -- for alpha
 	}
 }
 
@@ -814,12 +817,7 @@ Draw_FadeScreen -- johnfitz -- revised
 void Draw_FadeScreen (void)
 {
 	GL_SetCanvas (CANVAS_DEFAULT);
-
-	glEnable (GL_BLEND);
-
 	Draw_ColouredQuad (0, 0, glwidth, glheight, 0x7f000000);
-
-	glDisable (GL_BLEND);
 }
 
 
@@ -914,7 +912,6 @@ void GL_Set2D (void)
 
 	glDisable (GL_DEPTH_TEST);
 	glDisable (GL_CULL_FACE);
-	glDisable (GL_BLEND);
 
 	// ensure that no buffer is bound when drawing 2D quads
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);

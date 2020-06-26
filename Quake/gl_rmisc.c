@@ -25,8 +25,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 
 // johnfitz -- new cvars
-extern cvar_t r_stereo;
-extern cvar_t r_stereodepth;
 extern cvar_t r_clearcolor;
 extern cvar_t r_flatlightstyles;
 extern cvar_t gl_fullbrights;
@@ -166,6 +164,7 @@ void R_Init (void)
 	Cvar_RegisterVariable (&r_wateralpha);
 	Cvar_SetCallback (&r_wateralpha, R_SetWateralpha_f);
 	Cvar_RegisterVariable (&r_dynamic);
+	Cvar_RegisterVariable (&r_fullbright);
 	Cvar_RegisterVariable (&r_novis);
 	Cvar_SetCallback (&r_novis, R_VisChanged);
 	Cvar_RegisterVariable (&r_speeds);
@@ -178,8 +177,6 @@ void R_Init (void)
 	Cvar_RegisterVariable (&gl_nocolors);
 
 	// johnfitz -- new cvars
-	Cvar_RegisterVariable (&r_stereo);
-	Cvar_RegisterVariable (&r_stereodepth);
 	Cvar_RegisterVariable (&r_clearcolor);
 	Cvar_SetCallback (&r_clearcolor, R_SetClearColor_f);
 	Cvar_RegisterVariable (&r_waterwarp);
@@ -191,6 +188,7 @@ void R_Init (void)
 	Cvar_RegisterVariable (&gl_overbright);
 	Cvar_SetCallback (&gl_fullbrights, NULL);
 	Cvar_SetCallback (&gl_overbright, GL_Overbright_f);
+	Cvar_SetCallback (&r_fullbright, GL_Overbright_f);
 	Cvar_RegisterVariable (&gl_overbright_models);
 	Cvar_RegisterVariable (&r_lerpmodels);
 	Cvar_RegisterVariable (&r_lerpmove);
@@ -349,14 +347,9 @@ R_NewMap
 */
 void R_NewMap (void)
 {
-	int		i;
-
-	for (i = 0; i < 256; i++)
-		d_lightstylevalue[i] = 264;		// normal light value
-
-// clear out efrags in case the level hasn't been reloaded
-// FIXME: is this one short?
-	for (i = 0; i < cl.worldmodel->numleafs; i++)
+	// clear out efrags in case the level hasn't been reloaded
+	// FIXME: is this one short?
+	for (int i = 0; i < cl.worldmodel->numleafs; i++)
 		cl.worldmodel->leafs[i].efrags = NULL;
 
 	r_viewleaf = NULL;
@@ -408,140 +401,14 @@ void R_TimeRefresh_f (void)
 	Con_Printf ("%f seconds (%f fps)\n", time, 128 / time);
 }
 
+
 void D_FlushCaches (void)
 {
 }
 
-static GLuint gl_programs[16];
-static int gl_num_programs;
 
 static GLuint gl_arb_programs[128];
 static int gl_num_arb_programs;
-
-static qboolean GL_CheckShader (GLuint shader)
-{
-	GLint status;
-	glGetShaderiv (shader, GL_COMPILE_STATUS, &status);
-
-	if (status != GL_TRUE)
-	{
-		char infolog[1024];
-
-		memset (infolog, 0, sizeof (infolog));
-		glGetShaderInfoLog (shader, sizeof (infolog), NULL, infolog);
-
-		Con_Warning ("GLSL program failed to compile: %s", infolog);
-
-		return false;
-	}
-	return true;
-}
-
-static qboolean GL_CheckProgram (GLuint program)
-{
-	GLint status;
-	glGetProgramiv (program, GL_LINK_STATUS, &status);
-
-	if (status != GL_TRUE)
-	{
-		char infolog[1024];
-
-		memset (infolog, 0, sizeof (infolog));
-		glGetProgramInfoLog (program, sizeof (infolog), NULL, infolog);
-
-		Con_Warning ("GLSL program failed to link: %s", infolog);
-
-		return false;
-	}
-	return true;
-}
-
-/*
-=============
-GL_GetUniformLocation
-=============
-*/
-GLint GL_GetUniformLocation (GLuint *programPtr, const char *name)
-{
-	GLint location;
-
-	if (!programPtr)
-		return -1;
-
-	location = glGetUniformLocation (*programPtr, name);
-	if (location == -1)
-	{
-		Con_Warning ("glGetUniformLocation %s failed\n", name);
-		*programPtr = 0;
-	}
-	return location;
-}
-
-/*
-====================
-GL_CreateProgram
-
-Compiles and returns GLSL program.
-====================
-*/
-GLuint GL_CreateProgram (const GLchar *vertSource, const GLchar *fragSource, int numbindings, const glsl_attrib_binding_t *bindings)
-{
-	int i;
-	GLuint program, vertShader, fragShader;
-
-	vertShader = glCreateShader (GL_VERTEX_SHADER);
-	glShaderSource (vertShader, 1, &vertSource, NULL);
-	glCompileShader (vertShader);
-
-	if (!GL_CheckShader (vertShader))
-	{
-		glDeleteShader (vertShader);
-		return 0;
-	}
-
-	fragShader = glCreateShader (GL_FRAGMENT_SHADER);
-	glShaderSource (fragShader, 1, &fragSource, NULL);
-	glCompileShader (fragShader);
-
-	if (!GL_CheckShader (fragShader))
-	{
-		glDeleteShader (vertShader);
-		glDeleteShader (fragShader);
-		return 0;
-	}
-
-	program = glCreateProgram ();
-	glAttachShader (program, vertShader);
-	glDeleteShader (vertShader);
-	glAttachShader (program, fragShader);
-	glDeleteShader (fragShader);
-
-	if (bindings)
-	{
-		for (i = 0; i < numbindings; i++)
-		{
-			glBindAttribLocation (program, bindings[i].attrib, bindings[i].name);
-		}
-	}
-
-	glLinkProgram (program);
-
-	if (!GL_CheckProgram (program))
-	{
-		glDeleteProgram (program);
-		return 0;
-	}
-	else
-	{
-		if (gl_num_programs == (sizeof (gl_programs) / sizeof (GLuint)))
-			Host_Error ("gl_programs overflow");
-
-		gl_programs[gl_num_programs] = program;
-		gl_num_programs++;
-
-		return program;
-	}
-}
 
 
 /*
@@ -553,16 +420,6 @@ Deletes any GLSL programs that have been created.
 */
 void R_DeleteShaders (void)
 {
-	// GLSL
-	for (int i = 0; i < gl_num_programs; i++)
-	{
-		glDeleteProgram (gl_programs[i]);
-		gl_programs[i] = 0;
-	}
-
-	gl_num_programs = 0;
-
-	// ARB
 	glDeleteProgramsARB (gl_num_arb_programs, gl_arb_programs);
 	gl_num_arb_programs = 0;
 }
@@ -611,9 +468,11 @@ void GL_BindBuffer (GLenum target, GLuint buffer)
 	case GL_ARRAY_BUFFER:
 		cache = &current_array_buffer;
 		break;
+
 	case GL_ELEMENT_ARRAY_BUFFER:
 		cache = &current_element_array_buffer;
 		break;
+
 	default:
 		Host_Error ("GL_BindBuffer: unsupported target %d", (int) target);
 		return;
@@ -625,6 +484,7 @@ void GL_BindBuffer (GLenum target, GLuint buffer)
 		glBindBuffer (target, *cache);
 	}
 }
+
 
 /*
 ====================
@@ -683,5 +543,81 @@ void GL_BindPrograms (GLuint vp, GLuint fp)
 		currentfp = fp;
 	}
 }
+
+
+void GL_BlendState (GLenum enable, GLenum sfactor, GLenum dfactor)
+{
+	static GLenum currentenable = GL_INVALID_VALUE;
+	static GLenum currentsfactor = GL_INVALID_VALUE;
+	static GLenum currentdfactor = GL_INVALID_VALUE;
+
+	if (enable == GL_INVALID_VALUE)
+	{
+		// this toggle forces the states to explicitly set the next time they're seen
+		currentenable = GL_INVALID_VALUE;
+		currentsfactor = GL_INVALID_VALUE;
+		currentdfactor = GL_INVALID_VALUE;
+		return;
+	}
+
+	if (enable != currentenable)
+	{
+		if (enable == GL_TRUE)
+		{
+			glEnable (GL_BLEND);
+
+			if (currentsfactor != sfactor || currentdfactor != dfactor)
+			{
+				glBlendFunc (sfactor, dfactor);
+				currentsfactor = sfactor;
+				currentdfactor = dfactor;
+			}
+		}
+		else glDisable (GL_BLEND);
+
+		currentenable = enable;
+	}
+}
+
+
+void GL_DepthState (GLenum enable, GLenum testmode, GLenum writemode)
+{
+	static GLenum currentenable = GL_INVALID_VALUE;
+	static GLenum currenttestmode = GL_INVALID_VALUE;
+	static GLenum currentwritemode = GL_INVALID_VALUE;
+
+	if (enable == GL_INVALID_VALUE)
+	{
+		// this toggle forces the states to explicitly set the next time they're seen
+		currentenable = GL_INVALID_VALUE;
+		currenttestmode = GL_INVALID_VALUE;
+		currentwritemode = GL_INVALID_VALUE;
+		return;
+	}
+
+	if (enable != currentenable)
+	{
+		if (enable == GL_TRUE)
+		{
+			glEnable (GL_DEPTH_TEST);
+
+			if (currenttestmode != testmode)
+			{
+				glDepthFunc (testmode);
+				currenttestmode = testmode;
+			}
+		}
+		else glDisable (GL_DEPTH_TEST);
+
+		currentenable = enable;
+	}
+
+	if (currentwritemode != writemode)
+	{
+		glDepthMask (writemode);
+		currentwritemode = writemode;
+	}
+}
+
 
 

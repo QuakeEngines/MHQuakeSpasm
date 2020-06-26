@@ -109,6 +109,7 @@ extern	cvar_t	r_lavaalpha;
 extern	cvar_t	r_telealpha;
 extern	cvar_t	r_slimealpha;
 extern	cvar_t	r_dynamic;
+extern	cvar_t	r_fullbright;
 extern	cvar_t	r_novis;
 extern	cvar_t	r_scale;
 
@@ -166,11 +167,10 @@ typedef struct {
 extern overflowtimes_t dev_overflows; // this stores the last time overflow messages were displayed, not the last time overflows occured
 #define CONSOLE_RESPAM_TIME 3 // seconds between repeated warning messages
 
-#define LMBLOCK_WIDTH	256	// FIXME: make dynamic. if we have a decent card there's no real reason not to use 4k or 16k (assuming there's no lightstyles/dynamics that need uploading...)
-#define LMBLOCK_HEIGHT	256 // Alternatively, use texture arrays, which would avoid the need to switch textures as often.
+#define LIGHTMAP_SIZE	256	// FIXME: make dynamic. if we have a decent card there's no real reason not to use 4k or 16k (assuming there's no lightstyles/dynamics that need uploading...)
 
 
-struct lightmap_s {
+typedef struct lightmap_s {
 	gltexture_t *texture;
 	qboolean	modified;
 	gl_rect_t	dirtyrect;
@@ -179,11 +179,12 @@ struct lightmap_s {
 
 	// the lightmap texture data needs to be kept in
 	// main memory so texsubimage can update properly
-	byte *data; // [4*LMBLOCK_WIDTH*LMBLOCK_HEIGHT];
-};
+	byte *lm_data; // [4*LMBLOCK_WIDTH*LMBLOCK_HEIGHT];
+} lightmap_t;
 
-extern struct lightmap_s *lightmap;
-extern int lightmap_count;	// allocated lightmaps
+
+extern lightmap_t gl_lightmaps[];
+extern int lm_currenttexture;	// allocated lightmaps
 
 
 typedef struct glsl_attrib_binding_s {
@@ -197,10 +198,6 @@ extern float	map_wateralpha, map_lavaalpha, map_telealpha, map_slimealpha; // er
 void Fog_ParseServerMessage (void);
 float *Fog_GetColor (void);
 float Fog_GetDensity (void);
-void Fog_EnableGFog (void);
-void Fog_DisableGFog (void);
-void Fog_StartAdditive (void);
-void Fog_StopAdditive (void);
 void Fog_SetupFrame (void);
 void Fog_NewMap (void);
 void Fog_Init (void);
@@ -208,7 +205,7 @@ void Fog_SetupState (void);
 
 void R_NewGame (void);
 
-void R_AnimateLight (void);
+void R_AnimateLight (double time);
 void R_MarkSurfaces (void);
 void R_CullSurfaces (void);
 qboolean R_CullBox (vec3_t emins, vec3_t emaxs);
@@ -245,12 +242,9 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride);
 void R_RenderDynamicLightmaps (msurface_t *surf);
 void R_UploadLightmaps (void);
 
-GLint GL_GetUniformLocation (GLuint *programPtr, const char *name);
-GLuint GL_CreateProgram (const GLchar *vertSource, const GLchar *fragSource, int numbindings, const glsl_attrib_binding_t *bindings);
-void R_DeleteShaders (void);
-
 // MH - ARB programs
 GLuint GL_CreateARBProgram (GLenum mode, const GLchar *progstr);
+void R_DeleteShaders (void);
 
 
 void GLDraw_CreateShaders (void);
@@ -334,6 +328,10 @@ void Sky_ReloadSkyBox (void);
 GLuint TexMgr_LoadCubemap (byte *data[6], int width[6], int height[6]);
 void TexMgr_SetCubemapFilterModes (void);
 void Sky_FreeSkybox (void);
+
+
+void GL_BlendState (GLenum enable, GLenum sfactor, GLenum dfactor);
+void GL_DepthState (GLenum enable, GLenum testmode, GLenum writemode);
 
 #endif	/* __GLQUAKE_H */
 

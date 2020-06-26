@@ -44,7 +44,7 @@ float	vpn[4];
 float	vright[4];
 float	r_origin[4];
 
-float r_fovx, r_fovy; // johnfitz -- rendering fov may be different becuase of r_waterwarp and r_stereo
+float r_fovx, r_fovy; // johnfitz -- rendering fov may be different becuase of r_waterwarp
 
 // screen size info
 refdef_t	r_refdef;
@@ -61,6 +61,7 @@ cvar_t	r_speeds = { "r_speeds", "0", CVAR_NONE };
 cvar_t	r_pos = { "r_pos", "0", CVAR_NONE };
 cvar_t	r_wateralpha = { "r_wateralpha", "1", CVAR_ARCHIVE };
 cvar_t	r_dynamic = { "r_dynamic", "1", CVAR_ARCHIVE };
+cvar_t	r_fullbright = { "r_fullbright", "0", CVAR_NONE };
 cvar_t	r_novis = { "r_novis", "0", CVAR_ARCHIVE };
 
 cvar_t	gl_finish = { "gl_finish", "0", CVAR_NONE };
@@ -70,8 +71,6 @@ cvar_t	gl_polyblend = { "gl_polyblend", "1", CVAR_NONE };
 cvar_t	gl_nocolors = { "gl_nocolors", "0", CVAR_NONE };
 
 // johnfitz -- new cvars
-cvar_t	r_stereo = { "r_stereo", "0", CVAR_NONE };
-cvar_t	r_stereodepth = { "r_stereodepth", "128", CVAR_NONE };
 cvar_t	r_clearcolor = { "r_clearcolor", "2", CVAR_ARCHIVE };
 cvar_t	r_flatlightstyles = { "r_flatlightstyles", "0", CVAR_NONE };
 cvar_t	gl_fullbrights = { "gl_fullbrights", "1", CVAR_ARCHIVE };
@@ -261,9 +260,9 @@ void GLSLGamma_GammaCorrect (void)
 	glCopyTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, glx, gly, glwidth, glheight);
 
 	// draw the texture back to the framebuffer
-	glDisable (GL_DEPTH_TEST);
+	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
+	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
 	glDisable (GL_CULL_FACE);
-	glDisable (GL_BLEND);
 
 	glViewport (glx, gly, glwidth, glheight);
 
@@ -447,17 +446,12 @@ R_SetFrustum -- johnfitz -- rewritten
 */
 void R_SetFrustum (float fovx, float fovy)
 {
-	int		i;
-
-	if (r_stereo.value)
-		fovx += 10; // silly hack so that polygons don't drop out becuase of stereo skew
-
 	TurnVector (frustum[0].normal, vpn, vright, fovx / 2 - 90); // left plane
 	TurnVector (frustum[1].normal, vpn, vright, 90 - fovx / 2); // right plane
 	TurnVector (frustum[2].normal, vpn, vup, 90 - fovy / 2); // bottom plane
 	TurnVector (frustum[3].normal, vpn, vup, fovy / 2 - 90); // top plane
 
-	for (i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		frustum[i].type = PLANE_ANYZ;
 		frustum[i].dist = DotProduct (r_origin, frustum[i].normal); // FIXME: shouldn't this always be zero?
@@ -471,14 +465,14 @@ GL_SetFrustum -- johnfitz -- written to replace MYgluPerspective
 =============
 */
 #define NEARCLIP 4
-float frustum_skew = 0.0; // used by r_stereo
+
 void GL_SetFrustum (float fovx, float fovy)
 {
-	float xmax, ymax;
-	xmax = NEARCLIP * tan (fovx * M_PI / 360.0);
-	ymax = NEARCLIP * tan (fovy * M_PI / 360.0);
-	glFrustum (-xmax + frustum_skew, xmax + frustum_skew, -ymax, ymax, NEARCLIP, gl_farclip.value);
+	float xmax = NEARCLIP * tan (fovx * M_PI / 360.0);
+	float ymax = NEARCLIP * tan (fovy * M_PI / 360.0);
+	glFrustum (-xmax, xmax, -ymax, ymax, NEARCLIP, gl_farclip.value);
 }
+
 
 /*
 =============
@@ -518,10 +512,8 @@ void R_SetupGL (void)
 		glEnable (GL_CULL_FACE);
 	else
 		glDisable (GL_CULL_FACE);
-
-	glDisable (GL_BLEND);
-	glEnable (GL_DEPTH_TEST);
 }
+
 
 /*
 =============
@@ -530,16 +522,19 @@ R_Clear -- johnfitz -- rewritten and gutted
 */
 void R_Clear (void)
 {
-	unsigned int clearbits;
+	unsigned int clearbits = GL_DEPTH_BUFFER_BIT;
 
-	clearbits = GL_DEPTH_BUFFER_BIT;
 	// from mh -- if we get a stencil buffer, we should clear it, even though we don't use it
-	if (gl_stencilbits)
-		clearbits |= GL_STENCIL_BUFFER_BIT;
-	if (gl_clear.value)
-		clearbits |= GL_COLOR_BUFFER_BIT;
+	if (gl_stencilbits) clearbits |= GL_STENCIL_BUFFER_BIT;
+	if (gl_clear.value) clearbits |= GL_COLOR_BUFFER_BIT;
+
+	// in GL clears are affected by the current depth write mask, so set up a default depth state including write-enable so that the clear will work
+	// the next depth state set will most likely be for world poly drawing, which is the same as this state, so we won't have redundant sets here
+	GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
+
 	glClear (clearbits);
 }
+
 
 /*
 ===============
@@ -549,7 +544,7 @@ R_SetupScene -- johnfitz -- this is the stuff that needs to be done once per eye
 void R_SetupScene (void)
 {
 	R_PushDlights ();
-	R_AnimateLight ();
+	R_AnimateLight (cl.time);
 	r_framecount++;
 	R_SetupGL ();
 }
@@ -695,15 +690,10 @@ void R_DrawPolyBlend (void)
 	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, verts);
 	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, v_blend);
 
-	glDisable (GL_DEPTH_TEST);
-	glDepthMask (GL_FALSE);
-	glEnable (GL_BLEND);
+	GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
 
 	glDrawArrays (GL_TRIANGLES, 0, 3);
-
-	glDisable (GL_BLEND);
-	glDepthMask (GL_TRUE);
-	glEnable (GL_DEPTH_TEST);
 }
 
 
@@ -715,8 +705,6 @@ R_RenderScene
 void R_RenderScene (void)
 {
 	R_SetupScene (); // johnfitz -- this does everything that should be done once per call to RenderScene
-
-	Fog_EnableGFog (); // johnfitz
 
 	R_DrawWorld ();
 
@@ -805,9 +793,10 @@ void R_ScaleView (void)
 	glCopyTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, srcx, srcy, srcw, srch);
 
 	// draw the texture back to the framebuffer
-	glDisable (GL_DEPTH_TEST);
 	glDisable (GL_CULL_FACE);
-	glDisable (GL_BLEND);
+
+	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
+	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
 
 	glViewport (srcx, srcy, r_refdef.vrect.width, r_refdef.vrect.height);
 
@@ -859,43 +848,9 @@ void R_RenderView (void)
 	else if (gl_finish.value)
 		glFinish ();
 
-	R_SetupView (); // johnfitz -- this does everything that should be done once per frame
+	R_SetupView ();
 
-	// johnfitz -- stereo rendering -- full of hacky goodness
-	if (r_stereo.value)
-	{
-		float eyesep = CLAMP (-8.0f, r_stereo.value, 8.0f);
-		float fdepth = CLAMP (32.0f, r_stereodepth.value, 1024.0f);
-
-		AngleVectors (r_refdef.viewangles, vpn, vright, vup);
-
-		// render left eye (red)
-		glColorMask (1, 0, 0, 1);
-		VectorMA (r_refdef.vieworg, -0.5f * eyesep, vright, r_refdef.vieworg);
-		frustum_skew = 0.5 * eyesep * NEARCLIP / fdepth;
-		srand ((int) (cl.time * 1000)); // sync random stuff between eyes
-
-		R_RenderScene ();
-
-		// render right eye (cyan)
-		glClear (GL_DEPTH_BUFFER_BIT);
-		glColorMask (0, 1, 1, 1);
-		VectorMA (r_refdef.vieworg, 1.0f * eyesep, vright, r_refdef.vieworg);
-		frustum_skew = -frustum_skew;
-		srand ((int) (cl.time * 1000)); // sync random stuff between eyes
-
-		R_RenderScene ();
-
-		// restore
-		glColorMask (1, 1, 1, 1);
-		VectorMA (r_refdef.vieworg, -0.5f * eyesep, vright, r_refdef.vieworg);
-		frustum_skew = 0.0f;
-	}
-	else
-	{
-		R_RenderScene ();
-	}
-	// johnfitz
+	R_RenderScene ();
 
 	R_ScaleView ();
 

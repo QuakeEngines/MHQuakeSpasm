@@ -23,9 +23,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-// ==============================================================================
-//  GLOBAL FOG
-// ==============================================================================
+/*
+==============================================================================
+ GLOBAL FOG
+
+ MH - shader-based fog doesn't need explicit enable/disable
+==============================================================================
+*/
 
 #define DEFAULT_DENSITY 0.0
 #define DEFAULT_GRAY 0.3
@@ -265,15 +269,12 @@ returns current density of fog
 */
 float Fog_GetDensity (void)
 {
-	float f;
-
 	if (fade_done > cl.time)
 	{
-		f = (fade_done - cl.time) / fade_time;
+		float f = (fade_done - cl.time) / fade_time;
 		return f * old_density + (1.0 - f) * fog_density;
 	}
-	else
-		return fog_density;
+	else return fog_density;
 }
 
 /*
@@ -289,59 +290,6 @@ void Fog_SetupFrame (void)
 	glFogf (GL_FOG_DENSITY, Fog_GetDensity () / 64.0);
 }
 
-/*
-=============
-Fog_EnableGFog
-
-called before drawing stuff that should be fogged
-=============
-*/
-void Fog_EnableGFog (void)
-{
-	if (Fog_GetDensity () > 0)
-		glEnable (GL_FOG);
-}
-
-/*
-=============
-Fog_DisableGFog
-
-called after drawing stuff that should be fogged
-=============
-*/
-void Fog_DisableGFog (void)
-{
-	if (Fog_GetDensity () > 0)
-		glDisable (GL_FOG);
-}
-
-/*
-=============
-Fog_StartAdditive
-
-called before drawing stuff that is additive blended -- sets fog color to black
-=============
-*/
-void Fog_StartAdditive (void)
-{
-	vec3_t color = { 0, 0, 0 };
-
-	if (Fog_GetDensity () > 0)
-		glFogfv (GL_FOG_COLOR, color);
-}
-
-/*
-=============
-Fog_StopAdditive
-
-called after drawing stuff that is additive blended -- restores fog color
-=============
-*/
-void Fog_StopAdditive (void)
-{
-	if (Fog_GetDensity () > 0)
-		glFogfv (GL_FOG_COLOR, Fog_GetColor ());
-}
 
 // ==============================================================================
 //  VOLUMETRIC FOG
@@ -368,6 +316,7 @@ void Fog_NewMap (void)
 	Fog_ParseWorldspawn (); // for global fog
 	Fog_MarkModels (); // for volumetric fog
 }
+
 
 /*
 =============

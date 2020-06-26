@@ -483,8 +483,8 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 	{
 		if (s->culled) continue;
 
-		s->lightmapchain = lightmap[s->lightmaptexturenum].texturechain;
-		lightmap[s->lightmaptexturenum].texturechain = s;
+		s->lightmapchain = gl_lightmaps[s->lightmaptexturenum].texturechain;
+		gl_lightmaps[s->lightmaptexturenum].texturechain = s;
 
 		rs_brushpasses++;
 		num_surfaces++;
@@ -505,21 +505,21 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 	else GL_BindPrograms (r_lightmapped_vp, r_lightmapped_fp[0]);
 
 	// and draw our batches in lightmap order
-	for (int i = 0; i < lightmap_count; i++)
+	for (int i = 0; i < lm_currenttexture; i++)
 	{
-		if (!lightmap[i].texturechain) continue;
+		if (!gl_lightmaps[i].texturechain) continue;
 
-		GL_BindTexture (GL_TEXTURE1, lightmap[i].texture);
+		GL_BindTexture (GL_TEXTURE1, gl_lightmaps[i].texture);
 
 		R_ClearBatch ();
 
-		for (msurface_t *s2 = lightmap[i].texturechain; s2; s2 = s2->lightmapchain)
+		for (msurface_t *s2 = gl_lightmaps[i].texturechain; s2; s2 = s2->lightmapchain)
 			R_BatchSurface (s2);
 
 		R_FlushBatch ();
 
 		// clear the surfaces used by this lightmap
-		lightmap[i].texturechain = NULL;
+		gl_lightmaps[i].texturechain = NULL;
 	}
 }
 
@@ -557,8 +557,13 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 	// enable blending / disable depth writes
 	if (entalpha < 1)
 	{
-		glDepthMask (GL_FALSE);
-		glEnable (GL_BLEND);
+		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);
+		GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+	else
+	{
+		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
+		GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
 	}
 
 	// overbright
@@ -595,12 +600,6 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 			// normal lightmapped surface - turbs are drawn separately because of alpha
 			R_DrawLightmappedChain (s, R_TextureAnimation (t, ent != NULL ? ent->frame : 0));
 		}
-	}
-
-	if (entalpha < 1)
-	{
-		glDepthMask (GL_TRUE);
-		glDisable (GL_BLEND);
 	}
 }
 

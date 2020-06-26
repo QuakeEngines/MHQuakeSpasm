@@ -168,6 +168,8 @@ typedef struct msurface_s {
 	byte		styles[MAXLIGHTMAPS];
 	int			cached_light[MAXLIGHTMAPS];	// values currently used in lightmap
 	qboolean	cached_dlight;				// true if dynamic light in cache
+	int			lightproperty;
+
 	byte *samples;		// [numstyles*surfsize]
 } msurface_t;
 

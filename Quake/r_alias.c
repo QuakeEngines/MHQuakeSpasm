@@ -543,8 +543,13 @@ void R_DrawAliasModel (entity_t *e)
 
 	if (entalpha < 1)
 	{
-		glDepthMask (GL_FALSE);
-		glEnable (GL_BLEND);
+		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);
+		GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+	else
+	{
+		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
+		GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
 	}
 
 	// set up lighting
@@ -580,10 +585,7 @@ void R_DrawAliasModel (entity_t *e)
 
 cleanup:
 	glShadeModel (GL_SMOOTH);
-	glDepthMask (GL_TRUE);
-	glDisable (GL_BLEND);
 
-	glColor3f (1, 1, 1);
 	glPopMatrix ();
 }
 

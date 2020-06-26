@@ -223,6 +223,9 @@ void R_DrawSpriteModel (entity_t *e)
 	GL_BindPrograms (r_sprite_vp, r_sprite_fp);
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
 
+	GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
+	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
+
 	GL_EnableVertexAttribArrays (VAA0 | VAA1);
 
 	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), verts->point);

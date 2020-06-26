@@ -118,26 +118,16 @@ static void R_BeginTransparentDrawing (float entalpha)
 {
 	if (entalpha < 1.0f)
 	{
-		glDepthMask (GL_FALSE);
-		glEnable (GL_BLEND);
+		GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);
 
 		// water alpha
 		glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 1, 1, 1, entalpha);
 	}
-}
-
-
-/*
-=============
-R_EndTransparentDrawing -- ericw
-=============
-*/
-static void R_EndTransparentDrawing (float entalpha)
-{
-	if (entalpha < 1.0f)
+	else
 	{
-		glDepthMask (GL_TRUE);
-		glDisable (GL_BLEND);
+		GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
+		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
 	}
 }
 
@@ -193,7 +183,6 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 		}
 
 		R_FlushBatch ();
-		R_EndTransparentDrawing (entalpha);
 	}
 }
 

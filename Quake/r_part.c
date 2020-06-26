@@ -822,8 +822,9 @@ void R_DrawParticlesARB (void)
 	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 3, vup);
 	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 4, vright);
 
-	glEnable (GL_BLEND);
-	glDepthMask (GL_FALSE); // johnfitz -- fix for particle z-buffer bug
+	// set up states for particle drawing
+	GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);
+	GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// ensure that no buffer is bound when drawing particles
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
@@ -886,9 +887,6 @@ void R_DrawParticlesARB (void)
 	// draw anything left over
 	if (r_numparticleverts)
 		glDrawArraysInstancedARB (GL_QUADS, 0, 4, r_numparticleverts);
-
-	glDepthMask (GL_TRUE); // johnfitz -- fix for particle z-buffer bug
-	glDisable (GL_BLEND);
 }
 
 

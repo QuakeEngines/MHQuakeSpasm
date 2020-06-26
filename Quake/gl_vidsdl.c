@@ -970,7 +970,6 @@ static void GL_SetupState (void)
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	glDepthRange (0, 1); // johnfitz -- moved here becuase gl_ztrick is gone.
-	glDepthFunc (GL_LEQUAL); // johnfitz -- moved here becuase gl_ztrick is gone.
 }
 
 
@@ -1052,6 +1051,11 @@ void GL_BeginRendering (int *x, int *y, int *width, int *height)
 	GL_BindPrograms (0, 0);
 	GL_ClearTextureBindings ();
 
+	// forces states to reset first time they're seen
+	GL_BlendState (GL_INVALID_VALUE, GL_INVALID_VALUE, GL_INVALID_VALUE);
+	GL_DepthState (GL_INVALID_VALUE, GL_INVALID_VALUE, GL_INVALID_VALUE);
+
+	// alpha test is never used in this engine so this is the only place it's set and it's an explicit disable
 	glDisable (GL_ALPHA_TEST);
 }
 
