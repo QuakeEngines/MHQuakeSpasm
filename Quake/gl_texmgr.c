@@ -407,6 +407,8 @@ void TexMgr_FreeTextures (unsigned int flags, unsigned int mask)
 		if ((glt->flags & mask) == (flags & mask))
 			TexMgr_FreeTexture (glt);
 	}
+
+	Sky_FreeSkybox ();
 }
 
 /*
@@ -439,6 +441,8 @@ void TexMgr_DeleteTextureObjects (void)
 	{
 		GL_DeleteTexture (glt);
 	}
+
+	Sky_FreeSkybox ();
 }
 
 /*
@@ -692,18 +696,17 @@ static unsigned *TexMgr_MipMapH (unsigned *data, int width, int height)
 TexMgr_ResampleTexture -- bilinear resample
 ================
 */
-static unsigned *TexMgr_ResampleTexture (unsigned *in, int inwidth, int inheight, qboolean alpha)
+static unsigned *TexMgr_ResampleTextureToSize (unsigned *in, int inwidth, int inheight, int outwidth, int outheight, qboolean alpha)
 {
+	// general case - resamples up or down to arbitrary size
 	byte *nwpx, *nepx, *swpx, *sepx, *dest;
 	unsigned xfrac, yfrac, x, y, modx, mody, imodx, imody, injump, outjump;
 	unsigned *out;
-	int i, j, outwidth, outheight;
+	int i, j;
 
-	if (inwidth == TexMgr_Pad (inwidth) && inheight == TexMgr_Pad (inheight))
+	if (inwidth == outwidth && inheight == outheight)
 		return in;
 
-	outwidth = TexMgr_Pad (inwidth);
-	outheight = TexMgr_Pad (inheight);
 	out = (unsigned *) Hunk_Alloc (outwidth * outheight * 4);
 
 	xfrac = ((inwidth - 1) << 16) / (outwidth - 1);
@@ -745,6 +748,17 @@ static unsigned *TexMgr_ResampleTexture (unsigned *in, int inwidth, int inheight
 
 	return out;
 }
+
+
+static unsigned *TexMgr_ResampleTexture (unsigned *in, int inwidth, int inheight, qboolean alpha)
+{
+	// special case - just resamples up to next POT
+	int outwidth = TexMgr_Pad (inwidth);
+	int outheight = TexMgr_Pad (inheight);
+
+	return TexMgr_ResampleTextureToSize (in, inwidth, inheight, outwidth, outheight, alpha);
+}
+
 
 /*
 ===============
@@ -1355,7 +1369,98 @@ void TexMgr_ReloadImages (void)
 		TexMgr_ReloadImage (glt, -1, -1);
 	}
 
+	Sky_ReloadSkyBox ();
 	in_reload_images = false;
+}
+
+
+/*
+================================================================================
+
+	CUBEMAP LOADING AND MANIPULATION FOR SKYBOXES
+
+================================================================================
+*/
+
+GLuint TexMgr_LoadCubemap (byte *data[6], int width[6], int height[6])
+{
+	int maxsize = 0;
+	GLuint cubemap_texture;
+
+	// figure the size of the cubemap which will be the max size of all 6 faces
+	for (int i = 0; i < 6; i++)
+	{
+		// some maps or mods deliberately have incomplete skyboxes; e.g a bottom face may be missing
+		if (data[i])
+		{
+			if (width[i] > maxsize) maxsize = width[i];
+			if (height[i] > maxsize) maxsize = height[i];
+		}
+	}
+
+	// if we found any faces at all, maxsize will be > 0
+	if (maxsize > 0)
+	{
+		// adjust for POT and hardware limits
+		maxsize = TexMgr_SafeTextureSize (maxsize);
+
+		// make a texture for it
+		glGenTextures (1, &cubemap_texture);
+
+		// explicitly bind to TMU 3 to bypass the texture manager
+		glActiveTexture (GL_TEXTURE3);
+		glBindTexture (GL_TEXTURE_CUBE_MAP, cubemap_texture);
+
+		for (int i = 0; i < 6; i++)
+		{
+			// in case we need to make any allocations e.g. for resampling
+			int mark = Hunk_LowMark ();
+
+			if (!data[i])
+			{
+				// face was not provided
+				glTexImage2D (GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, maxsize, maxsize, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+			}
+			else
+			{
+				// some maps or mods provide different-sized faces
+				if (width[i] != maxsize || height[i] != maxsize)
+				{
+					// resample the face
+					data[i] = (byte *) TexMgr_ResampleTextureToSize ((unsigned *) data[i], width[i], height[i], maxsize, maxsize, false);
+				}
+
+				// load this face
+				glTexImage2D (GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, maxsize, maxsize, 0, GL_RGBA, GL_UNSIGNED_BYTE, data[i]);
+			}
+
+			Hunk_FreeToLowMark (mark);
+		}
+
+		// clamp mode for cubemaps
+		glTexParameterf (GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameterf (GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameterf (GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+		// obey gl_texturemode
+		TexMgr_SetCubemapFilterModes ();
+
+		// force a rebind after explicitly calling glActiveTexture
+		GL_ClearTextureBindings ();
+
+		return cubemap_texture;
+	}
+
+	// nothing was loaded
+	return 0;
+}
+
+
+void TexMgr_SetCubemapFilterModes (void)
+{
+	// assumes that the cubemap is already bound
+	glTexParameterf (GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, glmodes[glmode_idx].magfilter);
+	glTexParameterf (GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, glmodes[glmode_idx].magfilter);
 }
 
 
@@ -1367,9 +1472,9 @@ void TexMgr_ReloadImages (void)
 ================================================================================
 */
 
+// MH - made these GL_INVALID_VALUE
 static GLuint	currenttexture[3] = { GL_INVALID_VALUE, GL_INVALID_VALUE, GL_INVALID_VALUE }; // to avoid unnecessary texture sets
 static GLenum	currenttarget = GL_INVALID_VALUE;
-qboolean	mtexenabled = false;
 
 
 /*
@@ -1384,35 +1489,6 @@ void GL_ActiveTexture (GLenum target)
 
 	glActiveTexture (target);
 	currenttarget = target;
-}
-
-
-/*
-================
-GL_DisableMultitexture -- selects texture unit 0
-================
-*/
-void GL_DisableMultitexture (void)
-{
-	if (mtexenabled)
-	{
-		GL_ActiveTexture (GL_TEXTURE1);
-		glDisable (GL_TEXTURE_2D);
-		GL_ActiveTexture (GL_TEXTURE0);
-		mtexenabled = false;
-	}
-}
-
-/*
-================
-GL_EnableMultitexture -- selects texture unit 1
-================
-*/
-void GL_EnableMultitexture (void)
-{
-	GL_ActiveTexture (GL_TEXTURE1);
-	glEnable (GL_TEXTURE_2D);
-	mtexenabled = true;
 }
 
 
@@ -1475,4 +1551,5 @@ void GL_ClearTextureBindings (void)
 
 	currenttarget = GL_INVALID_VALUE;
 }
+
 

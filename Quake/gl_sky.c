@@ -112,6 +112,14 @@ void Sky_LoadTexture (texture_t *mt, byte *src)
 	skyflatcolor[2] = (float) b / (count * 255);
 }
 
+
+void Sky_FreeSkybox (void)
+{
+	glDeleteTextures (1, &r_skybox_cubemap);
+	r_skybox_cubemap = 0;
+}
+
+
 /*
 ==================
 Sky_LoadSkyBox
@@ -123,8 +131,7 @@ void Sky_LoadSkyBox (const char *name)
 		return; // no change
 
 	// purge old textures
-	glDeleteTextures (1, &r_skybox_cubemap);
-	r_skybox_cubemap = 0;
+	Sky_FreeSkybox ();
 
 	// turn off skybox if sky is set to ""
 	if (name[0] == 0)
@@ -134,7 +141,6 @@ void Sky_LoadSkyBox (const char *name)
 	}
 
 	int mark = Hunk_LowMark ();
-	int maxsize = 0;
 
 	char *suf[6] = { "ft", "bk", "up", "dn", "rt", "lf" };
 	byte *data[6] = { NULL, NULL, NULL, NULL, NULL, NULL };
@@ -144,58 +150,16 @@ void Sky_LoadSkyBox (const char *name)
 	// load textures
 	for (int i = 0; i < 6; i++)
 	{
-		if ((data[i] = Image_LoadImage (va ("gfx/env/%s%s", name, suf[i]), &width[i], &height[i])) != NULL)
-		{
-			if (width[i] > maxsize) maxsize = width[i];
-			if (height[i] > maxsize) maxsize = height[i];
-		}
-		else if ((data[i] = Image_LoadImage (va ("gfx/env/%s_%s", name, suf[i]), &width[i], &height[i])) != NULL)
-		{
-			if (width[i] > maxsize) maxsize = width[i];
-			if (height[i] > maxsize) maxsize = height[i];
-		}
+		// attempt to load the name with or without an _ for different naming conventions
+		if ((data[i] = Image_LoadImage (va ("gfx/env/%s%s", name, suf[i]), &width[i], &height[i])) != NULL) continue;
+		if ((data[i] = Image_LoadImage (va ("gfx/env/%s_%s", name, suf[i]), &width[i], &height[i])) != NULL) continue;
+
+		// some maps or mods deliberately have incomplete skyboxes; e.g a bottom face may be missing
+		// this should probably be a Con_DPrintf so it's suppressed for the general user
 	}
 
-	// if we found any faces at all, maxsize will be > 0
-	// some maps or mods deliberately have incomplete skyboxes; e.g a bottom face may be missing
-	if (maxsize > 0)
+	if ((r_skybox_cubemap = TexMgr_LoadCubemap (data, width, height)) != 0)
 	{
-		// make a texture for it
-		glGenTextures (1, &r_skybox_cubemap);
-
-		// explicitly bind to TMU 3 to bypass the texture manager
-		glActiveTexture (GL_TEXTURE3);
-		glBindTexture (GL_TEXTURE_CUBE_MAP, r_skybox_cubemap);
-
-		for (int i = 0; i < 6; i++)
-		{
-			if (!data[i])
-			{
-				// face was not provided
-				glTexImage2D (GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, maxsize, maxsize, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-			}
-			else
-			{
-				// some maps or mods provide different-sized faces
-				if (width[i] != maxsize || height[i] != maxsize)
-				{
-					// to do - resample the face
-				}
-
-				// load this face
-				glTexImage2D (GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, maxsize, maxsize, 0, GL_RGBA, GL_UNSIGNED_BYTE, data[i]);
-			}
-		}
-
-		// to do - obey gl_texturemode
-		glTexParameterf (GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameterf (GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		glTexParameterf (GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameterf (GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameterf (GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-		GL_ClearTextureBindings ();
 		q_strlcpy (skybox_name, name, sizeof (skybox_name));
 	}
 	else
@@ -207,6 +171,18 @@ void Sky_LoadSkyBox (const char *name)
 
 	Hunk_FreeToLowMark (mark);
 }
+
+
+void Sky_ReloadSkyBox (void)
+{
+	char lastname[1024];
+
+	// copy off the skybox name and force it to reload
+	strcpy (lastname, skybox_name);
+	skybox_name[0] = 0;
+	Sky_LoadSkyBox (lastname);
+}
+
 
 /*
 =================
@@ -477,6 +453,9 @@ void R_DrawSkychain_ARB (msurface_t *s)
 		// explicitly bind to TMU 3 to bypass the texture manager
 		glActiveTexture (GL_TEXTURE3);
 		glBindTexture (GL_TEXTURE_CUBE_MAP, r_skybox_cubemap);
+
+		// this is only done once per frame so it's OK to explicitly call each time
+		TexMgr_SetCubemapFilterModes ();
 
 		// force a rebind after explicitly calling glActiveTexture
 		GL_ClearTextureBindings ();

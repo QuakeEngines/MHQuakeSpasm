@@ -958,12 +958,10 @@ static void GL_SetupState (void)
 	glCullFace (GL_BACK); // johnfitz -- glquake used CCW with backwards culling -- let's do it right
 	glFrontFace (GL_CW); // johnfitz -- glquake used CCW with backwards culling -- let's do it right
 
-	glEnable (GL_TEXTURE_2D);
 	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 	glShadeModel (GL_SMOOTH);
 	glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST); // johnfitz
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
 	// note: here, these only apply to texture object 0
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

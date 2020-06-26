@@ -120,7 +120,6 @@ extern	cvar_t	gl_nocolors;
 extern int		gl_stencilbits;
 
 // Multitexture
-extern	qboolean	mtexenabled;
 extern GLint		gl_max_texture_units; // ericw
 
 // johnfitz -- anisotropic filtering
@@ -330,6 +329,11 @@ void R_FlushBatch ();
 void R_SetupWorldVBOState (void);
 
 void R_DrawSkychain_ARB (msurface_t *s);
+
+void Sky_ReloadSkyBox (void);
+GLuint TexMgr_LoadCubemap (byte *data[6], int width[6], int height[6]);
+void TexMgr_SetCubemapFilterModes (void);
+void Sky_FreeSkybox (void);
 
 #endif	/* __GLQUAKE_H */
 

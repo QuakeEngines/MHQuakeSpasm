@@ -98,8 +98,6 @@ int TexMgr_PadConditional (int s);
 
 // TEXTURE BINDING & TEXTURE UNIT SWITCHING
 
-void GL_DisableMultitexture (void); // selects texture unit 0
-void GL_EnableMultitexture (void); // selects texture unit 1
 void GL_BindTexture (GLenum target, gltexture_t *texture);
 void GL_ClearTextureBindings (void);
 

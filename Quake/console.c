@@ -519,6 +519,7 @@ void Con_Printf (const char *fmt, ...)
 	}
 }
 
+
 /*
 ================
 Con_DWarning -- ericw
@@ -544,15 +545,21 @@ void Con_DWarning (const char *fmt, ...)
 	Con_Printf ("%s", msg);
 }
 
+
 /*
 ================
 Con_Warning -- johnfitz -- prints a warning to the console
+
+MH - made this developer-only too
 ================
 */
 void Con_Warning (const char *fmt, ...)
 {
 	va_list		argptr;
 	char		msg[MAXPRINTMSG];
+
+	if (!developer.value)
+		return;			// don't confuse non-developers with techie stuff...
 
 	va_start (argptr, fmt);
 	q_vsnprintf (msg, sizeof (msg), fmt, argptr);
@@ -561,6 +568,7 @@ void Con_Warning (const char *fmt, ...)
 	Con_SafePrintf ("\x02Warning: ");
 	Con_Printf ("%s", msg);
 }
+
 
 /*
 ================
