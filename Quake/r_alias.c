@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern cvar_t gl_overbright, gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
+extern cvar_t gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
 
 // up to 16 color translated skins
 gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz -- changed to an array of pointers
@@ -155,7 +155,7 @@ void GLAlias_CreateShaders (void)
 		"# perform the lightmapping to output\n"
 		"MUL diff.rgb, diff, shadedot;\n"
 		"MUL diff.rgb, diff, shadelight;\n"
-		"MUL diff.rgb, diff, program.env[0]; # overbright factor\n"
+		"MUL diff.rgb, diff, program.env[10].z; # overbright factor\n"
 		"\n"
 		"# perform the fogging\n"
 		"TEMP fogFactor;\n"
@@ -208,7 +208,7 @@ void GLAlias_CreateShaders (void)
 		"# perform the lightmapping to output\n"
 		"MUL diff.rgb, diff, shadedot;\n"
 		"MUL diff.rgb, diff, shadelight;\n"
-		"MUL diff.rgb, diff, program.env[0]; # overbright factor\n"
+		"MUL diff.rgb, diff, program.env[10].z; # overbright factor\n"
 		"\n"
 		"# perform the luma masking\n"
 		"MAX diff, diff, luma;\n"
@@ -242,9 +242,6 @@ void GLAlias_CreateShaders (void)
 void GL_DrawAliasFrame_ARB (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltexture_t *tx, gltexture_t *fb)
 {
 	float	blend;
-
-	// MH - variable overbright
-	float	overbright = (float) (1 << (int) gl_overbright.value);
 
 	if (lerpdata.pose1 != lerpdata.pose2)
 	{
@@ -282,8 +279,7 @@ void GL_DrawAliasFrame_ARB (aliashdr_t *paliashdr, lerpdata_t lerpdata, gltextur
 	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, shadelight);
 	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, shadevector);
 
-	// overbright
-	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, overbright, overbright, overbright, entalpha);
+	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 1, 1, 1, entalpha);
 
 	// draw
 	glDrawElements (GL_TRIANGLES, paliashdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) currententity->model->vboindexofs);

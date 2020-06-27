@@ -280,6 +280,14 @@ extern	int		host_framecount;	// incremented every frame, never reset
 extern	double		realtime;		// not bounded in any way, changed at
 							// start of every frame, never reset
 
+// this is how often we tick by default
+// i think this should be ~20 to match the expected framerate we'd have had when Quake was first released
+#define HOST_STANDARDFPS	72
+#define HALF_STANDARDFPS	(HOST_STANDARDFPS / 2)
+#define HOST_FRAMEDELTA		(1.0 / HOST_STANDARDFPS)
+#define HALF_FRAMEDELTA		(2.0 / HOST_STANDARDFPS)
+
+
 typedef struct filelist_item_s {
 	char			name[32];
 	struct filelist_item_s *next;

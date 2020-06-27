@@ -1060,7 +1060,12 @@ void GL_BeginRendering (int *x, int *y, int *width, int *height)
 	// gamme and brightness
 	float contrastval = q_min (2.0, q_max (1.0, vid_contrast.value));
 	float gammaval = q_min (1.0, q_max (0.25, vid_gamma.value));
-	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 10, contrastval, gammaval, 0, 0);
+
+	// MH - variable overbright
+	float	overbright = (float) (1 << (int) gl_overbright.value);
+
+	// and set them all
+	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 10, contrastval, gammaval, overbright, 0);
 }
 
 

@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 int	r_dlightframecount;
 
 extern cvar_t r_flatlightstyles; // johnfitz
-extern cvar_t gl_fullbrights, gl_overbright; // johnfitz
+extern cvar_t gl_fullbrights; // johnfitz
 
 
 /*
@@ -80,7 +80,7 @@ DYNAMIC LIGHTS
 R_MarkLights -- johnfitz -- rewritten to use LordHavoc's lighting speedup
 =============
 */
-void R_MarkLights (dlight_t *light, int num, mnode_t *node)
+void R_MarkLights (dlight_t *dl, int num, mnode_t *node)
 {
 	mplane_t *splitplane;
 	msurface_t *surf;
@@ -88,42 +88,48 @@ void R_MarkLights (dlight_t *light, int num, mnode_t *node)
 	float		dist, l, maxdist;
 	int			i, j, s, t;
 
-start:
-
+start:;
 	if (node->contents < 0)
 		return;
 
 	splitplane = node->plane;
-	if (splitplane->type < 3)
-		dist = light->transformed[splitplane->type] - splitplane->dist;
-	else
-		dist = DotProduct (light->transformed, splitplane->normal) - splitplane->dist;
 
-	if (dist > light->radius)
+	if (splitplane->type < 3)
+		dist = dl->transformed[splitplane->type] - splitplane->dist;
+	else
+		dist = DotProduct (dl->transformed, splitplane->normal) - splitplane->dist;
+
+	if (dist > dl->radius)
 	{
 		node = node->children[0];
 		goto start;
 	}
-	if (dist < -light->radius)
+
+	if (dist < -dl->radius)
 	{
 		node = node->children[1];
 		goto start;
 	}
 
-	maxdist = light->radius * light->radius;
+	maxdist = dl->radius * dl->radius;
+
 	// mark the polygons
 	surf = cl.worldmodel->surfaces + node->firstsurface;
+
 	for (i = 0; i < node->numsurfaces; i++, surf++)
 	{
 		for (j = 0; j < 3; j++)
-			impact[j] = light->transformed[j] - surf->plane->normal[j] * dist;
+			impact[j] = dl->transformed[j] - surf->plane->normal[j] * dist;
+
 		// clamp center of light to corner and check brightness
 		l = DotProduct (impact, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3] - surf->texturemins[0];
 		s = l + 0.5; if (s < 0) s = 0; else if (s > surf->extents[0]) s = surf->extents[0];
 		s = l - s;
+
 		l = DotProduct (impact, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3] - surf->texturemins[1];
 		t = l + 0.5; if (t < 0) t = 0; else if (t > surf->extents[1]) t = surf->extents[1];
 		t = l - t;
+
 		// compare to minimum light
 		if ((s * s + t * t + dist * dist) < maxdist)
 		{
@@ -137,10 +143,8 @@ start:
 		}
 	}
 
-	if (node->children[0]->contents >= 0)
-		R_MarkLights (light, num, node->children[0]);
-	if (node->children[1]->contents >= 0)
-		R_MarkLights (light, num, node->children[1]);
+	if (node->children[0]->contents >= 0) R_MarkLights (dl, num, node->children[0]);
+	if (node->children[1]->contents >= 0) R_MarkLights (dl, num, node->children[1]);
 }
 
 /*
@@ -151,23 +155,23 @@ R_PushDlights
 void R_PushDlights (void)
 {
 	int		i;
-	dlight_t *l;
+	dlight_t *dl;
 
 	r_dlightframecount = r_framecount + 1;	// because the count hasn't
 											//  advanced yet for this frame
-	l = cl_dlights;
+	dl = cl_dlights;
 
-	for (i = 0; i < MAX_DLIGHTS; i++, l++)
+	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
 	{
-		if (l->die < cl.time || !l->radius)
+		if (dl->die < cl.time || !(dl->radius > dl->minlight))
 			continue;
 
 		// MH - only the world model goes through this path
-		l->transformed[0] = l->origin[0];
-		l->transformed[1] = l->origin[1];
-		l->transformed[2] = l->origin[2];
+		dl->transformed[0] = dl->origin[0];
+		dl->transformed[1] = dl->origin[1];
+		dl->transformed[2] = dl->origin[2];
 
-		R_MarkLights (l, i, cl.worldmodel->nodes);
+		R_MarkLights (dl, i, cl.worldmodel->nodes);
 	}
 }
 

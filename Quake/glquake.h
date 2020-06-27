@@ -120,6 +120,8 @@ extern	cvar_t	gl_nocolors;
 
 extern int		gl_stencilbits;
 
+extern cvar_t gl_overbright;
+
 // Multitexture
 extern GLint		gl_max_texture_units; // ericw
 

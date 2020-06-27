@@ -877,19 +877,12 @@ CL_ParseStatic
 */
 void CL_ParseStatic (int version) // johnfitz -- added a parameter
 {
-	entity_t *ent;
-	int		i;
+	// MH - we can just alloc these directly on the hunk
+	entity_t *ent = (entity_t *) Hunk_Alloc (sizeof (entity_t));
 
-	i = cl.num_statics;
-	if (i >= MAX_STATIC_ENTITIES)
-		Host_Error ("Too many static entities");
-
-	ent = &cl_static_entities[i];
-	cl.num_statics++;
 	CL_ParseBaseline (ent, version); // johnfitz -- added second parameter
 
-// copy it to the current state
-
+	// copy it to the current state
 	ent->model = cl.model_precache[ent->baseline.modelindex];
 	ent->lerpflags |= LERP_RESETANIM; // johnfitz -- lerping
 	ent->frame = ent->baseline.frame;
@@ -904,6 +897,9 @@ void CL_ParseStatic (int version) // johnfitz -- added a parameter
 	R_AddEfrags (ent);
 
 	CL_ClearRocketTrail (ent);
+
+	// track the count of statics allocated because people seem to like this stuff
+	cl.num_statics++;
 }
 
 
@@ -1147,7 +1143,7 @@ void CL_ParseServerMessage (void)
 			if (i == 2)
 			{
 				if (cl.num_statics > 128)
-					Con_DWarning ("%i static entities exceeds standard limit of 128 (max = %d).\n", cl.num_statics, MAX_STATIC_ENTITIES);
+					Con_DWarning ("%i static entities exceeds standard limit of 128.\n", cl.num_statics);
 				R_CheckEfrags ();
 			}
 			// johnfitz

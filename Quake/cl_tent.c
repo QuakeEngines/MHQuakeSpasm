@@ -190,9 +190,8 @@ void CL_ParseTEnt (void)
 		pos[1] = MSG_ReadCoord (cl.protocolflags);
 		pos[2] = MSG_ReadCoord (cl.protocolflags);
 		R_ParticleExplosion (pos);
-		dl = CL_AllocDlight (0);
+		dl = CL_AllocDlight (0, 350);
 		VectorCopy (pos, dl->origin);
-		dl->radius = 350;
 		dl->die = cl.time + 0.5;
 		dl->decay = 300;
 		S_StartSound (-1, 0, cl_sfx_r_exp3, pos, 1, 1);
@@ -246,9 +245,8 @@ void CL_ParseTEnt (void)
 		colorStart = MSG_ReadByte ();
 		colorLength = MSG_ReadByte ();
 		R_ParticleExplosion2 (pos, colorStart, colorLength);
-		dl = CL_AllocDlight (0);
+		dl = CL_AllocDlight (0, 350);
 		VectorCopy (pos, dl->origin);
-		dl->radius = 350;
 		dl->die = cl.time + 0.5;
 		dl->decay = 300;
 		S_StartSound (-1, 0, cl_sfx_r_exp3, pos, 1, 1);
@@ -301,9 +299,7 @@ void CL_UpdateTEnts (void)
 
 	num_temp_entities = 0;
 
-	srand ((int) (cl.time * 1000)); // johnfitz -- freeze beams when paused
-
-// update lightning
+	// update lightning
 	for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
@@ -359,3 +355,5 @@ void CL_UpdateTEnts (void)
 		}
 	}
 }
+
+

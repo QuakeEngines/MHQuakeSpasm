@@ -50,16 +50,16 @@ cvar_t	cl_minpitch = { "cl_minpitch", "-90", CVAR_ARCHIVE }; // johnfitz -- vari
 
 client_static_t	cls;
 client_state_t	cl;
+
 // FIXME: put these on hunk?
-entity_t		cl_static_entities[MAX_STATIC_ENTITIES];
 lightstyle_t	cl_lightstyle[MAX_LIGHTSTYLES];
 dlight_t		cl_dlights[MAX_DLIGHTS];
 
-entity_t *cl_entities; // johnfitz -- was a static array, now on hunk
+entity_t		*cl_entities; // johnfitz -- was a static array, now on hunk
 int				cl_max_edicts; // johnfitz -- only changes when new map loads
 
 int				cl_numvisedicts;
-entity_t *cl_visedicts[MAX_VISEDICTS];
+entity_t		*cl_visedicts[MAX_VISEDICTS];
 
 extern cvar_t	r_lerpmodels, r_lerpmove; // johnfitz
 
@@ -109,7 +109,7 @@ void CL_Disconnect (void)
 	if (key_dest == key_message)
 		Key_EndChat ();	// don't get stuck in chat mode
 
-// stop sounds (especially looping!)
+	// stop sounds (especially looping!)
 	S_StopAllSounds (true);
 	BGM_Stop ();
 	CDAudio_Stop ();
@@ -130,6 +130,7 @@ void CL_Disconnect (void)
 		NET_Close (cls.netcon);
 
 		cls.state = ca_disconnected;
+
 		if (sv.active)
 			Host_ShutdownServer (false);
 	}
@@ -143,6 +144,7 @@ void CL_Disconnect (void)
 void CL_Disconnect_f (void)
 {
 	CL_Disconnect ();
+
 	if (sv.active)
 		Host_ShutdownServer (false);
 }
@@ -237,6 +239,7 @@ void CL_NextDemo (void)
 	if (!cls.demos[cls.demonum][0] || cls.demonum == MAX_DEMOS)
 	{
 		cls.demonum = 0;
+
 		if (!cls.demos[cls.demonum][0])
 		{
 			Con_Printf ("No demos listed with startdemos\n");
@@ -269,13 +272,15 @@ void CL_PrintEntities_f (void)
 	for (i = 0, ent = cl_entities; i < cl.num_entities; i++, ent++)
 	{
 		Con_Printf ("%3i:", i);
+
 		if (!ent->model)
 		{
 			Con_Printf ("EMPTY\n");
 			continue;
 		}
-		Con_Printf ("%s:%2i  (%5.1f,%5.1f,%5.1f) [%5.1f %5.1f %5.1f]\n"
-			, ent->model->name, ent->frame, ent->origin[0], ent->origin[1], ent->origin[2], ent->angles[0], ent->angles[1], ent->angles[2]);
+
+		Con_Printf ("%s:%2i  (%5.1f,%5.1f,%5.1f) [%5.1f %5.1f %5.1f]\n",
+			ent->model->name, ent->frame, ent->origin[0], ent->origin[1], ent->origin[2], ent->angles[0], ent->angles[1], ent->angles[2]);
 	}
 }
 
@@ -285,22 +290,20 @@ CL_AllocDlight
 
 ===============
 */
-dlight_t *CL_AllocDlight (int key)
+dlight_t *CL_GetDlight (int key)
 {
-	int		i;
 	dlight_t *dl;
+	dlight_t *oldest = &cl_dlights[0];
 
 	// first look for an exact key match
 	if (key)
 	{
 		dl = cl_dlights;
-		for (i = 0; i < MAX_DLIGHTS; i++, dl++)
+
+		for (int i = 0; i < MAX_DLIGHTS; i++, dl++)
 		{
 			if (dl->key == key)
 			{
-				memset (dl, 0, sizeof (*dl));
-				dl->key = key;
-				dl->color[0] = dl->color[1] = dl->color[2] = 1; // johnfitz -- lit support via lordhavoc
 				return dl;
 			}
 		}
@@ -308,21 +311,43 @@ dlight_t *CL_AllocDlight (int key)
 
 	// then look for anything else
 	dl = cl_dlights;
-	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
+
+	for (int i = 0; i < MAX_DLIGHTS; i++, dl++)
 	{
-		if (dl->die < cl.time)
+		// track the oldest dlight which we'll just replace if we can't find a free light
+		if (dl->die < oldest->die) oldest = dl;
+
+		// take the first dead light
+		if (dl->die < cl.time || !(dl->radius > dl->minlight))
 		{
-			memset (dl, 0, sizeof (*dl));
-			dl->key = key;
-			dl->color[0] = dl->color[1] = dl->color[2] = 1; // johnfitz -- lit support via lordhavoc
 			return dl;
 		}
 	}
 
-	dl = &cl_dlights[0];
+	// take the oldest dl
+	dl = oldest;
+
+	return dl;
+}
+
+
+dlight_t *CL_AllocDlight (int key, float radius)
+{
+	// get a dl
+	dlight_t *dl = CL_GetDlight (key);
+
+	// fill it in
 	memset (dl, 0, sizeof (*dl));
 	dl->key = key;
 	dl->color[0] = dl->color[1] = dl->color[2] = 1; // johnfitz -- lit support via lordhavoc
+
+	// start time so that we can drop the radius framerate-independently
+	dl->starttime = cl.time;
+
+	// copy off the start radius for framerate-independent decays
+	dl->startradius = dl->radius = radius;
+
+	// and return it
 	return dl;
 }
 
@@ -335,21 +360,20 @@ CL_DecayLights
 */
 void CL_DecayLights (void)
 {
-	int			i;
-	dlight_t *dl;
-	float		time;
-
-	time = cl.time - cl.oldtime;
-
-	dl = cl_dlights;
-	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
+	for (int i = 0; i < MAX_DLIGHTS; i++)
 	{
-		if (dl->die < cl.time || !dl->radius)
-			continue;
+		dlight_t *dl = &cl_dlights[i];
 
-		dl->radius -= time * dl->decay;
-		if (dl->radius < 0)
+		if (dl->die < cl.time || !(dl->radius > dl->minlight))
+		{
 			dl->radius = 0;
+			dl->die = -1;
+		}
+		else if ((dl->radius = dl->startradius - ((cl.time - dl->starttime) * dl->decay)) < dl->minlight)
+		{
+			dl->radius = 0;
+			dl->die = -1;
+		}
 	}
 }
 
@@ -405,7 +429,7 @@ float	CL_LerpPoint (void)
 
 
 // update trails at a consistent fixed rate
-static const double cl_traildelta = 0.025;
+static const double cl_traildelta = HALF_FRAMEDELTA;
 
 void CL_RocketTrail (entity_t *ent, int type)
 {
@@ -542,13 +566,12 @@ void CL_RelinkEntities (void)
 		{
 			vec3_t		fv, rv, uv;
 
-			dl = CL_AllocDlight (i);
+			dl = CL_AllocDlight (i, 200 + (rand () & 31));
 			VectorCopy (ent->origin, dl->origin);
 			dl->origin[2] += 16;
 			AngleVectors (ent->angles, fv, rv, uv);
 
 			VectorMA (dl->origin, 18, fv, dl->origin);
-			dl->radius = 200 + (rand () & 31);
 			dl->minlight = 32;
 			dl->die = cl.time + 0.1;
 
@@ -564,17 +587,15 @@ void CL_RelinkEntities (void)
 		}
 		if (ent->effects & EF_BRIGHTLIGHT)
 		{
-			dl = CL_AllocDlight (i);
+			dl = CL_AllocDlight (i, 400 + (rand () & 31));
 			VectorCopy (ent->origin, dl->origin);
 			dl->origin[2] += 16;
-			dl->radius = 400 + (rand () & 31);
 			dl->die = cl.time + 0.001;
 		}
 		if (ent->effects & EF_DIMLIGHT)
 		{
-			dl = CL_AllocDlight (i);
+			dl = CL_AllocDlight (i, 200 + (rand () & 31));
 			VectorCopy (ent->origin, dl->origin);
-			dl->radius = 200 + (rand () & 31);
 			dl->die = cl.time + 0.001;
 		}
 
@@ -589,9 +610,8 @@ void CL_RelinkEntities (void)
 		else if (ent->model->flags & EF_ROCKET)
 		{
 			CL_RocketTrail (ent, RT_ROCKETTRAIL);
-			dl = CL_AllocDlight (i);
+			dl = CL_AllocDlight (i, 200);
 			VectorCopy (ent->origin, dl->origin);
-			dl->radius = 200;
 			dl->die = cl.time + 0.01;
 		}
 		else if (ent->model->flags & EF_GRENADE)
@@ -627,12 +647,14 @@ int CL_ReadFromServer (double frametime)
 	int			num_beams = 0; // johnfitz
 	int			num_dlights = 0; // johnfitz
 	beam_t *b; // johnfitz
-	dlight_t *l; // johnfitz
+	dlight_t *dl; // johnfitz
 	int			i; // johnfitz
-
 
 	cl.oldtime = cl.time;
 	cl.time += frametime;
+
+	// keep the random time-dependent
+	srand ((unsigned int) (cl.time * HALF_STANDARDFPS));
 
 	do
 	{
@@ -676,11 +698,13 @@ int CL_ReadFromServer (double frametime)
 	dev_peakstats.beams = q_max (num_beams, dev_peakstats.beams);
 
 	// dlights
-	for (i = 0, l = cl_dlights; i < MAX_DLIGHTS; i++, l++)
-		if (l->die >= cl.time && l->radius)
+	for (i = 0, dl = cl_dlights; i < MAX_DLIGHTS; i++, dl++)
+		if (dl->die >= cl.time && dl->radius > dl->minlight)
 			num_dlights++;
+
 	if (num_dlights > 32 && dev_peakstats.dlights <= 32)
 		Con_DWarning ("%i dlights exceeded standard limit of 32 (max = %d).\n", num_dlights, MAX_DLIGHTS);
+
 	dev_stats.dlights = num_dlights;
 	dev_peakstats.dlights = q_max (num_dlights, dev_peakstats.dlights);
 

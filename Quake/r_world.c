@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern cvar_t gl_fullbrights, gl_overbright, r_oldskyleaf; // johnfitz
+extern cvar_t gl_fullbrights, r_oldskyleaf; // johnfitz
 
 byte *SV_FatPVS (vec3_t org, qmodel_t *worldmodel);
 
@@ -408,7 +408,7 @@ void GLWorld_CreateShaders (void)
 		"\n"
 		"# perform the lightmapping\n"
 		"MUL diff.rgb, diff, lmap;\n"
-		"MUL diff.rgb, diff, program.env[0]; # overbright factor\n"
+		"MUL diff.rgb, diff, program.env[10].z; # overbright factor\n"
 		"\n"
 		"# perform the fogging\n"
 		"TEMP fogFactor;\n"
@@ -446,7 +446,7 @@ void GLWorld_CreateShaders (void)
 		"\n"
 		"# perform the lightmapping\n"
 		"MUL diff.rgb, diff, lmap;\n"
-		"MUL diff.rgb, diff, program.env[0]; # overbright factor\n"
+		"MUL diff.rgb, diff, program.env[10].z; # overbright factor\n"
 		"\n"
 		"# perform the luma masking\n"
 		"MAX diff, diff, luma;\n"
@@ -558,9 +558,6 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 	// entity alpha
 	float		entalpha = (ent != NULL) ? ENTALPHA_DECODE (ent->alpha) : 1.0f;
 
-	// MH - variable overbright
-	float		overbright = (float) (1 << (int) gl_overbright.value);
-
 	// enable blending / disable depth writes
 	if (entalpha < 1)
 	{
@@ -573,8 +570,7 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 		GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
 	}
 
-	// overbright
-	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, overbright, overbright, overbright, entalpha);
+	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 1, 1, 1, entalpha);
 
 	R_SetupWorldVBOState ();
 

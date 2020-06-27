@@ -22,6 +22,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // r_misc.c
 
+
+/*
+
+params
+
+fp	env		10		contrast & gamma
+fp	env		0		overbright & alpha
+
+*/
+
+
 #include "quakedef.h"
 
 // johnfitz -- new cvars
@@ -29,7 +40,6 @@ extern cvar_t r_clearcolor;
 extern cvar_t r_flatlightstyles;
 extern cvar_t gl_fullbrights;
 extern cvar_t gl_farclip;
-extern cvar_t gl_overbright;
 extern cvar_t r_waterwarp;
 extern cvar_t r_oldskyleaf;
 extern cvar_t r_lerpmodels;

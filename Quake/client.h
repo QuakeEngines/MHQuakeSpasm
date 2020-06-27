@@ -59,11 +59,13 @@ typedef struct {
 #define	SIGNONS		4			// signon messages to receive before connected
 
 #define	MAX_DLIGHTS		64 // johnfitz -- was 32
-typedef struct {
+typedef struct dlight_s {
 	vec3_t	origin;				// world space
 	vec3_t	transformed;		// inverse transform back to model space
 	float	radius;
-	float	die;				// stop lighting after this time
+	float	starttime;			// cl.time the light was started at
+	float	startradius;		// radius the light was started at
+	float	die;			// stop lighting after this time
 	float	decay;				// drop this each second
 	float	minlight;			// don't add when contributing less
 	int		key;
@@ -72,7 +74,8 @@ typedef struct {
 
 
 #define	MAX_BEAMS	32 // johnfitz -- was 24
-typedef struct {
+
+typedef struct beam_s {
 	int		entity;
 	struct qmodel_s *model;
 	float	endtime;
@@ -243,27 +246,25 @@ extern	cvar_t	m_side;
 
 
 #define	MAX_TEMP_ENTITIES	256		// johnfitz -- was 64
-#define	MAX_STATIC_ENTITIES	4096	// ericw -- was 512	// johnfitz -- was 128
 #define	MAX_VISEDICTS		4096	// larger, now we support BSP2
 
 extern	client_state_t	cl;
 
 // FIXME, allocate dynamically
-extern	entity_t		cl_static_entities[MAX_STATIC_ENTITIES];
 extern	lightstyle_t	cl_lightstyle[MAX_LIGHTSTYLES];
 extern	dlight_t		cl_dlights[MAX_DLIGHTS];
 extern	entity_t		cl_temp_entities[MAX_TEMP_ENTITIES];
 extern	beam_t			cl_beams[MAX_BEAMS];
-extern	entity_t *cl_visedicts[MAX_VISEDICTS];
+extern	entity_t		*cl_visedicts[MAX_VISEDICTS];
 extern	int				cl_numvisedicts;
 
-extern	entity_t *cl_entities; // johnfitz -- was a static array, now on hunk
+extern	entity_t		*cl_entities; // johnfitz -- was a static array, now on hunk
 extern	int				cl_max_edicts; // johnfitz -- only changes when new map loads
 
 // =============================================================================
 
 // cl_main
-dlight_t *CL_AllocDlight (int key);
+dlight_t *CL_AllocDlight (int key, float radius);
 void	CL_DecayLights (void);
 
 // trail types

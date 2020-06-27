@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 
 // to do - move all of the lighting stuff to gl_rlight.c
-extern cvar_t gl_fullbrights, gl_overbright; // johnfitz
+extern cvar_t gl_fullbrights; // johnfitz
 
 #define MAX_LIGHTMAPS		1024
 
@@ -122,11 +122,13 @@ void R_DrawBrushModel (entity_t *e)
 	{
 		for (k = 0; k < MAX_DLIGHTS; k++)
 		{
-			if ((cl_dlights[k].die < cl.time) || (!cl_dlights[k].radius))
+			dlight_t *dl = &cl_dlights[k];
+
+			if (dl->die < cl.time || !(dl->radius > dl->minlight))
 				continue;
 
 			// MH - dlight transform
-			R_InverseTransform (cl_dlights[k].transformed, cl_dlights[k].origin, e->origin, e->angles);
+			R_InverseTransform (dl->transformed, dl->origin, e->origin, e->angles);
 
 			R_MarkLights (&cl_dlights[k], k, clmodel->nodes + clmodel->hulls[0].firstclipnode);
 		}
@@ -552,21 +554,26 @@ void R_AddDynamicLights (msurface_t *surf)
 
 	for (lnum = 0; lnum < MAX_DLIGHTS; lnum++)
 	{
+		dlight_t *dl = &cl_dlights[lnum];
+
+		if (dl->die < cl.time || !(dl->radius > dl->minlight))
+			continue;		// dead light
+
 		if (!(surf->dlightbits[lnum >> 5] & (1U << (lnum & 31))))
 			continue;		// not lit by this light
 
-		rad = cl_dlights[lnum].radius;
-		dist = DotProduct (cl_dlights[lnum].transformed, surf->plane->normal) -
+		rad = dl->radius;
+		dist = DotProduct (dl->transformed, surf->plane->normal) -
 			surf->plane->dist;
 		rad -= fabs (dist);
-		minlight = cl_dlights[lnum].minlight;
+		minlight = dl->minlight;
 		if (rad < minlight)
 			continue;
 		minlight = rad - minlight;
 
 		for (i = 0; i < 3; i++)
 		{
-			impact[i] = cl_dlights[lnum].transformed[i] -
+			impact[i] = dl->transformed[i] -
 				surf->plane->normal[i] * dist;
 		}
 
@@ -577,9 +584,9 @@ void R_AddDynamicLights (msurface_t *surf)
 		local[1] -= surf->texturemins[1];
 
 		// johnfitz -- lit support via lordhavoc
-		cred = cl_dlights[lnum].color[0] * 256.0f;
-		cgreen = cl_dlights[lnum].color[1] * 256.0f;
-		cblue = cl_dlights[lnum].color[2] * 256.0f;
+		cred = dl->color[0] * 256.0f;
+		cgreen = dl->color[1] * 256.0f;
+		cblue = dl->color[2] * 256.0f;
 		// johnfitz
 
 		for (t = 0; t < tmax; t++)

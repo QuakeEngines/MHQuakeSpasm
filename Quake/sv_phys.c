@@ -1171,6 +1171,9 @@ void SV_Physics (double frametime)
 	int	entity_cap; // For sv_freezenonclients 
 	edict_t *ent;
 
+	// keep the random time-dependent
+	srand ((unsigned int) (sv.time * HALF_STANDARDFPS));
+
 	sv.frametime = frametime;
 
 	// let the progs know that a new frame has started

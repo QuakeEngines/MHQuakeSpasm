@@ -130,6 +130,7 @@ void Fog_FogCommand_f (void)
 		Con_Printf ("   \"green\" is \"%f\"\n", fog_green);
 		Con_Printf ("   \"blue\" is \"%f\"\n", fog_blue);
 		break;
+
 	case 2:
 		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
 			fog_red,
@@ -137,6 +138,7 @@ void Fog_FogCommand_f (void)
 			fog_blue,
 			0.0);
 		break;
+
 	case 3: // TEST
 		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
 			fog_red,
@@ -144,6 +146,7 @@ void Fog_FogCommand_f (void)
 			fog_blue,
 			atof (Cmd_Argv (2)));
 		break;
+
 	case 4:
 		Fog_Update (fog_density,
 			CLAMP (0.0, atof (Cmd_Argv (1)), 1.0),
@@ -151,6 +154,7 @@ void Fog_FogCommand_f (void)
 			CLAMP (0.0, atof (Cmd_Argv (3)), 1.0),
 			0.0);
 		break;
+
 	case 5:
 		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
 			CLAMP (0.0, atof (Cmd_Argv (2)), 1.0),
@@ -158,6 +162,7 @@ void Fog_FogCommand_f (void)
 			CLAMP (0.0, atof (Cmd_Argv (4)), 1.0),
 			0.0);
 		break;
+
 	case 6: // TEST
 		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
 			CLAMP (0.0, atof (Cmd_Argv (2)), 1.0),
@@ -195,26 +200,36 @@ void Fog_ParseWorldspawn (void)
 	fade_done = 0.0;
 
 	data = COM_Parse (cl.worldmodel->entities);
+
 	if (!data)
 		return; // error
+
 	if (com_token[0] != '{')
 		return; // error
+
 	while (1)
 	{
 		data = COM_Parse (data);
+
 		if (!data)
 			return; // error
+
 		if (com_token[0] == '}')
 			break; // end of worldspawn
+
 		if (com_token[0] == '_')
 			q_strlcpy (key, com_token + 1, sizeof (key));
 		else
 			q_strlcpy (key, com_token, sizeof (key));
+
 		while (key[0] && key[strlen (key) - 1] == ' ') // remove trailing spaces
 			key[strlen (key) - 1] = 0;
+
 		data = COM_Parse (data);
+
 		if (!data)
 			return; // error
+
 		q_strlcpy (value, com_token, sizeof (value));
 
 		if (!strcmp ("fog", key))
