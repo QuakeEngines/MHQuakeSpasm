@@ -431,7 +431,7 @@ void R_SetupAliasLighting (entity_t *e)
 	// minimum light value on gun (24)
 	if (e == &cl.viewent)
 	{
-		float add = 72.0f - (shadelight[0] + shadelight[1] + shadelight[2]);
+		float add = (float) (72 >> (int) gl_overbright.value) - (shadelight[0] + shadelight[1] + shadelight[2]);
 
 		if (add > 0.0f)
 		{
@@ -444,7 +444,7 @@ void R_SetupAliasLighting (entity_t *e)
 	// minimum light value on players (8)
 	if (e > cl_entities && e <= cl_entities + cl.maxclients)
 	{
-		float add = 24.0f - (shadelight[0] + shadelight[1] + shadelight[2]);
+		float add = (float) (24 >> (int) gl_overbright.value) - (shadelight[0] + shadelight[1] + shadelight[2]);
 
 		if (add > 0.0f)
 		{
