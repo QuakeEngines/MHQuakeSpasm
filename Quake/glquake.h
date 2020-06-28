@@ -244,6 +244,8 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride);
 void R_RenderDynamicLightmaps (msurface_t *surf);
 void R_UploadLightmaps (void);
 
+qboolean R_AllocBlock (int w, int h, int *x, int *y, int *allocated, int block_width, int block_height);
+
 // MH - ARB programs
 GLuint GL_CreateARBProgram (GLenum mode, const GLchar *progstr);
 void R_DeleteShaders (void);

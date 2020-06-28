@@ -146,49 +146,20 @@ returns an index into scrap_texnums[] and the position inside it
 */
 int Scrap_AllocBlock (int w, int h, int *x, int *y)
 {
-	int		i, j;
-	int		best, best2;
-	int		texnum;
-
-	for (texnum = 0; texnum < MAX_SCRAPS; texnum++)
-	{
-		best = BLOCK_HEIGHT;
-
-		for (i = 0; i < BLOCK_WIDTH - w; i++)
-		{
-			best2 = 0;
-
-			for (j = 0; j < w; j++)
-			{
-				if (scrap_allocated[texnum][i + j] >= best)
-					break;
-				if (scrap_allocated[texnum][i + j] > best2)
-					best2 = scrap_allocated[texnum][i + j];
-			}
-			if (j == w)
-			{
-				// this is a valid spot
-				*x = i;
-				*y = best = best2;
-			}
-		}
-
-		if (best + h > BLOCK_HEIGHT)
-			continue;
-
-		for (i = 0; i < w; i++)
-			scrap_allocated[texnum][*x + i] = best + h;
-
-		return texnum;
-	}
+	for (int texnum = 0; texnum < MAX_SCRAPS; texnum++)
+		if (R_AllocBlock (w, h, x, y, scrap_allocated[texnum], BLOCK_WIDTH, BLOCK_HEIGHT))
+			return texnum;
 
 	Sys_Error ("Scrap_AllocBlock: full"); // johnfitz -- correct function name
 	return 0; // johnfitz -- shut up compiler
 }
 
+
 /*
 ================
 Scrap_Upload -- johnfitz -- now uses TexMgr
+
+to do - pre-create the scrap texture so that we can just texsubimage new allocations and not have to worry about checking for scrap-dirty at runtime
 ================
 */
 void Scrap_Upload (void)

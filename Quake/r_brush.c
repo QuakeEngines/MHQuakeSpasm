@@ -323,14 +323,14 @@ void GL_CreateSurfaceLightmap (msurface_t *surf)
 	int smax = (surf->extents[0] >> 4) + 1;
 	int tmax = (surf->extents[1] >> 4) + 1;
 
-	if (!LM_AllocBlock (smax, tmax, &surf->light_s, &surf->light_t))
+	if (!R_AllocBlock (smax, tmax, &surf->light_s, &surf->light_t, lm_allocated, LIGHTMAP_SIZE, LIGHTMAP_SIZE))
 	{
 		LM_UploadBlock ();
 		LM_InitBlock ();
 
-		if (!LM_AllocBlock (smax, tmax, &surf->light_s, &surf->light_t))
+		if (!R_AllocBlock (smax, tmax, &surf->light_s, &surf->light_t, lm_allocated, LIGHTMAP_SIZE, LIGHTMAP_SIZE))
 		{
-			Sys_Error ("Consecutive calls to LM_AllocBlock (%d, %d) failed", smax, tmax);
+			Sys_Error ("GL_CreateSurfaceLightmap : Consecutive calls to R_AllocBlock (%d, %d) failed", smax, tmax);
 		}
 	}
 
