@@ -470,7 +470,7 @@ void R_SetupAliasLighting (entity_t *e)
 
 	// take the final colour down to 0..1 range
 	// note: our DotProducts will potentially scale this up to 2*, so reduce the range a little further to compensate
-	VectorScale (shadelight, 1.0f / 384.0f, shadelight);
+	VectorScale (shadelight, 1.0f / 320.0f, shadelight);
 }
 
 /*
