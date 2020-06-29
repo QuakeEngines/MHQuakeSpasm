@@ -44,23 +44,18 @@ typedef struct vrect_s {
 	struct vrect_s *pnext;
 } vrect_t;
 
-typedef struct {
-	pixel_t *buffer;	// invisible buffer
+typedef struct viddef_s {
 	pixel_t *colormap;	// 256 * VID_GRADES size
-	unsigned short *colormap16;	// 256 * VID_GRADES size
 	int		fullbright;	// index of first fullbright color
 	int		rowbytes;	// may be > width if displayed in a window
 	int		width;
 	int		height;
 	float		aspect;		// width / height -- < 0 is taller than wide
-	int		numpages;
-	pixel_t *conbuffer;
 	int		conrowbytes;
 	int		conwidth;
 	int		conheight;
 	int		maxwarpwidth;
 	int		maxwarpheight;
-	pixel_t *direct;	// direct drawing to framebuffer, if not NULL
 } viddef_t;
 
 extern	viddef_t	vid;				// global video state

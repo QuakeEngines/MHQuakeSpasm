@@ -378,7 +378,7 @@ breakOut:;
 //  PCX
 // ==============================================================================
 
-typedef struct {
+typedef struct pcxheader_s {
 	char			signature;
 	char			version;
 	char			encoding;

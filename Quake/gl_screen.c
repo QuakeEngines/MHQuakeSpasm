@@ -105,7 +105,6 @@ cvar_t		scr_showram = { "showram", "1", CVAR_NONE };
 cvar_t		scr_showturtle = { "showturtle", "0", CVAR_NONE };
 cvar_t		scr_showpause = { "showpause", "1", CVAR_NONE };
 cvar_t		scr_printspeed = { "scr_printspeed", "8", CVAR_NONE };
-cvar_t		gl_triplebuffer = { "gl_triplebuffer", "1", CVAR_ARCHIVE };
 
 extern	cvar_t	crosshair;
 
@@ -122,6 +121,8 @@ vrect_t		scr_vrect;
 
 qboolean	scr_disabled_for_loading;
 qboolean	scr_drawloading;
+qboolean	scr_remove_console = false;
+
 float		scr_disabled_time;
 
 void SCR_ScreenShot_f (void);
@@ -427,6 +428,7 @@ void SCR_Init (void)
 	Cvar_RegisterVariable (&scr_showfps);
 	Cvar_RegisterVariable (&scr_clock);
 	// johnfitz
+
 	Cvar_SetCallback (&scr_fov, SCR_Callback_refdef);
 	Cvar_SetCallback (&scr_fov_adapt, SCR_Callback_refdef);
 	Cvar_SetCallback (&scr_viewsize, SCR_Callback_refdef);
@@ -439,7 +441,6 @@ void SCR_Init (void)
 	Cvar_RegisterVariable (&scr_showpause);
 	Cvar_RegisterVariable (&scr_centertime);
 	Cvar_RegisterVariable (&scr_printspeed);
-	Cvar_RegisterVariable (&gl_triplebuffer);
 
 	Cmd_AddCommand ("screenshot", SCR_ScreenShot_f);
 	Cmd_AddCommand ("sizeup", SCR_SizeUp_f);
@@ -474,8 +475,9 @@ void SCR_DrawFPS (void)
 		oldframecount = r_framecount;
 		return;
 	}
-	// update value every 3/4 second
-	if (elapsed_time > 0.75)
+
+	// update value every 1/4 second
+	if (elapsed_time > 0.25)
 	{
 		lastfps = frames / elapsed_time;
 		oldtime = realtime;
@@ -660,6 +662,12 @@ void SCR_SetUpToDrawConsole (void)
 		scr_conlines = glheight; // full screen // johnfitz -- glheight instead of vid.height
 		scr_con_current = scr_conlines;
 	}
+	else if (scr_remove_console)
+	{
+		scr_conlines = 0;
+		scr_con_current = 0;
+		scr_remove_console = false;
+	}
 	else if (key_dest == key_console)
 		scr_conlines = glheight / 2; // half screen // johnfitz -- glheight instead of vid.height
 	else
@@ -698,6 +706,12 @@ void SCR_DrawConsole (void)
 		if (key_dest == key_game || key_dest == key_message)
 			Con_DrawNotify ();	// only draw notify in game
 	}
+}
+
+
+void SCR_RemoveConsole (void)
+{
+	scr_remove_console = true;
 }
 
 
@@ -766,6 +780,7 @@ void SCR_ScreenShot_f (void)
 		if (Sys_FileTime (checkname) == -1)
 			break;	// file doesn't exist
 	}
+
 	if (i == 10000)
 	{
 		Con_Printf ("SCR_ScreenShot_f: Couldn't find an unused filename\n");
@@ -922,7 +937,7 @@ int SCR_ModalMessage (const char *text, float timeout) // johnfitz -- timeout
 	{
 		Sys_SendKeyEvents ();
 		Key_GetGrabbedInput (&lastkey, &lastchar);
-		Sys_Sleep (16);
+		Sys_Sleep (1);
 		if (timeout) time2 = Sys_DoubleTime (); // johnfitz -- zero timeout means wait forever.
 	} while (lastchar != 'y' && lastchar != 'Y' &&
 		lastchar != 'n' && lastchar != 'N' &&
@@ -964,6 +979,7 @@ void SCR_TileClear (void)
 			0,
 			r_refdef.vrect.x,
 			glheight - sb_lines);
+
 		// right
 		Draw_TileClear (r_refdef.vrect.x + r_refdef.vrect.width,
 			0,
@@ -978,6 +994,7 @@ void SCR_TileClear (void)
 			0,
 			r_refdef.vrect.width,
 			r_refdef.vrect.y);
+
 		// bottom
 		Draw_TileClear (r_refdef.vrect.x,
 			r_refdef.vrect.y + r_refdef.vrect.height,
@@ -999,8 +1016,6 @@ needs almost the entire 256k of stack space!
 */
 void SCR_UpdateScreen (void)
 {
-	vid.numpages = (gl_triplebuffer.value) ? 3 : 2;
-
 	if (scr_disabled_for_loading)
 	{
 		if (realtime - scr_disabled_time > 60)
@@ -1014,7 +1029,6 @@ void SCR_UpdateScreen (void)
 
 	if (!scr_initialized || !con_initialized)
 		return;				// not initialized yet
-
 
 	GL_BeginRendering (&glx, &gly, &glwidth, &glheight);
 
@@ -1037,6 +1051,7 @@ void SCR_UpdateScreen (void)
 			Draw_ConsoleBackground ();
 		else
 			Sbar_Draw ();
+
 		Draw_FadeScreen ();
 		SCR_DrawNotifyString ();
 	}

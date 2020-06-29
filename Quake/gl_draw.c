@@ -100,7 +100,7 @@ byte pic_crosshair_data[8][8] =
 };
 // johnfitz
 
-typedef struct {
+typedef struct glpic_s {
 	gltexture_t *gltexture;
 	float		sl, tl, sh, th;
 } glpic_t;

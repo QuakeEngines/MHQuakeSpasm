@@ -52,7 +52,7 @@ BRUSH MODELS
 
 // in memory representation
 // !!! if this is changed, it must be changed in asm_draw.h too !!!
-typedef struct {
+typedef struct mvertex_s {
 	vec3_t		position;
 } mvertex_t;
 
@@ -107,12 +107,12 @@ typedef struct texture_s {
 #define SURF_DRAWWATER		0x2000
 
 // !!! if this is changed, it must be changed in asm_draw.h too !!!
-typedef struct {
+typedef struct medge_s {
 	unsigned int	v[2];
 	unsigned int	cachededgeoffset;
 } medge_t;
 
-typedef struct {
+typedef struct mtexinfo_s {
 	float		vecs[2][4];
 	float		mipadjust;
 	texture_t *texture;
@@ -221,7 +221,7 @@ typedef struct mclipnode_s {
 // johnfitz
 
 // !!! if this is changed, it must be changed in asm_i386.h too !!!
-typedef struct {
+typedef struct hull_s {
 	mclipnode_t *clipnodes; // johnfitz -- was dclipnode_t
 	mplane_t *planes;
 	int			firstclipnode;
@@ -247,18 +247,18 @@ typedef struct mspriteframe_s {
 	struct gltexture_s *gltexture;
 } mspriteframe_t;
 
-typedef struct {
+typedef struct mspritegroup_s {
 	int				numframes;
 	float *intervals;
 	mspriteframe_t *frames[1];
 } mspritegroup_t;
 
-typedef struct {
+typedef struct mspriteframedesc_s {
 	spriteframetype_t	type;
 	mspriteframe_t *frameptr;
 } mspriteframedesc_t;
 
-typedef struct {
+typedef struct msprite_s {
 	int					type;
 	int					maxwidth;
 	int					maxheight;
@@ -295,7 +295,7 @@ typedef struct meshst_s {
 } meshst_t;
 // --
 
-typedef struct {
+typedef struct maliasframedesc_s {
 	int					firstpose;
 	int					numposes;
 	float				interval;
@@ -305,13 +305,13 @@ typedef struct {
 	char				name[16];
 } maliasframedesc_t;
 
-typedef struct {
+typedef struct maliasgroupframedesc_s {
 	trivertx_t			bboxmin;
 	trivertx_t			bboxmax;
 	int					frame;
 } maliasgroupframedesc_t;
 
-typedef struct {
+typedef struct maliasgroup_s {
 	int						numframes;
 	int						intervals;
 	maliasgroupframedesc_t	frames[1];
@@ -325,7 +325,8 @@ typedef struct mtriangle_s {
 
 
 #define	MAX_SKINS	32
-typedef struct {
+
+typedef struct aliashdr_s {
 	int			ident;
 	int			version;
 	vec3_t		scale;
@@ -360,6 +361,8 @@ typedef struct {
 #define	MAXALIASVERTS	2000 // johnfitz -- was 1024
 #define	MAXALIASFRAMES	256
 #define	MAXALIASTRIS	4096 // ericw -- was 2048
+
+// MH - get rid of these and move them to params
 extern	aliashdr_t *pheader;
 extern	stvert_t	stverts[MAXALIASVERTS];
 extern	mtriangle_t	triangles[MAXALIASTRIS];

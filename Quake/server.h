@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // server.h
 
-typedef struct {
+typedef struct server_static_s {
 	int			maxclients;
 	int			maxclientslimit;
 	struct client_s *clients;		// [maxclients]
@@ -37,7 +37,7 @@ typedef struct {
 
 typedef enum { ss_loading, ss_active } server_state_t;
 
-typedef struct {
+typedef struct server_s {
 	qboolean	active;				// false if only a net client
 
 	qboolean	paused;

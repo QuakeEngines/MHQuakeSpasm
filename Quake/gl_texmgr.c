@@ -53,11 +53,12 @@ unsigned int d_8to24table_pants[256];
 ================================================================================
 */
 
-typedef struct {
+typedef struct glmode_s {
 	int	magfilter;
 	int	minfilter;
 	const char *name;
 } glmode_t;
+
 static glmode_t glmodes[] = {
 	{ GL_NEAREST, GL_NEAREST, "GL_NEAREST" },
 	{ GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST, "GL_NEAREST_MIPMAP_NEAREST" },

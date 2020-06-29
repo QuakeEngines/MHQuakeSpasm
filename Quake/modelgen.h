@@ -59,7 +59,7 @@ typedef enum { ALIAS_SINGLE = 0, ALIAS_GROUP } aliasframetype_t;
 
 typedef enum { ALIAS_SKIN_SINGLE = 0, ALIAS_SKIN_GROUP } aliasskintype_t;
 
-typedef struct {
+typedef struct mdl_s {
 	int			ident;
 	int			version;
 	vec3_t		scale;
@@ -79,7 +79,7 @@ typedef struct {
 
 // TODO: could be shorts
 
-typedef struct {
+typedef struct stvert_s {
 	int		onseam;
 	int		s;
 	int		t;
@@ -95,40 +95,40 @@ typedef struct dtriangle_s {
 // This mirrors trivert_t in trilib.h, is present so Quake knows how to
 // load this data
 
-typedef struct {
+typedef struct trivertx_s {
 	byte	v[3];
 	byte	lightnormalindex;
 } trivertx_t;
 
-typedef struct {
+typedef struct daliasframe_s {
 	trivertx_t	bboxmin;	// lightnormal isn't used
 	trivertx_t	bboxmax;	// lightnormal isn't used
 	char		name[16];	// frame name from grabbing
 } daliasframe_t;
 
-typedef struct {
+typedef struct daliasgroup_s {
 	int			numframes;
 	trivertx_t	bboxmin;	// lightnormal isn't used
 	trivertx_t	bboxmax;	// lightnormal isn't used
 } daliasgroup_t;
 
-typedef struct {
+typedef struct daliasskingroup_s {
 	int			numskins;
 } daliasskingroup_t;
 
-typedef struct {
+typedef struct daliasinterval_s {
 	float	interval;
 } daliasinterval_t;
 
-typedef struct {
+typedef struct daliasskininterval_s {
 	float	interval;
 } daliasskininterval_t;
 
-typedef struct {
+typedef struct daliasframetype_s {
 	aliasframetype_t	type;
 } daliasframetype_t;
 
-typedef struct {
+typedef struct daliasskintype_s {
 	aliasskintype_t	type;
 } daliasskintype_t;
 

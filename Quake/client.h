@@ -25,14 +25,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // client.h
 
-typedef struct {
+typedef struct lightstyle_s {
 	int		length;
 	char	map[MAX_STYLESTRING];
 	char	average; // johnfitz
 	char	peak; // johnfitz
 } lightstyle_t;
 
-typedef struct {
+typedef struct scoreboard_s {
 	char	name[MAX_SCOREBOARDNAME];
 	float	entertime;
 	int		frags;
@@ -40,7 +40,7 @@ typedef struct {
 	byte	translations[VID_GRADES * 256];
 } scoreboard_t;
 
-typedef struct {
+typedef struct cshift_s {
 	float	destcolor[3];
 	float	percent;		// 0-256
 } cshift_t;
@@ -94,7 +94,7 @@ typedef enum {
 
 // the client_static_t structure is persistant through an arbitrary number
 // of server connections
-typedef struct {
+typedef struct client_static_s {
 	cactive_t	state;
 
 	// personalization data sent to server
@@ -131,7 +131,7 @@ extern client_static_t	cls;
 
 // the client_state_t structure is wiped completely at every
 // server signon
-typedef struct {
+typedef struct client_state_s {
 	int			movemessages;	// since connecting to this server
 								// throw out the first couple, so the player
 								// doesn't accidentally do something the
@@ -293,7 +293,7 @@ void CL_Disconnect_f (void);
 void CL_NextDemo (void);
 
 // cl_input
-typedef struct {
+typedef struct kbutton_s {
 	int		down[2];		// key nums holding it down
 	int		state;			// low bit is down state
 } kbutton_t;

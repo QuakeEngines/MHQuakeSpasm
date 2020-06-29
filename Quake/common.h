@@ -193,7 +193,7 @@ char *va (const char *format, ...) FUNC_PRINTF (1, 2);
 // ============================================================================
 
 // QUAKEFS
-typedef struct {
+typedef struct packfile_s {
 	char	name[MAX_QPATH];
 	int		filepos, filelen;
 } packfile_t;

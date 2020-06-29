@@ -161,7 +161,7 @@ extern qsocket_t *net_activeSockets;
 extern qsocket_t *net_freeSockets;
 extern int		net_numsockets;
 
-typedef struct {
+typedef struct net_landriver_s {
 	const char *name;
 	qboolean	initialized;
 	sys_socket_t	controlSock;
@@ -189,7 +189,7 @@ typedef struct {
 extern net_landriver_t	net_landrivers[];
 extern const int	net_numlandrivers;
 
-typedef struct {
+typedef struct net_driver_s {
 	const char *name;
 	qboolean	initialized;
 	int		(*Init) (void);
@@ -226,7 +226,7 @@ double SetNetTime (void);
 
 #define HOSTCACHESIZE	8
 
-typedef struct {
+typedef struct hostcache_s {
 	char	name[16];
 	char	map[16];
 	char	cname[32];

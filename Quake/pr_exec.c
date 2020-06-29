@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-typedef struct {
+typedef struct prstack_s {
 	int		s;
 	dfunction_t *f;
 } prstack_t;
@@ -39,8 +39,7 @@ dfunction_t *pr_xfunction;
 int		pr_xstatement;
 int		pr_argc;
 
-static const char *pr_opnames[] =
-{
+static const char *pr_opnames[] = {
 	"DONE",
 
 	"MUL_F",

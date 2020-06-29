@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define __QUAKE_SOUND__
 
 /* !!! if this is changed, it must be changed in asm_i386.h too !!! */
-typedef struct {
+typedef struct portable_samplepair_s {
 	int left;
 	int right;
 } portable_samplepair_t;
@@ -37,7 +37,7 @@ typedef struct sfx_s {
 } sfx_t;
 
 /* !!! if this is changed, it must be changed in asm_i386.h too !!! */
-typedef struct {
+typedef struct sfxcache_s {
 	int	length;
 	int	loopstart;
 	int	speed;
@@ -46,7 +46,7 @@ typedef struct {
 	byte	data[1];	/* variable sized	*/
 } sfxcache_t;
 
-typedef struct {
+typedef struct dma_s {
 	int	channels;
 	int	samples;		/* mono samples in buffer			*/
 	int	submission_chunk;	/* don't mix less than this #			*/
@@ -58,7 +58,7 @@ typedef struct {
 } dma_t;
 
 /* !!! if this is changed, it must be changed in asm_i386.h too !!! */
-typedef struct {
+typedef struct channel_s {
 	sfx_t *sfx;			/* sfx number					*/
 	int	leftvol;		/* 0-255 volume					*/
 	int	rightvol;		/* 0-255 volume					*/
@@ -74,7 +74,7 @@ typedef struct {
 
 #define WAV_FORMAT_PCM	1
 
-typedef struct {
+typedef struct wavinfo_s {
 	int	rate;
 	int	width;
 	int	channels;

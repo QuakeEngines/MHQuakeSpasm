@@ -1930,7 +1930,7 @@ qboolean M_LanConfig_TextEntry (void)
 // =============================================================================
 /* GAME OPTIONS MENU */
 
-typedef struct {
+typedef struct level_s {
 	const char *name;
 	const char *description;
 } level_t;
@@ -2034,7 +2034,7 @@ level_t		roguelevels[] =
 	{ "ctf1", "Division of Change" }
 };
 
-typedef struct {
+typedef struct episode_s {
 	const char *description;
 	int		firstLevel;
 	int		levels;

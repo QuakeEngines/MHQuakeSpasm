@@ -23,12 +23,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef _QUAKE_WORLD_H
 #define _QUAKE_WORLD_H
 
-typedef struct {
+typedef struct plane_s {
 	vec3_t	normal;
 	float	dist;
 } plane_t;
 
-typedef struct {
+typedef struct trace_s {
 	qboolean	allsolid;	// if true, plane is not valid
 	qboolean	startsolid;	// if true, the initial point was in a solid area
 	qboolean	inopen, inwater;

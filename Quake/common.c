@@ -1463,12 +1463,12 @@ int	com_filesize;
 
 
 // on-disk pakfile
-typedef struct {
+typedef struct dpackfile_s {
 	char	name[56];
 	int		filepos, filelen;
 } dpackfile_t;
 
-typedef struct {
+typedef struct dpackheader_s {
 	char	id[4];
 	int		dirofs;
 	int		dirlen;

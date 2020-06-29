@@ -67,7 +67,7 @@ typedef unsigned FLAC_SIZE_T;
 typedef size_t   FLAC_SIZE_T;
 #endif
 
-typedef struct {
+typedef struct flacfile_s {
 	FLAC__StreamDecoder *decoder;
 	fshandle_t *file;
 	snd_info_t *info;

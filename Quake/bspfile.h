@@ -68,7 +68,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	TOOLVERSION	2
 
-typedef struct {
+typedef struct lump_s {
 	int		fileofs, filelen;
 } lump_t;
 
@@ -90,7 +90,7 @@ typedef struct {
 
 #define	HEADER_LUMPS	15
 
-typedef struct {
+typedef struct dmodel_s {
 	float		mins[3], maxs[3];
 	float		origin[3];
 	int			headnode[MAX_MAP_HULLS];
@@ -98,17 +98,18 @@ typedef struct {
 	int			firstface, numfaces;
 } dmodel_t;
 
-typedef struct {
+typedef struct dheader_s {
 	int			version;
 	lump_t		lumps[HEADER_LUMPS];
 } dheader_t;
 
-typedef struct {
+typedef struct dmiptexlump_s {
 	int			nummiptex;
 	int			dataofs[4];		// [nummiptex]
 } dmiptexlump_t;
 
 #define	MIPLEVELS	4
+
 typedef struct miptex_s {
 	char		name[16];
 	unsigned	width, height;
@@ -116,7 +117,7 @@ typedef struct miptex_s {
 } miptex_t;
 
 
-typedef struct {
+typedef struct dvertex_s {
 	float	point[3];
 } dvertex_t;
 
@@ -131,7 +132,7 @@ typedef struct {
 #define	PLANE_ANYY		4
 #define	PLANE_ANYZ		5
 
-typedef struct {
+typedef struct dplane_s {
 	float	normal[3];
 	float	dist;
 	int		type;		// PLANE_X - PLANE_ANYZ ?remove? trivial to regenerate
@@ -156,7 +157,7 @@ typedef struct {
 
 
 // !!! if this is changed, it must be changed in asm_i386.h too !!!
-typedef struct {
+typedef struct dsnode_s {
 	int			planenum;
 	short		children[2];	// negative numbers are -(leafs+1), not nodes
 	short		mins[3];		// for sphere culling
@@ -165,7 +166,7 @@ typedef struct {
 	unsigned short	numfaces;	// counting both sides
 } dsnode_t;
 
-typedef struct {
+typedef struct dl1node_s {
 	int			planenum;
 	int			children[2];	// negative numbers are -(leafs+1), not nodes
 	short		mins[3];		// for sphere culling
@@ -174,7 +175,7 @@ typedef struct {
 	unsigned int	numfaces;	// counting both sides
 } dl1node_t;
 
-typedef struct {
+typedef struct dl2node_s {
 	int			planenum;
 	int			children[2];	// negative numbers are -(leafs+1), not nodes
 	float		mins[3];		// for sphere culling
@@ -183,12 +184,12 @@ typedef struct {
 	unsigned int	numfaces;	// counting both sides
 } dl2node_t;
 
-typedef struct {
+typedef struct dsclipnode_s {
 	int			planenum;
 	short		children[2];	// negative numbers are contents
 } dsclipnode_t;
 
-typedef struct {
+typedef struct dlclipnode_s {
 	int			planenum;
 	int			children[2];	// negative numbers are contents
 } dlclipnode_t;
@@ -199,21 +200,23 @@ typedef struct texinfo_s {
 	int			miptex;
 	int			flags;
 } texinfo_t;
+
 #define	TEX_SPECIAL		1		// sky or slime, no lightmap or 256 subdivision
 #define TEX_MISSING		2		// johnfitz -- this texinfo does not have a texture
 
 // note that edge 0 is never used, because negative edge nums are used for
 // counterclockwise use of the edge in a face
-typedef struct {
+typedef struct dsedge_s {
 	unsigned short	v[2];		// vertex numbers
 } dsedge_t;
 
-typedef struct {
+typedef struct dledge_s {
 	unsigned int	v[2];		// vertex numbers
 } dledge_t;
 
 #define	MAXLIGHTMAPS	4
-typedef struct {
+
+typedef struct dsface_s {
 	short		planenum;
 	short		side;
 
@@ -226,7 +229,7 @@ typedef struct {
 	int			lightofs;		// start of [numstyles*surfsize] samples
 } dsface_t;
 
-typedef struct {
+typedef struct dlface_s {
 	int			planenum;
 	int			side;
 
@@ -248,7 +251,7 @@ typedef struct {
 
 // leaf 0 is the generic CONTENTS_SOLID leaf, used for all solid areas
 // all other leafs need visibility info
-typedef struct {
+typedef struct dsleaf_s {
 	int			contents;
 	int			visofs;				// -1 = no visibility info
 
@@ -261,7 +264,7 @@ typedef struct {
 	byte		ambient_level[NUM_AMBIENTS];
 } dsleaf_t;
 
-typedef struct {
+typedef struct dl1leaf_s {
 	int			contents;
 	int			visofs;				// -1 = no visibility info
 
@@ -274,7 +277,7 @@ typedef struct {
 	byte		ambient_level[NUM_AMBIENTS];
 } dl1leaf_t;
 
-typedef struct {
+typedef struct dl2leaf_s {
 	int			contents;
 	int			visofs;				// -1 = no visibility info
 
@@ -360,7 +363,7 @@ typedef struct epair_s {
 	char *value;
 } epair_t;
 
-typedef struct {
+typedef struct entity_s {
 	vec3_t		origin;
 	int			firstbrush;
 	int			numbrushes;

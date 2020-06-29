@@ -65,7 +65,7 @@ typedef struct surfcache_s {
 } surfcache_t;
 
 
-typedef struct {
+typedef struct drawsurf_s {
 	pixel_t *surfdat;	// destination for generated surface
 	int		rowbytes;	// destination logical width in bytes
 	msurface_t *surf;		// description for surface to generate
@@ -148,7 +148,8 @@ extern float rs_megatexels;
 
 // johnfitz -- track developer statistics that vary every frame
 extern cvar_t devstats;
-typedef struct {
+
+typedef struct devstats_s {
 	int		packetsize;
 	int		edicts;
 	int		visedicts;
@@ -157,16 +158,19 @@ typedef struct {
 	int		beams;
 	int		dlights;
 } devstats_t;
+
 extern devstats_t dev_stats, dev_peakstats;
 
 // ohnfitz -- reduce overflow warning spam
-typedef struct {
+typedef struct overflowtimes_s {
 	double	packetsize;
 	double	efrags;
 	double	beams;
 	double	varstring;
 } overflowtimes_t;
+
 extern overflowtimes_t dev_overflows; // this stores the last time overflow messages were displayed, not the last time overflows occured
+
 #define CONSOLE_RESPAM_TIME 3 // seconds between repeated warning messages
 
 #define LIGHTMAP_SIZE	256	// FIXME: make dynamic. if we have a decent card there's no real reason not to use 4k or 16k (assuming there's no lightstyles/dynamics that need uploading...)

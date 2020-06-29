@@ -53,7 +53,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define DEFAULT_REFRESHRATE	60
 
-typedef struct {
+typedef struct vmode_s {
 	int			width;
 	int			height;
 	int			refreshrate;
@@ -594,7 +594,6 @@ static qboolean VID_SetMode (int width, int height, int refreshrate, int bpp, qb
 	vid.height = VID_GetCurrentHeight ();
 	vid.conwidth = vid.width & 0xFFFFFFF8;
 	vid.conheight = vid.conwidth * vid.height / vid.width;
-	vid.numpages = 2;
 
 	// read the obtained z-buffer depth
 	if (SDL_GL_GetAttribute (SDL_GL_DEPTH_SIZE, &depthbits) == -1)
@@ -1560,7 +1559,7 @@ enum {
 
 static int	video_options_cursor = 0;
 
-typedef struct {
+typedef struct vid_menu_mode_s {
 	int width, height;
 } vid_menu_mode;
 

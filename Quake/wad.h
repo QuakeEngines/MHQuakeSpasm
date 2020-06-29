@@ -42,18 +42,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	WADFILENAME "gfx.wad" // johnfitz -- filename is now hard-coded for honesty
 
-typedef struct {
+typedef struct qpic_s {
 	int			width, height;
 	byte		data[4];			// variably sized
 } qpic_t;
 
-typedef struct {
+typedef struct wadinfo_s {
 	char		identification[4];		// should be WAD2 or 2DAW
 	int			numlumps;
 	int			infotableofs;
 } wadinfo_t;
 
-typedef struct {
+typedef struct lumpinfo_s {
 	int			filepos;
 	int			disksize;
 	int			size;					// uncompressed

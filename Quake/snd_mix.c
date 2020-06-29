@@ -194,7 +194,7 @@ static void S_MakeBlackmanWindowKernel (float *kernel, int M, float f_c)
 	}
 }
 
-typedef struct {
+typedef struct filter_s {
 	float *memory;  // kernelsize floats
 	float *kernel;  // kernelsize floats
 	int kernelsize; // M+1, rounded up to be a multiple of 16

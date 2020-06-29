@@ -44,7 +44,7 @@ qboolean	consolekeys[MAX_KEYS];	// if true, can't be rebound while in console
 qboolean	menubound[MAX_KEYS];	// if true, can't be rebound while in menu
 qboolean	keydown[MAX_KEYS];
 
-typedef struct {
+typedef struct keyname_s {
 	const char *name;
 	int		keynum;
 } keyname_t;

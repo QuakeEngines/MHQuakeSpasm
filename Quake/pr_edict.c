@@ -60,7 +60,7 @@ static qboolean	ED_ParseEpair (void *base, ddef_t *key, const char *s);
 #define	MAX_FIELD_LEN	64
 #define	GEFV_CACHESIZE	2
 
-typedef struct {
+typedef struct gefv_cache_s {
 	ddef_t *pcache;
 	char	field[MAX_FIELD_LEN];
 } gefv_cache;

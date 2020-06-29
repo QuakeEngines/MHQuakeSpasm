@@ -36,7 +36,7 @@ typedef struct memblock_s {
 	struct	memblock_s *next, *prev;
 } memblock_t;
 
-typedef struct {
+typedef struct memzone_s {
 	int		size;		// total bytes malloced, including header
 	memblock_t	blocklist;	// start / end cap for linked list
 	memblock_t *rover;
@@ -284,7 +284,8 @@ void Z_Print (memzone_t *zone)
 #define	HUNK_SENTINAL	0x1df001ed
 
 #define HUNKNAME_LEN	24
-typedef struct {
+
+typedef struct hunk_s {
 	int		sentinal;
 	int		size;		// including sizeof(hunk_t), -1 = not allocated
 	char	name[HUNKNAME_LEN];

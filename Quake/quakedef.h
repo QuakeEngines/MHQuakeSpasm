@@ -186,7 +186,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	SOUND_CHANNELS		8
 
-typedef struct {
+typedef struct quakeparms_s {
 	const char *basedir;
 	const char *userdir;	// user's directory on UNIX platforms.
 				// if user directories are enabled, basedir

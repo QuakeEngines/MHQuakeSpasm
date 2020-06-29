@@ -2140,7 +2140,7 @@ Fill background pixels so mipmapping doesn't have haloes - Ed
 =================
 */
 
-typedef struct {
+typedef struct floodfill_s {
 	short		x, y;
 } floodfill_t;
 
