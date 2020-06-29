@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define TEXPREF_OVERWRITE		(1 << 6)	// overwrite existing same-name texture
 #define TEXPREF_FULLBRIGHT		(1 << 7)	// use fullbright mask palette
 #define TEXPREF_CONCHARS		(1 << 8)	// use conchars palette
+#define TEXPREF_FLOODFILL		(1 << 9)	// floodfill an alias skin
 
 
 enum srcformat { SRC_INDEXED, SRC_LIGHTMAP, SRC_RGBA };
