@@ -84,6 +84,7 @@ void _VectorCopy (vec3_t in, vec3_t out);
 
 int VectorCompare (vec3_t v1, vec3_t v2);
 vec_t VectorLength (vec3_t v);
+float VectorDist (vec3_t v1, vec3_t v2); // mh - use this in a few places
 void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross);
 float VectorNormalize (vec3_t v);		// returns vector length
 void VectorInverse (vec3_t v);

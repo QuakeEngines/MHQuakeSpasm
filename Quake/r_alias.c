@@ -64,7 +64,7 @@ model and pose.
 */
 static void *GLARB_GetXYZOffset (entity_t *e, aliashdr_t *hdr, int pose)
 {
-	const int xyzoffs = offsetof (meshxyz_t, position);
+	const int xyzoffs = offsetof (meshxyz_t, xyz);
 	return (void *) (e->model->vboxyzofs + (hdr->numverts_vbo * pose * sizeof (meshxyz_t)) + xyzoffs);
 }
 
@@ -101,11 +101,17 @@ void GLAlias_CreateShaders (void)
 		"!!ARBvp1.0\n"
 		"\n"
 		"TEMP position, normal;\n"
-		"PARAM lerpfactor = program.local[0];\n"
+		"PARAM lerpfactor = program.env[10];\n"
+		"PARAM scale = program.env[11];\n"
+		"PARAM scale_origin = program.env[12];\n"
 		"\n"
 		"# interpolate the position\n"
 		"SUB position, vertex.attrib[0], vertex.attrib[2];\n"
 		"MAD position, lerpfactor, position, vertex.attrib[2];\n"
+		"\n"
+		"# scale and offset\n"
+		"MAD position, position, scale, scale_origin;\n"
+		"MOV position.w, 1.0; # ensure\n"
 		"\n"
 		"# transform interpolated position to output position\n"
 		"DP4 result.position.x, state.matrix.mvp.row[0], position;\n"
@@ -239,11 +245,17 @@ void GLAlias_CreateShaders (void)
 		"!!ARBvp1.0\n"
 		"\n"
 		"TEMP position, normal;\n"
-		"PARAM lerpfactor = program.local[0];\n"
+		"PARAM lerpfactor = program.env[10];\n"
+		"PARAM scale = program.env[11];\n"
+		"PARAM scale_origin = program.env[12];\n"
 		"\n"
 		"# interpolate the position\n"
 		"SUB position, vertex.attrib[0], vertex.attrib[2];\n"
 		"MAD position, lerpfactor, position, vertex.attrib[2];\n"
+		"\n"
+		"# scale and offset\n"
+		"MAD position, position, scale, scale_origin;\n"
+		"MOV position.w, 1.0; # ensure\n"
 		"\n"
 		"# transform interpolated position to output position\n"
 		"DP4 result.position.x, state.matrix.mvp.row[0], position;\n"
@@ -268,16 +280,6 @@ void GLAlias_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	const GLchar *fp_dynamic_source = \
-		"!!ARBfp1.0\n"
-		"\n"
-		"# perform the texturing direct to output\n"
-		"TEX result.color, fragment.texcoord[0], texture[0], 2D;\n"
-		"\n"
-		"# done\n"
-		"END\n"
-		"\n";
-
 	r_alias_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_lightmapped_source);
 	r_alias_lightmapped_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source0);
 	r_alias_lightmapped_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source1);
@@ -287,7 +289,7 @@ void GLAlias_CreateShaders (void)
 }
 
 
-void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *paliashdr, lerpdata_t *lerpdata, gltexture_t *tx, gltexture_t *fb)
+void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, lerpdata_t *lerpdata, gltexture_t *tx, gltexture_t *fb)
 {
 	float	blend;
 
@@ -305,10 +307,10 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *palia
 
 	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3 | VAA4);
 
-	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (e, paliashdr, lerpdata->pose1));
-	glVertexAttribPointer (1, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (e, paliashdr, lerpdata->pose1));
-	glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (e, paliashdr, lerpdata->pose2));
-	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (e, paliashdr, lerpdata->pose2));
+	glVertexAttribPointer (0, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (e, hdr, lerpdata->pose1));
+	glVertexAttribPointer (1, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (e, hdr, lerpdata->pose1));
+	glVertexAttribPointer (2, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (e, hdr, lerpdata->pose2));
+	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (e, hdr, lerpdata->pose2));
 	glVertexAttribPointer (4, 2, GL_FLOAT, GL_FALSE, 0, (void *) (intptr_t) e->model->vbostofs);
 
 	// set textures
@@ -321,8 +323,10 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *palia
 	}
 	else GL_BindPrograms (r_alias_lightmapped_vp, r_alias_lightmapped_fp[0]);
 
-	// set uniforms
-	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, blend, blend, blend, 0);
+	// set uniforms - these need to be env params so that the dynamic program can also access them
+	glProgramEnvParameter4fARB (GL_VERTEX_PROGRAM_ARB, 10, blend, blend, blend, 0);
+	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 11, hdr->scale);
+	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 12, hdr->scale_origin);
 
 	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, shadelight);
 	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, shadevector);
@@ -330,8 +334,8 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *palia
 	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 1, 1, 1, entalpha);
 
 	// draw
-	glDrawElements (GL_TRIANGLES, paliashdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) e->model->vboindexofs);
-	rs_aliaspasses += paliashdr->numtris;
+	glDrawElements (GL_TRIANGLES, hdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) e->model->vboindexofs);
+	rs_aliaspasses += hdr->numtris;
 
 	// add dynamic lights
 	if (!r_dynamic.value) return;
@@ -339,15 +343,11 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *palia
 	for (int i = 0; i < MAX_DLIGHTS; i++)
 	{
 		dlight_t *dl = &cl_dlights[i];
-		float dist[3], add;
 
 		if (dl->die < cl.time || !(dl->radius > dl->minlight))
 			continue;
 
-		VectorSubtract (lerpdata->origin, dl->origin, dist);
-		add = dl->radius - VectorLength (dist);
-
-		if (add > 0)
+		if (((dl->radius + hdr->boundingradius) - VectorDist (lerpdata->origin, dl->origin)) > 0)
 		{
 			// move the light into the same space as the entity
 			R_InverseTransform (localMatrix, dl->transformed, dl->origin);
@@ -359,15 +359,12 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *palia
 			// dynamic light programs
 			GL_BindPrograms (r_alias_dynamic_vp, r_alias_dynamic_fp);
 
-			// blend is a local param so we need to send it again after a shader change
-			glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, blend, blend, blend, 0);
-
 			// light properties
 			GL_SetupDynamicLight (dl);
 
 			// and draw it
-			glDrawElements (GL_TRIANGLES, paliashdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) e->model->vboindexofs);
-			rs_aliaspasses += paliashdr->numtris;
+			glDrawElements (GL_TRIANGLES, hdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) e->model->vboindexofs);
+			rs_aliaspasses += hdr->numtris;
 		}
 	}
 }
@@ -378,22 +375,22 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *palia
 R_SetupAliasFrame -- johnfitz -- rewritten to support lerping
 =================
 */
-void R_SetupAliasFrame (entity_t *e, aliashdr_t *paliashdr, int frame, lerpdata_t *lerpdata)
+void R_SetupAliasFrame (entity_t *e, aliashdr_t *hdr, int frame, lerpdata_t *lerpdata)
 {
 	int		posenum, numposes;
 
-	if ((frame >= paliashdr->numframes) || (frame < 0))
+	if ((frame >= hdr->numframes) || (frame < 0))
 	{
 		Con_DPrintf ("R_AliasSetupFrame: no such frame %d for '%s'\n", frame, e->model->name);
 		frame = 0;
 	}
 
-	posenum = paliashdr->frames[frame].firstpose;
-	numposes = paliashdr->frames[frame].numposes;
+	posenum = hdr->frames[frame].firstpose;
+	numposes = hdr->frames[frame].numposes;
 
 	if (numposes > 1)
 	{
-		e->lerptime = paliashdr->frames[frame].interval;
+		e->lerptime = hdr->frames[frame].interval;
 		posenum += (int) (cl.time / e->lerptime) % numposes;
 	}
 	else
@@ -565,13 +562,13 @@ R_DrawAliasModel -- johnfitz -- almost completely rewritten
 void R_DrawAliasModel (entity_t *e)
 {
 	QMATRIX localMatrix;
-	aliashdr_t *paliashdr = (aliashdr_t *) Mod_Extradata (e->model);
+	aliashdr_t *hdr = (aliashdr_t *) Mod_Extradata (e->model);
 	int			i, anim, skinnum;
 	gltexture_t *tx, *fb;
 	lerpdata_t	lerpdata;
 
 	// setup pose/lerp data -- do it first so we don't miss updates due to culling
-	R_SetupAliasFrame (e, paliashdr, e->frame, &lerpdata);
+	R_SetupAliasFrame (e, hdr, e->frame, &lerpdata);
 	R_SetupEntityTransform (e, &lerpdata);
 
 	// cull it
@@ -600,22 +597,22 @@ void R_DrawAliasModel (entity_t *e)
 	}
 
 	// set up lighting
-	rs_aliaspolys += paliashdr->numtris;
+	rs_aliaspolys += hdr->numtris;
 	R_SetupAliasLighting (e);
 
 	// set up textures
 	anim = (int) (cl.time * 10) & 3;
 	skinnum = e->skinnum;
 
-	if ((skinnum >= paliashdr->numskins) || (skinnum < 0))
+	if ((skinnum >= hdr->numskins) || (skinnum < 0))
 	{
 		Con_DPrintf ("R_DrawAliasModel: no such skin # %d for '%s'\n", skinnum, e->model->name);
 		// ericw -- display skin 0 for winquake compatibility
 		skinnum = 0;
 	}
 
-	tx = paliashdr->gltextures[skinnum][anim];
-	fb = paliashdr->fbtextures[skinnum][anim];
+	tx = hdr->gltextures[skinnum][anim];
+	fb = hdr->fbtextures[skinnum][anim];
 
 	if (e->colormap != vid.colormap && !gl_nocolors.value)
 	{
@@ -632,7 +629,7 @@ void R_DrawAliasModel (entity_t *e)
 	glMultMatrixf (localMatrix.m16);
 
 	// draw it
-	GL_DrawAliasFrame_ARB (e, &localMatrix, paliashdr, &lerpdata, tx, fb);
+	GL_DrawAliasFrame_ARB (e, &localMatrix, hdr, &lerpdata, tx, fb);
 
 	// revert the transform
 	glPopMatrix ();

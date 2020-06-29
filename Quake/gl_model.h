@@ -282,7 +282,7 @@ typedef struct aliasmesh_s {
 } aliasmesh_t;
 
 typedef struct meshxyz_s {
-	float position[3]; // this needs the scaled and offset position for correct light and fog calculations
+	byte xyz[4];
 	signed char normal[4];
 } meshxyz_t;
 
@@ -325,8 +325,8 @@ typedef struct mtriangle_s {
 typedef struct aliashdr_s {
 	int			ident;
 	int			version;
-	vec3_t		scale;
-	vec3_t		scale_origin;
+	float		scale[4];			// padded for shader params
+	float		scale_origin[4];	// padded for shader params
 	float		boundingradius;
 	vec3_t		eyeposition;
 	int			numskins;

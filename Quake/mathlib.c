@@ -307,6 +307,14 @@ vec_t VectorLength (vec3_t v)
 	return sqrt (DotProduct (v, v));
 }
 
+float VectorDist (vec3_t v1, vec3_t v2)
+{
+	vec3_t dist;
+	VectorSubtract (v1, v2, dist);
+	return VectorLength (dist);
+}
+
+
 float VectorNormalize (vec3_t v)
 {
 	float	length, ilength;
