@@ -61,7 +61,7 @@ typedef struct cshift_s {
 #define	MAX_DLIGHTS		64 // johnfitz -- was 32
 typedef struct dlight_s {
 	vec3_t	origin;				// world space
-	vec3_t	transformed;		// inverse transform back to model space
+	float	transformed[4];		// inverse transform back to model space, padded for shader params
 	float	radius;
 	float	starttime;			// cl.time the light was started at
 	float	startradius;		// radius the light was started at
@@ -69,7 +69,7 @@ typedef struct dlight_s {
 	float	decay;				// drop this each second
 	float	minlight;			// don't add when contributing less
 	int		key;
-	vec3_t	color;				// johnfitz -- lit support via lordhavoc
+	float	color[4];				// johnfitz -- lit support via lordhavoc, MH - padded for shader params
 	int		numsurfaces;		// mh - track number of surfaces hit by this dlight
 } dlight_t;
 

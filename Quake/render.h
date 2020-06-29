@@ -158,8 +158,6 @@ void R_ParticleExplosion2 (vec3_t org, int colorStart, int colorLength);
 void R_LavaSplash (vec3_t org);
 void R_TeleportSplash (vec3_t org);
 
-void R_PushDlights (void);
-
 
 // surface cache related
 extern	int		reinit_surfcache;	// if 1, surface cache is currently empty and

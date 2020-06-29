@@ -422,7 +422,6 @@ R_SetupScene -- johnfitz -- this is the stuff that needs to be done once per eye
 */
 void R_SetupScene (void)
 {
-//	R_PushDlights ();
 	R_AnimateLight (cl.time);
 	r_framecount++;
 	R_SetupGL ();

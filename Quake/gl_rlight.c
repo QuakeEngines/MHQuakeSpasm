@@ -24,131 +24,70 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 
 
-/*
-// HLSL version of the below!!!!
-float4 GenericDynamicPS (PS_DYNAMICLIGHT ps_in) : SV_TARGET0
-{
-	// this clip is sufficient to exclude unlit portions; Add below may still bring it to 0
-	// but in practice it's rare and it runs faster without a second clip
-	clip ((LightRadius * LightRadius) - dot (ps_in.LightVector, ps_in.LightVector));
-
-	// reading the diffuse texture early so that it should interleave with some ALU ops
-	float4 diff = GetGamma (mainTexture.Sample (mainSampler, ps_in.TexCoord));
-
-	// this calc isn't correct per-theory but it matches with the calc used by light.exe and qrad.exe
-	// at this stage we don't adjust for the overbright range; that will be done via the "intensity" cvar in the C code
-	float Angle = ((dot (normalize (ps_in.Normal), normalize (ps_in.LightVector)) * 0.5f) + 0.5f) / 128.0f;
-
-	// using our own custom attenuation, again it's not correct per-theory but matches the Quake tools
-	float Add = max ((LightRadius - length (ps_in.LightVector)) * Angle, 0.0f) * LightStyle;
-
-	// accumulate final lighting
-	return float4 (diff.rgb * LightColour * Add * AlphaVal, 0.0f);
-}
-
-
-!!ARBvp1.0
-
-# program.env[0] is light position
-
-# vertex.attrib[0] is position
-# vertex.attrib[1] is normal
-# vertex.attrib[2] is texcoord
-
-# transform position to output
-DP4 result.position.x, state.matrix.mvp.row[0], vertex.attrib[0];
-DP4 result.position.y, state.matrix.mvp.row[1], vertex.attrib[0];
-DP4 result.position.z, state.matrix.mvp.row[2], vertex.attrib[0];
-DP4 result.position.w, state.matrix.mvp.row[3], vertex.attrib[0];
-
-# copy over texcoord
-MOV result.texcoord[0], vertex.attrib[2];
-
-# copy over normal
-MOV result.texcoord[1], vertex.attrib[1];
-
-# result.texcoord[2] is light vector
-SUB result.texcoord[2], program.env[0], vertex.attrib[0];
-
-# done
-END
-
-
-!!ARBfp1.0
-
-# fragment.texcoord[0] is texture coord
-# fragment.texcoord[1] is normal
-# fragment.texcoord[2] is light vector
-
-# program.env[0] is light radius
-# program.env[1] is light style
-
-TEMP diff;
-TEMP normal;
-TEMP incoming;
-TEMP dist;
-TEMP light;
-TEMP angle;
-
-# brings lights back to a 0..1 range (light.exe used 0..255)
-PARAM rescale = {0.00390625, 0.00390625, 0.00390625, 0};
-
-# perform the texturing; doing this early so it can interleave with ALU ops
-TEX diff, fragment.texcoord[0], texture[0], 2D;
-
-# normalize incoming normal
-DP3 normal.w, fragment.texcoord[1], fragment.texcoord[1];
-RSQ normal.w, normal.w;
-MUL normal.xyz, normal.w, fragment.texcoord[1];
-
-# normalize incoming light vector (this could be done in the vp)
-DP3 incoming.w, fragment.texcoord[2], fragment.texcoord[2];
-RSQ incoming.w, incoming.w;
-RCP dist, incoming.w;	# get the vector length while we're at it
-MUL incoming.xyz, incoming.w, fragment.texcoord[2];
-
-# adjust for normal; this is the same calculation used by light.exe
-DP3 angle, incoming, normal;
-MAD angle, angle, 0.5, 0.5;
-
-# get the light attenuation
-SUB light, program.env[0], dist;
-MUL light, light, rescale;
-MUL light, light, program.env[1];
-MUL light, light, angle;
-
-# move to output
-MUL result.color, diff, light;
-
-# done
-END
-
-
-*/
-
 const GLchar *GL_GetDynamicLightFragmentProgramSource (void)
 {
 	// this program is common to BSP and MDL so let's only define it once
 	static const GLchar *src = \
 		"!!ARBfp1.0\n"
 		"\n"
-		"TEMP diff, lmap, fence;\n"
+		"# fragment.texcoord[0] is texture coord\n"
+		"# fragment.texcoord[1] is normal\n"
+		"# fragment.texcoord[2] is light vector\n"
 		"\n"
-		"# perform the texturing\n"
+		"# program.local[0] is light radius\n"
+		"# program.local[1] is light colour\n"
+		"\n"
+		"TEMP diff;\n"
+		"TEMP normal;\n"
+		"TEMP incoming;\n"
+		"TEMP dist;\n"
+		"TEMP light;\n"
+		"TEMP angle;\n"
+		"TEMP fence;\n"
+		"\n"
+		"# brings lights back to a 0..1 range (light.exe used 0..255)\n"
+		"PARAM rescale = { 0.0078125, 0.0078125, 0.0078125, 0 };\n"
+		"\n"
+		"# perform the texturing; doing this early so it can interleave with ALU ops\n"
 		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
 		"\n"
 		"# fence texture test\n"
 		"SUB fence, diff, 0.666;\n"
 		"KIL fence.a;\n"
 		"\n"
-		"# perform the dynamic lighting\n"
+		"# normalize incoming normal\n"
+		"DP3 normal.w, fragment.texcoord[1], fragment.texcoord[1];\n"
+		"RSQ normal.w, normal.w;\n"
+		"MUL normal.xyz, normal.w, fragment.texcoord[1];\n"
+		"\n"
+		"# normalize incoming light vector\n"
+		"DP3 incoming.w, fragment.texcoord[2], fragment.texcoord[2];\n"
+		"RSQ incoming.w, incoming.w;\n"
+		"RCP dist, incoming.w;	# get the vector length while we're at it\n"
+		"MUL incoming.xyz, incoming.w, fragment.texcoord[2];\n"
+		"\n"
+		"# adjust for normal; this is the same calculation used by light.exe\n"
+		"DP3 angle, incoming, normal;\n"
+		"MAD angle, angle, 0.5, 0.5;\n"
+		"\n"
+		"# get the light attenuation\n"
+		"SUB light, program.local[0], dist;\n"
+		"MUL light, light, rescale;\n"
+		"MUL light, light, program.local[1];\n"
+		"MUL light, light, angle;\n"
+		"\n"
+		"# discard any fragments with negative light contribution otherwise the POW in the gamma calc will bring them to positive\n"
+		"KIL light;\n"
+		"\n"
+		"# modulate light by texture\n"
+		"MUL diff, diff, light;\n"
 		"\n"
 		"# perform the fogging\n"
 		"TEMP fogFactor;\n"
 		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
 		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
 		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
-		"LRP diff.rgb, fogFactor.x, diff, {0.0, 0.0, 0.0, 0.0};\n"
+		"LRP diff.rgb, fogFactor.x, diff, { 0.0, 0.0, 0.0, 0.0 };\n"
 		"\n"
 		"# apply the contrast\n"
 		"MUL diff.rgb, diff, program.env[10].x;\n"
@@ -219,107 +158,6 @@ DYNAMIC LIGHTS
 =============================================================================
 */
 
-/*
-=============
-R_MarkLights -- johnfitz -- rewritten to use LordHavoc's lighting speedup
-=============
-*/
-void R_MarkLights (dlight_t *dl, int num, mnode_t *node)
-{
-	mplane_t *splitplane;
-	msurface_t *surf;
-	vec3_t		impact;
-	float		dist, l, maxdist;
-	int			i, j, s, t;
-
-start:;
-	if (node->contents < 0)
-		return;
-
-	splitplane = node->plane;
-
-	if (splitplane->type < 3)
-		dist = dl->transformed[splitplane->type] - splitplane->dist;
-	else
-		dist = DotProduct (dl->transformed, splitplane->normal) - splitplane->dist;
-
-	if (dist > dl->radius)
-	{
-		node = node->children[0];
-		goto start;
-	}
-
-	if (dist < -dl->radius)
-	{
-		node = node->children[1];
-		goto start;
-	}
-
-	maxdist = dl->radius * dl->radius;
-
-	// mark the polygons
-	surf = node->surfaces;
-
-	for (i = 0; i < node->numsurfaces; i++, surf++)
-	{
-		for (j = 0; j < 3; j++)
-			impact[j] = dl->transformed[j] - surf->plane->normal[j] * dist;
-
-		// clamp center of light to corner and check brightness
-		l = DotProduct (impact, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3] - surf->texturemins[0];
-		s = l + 0.5; if (s < 0) s = 0; else if (s > surf->extents[0]) s = surf->extents[0];
-		s = l - s;
-
-		l = DotProduct (impact, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3] - surf->texturemins[1];
-		t = l + 0.5; if (t < 0) t = 0; else if (t > surf->extents[1]) t = surf->extents[1];
-		t = l - t;
-
-		// compare to minimum light
-		if ((s * s + t * t + dist * dist) < maxdist)
-		{
-			if (surf->dlightframe != r_dlightframecount) // not dynamic until now
-			{
-				surf->dlightbits[num >> 5] = 1U << (num & 31);
-				surf->dlightframe = r_dlightframecount;
-			}
-			else // already dynamic
-				surf->dlightbits[num >> 5] |= 1U << (num & 31);
-		}
-	}
-
-	if (node->children[0]->contents >= 0) R_MarkLights (dl, num, node->children[0]);
-	if (node->children[1]->contents >= 0) R_MarkLights (dl, num, node->children[1]);
-}
-
-/*
-=============
-R_PushDlights
-=============
-*/
-void R_PushDlights (void)
-{
-	int		i;
-	dlight_t *dl;
-
-	r_dlightframecount = r_framecount + 1;	// because the count hasn't
-											//  advanced yet for this frame
-	dl = cl_dlights;
-
-	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
-	{
-		if (dl->die < cl.time || !(dl->radius > dl->minlight))
-			continue;
-
-		// MH - only the world model goes through this path
-		dl->transformed[0] = dl->origin[0];
-		dl->transformed[1] = dl->origin[1];
-		dl->transformed[2] = dl->origin[2];
-
-		R_MarkLights (dl, i, cl.worldmodel->nodes);
-	}
-}
-
-
 qboolean R_SurfaceDLImpact (msurface_t *surf, dlight_t *dl, float dist)
 {
 	int s, t;
@@ -383,8 +221,7 @@ void R_MarkLights_New (dlight_t *dl, mnode_t *node, int visframe)
 		{
 			// add dlight surf to texture chain
 			// if sorting by texture, just store it out
-			surf->texturechain = surf->texinfo->texture->texturechains[chain_dlight];
-			surf->texinfo->texture->texturechains[chain_dlight] = surf;
+			R_ChainSurface (surf, chain_dlight);
 
 			// the DL has some surfaces now
 			dl->numsurfaces++;
@@ -436,6 +273,17 @@ void R_PushDlights_New (entity_t *e, qmodel_t *mod, mnode_t *headnode)
 
 	// go to a new dlight frame for each push so that we don't carry over lights from the previous
 	r_dlightframecount++;
+}
+
+
+void GL_SetupDynamicLight (dlight_t *dl)
+{
+	// the correct vertex and fragment pgograms are already bound so this just sets up some local params containing the light properties
+	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 1, dl->transformed);
+
+	// fragment program params
+	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, dl->radius, dl->radius, dl->radius, 0);
+	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, dl->color);
 }
 
 
@@ -606,4 +454,5 @@ int R_LightPoint (vec3_t p)
 
 	return ((shadelight[0] + shadelight[1] + shadelight[2]) * (1.0f / 3.0f));
 }
+
 

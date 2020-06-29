@@ -219,7 +219,6 @@ void R_DrawWorld_Old (void);
 qboolean R_CullBox (vec3_t emins, vec3_t emaxs);
 void R_StoreEfrags (efrag_t **ppefrag);
 qboolean R_CullModelForEntity (entity_t *e);
-void R_MarkLights (dlight_t *light, int num, mnode_t *node);
 
 void R_InitParticles (void);
 void R_DrawParticles (void);
@@ -329,6 +328,7 @@ void R_PushDlights_New (entity_t *e, qmodel_t *mod, mnode_t *headnode);
 extern int r_dlightframecount;
 const GLchar *GL_GetDynamicLightFragmentProgramSource (void);
 void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl);
+void GL_SetupDynamicLight (dlight_t *dl);
 
 #endif	/* __GLQUAKE_H */
 

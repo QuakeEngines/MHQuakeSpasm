@@ -162,13 +162,10 @@ typedef struct msurface_s {
 
 	// lighting info
 	int			dlightframe;
-	unsigned int		dlightbits[(MAX_DLIGHTS + 31) >> 5];
-	// int is 32 bits, need an array for MAX_DLIGHTS > 32
 
 	int			lightmaptexturenum;
 	byte		styles[MAXLIGHTMAPS];
 	int			cached_light[MAXLIGHTMAPS];	// values currently used in lightmap
-	qboolean	cached_dlight;				// true if dynamic light in cache
 	int			lightproperty;
 
 	byte *samples;		// [numstyles*surfsize]

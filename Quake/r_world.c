@@ -63,6 +63,7 @@ void R_ChainSurface (msurface_t *surf, texchain_t chain)
 	// run dynamic lighting if we're not collecting dlight surfaces
 	if (!(surf->flags & SURF_DRAWTILED) && chain != chain_dlight)
 	{
+		// marks this surf as having been seen in this dlight frame
 		surf->dlightframe = r_dlightframecount;
 		R_RenderDynamicLightmaps (surf);
 	}
@@ -317,6 +318,9 @@ void GLWorld_CreateShaders (void)
 		"# copy over the normal in texcoord[1] so that we can do per-pixel lighting\n"
 		"MOV result.texcoord[1], vertex.attrib[3];\n"
 		"\n"
+		"# result.texcoord[2] is light vector\n"
+		"SUB result.texcoord[2], program.local[1], vertex.attrib[0];\n"
+		"\n"
 		"# set up fog coordinate\n"
 		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
 		"\n"
@@ -453,8 +457,14 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 		}
 	}
 
-	if (!ent)
+	// set up dynamic lighting correctly for the entity type
+	if (!r_dynamic.value)
+		return;
+	else if (!ent)
 		R_PushDlights_New (ent, model, cl.worldmodel->nodes);
+	else if (model->firstmodelsurface != 0)
+		R_PushDlights_New (ent, model, model->nodes + model->hulls[0].firstclipnode);
+	else R_PushDlights_New (ent, model, model->nodes);
 }
 
 
@@ -468,6 +478,7 @@ void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl)
 	GL_BindPrograms (r_dynamic_vp, r_dynamic_fp);
 
 	// light properties
+	GL_SetupDynamicLight (dl);
 
 	// and draw them
 	for (int i = 0; i < model->numtextures; i++)

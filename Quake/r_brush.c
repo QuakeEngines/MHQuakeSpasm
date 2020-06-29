@@ -82,7 +82,7 @@ R_DrawBrushModel
 */
 void R_DrawBrushModel (entity_t *e)
 {
-	int			i, k;
+	int			i;
 	msurface_t *psurf;
 	float		dot;
 	mplane_t *pplane;
@@ -97,25 +97,6 @@ void R_DrawBrushModel (entity_t *e)
 	InverseTransform (modelorg, r_refdef.vieworg, e->origin, e->angles);
 
 	psurf = &clmodel->surfaces[clmodel->firstmodelsurface];
-
-	// calculate dynamic lighting for bmodel if it's not an instanced model
-	/*
-	if (clmodel->firstmodelsurface != 0)
-	{
-		for (k = 0; k < MAX_DLIGHTS; k++)
-		{
-			dlight_t *dl = &cl_dlights[k];
-
-			if (dl->die < cl.time || !(dl->radius > dl->minlight))
-				continue;
-
-			// MH - dlight transform
-			InverseTransform (dl->transformed, dl->origin, e->origin, e->angles);
-
-			R_MarkLights (&cl_dlights[k], k, clmodel->nodes + clmodel->hulls[0].firstclipnode);
-		}
-	}
-	*/
 
 	glPushMatrix ();
 
@@ -178,12 +159,6 @@ qboolean R_ShouldModifyLightmap (msurface_t *surf)
 	for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
 		if (d_lightstylevalue[surf->styles[maps]] != surf->cached_light[maps])
 			return true;
-
-	// dynamic this frame
-	//if (surf->dlightframe == r_framecount) return true;
-
-	// dynamic previously
-	//if (surf->cached_dlight) return true;
 
 	// not modified
 	return false;
@@ -514,98 +489,6 @@ void GL_DeleteBModelVertexBuffer (void)
 
 /*
 ===============
-R_AddDynamicLights
-===============
-*/
-void R_AddDynamicLights (msurface_t *surf)
-{
-	int			lnum;
-	int			sd, td;
-	float		dist, rad, minlight;
-	vec3_t		impact, local;
-	int			s, t;
-	int			i;
-	int			smax, tmax;
-	mtexinfo_t *tex;
-	// johnfitz -- lit support via lordhavoc
-	float		cred, cgreen, cblue, brightness;
-	// johnfitz
-
-	smax = (surf->extents[0] >> 4) + 1;
-	tmax = (surf->extents[1] >> 4) + 1;
-	tex = surf->texinfo;
-
-	for (lnum = 0; lnum < MAX_DLIGHTS; lnum++)
-	{
-		dlight_t *dl = &cl_dlights[lnum];
-
-		if (dl->die < cl.time || !(dl->radius > dl->minlight))
-			continue;		// dead light
-
-		if (!(surf->dlightbits[lnum >> 5] & (1U << (lnum & 31))))
-			continue;		// not lit by this light
-
-		rad = dl->radius;
-		dist = DotProduct (dl->transformed, surf->plane->normal) -
-			surf->plane->dist;
-		rad -= fabs (dist);
-		minlight = dl->minlight;
-		if (rad < minlight)
-			continue;
-		minlight = rad - minlight;
-
-		for (i = 0; i < 3; i++)
-		{
-			impact[i] = dl->transformed[i] -
-				surf->plane->normal[i] * dist;
-		}
-
-		local[0] = DotProduct (impact, tex->vecs[0]) + tex->vecs[0][3];
-		local[1] = DotProduct (impact, tex->vecs[1]) + tex->vecs[1][3];
-
-		local[0] -= surf->texturemins[0];
-		local[1] -= surf->texturemins[1];
-
-		// johnfitz -- lit support via lordhavoc
-		cred = dl->color[0] * 256.0f;
-		cgreen = dl->color[1] * 256.0f;
-		cblue = dl->color[2] * 256.0f;
-		// johnfitz
-
-		for (t = 0; t < tmax; t++)
-		{
-			td = local[1] - t * 16;
-
-			if (td < 0)
-				td = -td;
-
-			for (s = 0; s < smax; s++)
-			{
-				sd = local[0] - s * 16;
-
-				if (sd < 0)
-					sd = -sd;
-
-				if (sd > td)
-					dist = sd + (td >> 1);
-				else
-					dist = td + (sd >> 1);
-
-				if (dist < minlight)
-				{
-					brightness = rad - dist;
-					lm_blocklights[t * smax + s][0] += (int) (brightness * cred);
-					lm_blocklights[t * smax + s][1] += (int) (brightness * cgreen);
-					lm_blocklights[t * smax + s][2] += (int) (brightness * cblue);
-				}
-			}
-		}
-	}
-}
-
-
-/*
-===============
 R_BuildLightMap -- johnfitz -- revised for lit support via lordhavoc
 
 Combine and scale multiple lightmaps into the 8.8 format in blocklights
@@ -617,8 +500,6 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 	int tmax = (surf->extents[1] >> 4) + 1;
 	int size = smax * tmax;
 	byte *lightmap = surf->samples;
-
-	//surf->cached_dlight = (surf->dlightframe == r_framecount);
 
 	if (r_fullbright.value || !cl.worldmodel->lightdata)
 	{
@@ -657,10 +538,6 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 				surf->cached_light[maps] = scale;	// 8.8 fraction
 			}
 		}
-
-		// add all the dynamic lights
-		//if (surf->dlightframe == r_framecount)
-		//	R_AddDynamicLights (surf);
 	}
 
 	// bound, invert, and shift
@@ -689,7 +566,6 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 ===============
 R_UploadLightmaps -- johnfitz -- uploads the modified lightmap to opengl if necessary
 
-assumes lightmap texture is already bound
 ===============
 */
 void R_UploadLightmaps (void)
