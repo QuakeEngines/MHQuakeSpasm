@@ -150,51 +150,14 @@ void R_BatchSurface (msurface_t *s)
 }
 
 
-/*
-================
-R_DrawTextureChains_NoTexture -- johnfitz
-
-draws surfs whose textures were missing from the BSP
-================
-*/
-void R_DrawTextureChains_NoTexture (qmodel_t *model, texchain_t chain)
-{
-#if 0
-	int			i;
-	msurface_t *s;
-	texture_t *t;
-	qboolean	bound;
-
-	for (i = 0; i < model->numtextures; i++)
-	{
-		t = model->textures[i];
-
-		if (!t || !t->texturechains[chain] || !(t->texturechains[chain]->flags & SURF_NOTEXTURE))
-			continue;
-
-		bound = false;
-
-		for (s = t->texturechains[chain]; s; s = s->texturechain)
-			if (!s->culled)
-			{
-				if (!bound) // only bind once we are sure we need this texture
-				{
-					GL_BindTexture (GL_TEXTURE0, t->gltexture);
-					bound = true;
-				}
-				DrawGLPoly (s->polys);
-				rs_brushpasses++;
-			}
-	}
-#endif
-}
-
-
 static GLuint r_brush_lightmapped_vp = 0;
 static GLuint r_brush_lightmapped_fp[2] = { 0, 0 }; // luma, no luma
 
 static GLuint r_brush_dynamic_vp = 0;
 static GLuint r_brush_dynamic_fp = 0;
+
+static GLuint r_brush_notexture_vp = 0;
+static GLuint r_brush_notexture_fp = 0;
 
 /*
 =============
@@ -328,12 +291,62 @@ void GLWorld_CreateShaders (void)
 		"END\n"
 		"\n";
 
+	const GLchar *vp_notexture_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"# transform position to output\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.attrib[0];\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.attrib[0];\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.attrib[0];\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.attrib[0];\n"
+		"\n"
+		"# copy over diffuse texcoord\n"
+		"MOV result.texcoord[0], vertex.attrib[1];\n"
+		"\n"
+		"# set up fog coordinate\n"
+		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	const GLchar *fp_notexture_source = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"TEMP diff;\n"
+		"\n"
+		"# perform the texturing\n"
+		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
+		"\n"
+		"# perform the fogging\n"
+		"TEMP fogFactor;\n"
+		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
+		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
+		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
+		"LRP diff.rgb, fogFactor.x, diff, state.fog.color;\n"
+		"\n"
+		"# apply the contrast\n"
+		"MUL diff.rgb, diff, program.env[10].x;\n"
+		"\n"
+		"# apply the gamma (POW only operates on scalars)\n"
+		"POW result.color.r, diff.r, program.env[10].y;\n"
+		"POW result.color.g, diff.g, program.env[10].y;\n"
+		"POW result.color.b, diff.b, program.env[10].y;\n"
+		"MOV result.color.a, program.env[0].a;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
 	r_brush_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_lightmapped_source);
 	r_brush_lightmapped_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source0);
 	r_brush_lightmapped_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source1);
 
 	r_brush_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_dynamic_source);
 	r_brush_dynamic_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDynamicLightFragmentProgramSource ());
+
+	r_brush_notexture_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_notexture_source);
+	r_brush_notexture_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_notexture_source);
 }
 
 
@@ -342,15 +355,6 @@ extern GLuint r_surfaces_vbo;
 
 void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 {
-	// build lightmap chains from the surf; this also reverses the draw order so we get front-to-back for better z buffer performance
-	for (; s; s = s->texturechain)
-	{
-		s->lightmapchain = gl_lightmaps[s->lightmaptexturenum].texturechain;
-		gl_lightmaps[s->lightmaptexturenum].texturechain = s;
-
-		rs_brushpasses++;
-	}
-
 	// and now we can draw it
 	GL_BindTexture (GL_TEXTURE0, t->gltexture);
 
@@ -362,23 +366,45 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 	}
 	else GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[0]);
 
-	// and draw our batches in lightmap order
-	for (int i = 0; i < lm_currenttexture; i++)
+	R_ClearBatch ();
+
+	for (gltexture_t *currentlightmap = NULL; s; s = s->texturechain)
 	{
-		if (!gl_lightmaps[i].texturechain) continue;
+		if (gl_lightmaps[s->lightmaptexturenum].texture != currentlightmap)
+		{
+			R_FlushBatch (); // first time through there will be nothing in the batch
+			GL_BindTexture (GL_TEXTURE1, gl_lightmaps[s->lightmaptexturenum].texture);
+			currentlightmap = gl_lightmaps[s->lightmaptexturenum].texture;
+		}
 
-		GL_BindTexture (GL_TEXTURE1, gl_lightmaps[i].texture);
-
-		R_ClearBatch ();
-
-		for (msurface_t *s2 = gl_lightmaps[i].texturechain; s2; s2 = s2->lightmapchain)
-			R_BatchSurface (s2);
-
-		R_FlushBatch ();
-
-		// clear the surfaces used by this lightmap
-		gl_lightmaps[i].texturechain = NULL;
+		R_BatchSurface (s);
 	}
+
+	R_FlushBatch ();
+}
+
+
+void R_DrawSimpleTexturechain (msurface_t *s)
+{
+	R_ClearBatch ();
+
+	for (; s; s = s->texturechain)
+	{
+		R_BatchSurface (s);
+		rs_brushpolys++;
+	}
+
+	R_FlushBatch ();
+}
+
+
+void R_DrawNoTextureChain (msurface_t *s, texture_t *t)
+{
+	GL_BindTexture (GL_TEXTURE0, t->gltexture);
+
+	GL_BindPrograms (r_brush_notexture_vp, r_brush_notexture_fp);
+
+	R_DrawSimpleTexturechain (s);
 }
 
 
@@ -424,14 +450,7 @@ void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl)
 
 		GL_BindTexture (GL_TEXTURE0, anim->gltexture);
 
-		R_ClearBatch ();
-
-		for (; s; s = s->texturechain)
-		{
-			R_BatchSurface (s);
-		}
-
-		R_FlushBatch ();
+		R_DrawSimpleTexturechain (s);
 	}
 }
 
@@ -481,8 +500,8 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 		}
 		else if (s->flags & SURF_NOTEXTURE)
 		{
-			// to do
-			continue;
+			// special handling for missing textures
+			R_DrawNoTextureChain (s, t);
 		}
 		else if (s->flags & SURF_DRAWSKY)
 		{

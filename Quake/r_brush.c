@@ -223,7 +223,6 @@ static void LM_UploadBlock (void)
 
 	sprintf (name, "lightmap%07i", lm_currenttexture);
 	lm->texture = TexMgr_LoadImage (cl.worldmodel, name, LIGHTMAP_SIZE, LIGHTMAP_SIZE, SRC_LIGHTMAP, lm->lm_data, "", (src_offset_t) lm->lm_data, TEXPREF_LINEAR);
-	lm->texturechain = NULL;
 
 	if (++lm_currenttexture >= MAX_LIGHTMAPS)
 		Sys_Error ("LM_UploadBlock : MAX_LIGHTMAPS exceeded");

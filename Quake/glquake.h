@@ -181,8 +181,6 @@ typedef struct lightmap_s {
 	qboolean	modified;
 	gl_rect_t	dirtyrect;
 
-	struct msurface_s *texturechain;
-
 	// the lightmap texture data needs to be kept in
 	// main memory so texsubimage can update properly
 	byte *lm_data; // [4*LMBLOCK_WIDTH*LMBLOCK_HEIGHT];
@@ -327,6 +325,8 @@ extern int r_dlightframecount;
 const GLchar *GL_GetDynamicLightFragmentProgramSource (void);
 void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl);
 void GL_SetupDynamicLight (dlight_t *dl);
+
+void R_DrawSimpleTexturechain (msurface_t *s);
 
 #endif	/* __GLQUAKE_H */
 

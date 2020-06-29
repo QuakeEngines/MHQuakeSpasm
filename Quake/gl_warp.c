@@ -164,17 +164,10 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 		float entalpha = GL_WaterAlphaForEntitySurface (ent, t->texturechains[chain]);
 
 		R_BeginTransparentDrawing (entalpha);
+
 		GL_BindTexture (GL_TEXTURE0, t->gltexture);
 
-		R_ClearBatch ();
-
-		for (msurface_t *s = t->texturechains[chain]; s; s = s->texturechain)
-		{
-			R_BatchSurface (s);
-			rs_brushpasses++;
-		}
-
-		R_FlushBatch ();
+		R_DrawSimpleTexturechain (t->texturechains[chain]);
 	}
 }
 
