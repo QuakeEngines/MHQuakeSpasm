@@ -2796,7 +2796,7 @@ int Mod_GetAutoAnimation (float *intervals, int numframes, float syncbase)
 char *Mod_ValueForKeyFromWorldspawn (char *entities, char *findkey)
 {
 	char key[128];
-	char *data;
+	const char *data;
 
 	// read worldspawn (this is so ugly, and shouldn't it be done on the server?)
 	if ((data = entities) == NULL) return NULL;
