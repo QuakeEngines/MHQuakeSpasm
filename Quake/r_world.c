@@ -397,18 +397,57 @@ void R_SetupWorldVBOState (void)
 }
 
 
-/*
-================
-R_DrawTextureChains_GLSL -- ericw
+void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl)
+{
+	// switch to additive blending
+	GL_DepthState (GL_TRUE, GL_EQUAL, GL_FALSE);
+	GL_BlendState (GL_TRUE, GL_ONE, GL_ONE);
 
-Draw lightmapped surfaces with fulbrights in one pass, using VBO.
-Requires 3 TMUs, OpenGL 2.0
-================
+	// dynamic light programs
+	GL_BindPrograms (r_brush_dynamic_vp, r_brush_dynamic_fp);
+
+	// light properties
+	GL_SetupDynamicLight (dl);
+
+	// and draw them
+	for (int i = 0; i < model->numtextures; i++)
+	{
+		// fixme - make this never happen!!!
+		if (!model->textures[i]) continue;
+
+		texture_t *t = model->textures[i];
+		msurface_t *s = t->texturechains[chain_dlight];
+
+		if (!s) continue;
+
+		texture_t *anim = R_TextureAnimation (t, ent != NULL ? ent->frame : 0);
+
+		GL_BindTexture (GL_TEXTURE0, anim->gltexture);
+
+		R_ClearBatch ();
+
+		for (; s; s = s->texturechain)
+		{
+			R_BatchSurface (s);
+		}
+
+		R_FlushBatch ();
+	}
+}
+
+
+/*
+=============
+R_DrawWorld -- johnfitz -- rewritten
+=============
 */
-void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
+void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, texchain_t chain)
 {
 	// entity alpha
 	float		entalpha = (ent != NULL) ? ENTALPHA_DECODE (ent->alpha) : 1.0f;
+
+	// upload any lightmaps that were modified
+	R_UploadLightmaps ();
 
 	// enable blending / disable depth writes
 	if (entalpha < 1)
@@ -461,72 +500,10 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 	if (!r_dynamic.value)
 		return;
 	else if (!ent)
-		R_PushDlights_New (ent, model, cl.worldmodel->nodes);
+		R_PushDlights_New (NULL, NULL, model, cl.worldmodel->nodes);
 	else if (model->firstmodelsurface != 0)
-		R_PushDlights_New (ent, model, model->nodes + model->hulls[0].firstclipnode);
-	else R_PushDlights_New (ent, model, model->nodes);
-}
-
-
-void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl)
-{
-	// switch to additive blending
-	GL_DepthState (GL_TRUE, GL_EQUAL, GL_FALSE);
-	GL_BlendState (GL_TRUE, GL_ONE, GL_ONE);
-
-	// dynamic light programs
-	GL_BindPrograms (r_brush_dynamic_vp, r_brush_dynamic_fp);
-
-	// light properties
-	GL_SetupDynamicLight (dl);
-
-	// and draw them
-	for (int i = 0; i < model->numtextures; i++)
-	{
-		// fixme - make this never happen!!!
-		if (!model->textures[i]) continue;
-
-		texture_t *t = model->textures[i];
-		msurface_t *s = t->texturechains[chain_dlight];
-
-		if (!s) continue;
-
-		texture_t *anim = R_TextureAnimation (t, ent != NULL ? ent->frame : 0);
-
-		GL_BindTexture (GL_TEXTURE0, anim->gltexture);
-
-		R_ClearBatch ();
-
-		for (; s; s = s->texturechain)
-		{
-			R_BatchSurface (s);
-		}
-
-		R_FlushBatch ();
-	}
-}
-
-
-/*
-=============
-R_DrawWorld -- johnfitz -- rewritten
-=============
-*/
-void R_DrawTextureChains (qmodel_t *model, entity_t *ent, texchain_t chain)
-{
-	R_UploadLightmaps ();
-	R_DrawTextureChains_ARB (model, ent, chain);
-}
-
-
-/*
-=============
-R_DrawWorld -- ericw -- moved from R_DrawTextureChains, which is no longer specific to the world.
-=============
-*/
-void R_DrawWorld (void)
-{
-	R_DrawTextureChains (cl.worldmodel, NULL, chain_world);
+		R_PushDlights_New (ent, localMatrix, model, model->nodes + model->hulls[0].firstclipnode);
+	else R_PushDlights_New (ent, localMatrix, model, model->nodes);
 }
 
 
@@ -620,11 +597,15 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 
 void R_DrawWorld_Old (void)
 {
+	QMATRIX localMatrix;
+
+	R_IdentityMatrix (&localMatrix);
+
 	R_ClearTextureChains (cl.worldmodel, chain_world);
 
 	R_RecursiveWorldNode (cl.worldmodel->nodes, 15);
 
-	R_DrawTextureChains (cl.worldmodel, NULL, chain_world);
+	R_DrawTextureChains (cl.worldmodel, NULL, &localMatrix, chain_world);
 }
 
 

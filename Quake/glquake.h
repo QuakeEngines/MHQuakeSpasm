@@ -221,7 +221,6 @@ void R_StoreEfrags (efrag_t **ppefrag);
 qboolean R_CullModelForEntity (entity_t *e);
 
 void R_InitParticles (void);
-void R_DrawParticles (void);
 void R_DrawParticlesARB (void);
 void CL_RunParticles (void);
 void R_ClearParticles (void);
@@ -229,7 +228,6 @@ void R_ClearParticles (void);
 void R_TranslatePlayerSkin (int playernum);
 void R_TranslateNewPlayerSkin (int playernum); // johnfitz -- this handles cases when the actual texture changes
 
-void R_DrawWorld (void);
 void R_DrawAliasModel (entity_t *e);
 void R_DrawBrushModel (entity_t *e);
 void R_DrawSpriteModel (entity_t *e);
@@ -273,7 +271,7 @@ void Sky_LoadSkyBox (const char *name);
 
 void R_ClearTextureChains (qmodel_t *mod, texchain_t chain);
 void R_ChainSurface (msurface_t *surf, texchain_t chain);
-void R_DrawTextureChains (qmodel_t *model, entity_t *ent, texchain_t chain);
+void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, texchain_t chain);
 void R_DrawWorld_Water (void);
 
 void GL_BindBuffer (GLenum target, GLuint buffer);
@@ -324,7 +322,7 @@ void GL_DepthState (GLenum enable, GLenum testmode, GLenum writemode);
 
 
 // new dynamic lights
-void R_PushDlights_New (entity_t *e, qmodel_t *mod, mnode_t *headnode);
+void R_PushDlights_New (entity_t *e, QMATRIX *localMatrix, qmodel_t *mod, mnode_t *headnode);
 extern int r_dlightframecount;
 const GLchar *GL_GetDynamicLightFragmentProgramSource (void);
 void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl);

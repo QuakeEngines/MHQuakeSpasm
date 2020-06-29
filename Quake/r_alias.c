@@ -43,8 +43,6 @@ float	shadevector[4]; // padded for shader uniforms
 
 float	entalpha; // johnfitz
 
-qboolean shading = true; // johnfitz -- if false, disable vertex shading for various reasons (fullbright, etc)
-
 // johnfitz -- struct for passing lerp information to drawing functions
 typedef struct lerpdata_s {
 	short pose1;
@@ -289,7 +287,7 @@ void GLAlias_CreateShaders (void)
 }
 
 
-void GL_DrawAliasFrame_ARB (entity_t *e, aliashdr_t *paliashdr, lerpdata_t *lerpdata, gltexture_t *tx, gltexture_t *fb)
+void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *paliashdr, lerpdata_t *lerpdata, gltexture_t *tx, gltexture_t *fb)
 {
 	float	blend;
 
@@ -352,7 +350,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, aliashdr_t *paliashdr, lerpdata_t *lerp
 		if (add > 0)
 		{
 			// move the light into the same space as the entity
-			InverseTransform2 (dl->transformed, dl->origin, lerpdata->origin, lerpdata->angles);
+			R_InverseTransform (localMatrix, dl->transformed, dl->origin);
 
 			// switch to additive blending
 			GL_DepthState (GL_TRUE, GL_EQUAL, GL_FALSE);
@@ -360,6 +358,9 @@ void GL_DrawAliasFrame_ARB (entity_t *e, aliashdr_t *paliashdr, lerpdata_t *lerp
 
 			// dynamic light programs
 			GL_BindPrograms (r_alias_dynamic_vp, r_alias_dynamic_fp);
+
+			// blend is a local param so we need to send it again after a shader change
+			glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, blend, blend, blend, 0);
 
 			// light properties
 			GL_SetupDynamicLight (dl);
@@ -563,6 +564,7 @@ R_DrawAliasModel -- johnfitz -- almost completely rewritten
 */
 void R_DrawAliasModel (entity_t *e)
 {
+	QMATRIX localMatrix;
 	aliashdr_t *paliashdr = (aliashdr_t *) Mod_Extradata (e->model);
 	int			i, anim, skinnum;
 	gltexture_t *tx, *fb;
@@ -576,21 +578,15 @@ void R_DrawAliasModel (entity_t *e)
 	if (R_CullModelForEntity (e))
 		return;
 
-	// transform it
-	glPushMatrix ();
-
-	glTranslatef (lerpdata.origin[0], lerpdata.origin[1], lerpdata.origin[2]);
-	glRotatef (lerpdata.angles[1], 0, 0, 1);
-	glRotatef (-lerpdata.angles[0], 0, 1, 0);
-	glRotatef (lerpdata.angles[2], 1, 0, 0);
-
-	shading = true;
-
 	// set up for alpha blending
 	entalpha = ENTALPHA_DECODE (e->alpha);
 
 	if (entalpha == 0)
-		goto cleanup;
+		return;
+
+	R_IdentityMatrix (&localMatrix);
+	R_TranslateMatrix (&localMatrix, lerpdata.origin[0], lerpdata.origin[1], lerpdata.origin[2]);
+	R_RotateMatrix (&localMatrix, -lerpdata.angles[0], lerpdata.angles[1], lerpdata.angles[2]);
 
 	if (entalpha < 1)
 	{
@@ -631,12 +627,14 @@ void R_DrawAliasModel (entity_t *e)
 	if (!gl_fullbrights.value)
 		fb = NULL;
 
+	// transform it
+	glPushMatrix ();
+	glMultMatrixf (localMatrix.m16);
+
 	// draw it
-	GL_DrawAliasFrame_ARB (e, paliashdr, &lerpdata, tx, fb);
+	GL_DrawAliasFrame_ARB (e, &localMatrix, paliashdr, &lerpdata, tx, fb);
 
-cleanup:
-	glShadeModel (GL_SMOOTH);
-
+	// revert the transform
 	glPopMatrix ();
 }
 

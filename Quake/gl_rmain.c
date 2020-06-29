@@ -282,74 +282,48 @@ void GL_PolygonOffset (int offset)
 
 int SignbitsForPlane (mplane_t *out)
 {
-	int	bits, j;
-
 	// for fast box on planeside test
+	int bits = 0;
 
-	bits = 0;
-	for (j = 0; j < 3; j++)
-	{
+	for (int j = 0; j < 3; j++)
 		if (out->normal[j] < 0)
 			bits |= 1 << j;
-	}
+
 	return bits;
 }
 
-/*
-===============
-TurnVector -- johnfitz
-
-turn forward towards side on the plane defined by forward and side
-if angle = 90, the result will be equal to side
-assumes side and forward are perpendicular, and normalized
-to turn away from side, use a negative angle
-===============
-*/
-#define DEG2RAD( a ) ( (a) * M_PI_DIV_180 )
-void TurnVector (vec3_t out, const vec3_t forward, const vec3_t side, float angle)
-{
-	float scale_forward, scale_side;
-
-	scale_forward = cos (DEG2RAD (angle));
-	scale_side = sin (DEG2RAD (angle));
-
-	out[0] = scale_forward * forward[0] + scale_side * side[0];
-	out[1] = scale_forward * forward[1] + scale_side * side[1];
-	out[2] = scale_forward * forward[2] + scale_side * side[2];
-}
-
-/*
-===============
-R_SetFrustum -- johnfitz -- rewritten
-===============
-*/
-void R_SetFrustum (float fovx, float fovy)
-{
-	TurnVector (frustum[0].normal, vpn, vright, fovx / 2 - 90); // left plane
-	TurnVector (frustum[1].normal, vpn, vright, 90 - fovx / 2); // right plane
-	TurnVector (frustum[2].normal, vpn, vup, 90 - fovy / 2); // bottom plane
-	TurnVector (frustum[3].normal, vpn, vup, fovy / 2 - 90); // top plane
-
-	for (int i = 0; i < 4; i++)
-	{
-		frustum[i].type = PLANE_ANYZ;
-		frustum[i].dist = DotProduct (r_origin, frustum[i].normal); // FIXME: shouldn't this always be zero?
-		frustum[i].signbits = SignbitsForPlane (&frustum[i]);
-	}
-}
 
 /*
 =============
 GL_SetFrustum -- johnfitz -- written to replace MYgluPerspective
 =============
 */
-#define NEARCLIP 4
-
-void GL_SetFrustum (float fovx, float fovy)
+void R_ExtractFrustum (mplane_t *f, QMATRIX *m)
 {
-	float xmax = NEARCLIP * tan (fovx * M_PI / 360.0);
-	float ymax = NEARCLIP * tan (fovy * M_PI / 360.0);
-	glFrustum (-xmax, xmax, -ymax, ymax, NEARCLIP, gl_farclip.value);
+	// extract the frustum from the MVP matrix
+	f[0].normal[0] = m->m4x4[0][3] - m->m4x4[0][0];
+	f[0].normal[1] = m->m4x4[1][3] - m->m4x4[1][0];
+	f[0].normal[2] = m->m4x4[2][3] - m->m4x4[2][0];
+
+	f[1].normal[0] = m->m4x4[0][3] + m->m4x4[0][0];
+	f[1].normal[1] = m->m4x4[1][3] + m->m4x4[1][0];
+	f[1].normal[2] = m->m4x4[2][3] + m->m4x4[2][0];
+
+	f[2].normal[0] = m->m4x4[0][3] + m->m4x4[0][1];
+	f[2].normal[1] = m->m4x4[1][3] + m->m4x4[1][1];
+	f[2].normal[2] = m->m4x4[2][3] + m->m4x4[2][1];
+
+	f[3].normal[0] = m->m4x4[0][3] - m->m4x4[0][1];
+	f[3].normal[1] = m->m4x4[1][3] - m->m4x4[1][1];
+	f[3].normal[2] = m->m4x4[2][3] - m->m4x4[2][1];
+
+	for (int i = 0; i < 4; i++)
+	{
+		VectorNormalize (f[i].normal);
+		f[i].dist = DotProduct (r_refdef.vieworg, f[i].normal);
+		f[i].type = PLANE_ANYZ;
+		f[i].signbits = SignbitsForPlane (&f[i]);
+	}
 }
 
 
@@ -360,31 +334,43 @@ R_SetupGL
 */
 void R_SetupGL (void)
 {
-	int scale;
+	QMATRIX view;
+	QMATRIX proj;
+	QMATRIX mvp;
 
 	// johnfitz -- rewrote this section
-	glMatrixMode (GL_PROJECTION);
-	glLoadIdentity ();
-	scale = CLAMP (1, (int) r_scale.value, 4); // ericw -- see R_ScaleView
-	glViewport (glx + r_refdef.vrect.x,
+	int scale = CLAMP (1, (int) r_scale.value, 4); // ericw -- see R_ScaleView
+
+	glViewport (
+		glx + r_refdef.vrect.x,
 		gly + glheight - r_refdef.vrect.y - r_refdef.vrect.height,
 		r_refdef.vrect.width / scale,
-		r_refdef.vrect.height / scale);
+		r_refdef.vrect.height / scale
+	);
 	// johnfitz
 
-	GL_SetFrustum (r_fovx, r_fovy); // johnfitz -- use r_fov* vars
+	R_IdentityMatrix (&proj);
+	R_FrustumMatrix (&proj, r_fovx, r_fovy);
 
-//	glCullFace(GL_BACK); // johnfitz -- glquake used CCW with backwards culling -- let's do it right
+	R_IdentityMatrix (&view);
+	R_CameraMatrix (&view, r_refdef.vieworg, r_refdef.viewangles);
+
+	// take these from the view matrix
+	Vector3Set (vpn, -view.m4x4[0][2], -view.m4x4[1][2], -view.m4x4[2][2]);
+	Vector3Set (vup, view.m4x4[0][1], view.m4x4[1][1], view.m4x4[2][1]);
+	Vector3Set (vright, view.m4x4[0][0], view.m4x4[1][0], view.m4x4[2][0]);
+
+	glMatrixMode (GL_PROJECTION);
+	glLoadMatrixf (proj.m16);
 
 	glMatrixMode (GL_MODELVIEW);
-	glLoadIdentity ();
+	glLoadMatrixf (view.m16);
 
-	glRotatef (-90, 1, 0, 0);	    // put Z going up
-	glRotatef (90, 0, 0, 1);	    // put Z going up
-	glRotatef (-r_refdef.viewangles[2], 1, 0, 0);
-	glRotatef (-r_refdef.viewangles[0], 0, 1, 0);
-	glRotatef (-r_refdef.viewangles[1], 0, 0, 1);
-	glTranslatef (-r_refdef.vieworg[0], -r_refdef.vieworg[1], -r_refdef.vieworg[2]);
+	// derive a full MVP
+	R_MultMatrix (&mvp, &view, &proj);
+
+	// and extract the frustum from it
+	R_ExtractFrustum (frustum, &mvp);
 
 	// set drawing parms
 	if (gl_cull.value)
@@ -417,29 +403,17 @@ void R_Clear (void)
 
 /*
 ===============
-R_SetupScene -- johnfitz -- this is the stuff that needs to be done once per eye in stereo mode
-===============
-*/
-void R_SetupScene (void)
-{
-	R_AnimateLight (cl.time);
-	r_framecount++;
-	R_SetupGL ();
-}
-
-
-/*
-===============
 R_SetupView -- johnfitz -- this is the stuff that needs to be done once per frame, even in stereo mode
 ===============
 */
 void R_SetupView (void)
 {
+	r_framecount++;
+
 	Fog_SetupFrame (); // johnfitz
 
 	// build the transformation matrix for the given view angles
 	VectorCopy (r_refdef.vieworg, r_origin);
-	AngleVectors (r_refdef.viewangles, vpn, vright, vup);
 
 	// current viewleaf
 	r_oldviewleaf = r_viewleaf;
@@ -459,17 +433,15 @@ void R_SetupView (void)
 		int contents = Mod_PointInLeaf (r_origin, cl.worldmodel)->contents;
 		if (contents == CONTENTS_WATER || contents == CONTENTS_SLIME || contents == CONTENTS_LAVA)
 		{
+#define DEG2RAD( a ) ( (a) * M_PI_DIV_180 ) // johnfitz
 			// variance is a percentage of width, where width = 2 * tan(fov / 2) otherwise the effect is too dramatic at high FOV and too subtle at low FOV.  what a mess!
 			r_fovx = atan (tan (DEG2RAD (r_refdef.fov_x) / 2) * (0.97 + sin (cl.time * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
 			r_fovy = atan (tan (DEG2RAD (r_refdef.fov_y) / 2) * (1.03 - sin (cl.time * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
 		}
 	}
 	// johnfitz
-
-	R_SetFrustum (r_fovx, r_fovy); // johnfitz -- use r_fov* vars
-
-	R_Clear ();
 }
+
 
 // ==============================================================================
 // RENDER VIEW
@@ -570,33 +542,6 @@ void R_DrawPolyBlend (void)
 	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
 
 	glDrawArrays (GL_TRIANGLES, 0, 3);
-}
-
-
-/*
-================
-R_RenderScene
-================
-*/
-void R_RenderScene (void)
-{
-	R_SetupScene (); // johnfitz -- this does everything that should be done once per call to RenderScene
-
-	R_MarkLeaves ();	// done here so we know if we're in water
-
-	R_DrawWorld_Old (); // MH - reverting to old-style recursive world node drawing
-
-	S_ExtraUpdate (); // don't let sound get messed up if going slow
-
-	R_DrawEntitiesOnList (false); // johnfitz -- false means this is the pass for nonalpha entities
-
-	R_DrawWorld_Water (); // johnfitz -- drawn here since they might have transparency
-
-	R_DrawEntitiesOnList (true); // johnfitz -- true means this is the pass for alpha entities
-
-	R_DrawParticlesARB ();
-
-	R_DrawViewModel (); // johnfitz -- moved here from R_RenderView
 }
 
 
@@ -728,7 +673,27 @@ void R_RenderView (void)
 
 	R_SetupView ();
 
-	R_RenderScene ();
+	R_Clear ();
+
+	R_AnimateLight (cl.time);
+
+	R_SetupGL ();
+
+	R_MarkLeaves ();	// done here so we know if we're in water
+
+	R_DrawWorld_Old (); // MH - reverting to old-style recursive world node drawing
+
+	S_ExtraUpdate (); // don't let sound get messed up if going slow
+
+	R_DrawEntitiesOnList (false); // johnfitz -- false means this is the pass for nonalpha entities
+
+	R_DrawWorld_Water (); // johnfitz -- drawn here since they might have transparency
+
+	R_DrawEntitiesOnList (true); // johnfitz -- true means this is the pass for alpha entities
+
+	R_DrawParticlesARB ();
+
+	R_DrawViewModel (); // johnfitz -- moved here from R_RenderView
 
 	R_ScaleView ();
 

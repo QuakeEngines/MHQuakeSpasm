@@ -501,44 +501,6 @@ fixed16_t Invert24To16 (fixed16_t val)
 }
 
 
-void InverseTransform (float *out, float *in, float *origin, float *angles)
-{
-	VectorSubtract (in, origin, out);
-
-	if (angles[0] || angles[1] || angles[2])
-	{
-		vec3_t	temp;
-		vec3_t	forward, right, up;
-
-		VectorCopy (out, temp);
-		AngleVectors (angles, forward, right, up);
-
-		out[0] = DotProduct (temp, forward);
-		out[1] = -DotProduct (temp, right);
-		out[2] = DotProduct (temp, up);
-	}
-}
-
-
-void InverseTransform2 (float *out, float *in, float *origin, float *angles)
-{
-	VectorSubtract (in, origin, out);
-
-	if (angles[0] || angles[1] || angles[2])
-	{
-		vec3_t	temp;
-		vec3_t	forward, right, up;
-
-		VectorCopy (out, temp);
-		AngleVectors (angles, forward, right, up);
-
-		out[0] = DotProduct (temp, forward);
-		out[1] = DotProduct (temp, right);
-		out[2] = DotProduct (temp, up);
-	}
-}
-
-
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------
 // matrix stuff
 

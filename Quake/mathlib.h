@@ -72,7 +72,7 @@ static inline int IS_NAN (float x)
 	}\
 }
 
-void TurnVector (vec3_t out, const vec3_t forward, const vec3_t side, float angle); // johnfitz
+
 void VectorAngles (const vec3_t forward, vec3_t angles); // johnfitz
 
 void VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc);
@@ -120,9 +120,6 @@ float	anglemod (float a);
 		BoxOnPlaneSide( (emins), (emaxs), (p)))
 
 
-void InverseTransform (float *out, float *in, float *origin, float *angles);
-void InverseTransform2 (float *out, float *in, float *origin, float *angles);
-
 
 // matrix stuff
 // make this available everywhere
@@ -144,6 +141,14 @@ QMATRIX *R_RotateMatrixAxis (QMATRIX *m, float angle, float x, float y, float z)
 QMATRIX *R_CameraMatrix (QMATRIX *m, const float *origin, const float *angles);
 void R_InverseTransform (QMATRIX *m, float *out, const float *in);
 void R_Transform (QMATRIX *m, float *out, const float *in);
+
+
+__inline void Vector3Set (float *vec, const float x, const float y, const float z)
+{
+	vec[0] = x;
+	vec[1] = y;
+	vec[2] = z;
+}
 
 
 #endif	/* __MATHLIB_H */

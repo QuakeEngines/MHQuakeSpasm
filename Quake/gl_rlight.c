@@ -233,7 +233,7 @@ void R_MarkLights_New (dlight_t *dl, mnode_t *node, int visframe)
 }
 
 
-void R_PushDlights_New (entity_t *e, qmodel_t *mod, mnode_t *headnode)
+void R_PushDlights_New (entity_t *e, QMATRIX *localMatrix, qmodel_t *mod, mnode_t *headnode)
 {
 	for (int i = 0; i < MAX_DLIGHTS; i++)
 	{
@@ -242,10 +242,10 @@ void R_PushDlights_New (entity_t *e, qmodel_t *mod, mnode_t *headnode)
 		if (dl->die < cl.time || !(dl->radius > dl->minlight))
 			continue;
 
-		if (e)
+		if (localMatrix)
 		{
 			// move the light into the same space as the entity
-			InverseTransform (dl->transformed, dl->origin, e->origin, e->angles);
+			R_InverseTransform (localMatrix, dl->transformed, dl->origin);
 		}
 		else
 		{

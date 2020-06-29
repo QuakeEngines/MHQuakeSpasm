@@ -87,6 +87,7 @@ void R_DrawBrushModel (entity_t *e)
 	float		dot;
 	mplane_t *pplane;
 	qmodel_t *clmodel;
+	QMATRIX		localMatrix;
 
 	if (R_CullModelForEntity (e))
 		return;
@@ -94,16 +95,13 @@ void R_DrawBrushModel (entity_t *e)
 	currententity = e;
 	clmodel = e->model;
 
-	InverseTransform (modelorg, r_refdef.vieworg, e->origin, e->angles);
+	R_IdentityMatrix (&localMatrix);
+	R_TranslateMatrix (&localMatrix, e->origin[0], e->origin[1], e->origin[2]);
+	R_RotateMatrix (&localMatrix, e->angles[0], e->angles[1], e->angles[2]);
+
+	R_InverseTransform (&localMatrix, modelorg, r_refdef.vieworg);
 
 	psurf = &clmodel->surfaces[clmodel->firstmodelsurface];
-
-	glPushMatrix ();
-
-	glTranslatef (e->origin[0], e->origin[1], e->origin[2]);
-	glRotatef (e->angles[1], 0, 0, 1);
-	glRotatef (e->angles[0], 0, 1, 0);
-	glRotatef (e->angles[2], 1, 0, 0);
 
 	R_ClearTextureChains (clmodel, chain_model);
 
@@ -119,7 +117,10 @@ void R_DrawBrushModel (entity_t *e)
 		}
 	}
 
-	R_DrawTextureChains (clmodel, e, chain_model);
+	glPushMatrix ();
+	glMultMatrixf (localMatrix.m16);
+
+	R_DrawTextureChains (clmodel, e, &localMatrix, chain_model);
 	R_DrawTextureChains_Water (clmodel, e, chain_model);
 
 	glPopMatrix ();
