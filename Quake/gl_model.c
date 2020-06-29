@@ -1231,7 +1231,7 @@ void Mod_LoadNodes_S (lump_t *l)
 		p = LittleLong (in->planenum);
 		out->plane = loadmodel->planes + p;
 
-		out->firstsurface = (unsigned short) LittleShort (in->firstface); // johnfitz -- explicit cast as unsigned short
+		out->surfaces = loadmodel->surfaces + (unsigned short) LittleShort (in->firstface); // johnfitz -- explicit cast as unsigned short
 		out->numsurfaces = (unsigned short) LittleShort (in->numfaces); // johnfitz -- explicit cast as unsigned short
 
 		for (j = 0; j < 2; j++)
@@ -1283,7 +1283,7 @@ void Mod_LoadNodes_L1 (lump_t *l)
 		p = LittleLong (in->planenum);
 		out->plane = loadmodel->planes + p;
 
-		out->firstsurface = LittleLong (in->firstface); // johnfitz -- explicit cast as unsigned short
+		out->surfaces = loadmodel->surfaces + LittleLong (in->firstface); // johnfitz -- explicit cast as unsigned short
 		out->numsurfaces = LittleLong (in->numfaces); // johnfitz -- explicit cast as unsigned short
 
 		for (j = 0; j < 2; j++)
@@ -1335,7 +1335,7 @@ void Mod_LoadNodes_L2 (lump_t *l)
 		p = LittleLong (in->planenum);
 		out->plane = loadmodel->planes + p;
 
-		out->firstsurface = LittleLong (in->firstface); // johnfitz -- explicit cast as unsigned short
+		out->surfaces = loadmodel->surfaces + LittleLong (in->firstface); // johnfitz -- explicit cast as unsigned short
 		out->numsurfaces = LittleLong (in->numfaces); // johnfitz -- explicit cast as unsigned short
 
 		for (j = 0; j < 2; j++)
@@ -2769,4 +2769,98 @@ void Mod_Print (void)
 	}
 	Con_Printf ("%i models\n", mod_numknown); // johnfitz -- print the total too
 }
+
+
+int Mod_GetAutoAnimation (float *intervals, int numframes, float syncbase)
+{
+	int i;
+
+	// allow a random or fixed syncbase
+	float time = cl.time + syncbase;
+
+	// get the last interval for animation
+	float fullinterval = intervals[numframes - 1];
+
+	// when loading in Mod_LoadSpriteGroup, we guaranteed all interval values
+	// are positive, so we don't have to worry about division by 0
+	float targettime = time - ((int) (time / fullinterval)) * fullinterval;
+
+	for (i = 0; i < (numframes - 1); i++)
+		if (intervals[i] > targettime)
+			break;
+
+	return i;
+}
+
+
+char *Mod_ValueForKeyFromWorldspawn (char *entities, char *findkey)
+{
+	char key[128];
+	char *data;
+
+	// read worldspawn (this is so ugly, and shouldn't it be done on the server?)
+	if ((data = entities) == NULL) return NULL;
+	if ((data = COM_Parse (data)) == NULL) return NULL;
+	if (com_token[0] != '{') return NULL;
+
+	while (1)
+	{
+		if ((data = COM_Parse (data)) == NULL) return NULL;
+		if (com_token[0] == '}') break;
+
+		if (com_token[0] == '_')
+			strcpy (key, &com_token[1]);
+		else strcpy (key, com_token);
+
+		while (key[strlen (key) - 1] == ' ') // remove trailing spaces
+			key[strlen (key) - 1] = 0;
+
+		if ((data = COM_Parse (data)) == NULL) return NULL;
+
+		if (!strcmp (key, findkey))
+		{
+			// alloc on the hunk so it can be safely returned and will automatically free with the rest of the memory used for the map
+			char *value = (char *) Hunk_Alloc (strlen (com_token) + 1);
+
+			strcpy (value, com_token);
+			return value;
+		}
+	}
+
+	return NULL;
+}
+
+
+qboolean Mod_IsUnderwaterLeaf (mleaf_t *leaf)
+{
+	if (leaf->contents == CONTENTS_WATER) return true;
+	if (leaf->contents == CONTENTS_SLIME) return true;
+	if (leaf->contents == CONTENTS_LAVA) return true;
+
+	return false;
+}
+
+
+float Mod_PlaneDist (mplane_t *plane, float *org)
+{
+	switch (plane->type)
+	{
+	case PLANE_X:
+		return org[0] - plane->dist;
+		break;
+
+	case PLANE_Y:
+		return org[1] - plane->dist;
+		break;
+
+	case PLANE_Z:
+		return org[2] - plane->dist;
+		break;
+
+	default:
+		return DotProduct (org, plane->normal) - plane->dist;
+		break;
+	}
+}
+
 

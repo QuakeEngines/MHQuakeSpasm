@@ -114,7 +114,7 @@ start:;
 	maxdist = dl->radius * dl->radius;
 
 	// mark the polygons
-	surf = cl.worldmodel->surfaces + node->firstsurface;
+	surf = node->surfaces;
 
 	for (i = 0; i < node->numsurfaces; i++, surf++)
 	{
@@ -238,7 +238,7 @@ loc0:
 		VectorCopy (mid, lightspot);
 		lightplane = node->plane;
 
-		surf = cl.worldmodel->surfaces + node->firstsurface;
+		surf = node->surfaces;
 
 		for (i = 0; i < node->numsurfaces; i++, surf++)
 		{
@@ -267,7 +267,7 @@ loc0:
 
 			if (surf->samples)
 			{
-				// MH - changed this over to use the same lightiing calc as R_BuildLightmap for consistency
+				// MH - changed this over to use the same lighting calc as R_BuildLightmap for consistency
 				byte *lightmap = surf->samples + ((dt >> 4) * ((surf->extents[0] >> 4) + 1) + (ds >> 4)) * 3; // LordHavoc: *3 for color
 
 				for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)

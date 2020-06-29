@@ -188,7 +188,7 @@ typedef struct mnode_s {
 	mplane_t *plane;
 	struct mnode_s *children[2];
 
-	unsigned int		firstsurface;
+	struct msurface_s *surfaces;
 	unsigned int		numsurfaces;
 } mnode_t;
 
@@ -488,4 +488,12 @@ byte *Mod_NoVisPVS (qmodel_t *model);
 
 void Mod_SetExtraFlags (qmodel_t *mod);
 
+int Mod_GetAutoAnimation (float *intervals, int numframes, float syncbase);
+char *Mod_ValueForKeyFromWorldspawn (char *entities, char *findkey);
+qboolean Mod_IsUnderwaterLeaf (mleaf_t *leaf);
+float Mod_PlaneDist (mplane_t *plane, float *org);
+
+
 #endif	// __MODEL__
+
+

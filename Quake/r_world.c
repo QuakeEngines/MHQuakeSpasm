@@ -134,7 +134,7 @@ void R_MarkSurfaces (void)
 	// becuase his tool doesn't actually remove the surfaces from the bsp surfaces lump
 	// nor does it remove references to them in each leaf's marksurfaces list
 	for (i = 0, node = cl.worldmodel->nodes; i < cl.worldmodel->numnodes; i++, node++)
-		for (j = 0, surf = &cl.worldmodel->surfaces[node->firstsurface]; j < node->numsurfaces; j++, surf++)
+		for (j = 0, surf = node->surfaces; j < node->numsurfaces; j++, surf++)
 			if (surf->visframe == r_visframecount)
 			{
 				R_ChainSurface (surf, chain_world);
@@ -636,6 +636,7 @@ void R_DrawWorld (void)
 	R_DrawTextureChains (cl.worldmodel, NULL, chain_world);
 }
 
+
 /*
 =============
 R_DrawWorld_Water -- ericw -- moved from R_DrawTextureChains_Water, which is no longer specific to the world.
@@ -644,6 +645,123 @@ R_DrawWorld_Water -- ericw -- moved from R_DrawTextureChains_Water, which is no 
 void R_DrawWorld_Water (void)
 {
 	R_DrawTextureChains_Water (cl.worldmodel, NULL, chain_world);
+}
+
+
+/*
+================
+R_RecursiveWorldNode
+================
+*/
+void R_RecursiveWorldNode (mnode_t *node, int clipflags)
+{
+	int			c, side;
+	double		dot;
+
+	if (node->contents == CONTENTS_SOLID) return;		// solid
+	if (node->visframe != r_visframecount) return;
+
+	if (clipflags)
+	{
+		for (c = 0; c < 4; c++)
+		{
+			// don't need to clip against it
+			if (!(clipflags & (1 << c))) continue;
+
+			side = BoxOnPlaneSide (node->minmaxs, &node->minmaxs[3], &frustum[c]);
+
+			if (side == 1) clipflags &= ~(1 << c);	// node is entirely on screen
+			if (side == 2) return;	// node is entirely off screen
+		}
+	}
+
+	// if a leaf node, draw stuff
+	if (node->contents < 0)
+	{
+		mleaf_t *pleaf = (mleaf_t *) node;
+		msurface_t **mark = pleaf->firstmarksurface;
+
+		if ((pleaf->nummarksurfaces) > 0)
+		{
+			do
+			{
+				(*mark)->visframe = r_framecount;
+				mark++;
+			} while (--c);
+		}
+
+		// deal with model fragments in this leaf
+		if (pleaf->efrags) R_StoreEfrags (&pleaf->efrags);
+
+		return;
+	}
+
+	// node is just a decision point, so go down the apropriate sides
+	// find which side of the node we are on
+	if ((dot = Mod_PlaneDist (node->plane, r_refdef.vieworg)) >= 0)
+		side = 0;
+	else side = 1;
+
+	// recurse down the children, front side first
+	R_RecursiveWorldNode (node->children[side], clipflags);
+
+	// draw stuff
+	if ((c = node->numsurfaces) > 0)
+	{
+		for (msurface_t *surf = node->surfaces; c; c--, surf++)
+		{
+			// do fast reject cases first
+			if (surf->visframe != r_framecount) continue;
+			if ((dot < 0) ^ !!(surf->flags & SURF_PLANEBACK)) continue;
+			if (R_CullBox (surf->mins, surf->maxs)) continue;
+
+			// and chain it for drawing
+			//R_ChainSurface (surf, &r_worldentity);
+		}
+	}
+
+	// recurse down the back side
+	R_RecursiveWorldNode (node->children[!side], clipflags);
+}
+
+
+void R_AddPVSLeaf (mleaf_t *leaf)
+{
+	byte *vis = Mod_LeafPVS (leaf, cl.worldmodel);
+	int i;
+
+	for (i = 0; i < cl.worldmodel->numleafs; i++)
+	{
+		if (vis[i >> 3] & (1 << (i & 7)))
+		{
+			mnode_t *node = (mnode_t *) &cl.worldmodel->leafs[i + 1];
+
+			do
+			{
+				if (node->visframe == r_visframecount)
+					break;
+
+				node->visframe = r_visframecount;
+				node = node->parent;
+			} while (node);
+		}
+	}
+}
+
+
+void R_MarkLeaves (void)
+{
+	if (r_oldviewleaf == r_viewleaf)
+		return;
+
+	r_visframecount++;
+
+	R_AddPVSLeaf (r_viewleaf);
+
+	if (r_oldviewleaf && r_oldviewleaf->contents != r_viewleaf->contents)
+		R_AddPVSLeaf (r_oldviewleaf);
+
+	r_oldviewleaf = r_viewleaf;
 }
 
 
