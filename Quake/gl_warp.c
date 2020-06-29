@@ -161,27 +161,16 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 		if (!t || !t->texturechains[chain] || !(t->texturechains[chain]->flags & SURF_DRAWTURB))
 			continue;
 
-		qboolean bound = false;
-		float entalpha = 1.0f;
+		float entalpha = GL_WaterAlphaForEntitySurface (ent, t->texturechains[chain]);
+
+		R_BeginTransparentDrawing (entalpha);
+		GL_BindTexture (GL_TEXTURE0, t->gltexture);
+
+		R_ClearBatch ();
 
 		for (msurface_t *s = t->texturechains[chain]; s; s = s->texturechain)
 		{
-			if (s->culled) continue;
-
-			if (!bound) // only bind once we are sure we need this texture
-			{
-				entalpha = GL_WaterAlphaForEntitySurface (ent, s);
-
-				R_BeginTransparentDrawing (entalpha);
-				GL_BindTexture (GL_TEXTURE0, t->gltexture);
-
-				R_ClearBatch ();
-
-				bound = true;
-			}
-
 			R_BatchSurface (s);
-
 			rs_brushpasses++;
 		}
 

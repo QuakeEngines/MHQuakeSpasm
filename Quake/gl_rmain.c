@@ -438,7 +438,7 @@ void R_SetupView (void)
 {
 	Fog_SetupFrame (); // johnfitz
 
-// build the transformation matrix for the given view angles
+	// build the transformation matrix for the given view angles
 	VectorCopy (r_refdef.vieworg, r_origin);
 	AngleVectors (r_refdef.viewangles, vpn, vright, vup);
 
@@ -454,6 +454,7 @@ void R_SetupView (void)
 	// johnfitz -- calculate r_fovx and r_fovy here
 	r_fovx = r_refdef.fov_x;
 	r_fovy = r_refdef.fov_y;
+
 	if (r_waterwarp.value)
 	{
 		int contents = Mod_PointInLeaf (r_origin, cl.worldmodel)->contents;
@@ -467,10 +468,6 @@ void R_SetupView (void)
 	// johnfitz
 
 	R_SetFrustum (r_fovx, r_fovy); // johnfitz -- use r_fov* vars
-
-	R_MarkSurfaces (); // johnfitz -- create texture chains from PVS
-
-	R_CullSurfaces (); // johnfitz -- do after R_SetFrustum and R_MarkSurfaces
 
 	R_Clear ();
 }
@@ -586,7 +583,9 @@ void R_RenderScene (void)
 {
 	R_SetupScene (); // johnfitz -- this does everything that should be done once per call to RenderScene
 
-	R_DrawWorld ();
+	R_MarkLeaves ();	// done here so we know if we're in water
+
+	R_DrawWorld_Old (); // MH - reverting to old-style recursive world node drawing
 
 	S_ExtraUpdate (); // don't let sound get messed up if going slow
 

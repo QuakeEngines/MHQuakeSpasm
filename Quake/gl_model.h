@@ -75,7 +75,8 @@ typedef struct mplane_s {
 //          without affecting the world
 typedef enum {
 	chain_world = 0,
-	chain_model = 1
+	chain_model = 1,
+	chain_dlight = 2
 } texchain_t;
 
 typedef struct texture_s {
@@ -83,7 +84,7 @@ typedef struct texture_s {
 	unsigned			width, height;
 	struct gltexture_s *gltexture; // johnfitz -- pointer to gltexture
 	struct gltexture_s *fullbright; // johnfitz -- fullbright mask texture
-	struct msurface_s *texturechains[2];	// for texture chains
+	struct msurface_s *texturechains[3];	// for texture chains
 	int					anim_total;				// total tenths in sequence ( 0 = no)
 	int					anim_min, anim_max;		// time for this frame min <=time< max
 	struct texture_s *anim_next;		// in the animation sequence
@@ -136,7 +137,6 @@ typedef struct brushpolyvert_s {
 
 typedef struct msurface_s {
 	int			visframe;		// should be drawn when node is crossed
-	qboolean	culled;			// johnfitz -- for frustum culling
 	float		mins[3];		// johnfitz -- for frustum culling
 	float		maxs[3];		// johnfitz -- for frustum culling
 

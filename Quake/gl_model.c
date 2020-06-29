@@ -2156,10 +2156,10 @@ void *Mod_LoadAllSkins (int numskins, daliasskintype_t *pskintype)
 	if (loadmodel->flags & MF_HOLEY)
 		texflags |= TEXPREF_ALPHA;
 
-	// MH - the original Fitzquake code didn't mipmap alias models
+	// MH - the original Fitzquake code didn't mipmap alias models, but we should
 	texflags |= TEXPREF_MIPMAP;
 
-	// alias skins need to floodfill both on initial load and following a vid_restart
+	// alias skins need to floodfill both on initial load and following a vid_restart, so we just flag the floodfill here but run it from TexMgr_LoadImage8
 	texflags |= TEXPREF_FLOODFILL;
 
 	for (i = 0; i < numskins; i++)
@@ -2298,8 +2298,7 @@ void Mod_CalcAliasBounds (aliashdr_t *a)
 	loadmodel->ymaxs[2] = loadmodel->maxs[2];
 }
 
-static qboolean
-nameInList (const char *list, const char *name)
+static qboolean nameInList (const char *list, const char *name)
 {
 	const char *s;
 	char tmp[MAX_QPATH];

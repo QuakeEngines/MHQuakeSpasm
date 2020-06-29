@@ -57,192 +57,13 @@ R_ChainSurface -- ericw -- adds the given surface to its texture chain
 */
 void R_ChainSurface (msurface_t *surf, texchain_t chain)
 {
+	if (!(surf->flags & SURF_DRAWTILED))
+		R_RenderDynamicLightmaps (surf);
+
 	surf->texturechain = surf->texinfo->texture->texturechains[chain];
 	surf->texinfo->texture->texturechains[chain] = surf;
 }
 
-/*
-===============
-R_MarkSurfaces -- johnfitz -- mark surfaces based on PVS and rebuild texture chains
-===============
-*/
-void R_MarkSurfaces (void)
-{
-	byte *vis;
-	mleaf_t *leaf;
-	mnode_t *node;
-	msurface_t *surf, **mark;
-	int			i, j;
-	qboolean	nearwaterportal;
-
-	// check this leaf for water portals
-	// TODO: loop through all water surfs and use distance to leaf cullbox
-	nearwaterportal = false;
-	for (i = 0, mark = r_viewleaf->firstmarksurface; i < r_viewleaf->nummarksurfaces; i++, mark++)
-		if ((*mark)->flags & SURF_DRAWTURB)
-			nearwaterportal = true;
-
-	// choose vis data
-	if (r_novis.value || r_viewleaf->contents == CONTENTS_SOLID || r_viewleaf->contents == CONTENTS_SKY)
-		vis = Mod_NoVisPVS (cl.worldmodel);
-	else if (nearwaterportal)
-		vis = SV_FatPVS (r_origin, cl.worldmodel);
-	else
-		vis = Mod_LeafPVS (r_viewleaf, cl.worldmodel);
-
-	// if surface chains don't need regenerating, just add static entities and return
-	if (r_oldviewleaf == r_viewleaf && !vis_changed && !nearwaterportal)
-	{
-		leaf = &cl.worldmodel->leafs[1];
-		for (i = 0; i < cl.worldmodel->numleafs; i++, leaf++)
-			if (vis[i >> 3] & (1 << (i & 7)))
-				if (leaf->efrags)
-					R_StoreEfrags (&leaf->efrags);
-		return;
-	}
-
-	vis_changed = false;
-	r_visframecount++;
-	r_oldviewleaf = r_viewleaf;
-
-	// iterate through leaves, marking surfaces
-	leaf = &cl.worldmodel->leafs[1];
-	for (i = 0; i < cl.worldmodel->numleafs; i++, leaf++)
-	{
-		if (vis[i >> 3] & (1 << (i & 7)))
-		{
-			if (r_oldskyleaf.value || leaf->contents != CONTENTS_SKY)
-				for (j = 0, mark = leaf->firstmarksurface; j < leaf->nummarksurfaces; j++, mark++)
-					(*mark)->visframe = r_visframecount;
-
-			// add static models
-			if (leaf->efrags)
-				R_StoreEfrags (&leaf->efrags);
-		}
-	}
-
-	// set all chains to null
-	for (i = 0; i < cl.worldmodel->numtextures; i++)
-		if (cl.worldmodel->textures[i])
-			cl.worldmodel->textures[i]->texturechains[chain_world] = NULL;
-
-	// rebuild chains
-
-#if 1
-	// iterate through surfaces one node at a time to rebuild chains
-	// need to do it this way if we want to work with tyrann's skip removal tool
-	// becuase his tool doesn't actually remove the surfaces from the bsp surfaces lump
-	// nor does it remove references to them in each leaf's marksurfaces list
-	for (i = 0, node = cl.worldmodel->nodes; i < cl.worldmodel->numnodes; i++, node++)
-		for (j = 0, surf = node->surfaces; j < node->numsurfaces; j++, surf++)
-			if (surf->visframe == r_visframecount)
-			{
-				R_ChainSurface (surf, chain_world);
-			}
-#else
-	// the old way
-	surf = &cl.worldmodel->surfaces[cl.worldmodel->firstmodelsurface];
-	for (i = 0; i < cl.worldmodel->nummodelsurfaces; i++, surf++)
-	{
-		if (surf->visframe == r_visframecount)
-		{
-			R_ChainSurface (surf, chain_world);
-		}
-	}
-#endif
-}
-
-/*
-================
-R_BackFaceCull -- johnfitz -- returns true if the surface is facing away from vieworg
-================
-*/
-qboolean R_BackFaceCull (msurface_t *surf)
-{
-	double dot;
-
-	switch (surf->plane->type)
-	{
-	case PLANE_X:
-		dot = r_refdef.vieworg[0] - surf->plane->dist;
-		break;
-	case PLANE_Y:
-		dot = r_refdef.vieworg[1] - surf->plane->dist;
-		break;
-	case PLANE_Z:
-		dot = r_refdef.vieworg[2] - surf->plane->dist;
-		break;
-	default:
-		dot = DotProduct (r_refdef.vieworg, surf->plane->normal) - surf->plane->dist;
-		break;
-	}
-
-	if ((dot < 0) ^ !!(surf->flags & SURF_PLANEBACK))
-		return true;
-
-	return false;
-}
-
-/*
-================
-R_CullSurfaces -- johnfitz
-================
-*/
-void R_CullSurfaces (void)
-{
-	msurface_t *s;
-	int i;
-	texture_t *t;
-
-	// ericw -- instead of testing (s->visframe == r_visframecount) on all world
-	// surfaces, use the chained surfaces, which is exactly the same set of sufaces
-	for (i = 0; i < cl.worldmodel->numtextures; i++)
-	{
-		t = cl.worldmodel->textures[i];
-
-		if (!t || !t->texturechains[chain_world])
-			continue;
-
-		for (s = t->texturechains[chain_world]; s; s = s->texturechain)
-		{
-			if (R_CullBox (s->mins, s->maxs) || R_BackFaceCull (s))
-				s->culled = true;
-			else
-			{
-				s->culled = false;
-				rs_brushpolys++; // count wpolys here
-			}
-		}
-	}
-}
-
-/*
-================
-R_BuildLightmapChains
-
-ericw -- now always used at the start of R_DrawTextureChains for the
-mh dynamic lighting speedup
-================
-*/
-void R_BuildLightmapChains (qmodel_t *model, texchain_t chain)
-{
-	texture_t *t;
-	msurface_t *s;
-	int i;
-
-	// now rebuild them
-	for (i = 0; i < model->numtextures; i++)
-	{
-		t = model->textures[i];
-
-		if (!t || !t->texturechains[chain])
-			continue;
-
-		for (s = t->texturechains[chain]; s; s = s->texturechain)
-			if (!s->culled)
-				R_RenderDynamicLightmaps (s);
-	}
-}
 
 // ==============================================================================
 // DRAW CHAINS
@@ -482,22 +303,14 @@ extern GLuint r_surfaces_vbo;
 
 void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 {
-	int num_surfaces = 0;
-
 	// build lightmap chains from the surf; this also reverses the draw order so we get front-to-back for better z buffer performance
 	for (; s; s = s->texturechain)
 	{
-		if (s->culled) continue;
-
 		s->lightmapchain = gl_lightmaps[s->lightmaptexturenum].texturechain;
 		gl_lightmaps[s->lightmaptexturenum].texturechain = s;
 
 		rs_brushpasses++;
-		num_surfaces++;
 	}
-
-	// if no surfaces were added don't draw it
-	if (!num_surfaces) return;
 
 	// and now we can draw it
 	GL_BindTexture (GL_TEXTURE0, t->gltexture);
@@ -614,14 +427,7 @@ R_DrawWorld -- johnfitz -- rewritten
 */
 void R_DrawTextureChains (qmodel_t *model, entity_t *ent, texchain_t chain)
 {
-	// ericw -- the mh dynamic lightmap speedup: make a first pass through all
-	// surfaces we are going to draw, and rebuild any lightmaps that need it.
-	// the previous implementation of the speedup uploaded lightmaps one frame
-	// late which was visible under some conditions, this method avoids that.
-	R_BuildLightmapChains (model, chain);
 	R_UploadLightmaps ();
-
-	// OpenGL 2 fast path
 	R_DrawTextureChains_ARB (model, ent, chain);
 }
 
@@ -681,7 +487,7 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 		mleaf_t *pleaf = (mleaf_t *) node;
 		msurface_t **mark = pleaf->firstmarksurface;
 
-		if ((pleaf->nummarksurfaces) > 0)
+		if ((c = pleaf->nummarksurfaces) > 0)
 		{
 			do
 			{
@@ -716,7 +522,7 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 			if (R_CullBox (surf->mins, surf->maxs)) continue;
 
 			// and chain it for drawing
-			//R_ChainSurface (surf, &r_worldentity);
+			R_ChainSurface (surf, chain_world);
 		}
 	}
 
@@ -725,12 +531,21 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 }
 
 
+void R_DrawWorld_Old (void)
+{
+	R_ClearTextureChains (cl.worldmodel, chain_world);
+
+	R_RecursiveWorldNode (cl.worldmodel->nodes, 15);
+
+	R_DrawTextureChains (cl.worldmodel, NULL, chain_world);
+}
+
+
 void R_AddPVSLeaf (mleaf_t *leaf)
 {
 	byte *vis = Mod_LeafPVS (leaf, cl.worldmodel);
-	int i;
 
-	for (i = 0; i < cl.worldmodel->numleafs; i++)
+	for (int i = 0; i < cl.worldmodel->numleafs; i++)
 	{
 		if (vis[i >> 3] & (1 << (i & 7)))
 		{
