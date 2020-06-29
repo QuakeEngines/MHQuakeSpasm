@@ -119,5 +119,9 @@ float	anglemod (float a);
 	:										\
 		BoxOnPlaneSide( (emins), (emaxs), (p)))
 
+
+void InverseTransform (float *out, float *in, float *origin, float *angles);
+
+
 #endif	/* __MATHLIB_H */
 

@@ -70,6 +70,7 @@ typedef struct dlight_s {
 	float	minlight;			// don't add when contributing less
 	int		key;
 	vec3_t	color;				// johnfitz -- lit support via lordhavoc
+	int		numsurfaces;		// mh - track number of surfaces hit by this dlight
 } dlight_t;
 
 

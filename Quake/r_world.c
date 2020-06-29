@@ -52,6 +52,7 @@ void R_ClearTextureChains (qmodel_t *mod, texchain_t chain)
 	}
 }
 
+
 /*
 ================
 R_ChainSurface -- ericw -- adds the given surface to its texture chain
@@ -61,7 +62,10 @@ void R_ChainSurface (msurface_t *surf, texchain_t chain)
 {
 	// run dynamic lighting if we're not collecting dlight surfaces
 	if (!(surf->flags & SURF_DRAWTILED) && chain != chain_dlight)
+	{
+		surf->dlightframe = r_dlightframecount;
 		R_RenderDynamicLightmaps (surf);
+	}
 
 	surf->texturechain = surf->texinfo->texture->texturechains[chain];
 	surf->texinfo->texture->texturechains[chain] = surf;
@@ -188,6 +192,9 @@ void R_DrawTextureChains_NoTexture (qmodel_t *model, texchain_t chain)
 static GLuint r_lightmapped_vp = 0;
 static GLuint r_lightmapped_fp[2] = { 0, 0 }; // luma, no luma
 
+static GLuint r_dynamic_vp = 0;
+static GLuint r_dynamic_fp = 0;
+
 /*
 =============
 GLWorld_CreateShaders
@@ -195,7 +202,7 @@ GLWorld_CreateShaders
 */
 void GLWorld_CreateShaders (void)
 {
-	const GLchar *vp_source = \
+	const GLchar *vp_lightmapped_source = \
 		"!!ARBvp1.0\n"
 		"\n"
 		"# transform position to output\n"
@@ -217,7 +224,7 @@ void GLWorld_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	const GLchar *fp_source0 = \
+	const GLchar *fp_lightmapped_source0 = \
 		"!!ARBfp1.0\n"
 		"\n"
 		"TEMP diff, lmap, fence;\n"
@@ -254,7 +261,7 @@ void GLWorld_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	const GLchar *fp_source1 = \
+	const GLchar *fp_lightmapped_source1 = \
 		"!!ARBfp1.0\n"
 		"\n"
 		"TEMP diff, lmap, luma, fence;\n"
@@ -295,9 +302,34 @@ void GLWorld_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	r_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_source);
-	r_lightmapped_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source0);
-	r_lightmapped_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source1);
+	const GLchar *vp_dynamic_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"# transform position to output\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.attrib[0];\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.attrib[0];\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.attrib[0];\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.attrib[0];\n"
+		"\n"
+		"# copy over diffuse texcoord\n"
+		"MOV result.texcoord[0], vertex.attrib[1];\n"
+		"\n"
+		"# copy over the normal in texcoord[1] so that we can do per-pixel lighting\n"
+		"MOV result.texcoord[1], vertex.attrib[3];\n"
+		"\n"
+		"# set up fog coordinate\n"
+		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	r_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_lightmapped_source);
+	r_lightmapped_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source0);
+	r_lightmapped_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source1);
+
+	r_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_dynamic_source);
+	r_dynamic_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDynamicLightFragmentProgramSource ());
 }
 
 
@@ -419,6 +451,47 @@ void R_DrawTextureChains_ARB (qmodel_t *model, entity_t *ent, texchain_t chain)
 			// normal lightmapped surface - turbs are drawn separately because of alpha
 			R_DrawLightmappedChain (s, R_TextureAnimation (t, ent != NULL ? ent->frame : 0));
 		}
+	}
+
+	if (!ent)
+		R_PushDlights_New (ent, model, cl.worldmodel->nodes);
+}
+
+
+void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl)
+{
+	// switch to additive blending
+	GL_DepthState (GL_TRUE, GL_EQUAL, GL_FALSE);
+	GL_BlendState (GL_TRUE, GL_ONE, GL_ONE);
+
+	// dynamic light programs
+	GL_BindPrograms (r_dynamic_vp, r_dynamic_fp);
+
+	// light properties
+
+	// and draw them
+	for (int i = 0; i < model->numtextures; i++)
+	{
+		// fixme - make this never happen!!!
+		if (!model->textures[i]) continue;
+
+		texture_t *t = model->textures[i];
+		msurface_t *s = t->texturechains[chain_dlight];
+
+		if (!s) continue;
+
+		texture_t *anim = R_TextureAnimation (t, ent != NULL ? ent->frame : 0);
+
+		GL_BindTexture (GL_TEXTURE0, anim->gltexture);
+
+		R_ClearBatch ();
+
+		for (; s; s = s->texturechain)
+		{
+			R_BatchSurface (s);
+		}
+
+		R_FlushBatch ();
 	}
 }
 

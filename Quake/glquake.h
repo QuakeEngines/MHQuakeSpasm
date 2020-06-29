@@ -302,23 +302,6 @@ float GL_WaterAlphaForSurface (msurface_t *surf);
 #define VAA14 (1 << 14)
 #define VAA15 (1 << 15)
 
-// array has a divisor of 1
-#define VDIV0 (1 << 16)
-#define VDIV1 (1 << 17)
-#define VDIV2 (1 << 18)
-#define VDIV3 (1 << 19)
-#define VDIV4 (1 << 20)
-#define VDIV5 (1 << 21)
-#define VDIV6 (1 << 22)
-#define VDIV7 (1 << 23)
-#define VDIV8 (1 << 24)
-#define VDIV9 (1 << 25)
-#define VDIV10 (1 << 26)
-#define VDIV11 (1 << 27)
-#define VDIV12 (1 << 28)
-#define VDIV13 (1 << 29)
-#define VDIV14 (1 << 30)
-#define VDIV15 (1 << 31)
 
 void GL_EnableVertexAttribArrays (int arrays);
 void GL_BindPrograms (GLuint vp, GLuint fp);
@@ -339,6 +322,13 @@ void Sky_FreeSkybox (void);
 
 void GL_BlendState (GLenum enable, GLenum sfactor, GLenum dfactor);
 void GL_DepthState (GLenum enable, GLenum testmode, GLenum writemode);
+
+
+// new dynamic lights
+void R_PushDlights_New (entity_t *e, qmodel_t *mod, mnode_t *headnode);
+extern int r_dlightframecount;
+const GLchar *GL_GetDynamicLightFragmentProgramSource (void);
+void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl);
 
 #endif	/* __GLQUAKE_H */
 

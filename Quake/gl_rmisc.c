@@ -524,10 +524,6 @@ void GL_EnableVertexAttribArrays (int arrays)
 			// enable/disable as required
 			if ((arrays & (1 << i)) && !(oldarrays & (1 << i))) glEnableVertexAttribArray (i);
 			if (!(arrays & (1 << i)) && (oldarrays & (1 << i))) glDisableVertexAttribArray (i);
-
-			// using the extension version for compatibility with older Intels
-			if ((arrays & (1 << j)) && !(oldarrays & (1 << j))) glVertexAttribDivisorARB (i, 1);
-			if (!(arrays & (1 << j)) && (oldarrays & (1 << j))) glVertexAttribDivisorARB (i, 0);
 		}
 
 		oldarrays = arrays;

@@ -75,25 +75,6 @@ texture_t *R_TextureAnimation (texture_t *base, int frame)
 =============================================================
 */
 
-void R_InverseTransform (float *out, float *in, float *origin, float *angles)
-{
-	VectorSubtract (in, origin, out);
-
-	if (angles[0] || angles[1] || angles[2])
-	{
-		vec3_t	temp;
-		vec3_t	forward, right, up;
-
-		VectorCopy (out, temp);
-		AngleVectors (angles, forward, right, up);
-
-		out[0] = DotProduct (temp, forward);
-		out[1] = -DotProduct (temp, right);
-		out[2] = DotProduct (temp, up);
-	}
-}
-
-
 /*
 =================
 R_DrawBrushModel
@@ -113,11 +94,12 @@ void R_DrawBrushModel (entity_t *e)
 	currententity = e;
 	clmodel = e->model;
 
-	R_InverseTransform (modelorg, r_refdef.vieworg, e->origin, e->angles);
+	InverseTransform (modelorg, r_refdef.vieworg, e->origin, e->angles);
 
 	psurf = &clmodel->surfaces[clmodel->firstmodelsurface];
 
 	// calculate dynamic lighting for bmodel if it's not an instanced model
+	/*
 	if (clmodel->firstmodelsurface != 0)
 	{
 		for (k = 0; k < MAX_DLIGHTS; k++)
@@ -128,11 +110,12 @@ void R_DrawBrushModel (entity_t *e)
 				continue;
 
 			// MH - dlight transform
-			R_InverseTransform (dl->transformed, dl->origin, e->origin, e->angles);
+			InverseTransform (dl->transformed, dl->origin, e->origin, e->angles);
 
 			R_MarkLights (&cl_dlights[k], k, clmodel->nodes + clmodel->hulls[0].firstclipnode);
 		}
 	}
+	*/
 
 	glPushMatrix ();
 
@@ -197,10 +180,10 @@ qboolean R_ShouldModifyLightmap (msurface_t *surf)
 			return true;
 
 	// dynamic this frame
-	if (surf->dlightframe == r_framecount) return true;
+	//if (surf->dlightframe == r_framecount) return true;
 
 	// dynamic previously
-	if (surf->cached_dlight) return true;
+	//if (surf->cached_dlight) return true;
 
 	// not modified
 	return false;
@@ -635,7 +618,7 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 	int size = smax * tmax;
 	byte *lightmap = surf->samples;
 
-	surf->cached_dlight = (surf->dlightframe == r_framecount);
+	//surf->cached_dlight = (surf->dlightframe == r_framecount);
 
 	if (r_fullbright.value || !cl.worldmodel->lightdata)
 	{
@@ -676,8 +659,8 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 		}
 
 		// add all the dynamic lights
-		if (surf->dlightframe == r_framecount)
-			R_AddDynamicLights (surf);
+		//if (surf->dlightframe == r_framecount)
+		//	R_AddDynamicLights (surf);
 	}
 
 	// bound, invert, and shift
