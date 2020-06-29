@@ -283,7 +283,7 @@ typedef struct aliasmesh_s {
 } aliasmesh_t;
 
 typedef struct meshxyz_s {
-	byte xyz[4];
+	float position[3]; // this needs the scaled and offset position for correct light and fog calculations
 	signed char normal[4];
 } meshxyz_t;
 

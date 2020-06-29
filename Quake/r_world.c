@@ -190,11 +190,11 @@ void R_DrawTextureChains_NoTexture (qmodel_t *model, texchain_t chain)
 }
 
 
-static GLuint r_lightmapped_vp = 0;
-static GLuint r_lightmapped_fp[2] = { 0, 0 }; // luma, no luma
+static GLuint r_brush_lightmapped_vp = 0;
+static GLuint r_brush_lightmapped_fp[2] = { 0, 0 }; // luma, no luma
 
-static GLuint r_dynamic_vp = 0;
-static GLuint r_dynamic_fp = 0;
+static GLuint r_brush_dynamic_vp = 0;
+static GLuint r_brush_dynamic_fp = 0;
 
 /*
 =============
@@ -328,12 +328,12 @@ void GLWorld_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	r_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_lightmapped_source);
-	r_lightmapped_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source0);
-	r_lightmapped_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source1);
+	r_brush_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_lightmapped_source);
+	r_brush_lightmapped_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source0);
+	r_brush_lightmapped_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source1);
 
-	r_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_dynamic_source);
-	r_dynamic_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDynamicLightFragmentProgramSource ());
+	r_brush_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_dynamic_source);
+	r_brush_dynamic_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDynamicLightFragmentProgramSource ());
 }
 
 
@@ -358,9 +358,9 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 	if (gl_fullbrights.value && t->fullbright)
 	{
 		GL_BindTexture (GL_TEXTURE2, t->fullbright);
-		GL_BindPrograms (r_lightmapped_vp, r_lightmapped_fp[1]);
+		GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[1]);
 	}
-	else GL_BindPrograms (r_lightmapped_vp, r_lightmapped_fp[0]);
+	else GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[0]);
 
 	// and draw our batches in lightmap order
 	for (int i = 0; i < lm_currenttexture; i++)
@@ -475,7 +475,7 @@ void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl)
 	GL_BlendState (GL_TRUE, GL_ONE, GL_ONE);
 
 	// dynamic light programs
-	GL_BindPrograms (r_dynamic_vp, r_dynamic_fp);
+	GL_BindPrograms (r_brush_dynamic_vp, r_brush_dynamic_fp);
 
 	// light properties
 	GL_SetupDynamicLight (dl);

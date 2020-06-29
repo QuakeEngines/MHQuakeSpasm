@@ -121,6 +121,29 @@ float	anglemod (float a);
 
 
 void InverseTransform (float *out, float *in, float *origin, float *angles);
+void InverseTransform2 (float *out, float *in, float *origin, float *angles);
+
+
+// matrix stuff
+// make this available everywhere
+__declspec(align(16)) typedef union _QMATRIX {
+	float m4x4[4][4];
+	float m16[16];
+} QMATRIX;
+
+QMATRIX *R_IdentityMatrix (QMATRIX *m);
+QMATRIX *R_MultMatrix (QMATRIX *out, QMATRIX *m1, QMATRIX *m2);
+QMATRIX *R_LoadMatrix (QMATRIX *m, float _11, float _12, float _13, float _14, float _21, float _22, float _23, float _24, float _31, float _32, float _33, float _34, float _41, float _42, float _43, float _44);
+QMATRIX *R_CopyMatrix (QMATRIX *dst, QMATRIX *src);
+QMATRIX *R_FrustumMatrix (QMATRIX *m, float fovx, float fovy);
+QMATRIX *R_OrthoMatrix (QMATRIX *m, float left, float right, float bottom, float top, float zNear, float zFar);
+QMATRIX *R_TranslateMatrix (QMATRIX *m, float x, float y, float z);
+QMATRIX *R_ScaleMatrix (QMATRIX *m, float x, float y, float z);
+QMATRIX *R_RotateMatrix (QMATRIX *m, float p, float y, float r);
+QMATRIX *R_RotateMatrixAxis (QMATRIX *m, float angle, float x, float y, float z);
+QMATRIX *R_CameraMatrix (QMATRIX *m, const float *origin, const float *angles);
+void R_InverseTransform (QMATRIX *m, float *out, const float *in);
+void R_Transform (QMATRIX *m, float *out, const float *in);
 
 
 #endif	/* __MATHLIB_H */

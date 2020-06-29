@@ -425,26 +425,6 @@ int R_LightPoint (vec3_t p)
 
 		shadelight[0] = shadelight[1] = shadelight[2] = 0;
 		RecursiveLightPoint (shadelight, cl.worldmodel->nodes, p, end);
-
-		// add dlights
-		for (int i = 0; i < MAX_DLIGHTS; i++)
-		{
-			if (cl_dlights[i].die >= cl.time)
-			{
-				float dist[3], add;
-
-				VectorSubtract (p, cl_dlights[i].origin, dist);
-				add = cl_dlights[i].radius - VectorLength (dist);
-
-				if (add > 0)
-				{
-					// bring the dlight colour up to the range as in R_AddDynamicLights
-					shadelight[0] += cl_dlights[i].color[0] * add * 256.0f;
-					shadelight[1] += cl_dlights[i].color[1] * add * 256.0f;
-					shadelight[2] += cl_dlights[i].color[2] * add * 256.0f;
-				}
-			}
-		}
 	}
 
 	// shift down for overbrighting range

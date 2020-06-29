@@ -95,14 +95,13 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr)
 		{
 			trivertx_t trivert = tv[desc[v].vertindex];
 
-			xyz[v].xyz[0] = trivert.v[0];
-			xyz[v].xyz[1] = trivert.v[1];
-			xyz[v].xyz[2] = trivert.v[2];
-			xyz[v].xyz[3] = 1;	// need w 1 for 4 byte vertex compression
+			// this needs the scaled and offset position for correct light and fog calculations
+			xyz[v].position[0] = (float) trivert.v[0] * hdr->scale[0] + hdr->scale_origin[0];
+			xyz[v].position[1] = (float) trivert.v[1] * hdr->scale[1] + hdr->scale_origin[1];
+			xyz[v].position[2] = (float) trivert.v[2] * hdr->scale[2] + hdr->scale_origin[2];
 
 			// map the normal coordinates in [-1..1] to [-127..127] and store in an unsigned char.
-			// this introduces some error (less than 0.004), but the normals were very coarse
-			// to begin with
+			// this introduces some error (less than 0.004), but the normals were very coarse to begin with
 			xyz[v].normal[0] = 127 * r_avertexnormals[trivert.lightnormalindex][0];
 			xyz[v].normal[1] = 127 * r_avertexnormals[trivert.lightnormalindex][1];
 			xyz[v].normal[2] = 127 * r_avertexnormals[trivert.lightnormalindex][2];

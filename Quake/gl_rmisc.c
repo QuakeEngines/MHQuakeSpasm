@@ -568,19 +568,17 @@ void GL_BlendState (GLenum enable, GLenum sfactor, GLenum dfactor)
 	if (enable != currentenable)
 	{
 		if (enable == GL_TRUE)
-		{
 			glEnable (GL_BLEND);
-
-			if (currentsfactor != sfactor || currentdfactor != dfactor)
-			{
-				glBlendFunc (sfactor, dfactor);
-				currentsfactor = sfactor;
-				currentdfactor = dfactor;
-			}
-		}
 		else glDisable (GL_BLEND);
 
 		currentenable = enable;
+	}
+
+	if (enable && (currentsfactor != sfactor || currentdfactor != dfactor))
+	{
+		glBlendFunc (sfactor, dfactor);
+		currentsfactor = sfactor;
+		currentdfactor = dfactor;
 	}
 }
 
