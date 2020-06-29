@@ -783,27 +783,12 @@ void CL_RunParticles (void)
 R_DrawParticles -- johnfitz -- moved all non-drawing code to CL_RunParticles
 ===============
 */
-typedef struct partpolyvert_s {
-	float move[3];
-
-	union {
-		unsigned color;
-		byte rgba[4];
-	};
-} partpolyvert_t;
-
-
 void R_DrawParticlesARB (void)
 {
-	static const float r_particleoffsets[] = { -1, -1, -1, 1, 1, 1, 1, -1 };
-	static partpolyvert_t r_particleverts[MAX_PARTICLES];
-	int r_numparticleverts = 0;
-
 	if (!r_particles.value)
 		return;
 
 	// ericw -- avoid empty glBegin(),glEnd() pair below; causes issues on AMD
-	// MH - no longer using glBegin/glEnd but still useful for avoiding unnecessary state sets
 	if (!active_particles)
 		return;
 
@@ -847,28 +832,15 @@ void R_DrawParticlesARB (void)
 
 	// ensure that no buffer is bound when drawing particles
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
-	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VDIV1 | VDIV2);
 
-	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, r_particleoffsets);
-	glVertexAttribPointer (1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof (partpolyvert_t), r_particleverts->rgba);
-	glVertexAttribPointer (2, 3, GL_FLOAT, GL_FALSE, sizeof (partpolyvert_t), r_particleverts->move);
+	// no arrays in immediate mode
+	GL_EnableVertexAttribArrays (0);
 
-	// initially no particles
-	r_numparticleverts = 0;
+	// dynamic unbounded data is more easily handled in immediate mode
+	glBegin (GL_QUADS);
 
 	for (particle_t *p = active_particles; p; p = p->next)
 	{
-		// particle may have been removed
-		if (p->die < cl.time) continue;
-
-		// check this batch
-		if (r_numparticleverts + 1 >= MAX_PARTICLES)
-		{
-			// flush this batch
-			glDrawArraysInstancedARB (GL_QUADS, 0, 4, r_numparticleverts);
-			r_numparticleverts = 0;
-		}
-
 		// get the emitter properties for this particle
 		ptypedef_t *pt = &p_typedefs[p->type];
 		float etime = cl.time - p->time;
@@ -881,31 +853,34 @@ void R_DrawParticlesARB (void)
 			// set dead particles to full-alpha and the system will remove them on the next frame
 			if (ramp > 8)
 			{
+				p->color = 0xff;
 				p->die = -1;
-				continue;
 			}
 			else if ((p->color = pt->ramp[ramp]) == 0xff)
-			{
 				p->die = -1;
-				continue;
-			}
 		}
 
 		// move the particle in a framerate-independent manner
-		r_particleverts[r_numparticleverts].move[0] = p->org[0] + (p->vel[0] + (pt->accel[0] * etime)) * etime;
-		r_particleverts[r_numparticleverts].move[1] = p->org[1] + (p->vel[1] + (pt->accel[1] * etime)) * etime;
-		r_particleverts[r_numparticleverts].move[2] = p->org[2] + (p->vel[2] + (pt->accel[2] * etime)) * etime;
+		glVertexAttrib3f (
+			2,
+			p->org[0] + (p->vel[0] + (pt->accel[0] * etime)) * etime,
+			p->org[1] + (p->vel[1] + (pt->accel[1] * etime)) * etime,
+			p->org[2] + (p->vel[2] + (pt->accel[2] * etime)) * etime
+		);
 
 		// colour
-		r_particleverts[r_numparticleverts].color = d_8to24table[p->color & 255];
+		glVertexAttrib4Nubv (1, (byte *) &d_8to24table[p->color & 255]);
 
-		r_numparticleverts++;
+		// billboard quad corners
+		glVertexAttrib2f (0, -1, -1);
+		glVertexAttrib2f (0, -1, 1);
+		glVertexAttrib2f (0, 1, 1);
+		glVertexAttrib2f (0, 1, -1);
+
 		rs_particles++; // johnfitz // FIXME: just use r_numparticles
 	}
 
-	// draw anything left over
-	if (r_numparticleverts)
-		glDrawArraysInstancedARB (GL_QUADS, 0, 4, r_numparticleverts);
+	glEnd ();
 }
 
 
