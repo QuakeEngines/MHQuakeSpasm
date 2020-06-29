@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern cvar_t gl_fullbrights, r_oldskyleaf; // johnfitz
+extern cvar_t gl_fullbrights; // johnfitz
 
 byte *SV_FatPVS (vec3_t org, qmodel_t *worldmodel);
 
@@ -46,8 +46,10 @@ void R_ClearTextureChains (qmodel_t *mod, texchain_t chain)
 {
 	// set all chains to null
 	for (int i = 0; i < mod->numtextures; i++)
-		if (mod->textures[i])
-			mod->textures[i]->texturechains[chain] = NULL;
+	{
+		if (!mod->textures[i]) continue;
+		mod->textures[i]->texturechains[chain] = NULL;
+	}
 }
 
 /*
@@ -57,7 +59,8 @@ R_ChainSurface -- ericw -- adds the given surface to its texture chain
 */
 void R_ChainSurface (msurface_t *surf, texchain_t chain)
 {
-	if (!(surf->flags & SURF_DRAWTILED))
+	// run dynamic lighting if we're not collecting dlight surfaces
+	if (!(surf->flags & SURF_DRAWTILED) && chain != chain_dlight)
 		R_RenderDynamicLightmaps (surf);
 
 	surf->texturechain = surf->texinfo->texture->texturechains[chain];
@@ -566,7 +569,7 @@ void R_AddPVSLeaf (mleaf_t *leaf)
 
 void R_MarkLeaves (void)
 {
-	if (r_oldviewleaf == r_viewleaf)
+	if (r_oldviewleaf == r_viewleaf && !vis_changed)
 		return;
 
 	r_visframecount++;
@@ -577,6 +580,7 @@ void R_MarkLeaves (void)
 		R_AddPVSLeaf (r_oldviewleaf);
 
 	r_oldviewleaf = r_viewleaf;
+	vis_changed = 0;
 }
 
 

@@ -76,7 +76,6 @@ cvar_t	r_flatlightstyles = { "r_flatlightstyles", "0", CVAR_NONE };
 cvar_t	gl_fullbrights = { "gl_fullbrights", "1", CVAR_ARCHIVE };
 cvar_t	gl_farclip = { "gl_farclip", "16384", CVAR_ARCHIVE };
 cvar_t	gl_overbright = { "gl_overbright", "1", CVAR_ARCHIVE };
-cvar_t	r_oldskyleaf = { "r_oldskyleaf", "0", CVAR_NONE };
 cvar_t	r_lerpmodels = { "r_lerpmodels", "1", CVAR_NONE };
 cvar_t	r_lerpmove = { "r_lerpmove", "1", CVAR_NONE };
 cvar_t	r_nolerp_list = { "r_nolerp_list", "progs/flame.mdl,progs/flame2.mdl,progs/braztall.mdl,progs/brazshrt.mdl,progs/longtrch.mdl,progs/flame_pyre.mdl,progs/v_saw.mdl,progs/v_xfist.mdl,progs/h2stuff/newfire.mdl", CVAR_NONE };
