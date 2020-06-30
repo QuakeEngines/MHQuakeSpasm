@@ -161,8 +161,10 @@ static char	cwd[1024];
 void Sys_SetWorkingDirectory (void)
 {
 	char *testdirs[] = {
+		"C:\\Quake\\MHQS",
 		"D:\\Quake\\MHQS",
 		"C:\\Games\\MHQS",
+		"D:\\Games\\MHQS",
 		NULL
 	};
 
