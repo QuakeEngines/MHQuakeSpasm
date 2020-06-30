@@ -862,6 +862,16 @@ static void GL_CheckExtensions (void)
 	if (!GLEW_ARB_vertex_program) Sys_Error ("GL_ARB_vertex_program : not found");
 	if (!GLEW_ARB_fragment_program) Sys_Error ("GL_ARB_fragment_program : not found");
 
+	// we need 6 TMUs and we query GL_MAX_TEXTURE_IMAGE_UNITS because these are the ones that are accessible in shaders via GL_ARB_fragment_program;
+	// some GPUs report a hard limit of 4 for GL_MAX_TEXTURE_UNITS which is the FFP limit
+	// (note: GL_MAX_TEXTURE_IMAGE_UNITS, GL_MAX_TEXTURE_IMAGE_UNITS_NV and GL_MAX_TEXTURE_IMAGE_UNITS_ARB are all 0x8872)
+	glGetIntegerv (GL_MAX_TEXTURE_IMAGE_UNITS, &gl_max_texture_units);
+
+	// diffuse/lmr/lmg/lmb/luma/sky cube
+	// OpenGL binding points make it just more robust to reserve a dedicated TMU for the cubemap
+	if (gl_max_texture_units < 6)
+		Sys_Error ("GL_MAX_TEXTURE_IMAGE_UNITS < 6");
+
 	// swap control
 	if (!gl_swap_control)
 	{
@@ -899,7 +909,7 @@ static void GL_CheckExtensions (void)
 	}
 
 	// anisotropic filtering
-	if (GL_ParseExtensionList (gl_extensions, "GL_EXT_texture_filter_anisotropic"))
+	if (GLEW_EXT_texture_filter_anisotropic)
 	{
 		float test1, test2;
 		GLuint tex;
@@ -926,6 +936,7 @@ static void GL_CheckExtensions (void)
 
 		// get max value either way, so the menu and stuff know it
 		glGetFloatv (GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &gl_max_anisotropy);
+
 		if (gl_max_anisotropy < 2)
 		{
 			gl_anisotropy_able = false;

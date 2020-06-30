@@ -185,7 +185,7 @@ void R_DrawSpriteModel (entity_t *e)
 	case SPR_FACING_UPRIGHT: // faces camera origin, up is towards the heavens
 		VectorSubtract (currententity->origin, r_origin, v_forward);
 		v_forward[2] = 0;
-		VectorNormalizeFast (v_forward);
+		VectorNormalize (v_forward);
 		v_right[0] = v_forward[1];
 		v_right[1] = -v_forward[0];
 		v_right[2] = 0;
