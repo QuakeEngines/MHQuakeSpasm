@@ -29,9 +29,6 @@ vec3_t vec3_origin = { 0, 0, 0 };
 /*-----------------------------------------------------------------*/
 
 
-// #define DEG2RAD( a ) ( a * M_PI ) / 180.0F
-#define DEG2RAD( a ) ( (a) * M_PI_DIV_180 ) // johnfitz
-
 void ProjectPointOnPlane (vec3_t dst, const vec3_t p, const vec3_t normal)
 {
 	float d;
@@ -511,21 +508,6 @@ fixed16_t Invert24To16 (fixed16_t val)
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------
 // matrix stuff
-
-void Vector4Scalef (float *dst, const float *vec, const float scale)
-{
-	dst[0] = vec[0] * scale;
-	dst[1] = vec[1] * scale;
-	dst[2] = vec[2] * scale;
-	dst[3] = vec[3] * scale;
-}
-
-
-float Vector3Dot (const float *x, const float *y)
-{
-	// fix up math optimizations that screw things up in Quake
-	return ((double) x[0] * (double) y[0]) + ((double) x[1] * (double) y[1]) + ((double) x[2] * (double) y[2]);
-}
 
 
 QMATRIX *R_IdentityMatrix (QMATRIX *m)

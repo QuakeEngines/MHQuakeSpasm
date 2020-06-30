@@ -131,7 +131,7 @@ typedef struct brushpolyvert_s {
 	float xyz[3];
 	float st[2];
 	float lm[2];
-	char normal[4]; // for dynamic lighting; brings vertex size to a nice 32 bytes
+	float normal[3];
 } brushpolyvert_t;
 
 
@@ -283,8 +283,8 @@ typedef struct aliasmesh_s {
 } aliasmesh_t;
 
 typedef struct meshxyz_s {
-	byte xyz[4];
-	signed char normal[4];
+	byte position[4];
+	float normal[3];
 } meshxyz_t;
 
 typedef struct meshst_s {

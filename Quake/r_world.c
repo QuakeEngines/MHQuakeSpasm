@@ -471,7 +471,7 @@ void R_SetupWorldVBOState (void)
 	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, xyz));
 	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, st));
 	glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, lm));
-	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, normal));
+	glVertexAttribPointer (3, 3, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, normal));
 }
 
 

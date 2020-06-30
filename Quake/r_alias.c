@@ -64,7 +64,7 @@ model and pose.
 */
 static void *GLARB_GetXYZOffset (entity_t *e, aliashdr_t *hdr, int pose)
 {
-	const int xyzoffs = offsetof (meshxyz_t, xyz);
+	const int xyzoffs = offsetof (meshxyz_t, position);
 	return (void *) (e->model->vboxyzofs + (hdr->numverts_vbo * pose * sizeof (meshxyz_t)) + xyzoffs);
 }
 
@@ -308,9 +308,9 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3 | VAA4);
 
 	glVertexAttribPointer (0, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (e, hdr, lerpdata->pose1));
-	glVertexAttribPointer (1, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (e, hdr, lerpdata->pose1));
+	glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, sizeof (meshxyz_t), GLARB_GetNormalOffset (e, hdr, lerpdata->pose1));
 	glVertexAttribPointer (2, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (e, hdr, lerpdata->pose2));
-	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (e, hdr, lerpdata->pose2));
+	glVertexAttribPointer (3, 3, GL_FLOAT, GL_FALSE, sizeof (meshxyz_t), GLARB_GetNormalOffset (e, hdr, lerpdata->pose2));
 	glVertexAttribPointer (4, 2, GL_FLOAT, GL_FALSE, 0, (void *) (intptr_t) e->model->vbostofs);
 
 	// set textures

@@ -186,17 +186,15 @@ void GL_BuildPolygonForSurface (qmodel_t *mod, msurface_t *surf, brushpolyvert_t
 		// copy over the normals for dynamic lighting
 		if (surf->flags & SURF_PLANEBACK)
 		{
-			verts->normal[0] = 127 * -surf->plane->normal[0];
-			verts->normal[1] = 127 * -surf->plane->normal[1];
-			verts->normal[2] = 127 * -surf->plane->normal[2];
-			verts->normal[3] = 0; // unused; for 4-byte alignment
+			verts->normal[0] = -surf->plane->normal[0];
+			verts->normal[1] = -surf->plane->normal[1];
+			verts->normal[2] = -surf->plane->normal[2];
 		}
 		else
 		{
-			verts->normal[0] = 127 * surf->plane->normal[0];
-			verts->normal[1] = 127 * surf->plane->normal[1];
-			verts->normal[2] = 127 * surf->plane->normal[2];
-			verts->normal[3] = 0; // unused; for 4-byte alignment
+			verts->normal[0] = surf->plane->normal[0];
+			verts->normal[1] = surf->plane->normal[1];
+			verts->normal[2] = surf->plane->normal[2];
 		}
 	}
 }

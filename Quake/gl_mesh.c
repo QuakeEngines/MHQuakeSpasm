@@ -32,9 +32,68 @@ ALIAS MODEL DISPLAY LIST GENERATION
 =================================================================
 */
 
+typedef struct vertexnormals_s {
+	int numnormals;
+	float normal[3];
+} vertexnormals_t;
 
-#define NUMVERTEXNORMALS	 162
-extern	float	r_avertexnormals[NUMVERTEXNORMALS][3];
+vertexnormals_t vnorms[MAXALIASVERTS];
+
+void R_BuildFrameNormals (const aliashdr_t *hdr, const trivertx_t *verts)
+{
+	// this is the modelgen.c normal generation code and we regenerate correct normals for alias models
+	for (int i = 0; i < hdr->numverts; i++)
+	{
+		// no normals initially
+		Vector3Clear (vnorms[i].normal);
+		vnorms[i].numnormals = 0;
+	}
+
+	for (int i = 0; i < hdr->numtris; i++)
+	{
+		float triverts[3][3];
+		float vtemp1[3], vtemp2[3], normal[3];
+		int *vertindexes = triangles[i].vertindex;
+
+		// undo the vertex rotation from modelgen.c here too
+		for (int j = 0; j < 3; j++)
+		{
+			triverts[j][0] = (float) verts[vertindexes[j]].v[1] * hdr->scale[1] + hdr->scale_origin[1];
+			triverts[j][1] = -((float) verts[vertindexes[j]].v[0] * hdr->scale[0] + hdr->scale_origin[0]);
+			triverts[j][2] = (float) verts[vertindexes[j]].v[2] * hdr->scale[2] + hdr->scale_origin[2];
+		}
+
+		// calc the per-triangle normal
+		Vector3Subtract (vtemp1, triverts[0], triverts[1]);
+		Vector3Subtract (vtemp2, triverts[2], triverts[1]);
+		Vector3Cross (normal, vtemp1, vtemp2);
+		Vector3Normalize (normal);
+
+		// rotate the normal so the model faces down the positive x axis
+		float newnormal[3] = { -normal[1], normal[0], normal[2] };
+
+		// and accumulate it into the calculated normals array
+		for (int j = 0; j < 3; j++)
+		{
+			Vector3Add (vnorms[vertindexes[j]].normal, vnorms[vertindexes[j]].normal, newnormal);
+			vnorms[vertindexes[j]].numnormals++;
+		}
+	}
+
+	// copy out normals
+	for (int i = 0; i < hdr->numverts; i++)
+	{
+		// numnormals was checked for > 0 in modelgen.c so we shouldn't need to do it again 
+		// here but we do anyway just in case a rogue modder has used a bad modelling tool
+		if (vnorms[i].numnormals > 0)
+		{
+			Vector3Scalef (vnorms[i].normal, vnorms[i].normal, (float) vnorms[i].numnormals);
+			Vector3Normalize (vnorms[i].normal);
+		}
+		else Vector3Set (vnorms[i].normal, 0.0f, 0.0f, 1.0f);
+	}
+}
+
 
 /*
 ================
@@ -91,22 +150,21 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr)
 		meshxyz_t *xyz = (meshxyz_t *) (vbodata + (f * hdr->numverts_vbo * sizeof (meshxyz_t)));
 		const trivertx_t *tv = trivertexes + (hdr->numverts * f);
 
+		// rebuild the normals for this frame
+		R_BuildFrameNormals (hdr, tv);
+
 		for (v = 0; v < hdr->numverts_vbo; v++)
 		{
 			trivertx_t trivert = tv[desc[v].vertindex];
 
-			// this needs the scaled and offset position for correct light and fog calculations
-			xyz[v].xyz[0] = (float) trivert.v[0];
-			xyz[v].xyz[1] = (float) trivert.v[1];
-			xyz[v].xyz[2] = (float) trivert.v[2];
-			xyz[v].xyz[3] = 1;
+			xyz[v].position[0] = (float) trivert.v[0];
+			xyz[v].position[1] = (float) trivert.v[1];
+			xyz[v].position[2] = (float) trivert.v[2];
+			xyz[v].position[3] = 1;
 
-			// map the normal coordinates in [-1..1] to [-127..127] and store in an unsigned char.
-			// this introduces some error (less than 0.004), but the normals were very coarse to begin with
-			xyz[v].normal[0] = 127 * r_avertexnormals[trivert.lightnormalindex][0];
-			xyz[v].normal[1] = 127 * r_avertexnormals[trivert.lightnormalindex][1];
-			xyz[v].normal[2] = 127 * r_avertexnormals[trivert.lightnormalindex][2];
-			xyz[v].normal[3] = 0;	// unused; for 4-byte alignment
+			xyz[v].normal[0] = vnorms[desc[v].vertindex].normal[0];
+			xyz[v].normal[1] = vnorms[desc[v].vertindex].normal[1];
+			xyz[v].normal[2] = vnorms[desc[v].vertindex].normal[2];
 		}
 	}
 
