@@ -320,7 +320,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	// set textures
 	GL_BindTexture (GL_TEXTURE0, tx);
 
-	if (r_fullbright_cheatsafe)
+	if (r_fullbright_cheatsafe || !cl.worldmodel->lightdata)
 		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_fullbright_fp);
 	else if (fb)
 	{

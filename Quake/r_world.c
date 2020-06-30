@@ -346,7 +346,7 @@ extern GLuint r_surfaces_vbo;
 void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 {
 	// test for alternative modes
-	if (r_fullbright_cheatsafe)
+	if (r_fullbright_cheatsafe || !cl.worldmodel->lightdata)
 	{
 		// the r_fullbright case just draws the same as the notexture case
 		GL_BindTexture (GL_TEXTURE0, t->gltexture);
