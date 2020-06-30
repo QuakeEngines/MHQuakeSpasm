@@ -299,7 +299,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	}
 	else // poses the same means either 1. the entity has paused its animation, or 2. r_lerpmodels is disabled
 	{
-		blend = 0; // because of 1.0f - above
+		blend = 0; // because of "1.0f -" above
 	}
 
 	GL_BindBuffer (GL_ARRAY_BUFFER, e->model->meshvbo);
@@ -571,8 +571,13 @@ void R_DrawAliasModel (entity_t *e)
 	R_SetupAliasFrame (e, hdr, e->frame, &lerpdata);
 	R_SetupEntityTransform (e, &lerpdata);
 
+	// this needs to be calced early so we can cull it properly
+	R_IdentityMatrix (&localMatrix);
+	R_TranslateMatrix (&localMatrix, lerpdata.origin[0], lerpdata.origin[1], lerpdata.origin[2]);
+	R_RotateMatrix (&localMatrix, -lerpdata.angles[0], lerpdata.angles[1], lerpdata.angles[2]);
+
 	// cull it
-	if (R_CullModelForEntity (e))
+	if (R_CullModelForEntity (e, &localMatrix))
 		return;
 
 	// set up for alpha blending
@@ -580,10 +585,6 @@ void R_DrawAliasModel (entity_t *e)
 
 	if (entalpha == 0)
 		return;
-
-	R_IdentityMatrix (&localMatrix);
-	R_TranslateMatrix (&localMatrix, lerpdata.origin[0], lerpdata.origin[1], lerpdata.origin[2]);
-	R_RotateMatrix (&localMatrix, -lerpdata.angles[0], lerpdata.angles[1], lerpdata.angles[2]);
 
 	if (entalpha < 1)
 	{

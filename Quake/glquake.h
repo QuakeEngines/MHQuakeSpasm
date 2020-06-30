@@ -202,7 +202,7 @@ void R_DrawWorld_Old (void);
 
 qboolean R_CullBox (vec3_t emins, vec3_t emaxs);
 void R_StoreEfrags (efrag_t **ppefrag);
-qboolean R_CullModelForEntity (entity_t *e);
+qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix);
 
 void R_InitParticles (void);
 void R_DrawParticlesARB (void);

@@ -219,31 +219,85 @@ qboolean R_CullBox (vec3_t emins, vec3_t emaxs)
 	}
 	return false;
 }
+
+
+/*
+=================
+R_RotateBBox
+
+Rotate a bbox into an entities frame of reference and recomputes a new aa bbox from the rotated bbox
+=================
+*/
+void R_RotateBBox (QMATRIX *matrix, const float *inmins, const float *inmaxs, float *outmins, float *outmaxs)
+{
+	Vector3Set (outmins, 999999, 999999, 999999);
+	Vector3Set (outmaxs, -999999, -999999, -999999);
+
+	// compute a full box
+	for (int i = 0; i < 8; i++)
+	{
+		float point[3], transformed[3];
+
+		// get the corner point
+		point[0] = (i & 1) ? inmins[0] : inmaxs[0];
+		point[1] = (i & 2) ? inmins[1] : inmaxs[1];
+		point[2] = (i & 4) ? inmins[2] : inmaxs[2];
+
+		// transform it
+		R_Transform (matrix, transformed, point);
+
+		// accumulate to bbox
+		for (int j = 0; j < 3; j++)
+		{
+			if (transformed[j] < outmins[j]) outmins[j] = transformed[j];
+			if (transformed[j] > outmaxs[j]) outmaxs[j] = transformed[j];
+		}
+	}
+}
+
+
 /*
 ===============
 R_CullModelForEntity -- johnfitz -- uses correct bounds based on rotation
 ===============
 */
-qboolean R_CullModelForEntity (entity_t *e)
+qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix)
 {
 	vec3_t mins, maxs;
 
-	if (e->angles[0] || e->angles[2]) // pitch or roll
+	if (e == &cl.viewent)
 	{
-		VectorAdd (e->origin, e->model->rmins, mins);
-		VectorAdd (e->origin, e->model->rmaxs, maxs);
+		// never cull the view entity
+		return false;
 	}
-	else if (e->angles[1]) // yaw
+	else if (e->model->type == mod_alias)
 	{
-		VectorAdd (e->origin, e->model->ymins, mins);
-		VectorAdd (e->origin, e->model->ymaxs, maxs);
+		// per modelgen.c, alias bounds are 0...255 which are then scaled and offset by header->scale and header->scale_origin
+		aliashdr_t *hdr = (aliashdr_t *) Mod_Extradata (e->model);
+		vec3_t amins, amaxs;
+
+		// reconstruct the bbox
+		for (int i = 0; i < 3; i++)
+		{
+			amins[i] = hdr->scale_origin[i];
+			amaxs[i] = amins[i] + hdr->scale[i] * 255;
+		}
+
+		// and rotate it
+		R_RotateBBox (localMatrix, amins, amaxs, mins, maxs);
 	}
-	else // no rotation
+	else if (e->model->type == mod_brush)
 	{
-		VectorAdd (e->origin, e->model->mins, mins);
-		VectorAdd (e->origin, e->model->maxs, maxs);
+		// straightforward bbox rotation
+		R_RotateBBox (localMatrix, e->model->mins, e->model->maxs, mins, maxs);
+	}
+	else
+	{
+		// always cull unknown model types
+		return true;
 	}
 
+	// now do the cull test correctly on the rotated bbox
 	return R_CullBox (mins, maxs);
 }
 

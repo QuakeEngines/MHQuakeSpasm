@@ -80,15 +80,16 @@ void R_DrawBrushModel (entity_t *e)
 	qmodel_t *clmodel;
 	QMATRIX		localMatrix;
 
-	if (R_CullModelForEntity (e))
+	// this needs to be calced early so we can cull it properly
+	R_IdentityMatrix (&localMatrix);
+	R_TranslateMatrix (&localMatrix, e->origin[0], e->origin[1], e->origin[2]);
+	R_RotateMatrix (&localMatrix, e->angles[0], e->angles[1], e->angles[2]);
+
+	if (R_CullModelForEntity (e, &localMatrix))
 		return;
 
 	currententity = e;
 	clmodel = e->model;
-
-	R_IdentityMatrix (&localMatrix);
-	R_TranslateMatrix (&localMatrix, e->origin[0], e->origin[1], e->origin[2]);
-	R_RotateMatrix (&localMatrix, e->angles[0], e->angles[1], e->angles[2]);
 
 	R_InverseTransform (&localMatrix, modelorg, r_refdef.vieworg);
 
