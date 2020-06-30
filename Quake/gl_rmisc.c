@@ -47,6 +47,9 @@ extern cvar_t r_nolerp_list;
 
 extern gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz
 
+extern cvar_t r_drawworld;
+extern cvar_t r_drawflat;
+extern cvar_t r_lightmap;
 
 /*
 ====================
@@ -162,6 +165,9 @@ void R_Init (void)
 	Cvar_SetCallback (&r_wateralpha, R_SetWateralpha_f);
 	Cvar_RegisterVariable (&r_dynamic);
 	Cvar_RegisterVariable (&r_fullbright);
+	Cvar_RegisterVariable (&r_drawworld);
+	Cvar_RegisterVariable (&r_drawflat);
+	Cvar_RegisterVariable (&r_lightmap);
 	Cvar_RegisterVariable (&r_novis);
 	Cvar_SetCallback (&r_novis, R_VisChanged);
 	Cvar_RegisterVariable (&r_speeds);

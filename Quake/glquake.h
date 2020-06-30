@@ -182,7 +182,9 @@ extern gltexture_t *gl_lightmaps[3][MAX_LIGHTMAPS];
 extern int lm_currenttexture;	// allocated lightmaps
 
 
+extern qboolean r_drawflat_cheatsafe, r_fullbright_cheatsafe, r_lightmap_cheatsafe, r_drawworld_cheatsafe; // johnfitz
 extern float	map_wateralpha, map_lavaalpha, map_telealpha, map_slimealpha; // ericw
+
 
 // johnfitz -- fog functions called from outside gl_fog.c
 void Fog_ParseServerMessage (void);
@@ -306,6 +308,7 @@ void GL_DepthState (GLenum enable, GLenum testmode, GLenum writemode);
 void R_PushDlights_New (entity_t *e, QMATRIX *localMatrix, qmodel_t *mod, mnode_t *headnode);
 extern int r_dlightframecount;
 const GLchar *GL_GetDynamicLightFragmentProgramSource (void);
+const GLchar *GL_GetFullbrightFragmentProgramSource (void);
 void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl);
 void GL_SetupDynamicLight (dlight_t *dl);
 

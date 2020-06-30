@@ -90,6 +90,8 @@ GLuint r_alias_lightmapped_fp[2] = { 0, 0 }; // luma, no luma
 GLuint r_alias_dynamic_vp = 0;
 GLuint r_alias_dynamic_fp = 0;
 
+GLuint r_alias_fullbright_fp = 0;
+
 /*
 =============
 GLAlias_CreateShaders
@@ -286,6 +288,8 @@ void GLAlias_CreateShaders (void)
 
 	r_alias_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_dynamic_source);
 	r_alias_dynamic_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDynamicLightFragmentProgramSource ());
+
+	r_alias_fullbright_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFullbrightFragmentProgramSource ());
 }
 
 
@@ -316,7 +320,9 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	// set textures
 	GL_BindTexture (GL_TEXTURE0, tx);
 
-	if (fb)
+	if (r_fullbright_cheatsafe)
+		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_fullbright_fp);
+	else if (fb)
 	{
 		GL_BindTexture (GL_TEXTURE1, fb);
 		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_lightmapped_fp[1]);
@@ -339,6 +345,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 
 	// add dynamic lights
 	if (!r_dynamic.value) return;
+	if (r_fullbright_cheatsafe) return;
 
 	for (int i = 0; i < MAX_DLIGHTS; i++)
 	{

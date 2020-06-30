@@ -328,34 +328,6 @@ void GLWorld_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	const GLchar *fp_notexture_source = \
-		"!!ARBfp1.0\n"
-		"\n"
-		"TEMP diff;\n"
-		"\n"
-		"# perform the texturing\n"
-		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
-		"\n"
-		"# perform the fogging\n"
-		"TEMP fogFactor;\n"
-		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
-		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
-		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
-		"LRP diff.rgb, fogFactor.x, diff, state.fog.color;\n"
-		"\n"
-		"# apply the contrast\n"
-		"MUL diff.rgb, diff, program.env[10].x;\n"
-		"\n"
-		"# apply the gamma (POW only operates on scalars)\n"
-		"POW result.color.r, diff.r, program.env[10].y;\n"
-		"POW result.color.g, diff.g, program.env[10].y;\n"
-		"POW result.color.b, diff.b, program.env[10].y;\n"
-		"MOV result.color.a, program.env[0].a;\n"
-		"\n"
-		"# done\n"
-		"END\n"
-		"\n";
-
 	r_brush_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_lightmapped_source);
 	r_brush_lightmapped_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source0);
 	r_brush_lightmapped_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source1);
@@ -364,7 +336,7 @@ void GLWorld_CreateShaders (void)
 	r_brush_dynamic_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDynamicLightFragmentProgramSource ());
 
 	r_brush_notexture_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_notexture_source);
-	r_brush_notexture_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_notexture_source);
+	r_brush_notexture_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFullbrightFragmentProgramSource ());
 }
 
 
@@ -373,6 +345,16 @@ extern GLuint r_surfaces_vbo;
 
 void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 {
+	// test for alternative modes
+	if (r_fullbright_cheatsafe)
+	{
+		// the r_fullbright case just draws the same as the notexture case
+		GL_BindTexture (GL_TEXTURE0, t->gltexture);
+		GL_BindPrograms (r_brush_notexture_vp, r_brush_notexture_fp);
+		R_DrawSimpleTexturechain (s);
+		return;
+	}
+
 	// and now we can draw it
 	GL_BindTexture (GL_TEXTURE0, t->gltexture);
 
@@ -566,6 +548,8 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 
 	// set up dynamic lighting correctly for the entity type
 	if (!r_dynamic.value)
+		return;
+	else if (r_fullbright_cheatsafe)
 		return;
 	else if (!ent)
 		R_PushDlights_New (NULL, NULL, model, cl.worldmodel->nodes);

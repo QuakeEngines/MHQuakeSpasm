@@ -61,7 +61,12 @@ cvar_t	r_speeds = { "r_speeds", "0", CVAR_NONE };
 cvar_t	r_pos = { "r_pos", "0", CVAR_NONE };
 cvar_t	r_wateralpha = { "r_wateralpha", "1", CVAR_ARCHIVE };
 cvar_t	r_dynamic = { "r_dynamic", "1", CVAR_ARCHIVE };
+
 cvar_t	r_fullbright = { "r_fullbright", "0", CVAR_NONE };
+cvar_t	r_drawworld = { "r_drawworld", "1", CVAR_NONE };
+cvar_t	r_drawflat = { "r_drawflat", "0", CVAR_NONE };
+cvar_t	r_lightmap = { "r_lightmap", "0", CVAR_NONE };
+
 cvar_t	r_novis = { "r_novis", "0", CVAR_ARCHIVE };
 
 cvar_t	gl_finish = { "gl_finish", "0", CVAR_NONE };
@@ -88,6 +93,7 @@ cvar_t	r_telealpha = { "r_telealpha", "0", CVAR_NONE };
 cvar_t	r_slimealpha = { "r_slimealpha", "0", CVAR_NONE };
 
 float	map_wateralpha, map_lavaalpha, map_telealpha, map_slimealpha;
+qboolean r_drawflat_cheatsafe, r_fullbright_cheatsafe, r_lightmap_cheatsafe, r_drawworld_cheatsafe; // johnfitz
 
 cvar_t	r_scale = { "r_scale", "1", CVAR_ARCHIVE };
 
@@ -727,6 +733,20 @@ void R_RenderView (void)
 	}
 	else if (gl_finish.value)
 		glFinish ();
+
+	// johnfitz -- cheat-protect some draw modes
+	r_drawflat_cheatsafe = r_fullbright_cheatsafe = r_lightmap_cheatsafe = false;
+	r_drawworld_cheatsafe = true;
+
+	if (cl.maxclients == 1)
+	{
+		if (!r_drawworld.value) r_drawworld_cheatsafe = false;
+
+		if (r_drawflat.value) r_drawflat_cheatsafe = true;
+		else if (r_fullbright.value || !cl.worldmodel->lightdata) r_fullbright_cheatsafe = true;
+		else if (r_lightmap.value) r_lightmap_cheatsafe = true;
+	}
+	// johnfitz
 
 	R_SetupView ();
 
