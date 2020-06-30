@@ -403,6 +403,7 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 			GL_BindTexture (GL_TEXTURE2, gl_lightmaps[1][s->lightmaptexturenum]);
 			GL_BindTexture (GL_TEXTURE3, gl_lightmaps[2][s->lightmaptexturenum]);
 
+			// store back
 			currentlightmap = s->lightmaptexturenum;
 		}
 
@@ -422,9 +423,10 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 			}
 
 			// write them out
-			// (to do - benchmark this vs sending them as a glVertexAttrib call)
+			// (to do - benchmark this vs sending them as a glVertexAttrib call - right now it's plenty fast enough)
 			glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, fstyles);
 
+			// store back
 			oldstyle = s->fullstyle;
 		}
 
