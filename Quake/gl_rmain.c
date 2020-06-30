@@ -377,6 +377,10 @@ void R_SetupGL (void)
 		glEnable (GL_CULL_FACE);
 	else
 		glDisable (GL_CULL_FACE);
+
+	// set up shader constants
+	Sky_SetShaderConstants ();
+	Warp_SetShaderConstants ();
 }
 
 

@@ -294,7 +294,9 @@ void Sky_ReloadSkyBox (void);
 GLuint TexMgr_LoadCubemap (byte *data[6], int width[6], int height[6]);
 void TexMgr_SetCubemapFilterModes (void);
 void Sky_FreeSkybox (void);
+void Sky_SetShaderConstants (void);
 
+void Warp_SetShaderConstants (void);
 
 void GL_BlendState (GLenum enable, GLenum sfactor, GLenum dfactor);
 void GL_DepthState (GLenum enable, GLenum testmode, GLenum writemode);

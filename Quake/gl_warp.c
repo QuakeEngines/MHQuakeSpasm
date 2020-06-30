@@ -42,7 +42,7 @@ void GLWarp_CreateShaders (void)
 		"\n"
 		"# copy over texcoords adjusting[1] for time\n"
 		"MOV result.texcoord[0], vertex.attrib[1];\n"
-		"ADD result.texcoord[1], vertex.attrib[2], program.local[0];\n"
+		"ADD result.texcoord[1], vertex.attrib[2], program.env[0];\n"
 		"\n"
 		"# set up fog coordinate\n"
 		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
@@ -135,6 +135,19 @@ static void R_BeginTransparentDrawing (float entalpha)
 }
 
 
+void Warp_SetShaderConstants (void)
+{
+	// water warp
+	glProgramEnvParameter4fARB (GL_VERTEX_PROGRAM_ARB,
+		0,
+		cl.time - ((M_PI * 2) * (int) (cl.time / (M_PI * 2))),
+		cl.time - ((M_PI * 2) * (int) (cl.time / (M_PI * 2))),
+		0,
+		0
+	);
+}
+
+
 /*
 ================
 R_DrawTextureChains_Water -- johnfitz
@@ -145,14 +158,6 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 	R_SetupWorldVBOState ();
 
 	GL_BindPrograms (r_waterwarp_vp, r_waterwarp_fp);
-
-	// water warp
-	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB,
-		0,
-		cl.time - ((M_PI * 2) * (int) (cl.time / (M_PI * 2))),
-		cl.time - ((M_PI * 2) * (int) (cl.time / (M_PI * 2))),
-		0,
-		0);
 
 	for (int i = 0; i < model->numtextures; i++)
 	{

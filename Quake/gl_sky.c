@@ -336,21 +336,21 @@ void GLSky_CreateShaders (void)
 		"MUL texcoord, texcoord, 2.953125;\n"
 		"\n"
 		"# scroll the sky\n"
-		"ADD solidcoord, texcoord, program.local[0].x;\n"
-		"ADD alphacoord, texcoord, program.local[0].y;\n"
+		"ADD solidcoord, texcoord, program.env[1].x;\n"
+		"ADD alphacoord, texcoord, program.env[1].y;\n"
 		"\n"
 		"# perform the texturing\n"
 		"TEX solidcolor, solidcoord, texture[0], 2D;\n"
 		"TEX alphacolor, alphacoord, texture[1], 2D;\n"
 		"\n"
 		"# apply sky alpha\n"
-		"MUL alphacolor.a, alphacolor.a, program.local[0].z;\n"
+		"MUL alphacolor.a, alphacolor.a, program.env[1].z;\n"
 		"\n"
 		"# blend the layers\n"
 		"LRP diff, alphacolor.a, alphacolor, solidcolor;\n"
 		"\n"
 		"# perform the skyfogging\n"
-		"LRP diff.rgb, program.local[0].w, state.fog.color, diff;\n"
+		"LRP diff.rgb, program.env[1].w, state.fog.color, diff;\n"
 		"\n"
 		"# apply the contrast\n"
 		"MUL diff.rgb, diff, program.env[10].x;\n"
@@ -393,7 +393,7 @@ void GLSky_CreateShaders (void)
 		"TEX diff, fragment.texcoord[0], texture[5], CUBE;\n"
 		"\n"
 		"# perform the skyfogging\n"
-		"LRP diff.rgb, program.local[0].w, state.fog.color, diff;\n"
+		"LRP diff.rgb, program.env[1].w, state.fog.color, diff;\n"
 		"\n"
 		"# apply the contrast\n"
 		"MUL diff.rgb, diff, program.env[10].x;\n"
@@ -427,10 +427,10 @@ void GLSky_CreateShaders (void)
 		"TEMP diff;\n"
 		"\n"
 		"# perform the texturing\n"
-		"MOV diff, program.local[0];\n"
+		"MOV diff, program.env[1];\n"
 		"\n"
 		"# perform the skyfogging\n"
-		"LRP diff.rgb, program.local[0].w, state.fog.color, diff;\n"
+		"LRP diff.rgb, program.env[1].w, state.fog.color, diff;\n"
 		"\n"
 		"# apply the contrast\n"
 		"MUL diff.rgb, diff, program.env[10].x;\n"
@@ -458,17 +458,10 @@ void GLSky_CreateShaders (void)
 
 void Sky_SetShaderConstants (void)
 {
-}
-
-
-void R_DrawSkychain_ARB (msurface_t *s)
-{
 	if (r_fastsky.value)
 	{
-		GL_BindPrograms (r_skyfast_vp, r_skyfast_fp);
-
-		glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB,
-			0,
+		glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB,
+			1,
 			skyflatcolor[0],
 			skyflatcolor[1],
 			skyflatcolor[2],
@@ -482,23 +475,11 @@ void R_DrawSkychain_ARB (msurface_t *s)
 		glLoadMatrixf (skymatrix);
 		glMatrixMode (GL_MODELVIEW);
 
-		// explicitly bind to TMU 3 to bypass the texture manager
-		glActiveTexture (GL_TEXTURE5);
-		glBindTexture (GL_TEXTURE_CUBE_MAP, r_skybox_cubemap);
-
-		// this is only done once per frame so it's OK to explicitly call each time
-		TexMgr_SetCubemapFilterModes ();
-
-		// force a rebind after explicitly calling glActiveTexture
-		GL_ClearTextureBindings ();
-
 		// enable seamless cubemapping
 		if (GLEW_ARB_seamless_cube_map) glEnable (GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-		GL_BindPrograms (r_skycube_vp, r_skycube_fp);
-
-		glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB,
-			0,
+		glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB,
+			1,
 			0,
 			0,
 			0,
@@ -512,20 +493,43 @@ void R_DrawSkychain_ARB (msurface_t *s)
 		glLoadMatrixf (skymatrix);
 		glMatrixMode (GL_MODELVIEW);
 
-		GL_BindTexture (GL_TEXTURE0, solidskytexture);
-		GL_BindTexture (GL_TEXTURE1, alphaskytexture);
-
-		GL_BindPrograms (r_skywarp_vp, r_skywarp_fp);
-
 		// sky scroll
 		float speedscale[2] = { cl.time * 8.0f, cl.time * 16.0f };
 
-		glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB,
-			0,
+		glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB,
+			1,
 			(speedscale[0] - ((int) speedscale[0] & ~127)) * 0.0078125f,
 			(speedscale[1] - ((int) speedscale[1] & ~127)) * 0.0078125f,
 			r_skyalpha.value,
 			Fog_GetDensity () > 0 ? skyfog : 0);
+	}
+}
+
+
+void R_DrawSkychain_ARB (msurface_t *s)
+{
+	if (r_fastsky.value)
+		GL_BindPrograms (r_skyfast_vp, r_skyfast_fp);
+	else if (skybox_name[0])
+	{
+		// explicitly bind to TMU 3 to bypass the texture manager
+		glActiveTexture (GL_TEXTURE5);
+		glBindTexture (GL_TEXTURE_CUBE_MAP, r_skybox_cubemap);
+
+		// this is only done once per frame so it's OK to explicitly call each time
+		TexMgr_SetCubemapFilterModes ();
+
+		// force a rebind after explicitly calling glActiveTexture
+		GL_ClearTextureBindings ();
+
+		GL_BindPrograms (r_skycube_vp, r_skycube_fp);
+	}
+	else
+	{
+		GL_BindTexture (GL_TEXTURE0, solidskytexture);
+		GL_BindTexture (GL_TEXTURE1, alphaskytexture);
+
+		GL_BindPrograms (r_skywarp_vp, r_skywarp_fp);
 	}
 
 	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
