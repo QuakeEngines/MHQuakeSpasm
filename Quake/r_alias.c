@@ -299,7 +299,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	}
 	else // poses the same means either 1. the entity has paused its animation, or 2. r_lerpmodels is disabled
 	{
-		blend = 1;
+		blend = 0; // because of 1.0f - above
 	}
 
 	GL_BindBuffer (GL_ARRAY_BUFFER, e->model->meshvbo);
