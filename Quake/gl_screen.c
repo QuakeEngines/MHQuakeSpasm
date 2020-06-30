@@ -117,8 +117,6 @@ qpic_t *scr_turtle;
 int			clearconsole;
 int			clearnotify;
 
-vrect_t		scr_vrect;
-
 qboolean	scr_disabled_for_loading;
 qboolean	scr_drawloading;
 qboolean	scr_remove_console = false;
@@ -259,46 +257,53 @@ void SCR_CheckDrawCenterString (void)
 
 // =============================================================================
 
-/*
-====================
-AdaptFovx
-Adapt a 4:3 horizontal FOV to the current screen size using the "Hor+" scaling:
-2.0 * atan(width / height * 3.0 / 4.0 * tan(fov_x / 2.0))
-====================
-*/
-float AdaptFovx (float fov_x, float width, float height)
+
+float SCR_CalcFovX (float fov_y, float width, float height)
 {
-	float	a, x;
+	// bound, don't crash
+	if (fov_y < 1) fov_y = 1;
+	if (fov_y > 179) fov_y = 179;
 
-	if (fov_x < 1 || fov_x > 179)
-		Sys_Error ("Bad fov: %f", fov_x);
-
-	if (!scr_fov_adapt.value)
-		return fov_x;
-	if ((x = height / width) == 0.75)
-		return fov_x;
-	a = atan (0.75 / x * tan (fov_x / 360 * M_PI));
-	a = a * 360 / M_PI;
-	return a;
+	return (atan (width / (height / tan ((fov_y * M_PI) / 360.0f))) * 360.0f) / M_PI;
 }
 
-/*
-====================
-CalcFovy
-====================
-*/
-float CalcFovy (float fov_x, float width, float height)
+
+float SCR_CalcFovY (float fov_x, float width, float height)
 {
-	float	a, x;
+	// bound, don't crash
+	if (fov_x < 1) fov_x = 1;
+	if (fov_x > 179) fov_x = 179;
 
-	if (fov_x < 1 || fov_x > 179)
-		Sys_Error ("Bad fov: %f", fov_x);
-
-	x = width / tan (fov_x / 360 * M_PI);
-	a = atan (height / x);
-	a = a * 360 / M_PI;
-	return a;
+	return (atan (height / (width / tan ((fov_x * M_PI) / 360.0f))) * 360.0f) / M_PI;
 }
+
+
+void SCR_SetFOV (int width, int height)
+{
+	float aspect = (float) height / (float) width;
+
+	// set up relative to a baseline aspect of 640x480 with a 48-high sbar
+#define BASELINE_W	640.0f
+#define BASELINE_H	432.0f
+
+	// http://www.gamedev.net/topic/431111-perspective-math-calculating-horisontal-fov-from-vertical/
+	// horizontalFov = atan (tan (verticalFov) * aspectratio)
+	// verticalFov = atan (tan (horizontalFov) / aspectratio)
+	if (aspect > (BASELINE_H / BASELINE_W))
+	{
+		// use the same calculation as GLQuake did (horizontal is constant, vertical varies)
+		r_refdef.fov_x = scr_fov.value;
+		r_refdef.fov_y = SCR_CalcFovY (r_refdef.fov_x, width, height);
+	}
+	else
+	{
+		// alternate calculation (vertical is constant, horizontal varies)
+		// consistent with http://www.emsai.net/projects/widescreen/fovcalc/
+		r_refdef.fov_y = SCR_CalcFovY (scr_fov.value, BASELINE_W, BASELINE_H);
+		r_refdef.fov_x = SCR_CalcFovX (r_refdef.fov_y, width, height);
+	}
+}
+
 
 /*
 =================
@@ -310,30 +315,23 @@ Internal use only
 */
 static void SCR_CalcRefdef (void)
 {
-	float		size, scale; // johnfitz -- scale
-
-// bound viewsize
-	if (scr_viewsize.value < 30)
-		Cvar_SetQuick (&scr_viewsize, "30");
-	if (scr_viewsize.value > 120)
-		Cvar_SetQuick (&scr_viewsize, "120");
+	// bound viewsize
+	if (scr_viewsize.value < 30) Cvar_SetQuick (&scr_viewsize, "30");
+	if (scr_viewsize.value > 120) Cvar_SetQuick (&scr_viewsize, "120");
 
 	// bound fov
-	if (scr_fov.value < 10)
-		Cvar_SetQuick (&scr_fov, "10");
-	if (scr_fov.value > 170)
-		Cvar_SetQuick (&scr_fov, "170");
+	if (scr_fov.value < 10) Cvar_SetQuick (&scr_fov, "10");
+	if (scr_fov.value > 170) Cvar_SetQuick (&scr_fov, "170");
 
 	// johnfitz -- rewrote this section
-	size = scr_viewsize.value;
-	scale = CLAMP (1.0, scr_sbarscale.value, (float) glwidth / 320.0);
+	float size = scr_viewsize.value;
+	float scale = CLAMP (1.0, scr_sbarscale.value, (float) glwidth / 320.0);
 
 	if (size >= 120 || cl.intermission || scr_sbaralpha.value < 1) // johnfitz -- scr_sbaralpha.value
 		sb_lines = 0;
 	else if (size >= 110)
 		sb_lines = 24 * scale;
-	else
-		sb_lines = 48 * scale;
+	else sb_lines = 48 * scale;
 
 	size = q_min (scr_viewsize.value, 100) / 100;
 	// johnfitz
@@ -345,10 +343,8 @@ static void SCR_CalcRefdef (void)
 	r_refdef.vrect.y = (glheight - sb_lines - r_refdef.vrect.height) / 2;
 	// johnfitz
 
-	r_refdef.fov_x = AdaptFovx (scr_fov.value, vid.width, vid.height);
-	r_refdef.fov_y = CalcFovy (r_refdef.fov_x, r_refdef.vrect.width, r_refdef.vrect.height);
-
-	scr_vrect = r_refdef.vrect;
+	// MH - alternate FOV calculation
+	SCR_SetFOV (r_refdef.vrect.width, r_refdef.vrect.height);
 }
 
 
@@ -1002,6 +998,7 @@ void SCR_TileClear (void)
 			glheight - r_refdef.vrect.y - r_refdef.vrect.height - sb_lines);
 	}
 }
+
 
 /*
 ==================

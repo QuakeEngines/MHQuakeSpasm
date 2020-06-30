@@ -456,6 +456,11 @@ void GLSky_CreateShaders (void)
 }
 
 
+void Sky_SetShaderConstants (void)
+{
+}
+
+
 void R_DrawSkychain_ARB (msurface_t *s)
 {
 	if (r_fastsky.value)
