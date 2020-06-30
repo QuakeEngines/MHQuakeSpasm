@@ -119,33 +119,28 @@ R_AnimateLight
 */
 void R_AnimateLight (double time)
 {
-	int			i, j, k;
-
-	// light animations
 	// 'm' is normal light, 'a' is no light, 'z' is double bright
-	i = (int) (time * 10);
+	int flight = (int) floor (time * 10.0);
+	int clight = (int) ceil (time * 10.0);
+	float lerpfrac = (float) ((time * 10.0) - flight);
 
-	for (j = 0; j < MAX_LIGHTSTYLES; j++)
+	// interpolated lightstyle anims
+	for (int i = 0; i < MAX_LIGHTSTYLES; i++)
 	{
-		if (!cl_lightstyle[j].length)
-		{
-			d_lightstylevalue[j] = 256;
-			continue;
-		}
+		float light = 'm';
+		char *map = cl_lightstyle[i].map;
+		int length = cl_lightstyle[i].length;
 
-		// johnfitz -- r_flatlightstyles
 		if (r_flatlightstyles.value == 2)
-			k = cl_lightstyle[j].peak - 'a';
+			light = cl_lightstyle[i].peak;
 		else if (r_flatlightstyles.value == 1)
-			k = cl_lightstyle[j].average - 'a';
-		else
-		{
-			k = i % cl_lightstyle[j].length;
-			k = cl_lightstyle[j].map[k] - 'a';
-		}
+			light = cl_lightstyle[i].average;
+		else if (length > 1)
+			light = map[flight % length] + (map[clight % length] - map[flight % length]) * lerpfrac;
+		else if (length)
+			light = map[0];
 
-		d_lightstylevalue[j] = k * 22;
-		// johnfitz
+		d_lightstylevalue[i] = (int) (((256.0f * (light - 'a')) / ('m' - 'a')) + 0.5f);
 	}
 }
 
@@ -296,8 +291,8 @@ LIGHT SAMPLING
 */
 
 mplane_t *lightplane;
-vec3_t			lightspot;
-float			shadelight[4]; // johnfitz -- lit support via lordhavoc
+vec3_t	lightspot;
+float	shadelight[4]; // johnfitz -- lit support via lordhavoc / MH - padded for shader params
 
 /*
 =============
@@ -417,7 +412,7 @@ int R_LightPoint (vec3_t p)
 	}
 	else
 	{
-		vec3_t		end;
+		vec3_t	end;
 
 		end[0] = p[0];
 		end[1] = p[1];
@@ -433,6 +428,190 @@ int R_LightPoint (vec3_t p)
 	if ((shadelight[2] = (int) shadelight[2] >> (7 + (int) gl_overbright.value)) > 255) shadelight[2] = 255;
 
 	return ((shadelight[0] + shadelight[1] + shadelight[2]) * (1.0f / 3.0f));
+}
+
+
+/*
+=============================================================================
+
+LIGHTMAP ALLOCATION
+
+=============================================================================
+*/
+
+// to do - move all of the lighting stuff to gl_rlight.c
+extern cvar_t gl_fullbrights; // johnfitz
+
+gltexture_t *gl_lightmaps[3][MAX_LIGHTMAPS];
+
+typedef struct lighttexel_s {
+	byte styles[4];
+} lighttexel_t;
+
+static lighttexel_t lm_block[3][LIGHTMAP_SIZE * LIGHTMAP_SIZE];
+static int lm_allocated[LIGHTMAP_SIZE];
+
+int lm_currenttexture = 0;
+
+
+static void R_NewBuildLightmap (msurface_t *surf, int ch)
+{
+	if (surf->samples)
+	{
+		// copy over the lightmap beginning at the appropriate colour channel
+		byte *lightmap = surf->samples;
+
+		int smax = (surf->extents[0] >> 4) + 1;
+		int tmax = (surf->extents[1] >> 4) + 1;
+
+		for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
+		{
+			lighttexel_t *dest = lm_block[ch] + (surf->light_t * LIGHTMAP_SIZE) + surf->light_s;
+
+			for (int t = 0; t < tmax; t++)
+			{
+				for (int s = 0; s < smax; s++)
+				{
+					dest[s].styles[maps] = lightmap[ch];	// 'ch' is intentional here
+					lightmap += 3;
+				}
+
+				dest += LIGHTMAP_SIZE;
+			}
+		}
+	}
+}
+
+
+static void LM_InitBlock (void)
+{
+	memset (lm_allocated, 0, sizeof (lm_allocated));
+	memset (lm_block, 0, sizeof (lm_block));
+}
+
+
+static void LM_UploadBlock (void)
+{
+	char	name[24];
+
+	sprintf (name, "lightmap%07i", lm_currenttexture);
+
+	gl_lightmaps[0][lm_currenttexture] = TexMgr_LoadImage (cl.worldmodel, va ("%s_r", name), LIGHTMAP_SIZE, LIGHTMAP_SIZE, SRC_LIGHTMAP, (byte *) lm_block[0], "", (src_offset_t) lm_block[0], TEXPREF_LINEAR);
+	gl_lightmaps[1][lm_currenttexture] = TexMgr_LoadImage (cl.worldmodel, va ("%s_g", name), LIGHTMAP_SIZE, LIGHTMAP_SIZE, SRC_LIGHTMAP, (byte *) lm_block[1], "", (src_offset_t) lm_block[1], TEXPREF_LINEAR);
+	gl_lightmaps[2][lm_currenttexture] = TexMgr_LoadImage (cl.worldmodel, va ("%s_b", name), LIGHTMAP_SIZE, LIGHTMAP_SIZE, SRC_LIGHTMAP, (byte *) lm_block[2], "", (src_offset_t) lm_block[2], TEXPREF_LINEAR);
+
+	if (++lm_currenttexture >= MAX_LIGHTMAPS)
+		Sys_Error ("LM_UploadBlock : MAX_LIGHTMAPS exceeded");
+}
+
+
+// returns a texture number and the position inside it
+static qboolean LM_AllocBlock (int w, int h, int *x, int *y)
+{
+	int best = LIGHTMAP_SIZE;
+
+	for (int i = 0; i < LIGHTMAP_SIZE - w; i++)
+	{
+		int j;
+		int best2 = 0;
+
+		for (j = 0; j < w; j++)
+		{
+			if (lm_allocated[i + j] >= best)
+				break;
+
+			if (lm_allocated[i + j] > best2)
+				best2 = lm_allocated[i + j];
+		}
+
+		if (j == w)
+		{
+			// this is a valid spot
+			*x = i;
+			*y = best = best2;
+		}
+	}
+
+	if (best + h > LIGHTMAP_SIZE)
+		return false;
+
+	for (int i = 0; i < w; i++)
+		lm_allocated[*x + i] = best + h;
+
+	return true;
+}
+
+
+/*
+========================
+GL_CreateSurfaceLightmap
+========================
+*/
+void GL_CreateSurfaceLightmap (msurface_t *surf)
+{
+	if (surf->flags & SURF_DRAWTILED)
+		return;
+
+	int smax = (surf->extents[0] >> 4) + 1;
+	int tmax = (surf->extents[1] >> 4) + 1;
+
+	if (!LM_AllocBlock (smax, tmax, &surf->light_s, &surf->light_t))
+	{
+		LM_UploadBlock ();
+		LM_InitBlock ();
+
+		if (!LM_AllocBlock (smax, tmax, &surf->light_s, &surf->light_t))
+		{
+			Sys_Error ("GL_CreateSurfaceLightmap : Consecutive calls to R_AllocBlock (%d, %d) failed", smax, tmax);
+		}
+	}
+
+	surf->lightmaptexturenum = lm_currenttexture;
+
+	R_NewBuildLightmap (surf, 0); // red
+	R_NewBuildLightmap (surf, 1); // green
+	R_NewBuildLightmap (surf, 2); // blue
+}
+
+
+/*
+==================
+GL_BuildLightmaps -- called at level load time
+
+Builds the lightmap texture
+with all the surfaces from all brush models
+==================
+*/
+void GL_BuildLightmaps (void)
+{
+	// run a light animation at time 0 to setup the default lightstyles
+	// this must be done before lightmap building so that lightstyle caching for change tracking will work correctly
+	// (and the styles won't rebuild first time they're seen)
+	R_AnimateLight (0);
+
+	r_framecount = 1; // no dlightcache
+
+	// reset the lightmaps
+	memset (gl_lightmaps, 0, sizeof (gl_lightmaps));
+	LM_InitBlock ();
+	lm_currenttexture = 0;
+
+	for (int j = 1; j < MAX_MODELS; j++)
+	{
+		qmodel_t *m = cl.model_precache[j];
+
+		if (!m) break;
+		if (m->name[0] == '*') continue;
+
+		for (int i = 0; i < m->numsurfaces; i++)
+		{
+			msurface_t *surf = &m->surfaces[i];
+			GL_CreateSurfaceLightmap (surf);
+		}
+	}
+
+	// upload the final built lightmap
+	LM_UploadBlock ();
 }
 
 

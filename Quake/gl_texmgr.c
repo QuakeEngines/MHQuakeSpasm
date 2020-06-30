@@ -1323,11 +1323,15 @@ void TexMgr_ReloadImage (gltexture_t *glt, int shirt, int pants)
 		// lump inside file
 		long size;
 		FILE *f;
+
 		COM_FOpenFile (glt->source_file, &f, NULL);
+
 		if (!f)
 			goto invalid;
+
 		fseek (f, glt->source_offset, SEEK_CUR);
 		size = (long) (glt->source_width * glt->source_height);
+
 		/* should be SRC_INDEXED, but no harm being paranoid:  */
 		if (glt->source_format == SRC_RGBA)
 			size *= 4;
@@ -1345,7 +1349,7 @@ void TexMgr_ReloadImage (gltexture_t *glt, int shirt, int pants)
 
 	if (!data)
 	{
-invalid:
+invalid:;
 		Con_Printf ("TexMgr_ReloadImage: invalid source for %s\n", glt->name);
 		Hunk_FreeToLowMark (mark);
 		return;
@@ -1364,8 +1368,7 @@ invalid:
 			glt->shirt = shirt;
 			glt->pants = pants;
 		}
-		else
-			Con_Printf ("TexMgr_ReloadImage: can't colormap a non SRC_INDEXED texture: %s\n", glt->name);
+		else Con_Printf ("TexMgr_ReloadImage: can't colormap a non SRC_INDEXED texture: %s\n", glt->name);
 	}
 
 	if (glt->shirt > -1 && glt->pants > -1)
@@ -1417,9 +1420,11 @@ invalid:
 	case SRC_INDEXED:
 		TexMgr_LoadImage8 (glt, data);
 		break;
+
 	case SRC_LIGHTMAP:
 		TexMgr_LoadLightmap (glt, data);
 		break;
+
 	case SRC_RGBA:
 		TexMgr_LoadImage32 (glt, (unsigned *) data);
 		break;
@@ -1436,8 +1441,6 @@ TexMgr_ReloadImages -- reloads all texture images. called only by vid_restart
 */
 void TexMgr_ReloadImages (void)
 {
-	gltexture_t *glt;
-
 	// ericw -- tricky bug: if the hunk is almost full, an allocation in TexMgr_ReloadImage
 	// triggers cache items to be freed, which calls back into TexMgr to free the
 	// texture. If this frees 'glt' in the loop below, the active_gltextures
@@ -1448,12 +1451,21 @@ void TexMgr_ReloadImages (void)
 	// switching to a boolean flag.
 	in_reload_images = true;
 
-	for (glt = active_gltextures; glt; glt = glt->next)
+	for (gltexture_t *glt = active_gltextures; glt; glt = glt->next)
 	{
+		// defer reloading lightmaps
+		if (glt->source_format == SRC_LIGHTMAP) continue;
+
+		// reload the texture
 		glGenTextures (1, &glt->texnum);
 		TexMgr_ReloadImage (glt, -1, -1);
 	}
 
+	// reload the lightmaps
+	// this will rebuild the lightmaps from surfaces in the exact same order as they were originally loaded, so we guarantee that everything will match up
+	GL_BuildLightmaps ();
+
+	// reload anything else
 	Sky_ReloadSkyBox ();
 	in_reload_images = false;
 }

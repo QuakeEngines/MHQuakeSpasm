@@ -388,10 +388,7 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 	R_ClearBatch ();
 
 	// set these up so that they will trigger a set first time it's seen
-	unsigned oldstyle = ~s->fullstyle;
-	unsigned currentlightmap = ~s->lightmaptexturenum;
-
-	for (; s; s = s->texturechain)
+	for (unsigned oldstyle = ~s->fullstyle, currentlightmap = ~s->lightmaptexturenum; s; s = s->texturechain)
 	{
 		// check for lightmap change
 		if (s->lightmaptexturenum != currentlightmap)
