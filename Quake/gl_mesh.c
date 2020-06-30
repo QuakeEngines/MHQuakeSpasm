@@ -162,9 +162,9 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr)
 			xyz[v].position[2] = (float) trivert.v[2];
 			xyz[v].position[3] = 1;
 
-			xyz[v].normal[0] = vnorms[desc[v].vertindex].normal[0];
-			xyz[v].normal[1] = vnorms[desc[v].vertindex].normal[1];
-			xyz[v].normal[2] = vnorms[desc[v].vertindex].normal[2];
+			xyz[v].normal[0] = 127 * vnorms[desc[v].vertindex].normal[0];
+			xyz[v].normal[1] = 127 * vnorms[desc[v].vertindex].normal[1];
+			xyz[v].normal[2] = 127 * vnorms[desc[v].vertindex].normal[2];
 		}
 	}
 

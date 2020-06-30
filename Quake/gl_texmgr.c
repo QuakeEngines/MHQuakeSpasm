@@ -955,6 +955,15 @@ void TexMgr_FloodFillSkin (byte *skin, int skinwidth, int skinheight)
 	int			filledcolor = -1;
 	int			i;
 
+	// scan the data to see if it's single-colour; if so assume a fill is invalid and stop
+	// data[0] has already been stored to fillcolor so use that to check for a match
+	for (i = 1; i < skinwidth * skinheight; i++)
+		if (skin[i] != fillcolor)
+			break;
+
+	// everything matched
+	if (i == skinwidth * skinheight) return;
+
 	if (filledcolor == -1)
 	{
 		filledcolor = 0;

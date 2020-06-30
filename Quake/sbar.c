@@ -65,6 +65,25 @@ void Sbar_MiniDeathmatchOverlay (void);
 void Sbar_DeathmatchOverlay (void);
 void M_DrawPic (int x, int y, qpic_t *pic);
 
+
+char *Sbar_TimeToString (int timeseconds)
+{
+	int dig = timeseconds / 60;
+	int num = timeseconds - dig * 60;
+
+	return va ("%3i:%02i", dig, num);
+}
+
+
+char *Sbar_TimeToStringUnpadded (int timeseconds)
+{
+	int dig = timeseconds / 60;
+	int num = timeseconds - dig * 60;
+
+	return va ("%i:%02i", dig, num);
+}
+
+
 /*
 ===============
 Sbar_ShowScores
@@ -306,29 +325,11 @@ Sbar_DrawScrollString -- johnfitz
 scroll the string inside a glscissor region
 ===============
 */
-void Sbar_DrawScrollString (int x, int y, int width, const char *str)
+void Sbar_DrawScrollString (int x, int y, int width, char *str)
 {
-	float scale;
-	int len, ofs, left;
-
-	scale = CLAMP (1.0, scr_sbarscale.value, (float) glwidth / 320.0);
-	left = x * scale;
-	if (cl.gametype != GAME_DEATHMATCH)
-		left += (((float) glwidth - 320.0 * scale) / 2);
-
-	glEnable (GL_SCISSOR_TEST);
-	glScissor (left, 0, width * scale, glheight);
-
-	len = strlen (str) * 8 + 40;
-	ofs = ((int) (realtime * 30)) % len;
-	Sbar_DrawString (x - ofs, y, str);
-	Sbar_DrawCharacter (x - ofs + len - 32, y, '/');
-	Sbar_DrawCharacter (x - ofs + len - 24, y, '/');
-	Sbar_DrawCharacter (x - ofs + len - 16, y, '/');
-	Sbar_DrawString (x - ofs + len, y, str);
-
-	glDisable (GL_SCISSOR_TEST);
+	Draw_ScrollString (x, y + 24, width, str);
 }
+
 
 /*
 =============
@@ -482,30 +483,39 @@ void Sbar_UpdateScoreboard (void)
 Sbar_SoloScoreboard -- johnfitz -- new layout
 ===============
 */
+char *Sbar_MakeSoloStat (char *legend, int stat, int total)
+{
+	// some maps have none so we don't need to provide a total
+	if (cl.stats[total])
+		return va ("%s: %i/%i", legend, cl.stats[stat], cl.stats[total]);
+	else return va ("%s: %i", legend, cl.stats[stat]);
+}
+
 void Sbar_SoloScoreboard (void)
 {
-	char	str[256];
-	int	minutes, seconds, tens, units;
-	int	len;
+	char *kills = Sbar_MakeSoloStat ("Kills", STAT_MONSTERS, STAT_TOTALMONSTERS);
+	char *secrets = Sbar_MakeSoloStat ("Secrets", STAT_SECRETS, STAT_TOTALSECRETS);
+	char *time = Sbar_TimeToStringUnpadded ((int) (cl.time + 0.5));
+	char *map = va ("%s (%s)", cl.levelname, &cl.worldmodel->name[5]);
 
-	sprintf (str, "Kills: %i/%i", cl.stats[STAT_MONSTERS], cl.stats[STAT_TOTALMONSTERS]);
-	Sbar_DrawString (8, 12, str);
+	// remove ".bsp" from the map file name
+	for (int i = strlen (map); i; i--)
+	{
+		if (map[i] == '.')
+		{
+			map[i] = ')';
+			map[i + 1] = 0;
+			break;
+		}
+	}
 
-	sprintf (str, "Secrets: %i/%i", cl.stats[STAT_SECRETS], cl.stats[STAT_TOTALSECRETS]);
-	Sbar_DrawString (312 - strlen (str) * 8, 12, str);
+	if (strlen (map) > 39)
+		Sbar_DrawScrollString (4, 4, 312, map);
+	else Sbar_DrawString (160 - strlen (map) * 4, 4, map);
 
-	minutes = cl.time / 60;
-	seconds = cl.time - 60 * minutes;
-	tens = seconds / 10;
-	units = seconds - 10 * tens;
-	sprintf (str, "%i:%i%i", minutes, tens, units);
-	Sbar_DrawString (160 - strlen (str) * 4, 12, str);
-
-	len = strlen (cl.levelname);
-	if (len > 40)
-		Sbar_DrawScrollString (0, 4, 320, cl.levelname);
-	else
-		Sbar_DrawString (160 - len * 4, 4, cl.levelname);
+	Sbar_DrawString (8, 12, kills);
+	Sbar_DrawString (160 - strlen (time) * 4, 12, time);
+	Sbar_DrawString (312 - strlen (secrets) * 8, 12, secrets);
 }
 
 /*
@@ -643,12 +653,13 @@ void Sbar_DrawInventory (void)
 		val = cl.stats[STAT_SHELLS + i];
 		val = (val < 0) ? 0 : q_min (999, val);// johnfitz -- cap displayed value to 999
 		sprintf (num, "%3i", val);
-		if (num[0] != ' ')
-			Sbar_DrawCharacter ((6 * i + 1) * 8 + 2, -24, 18 + num[0] - '0');
-		if (num[1] != ' ')
-			Sbar_DrawCharacter ((6 * i + 2) * 8 + 2, -24, 18 + num[1] - '0');
-		if (num[2] != ' ')
-			Sbar_DrawCharacter ((6 * i + 3) * 8 + 2, -24, 18 + num[2] - '0');
+
+		// switch the colour
+		if (num[0] != ' ') num[0] = 18 + num[0] - '0';
+		if (num[1] != ' ') num[1] = 18 + num[1] - '0';
+		if (num[2] != ' ') num[2] = 18 + num[2] - '0';
+
+		Sbar_DrawString ((6 * i + 1) * 8 + 2, -24, num);
 	}
 
 	flashon = 0;
@@ -767,9 +778,7 @@ void Sbar_DrawFrags (void)
 
 		// number
 		sprintf (num, "%3i", s->frags);
-		Sbar_DrawCharacter (x + 12, -24, num[0]);
-		Sbar_DrawCharacter (x + 20, -24, num[1]);
-		Sbar_DrawCharacter (x + 28, -24, num[2]);
+		Sbar_DrawString (x + 12, -24, num);
 
 		// brackets
 		if (fragsort[i] == cl.viewentity - 1)
@@ -841,8 +850,7 @@ void Sbar_DrawFace (void)
 	}
 	// PGM 01/19/97 - team color drawing
 
-	if ((cl.items & (IT_INVISIBILITY | IT_INVULNERABILITY))
-		== (IT_INVISIBILITY | IT_INVULNERABILITY))
+	if ((cl.items & (IT_INVISIBILITY | IT_INVULNERABILITY)) == (IT_INVISIBILITY | IT_INVULNERABILITY))
 	{
 		Sbar_DrawPic (112, 0, sb_face_invis_invuln);
 		return;
@@ -931,7 +939,7 @@ void Sbar_Draw (void)
 	{
 		Sbar_DrawPicAlpha (0, 0, sb_sbar, scr_sbaralpha.value); // johnfitz -- scr_sbaralpha
 
-   // keys (hipnotic only)
+		// keys (hipnotic only)
 		// MED 01/04/97 moved keys here so they would not be overwritten
 		if (hipnotic)
 		{
@@ -950,8 +958,7 @@ void Sbar_Draw (void)
 		{
 			if (rogue)
 			{
-				Sbar_DrawNum (24, 0, cl.stats[STAT_ARMOR], 3,
-					cl.stats[STAT_ARMOR] <= 25);
+				Sbar_DrawNum (24, 0, cl.stats[STAT_ARMOR], 3, cl.stats[STAT_ARMOR] <= 25);
 				if (cl.items & RIT_ARMOR3)
 					Sbar_DrawPic (0, 0, sb_armor[2]);
 				else if (cl.items & RIT_ARMOR2)
@@ -961,8 +968,7 @@ void Sbar_Draw (void)
 			}
 			else
 			{
-				Sbar_DrawNum (24, 0, cl.stats[STAT_ARMOR], 3
-					, cl.stats[STAT_ARMOR] <= 25);
+				Sbar_DrawNum (24, 0, cl.stats[STAT_ARMOR], 3, cl.stats[STAT_ARMOR] <= 25);
 				if (cl.items & IT_ARMOR3)
 					Sbar_DrawPic (0, 0, sb_armor[2]);
 				else if (cl.items & IT_ARMOR2)
@@ -976,8 +982,7 @@ void Sbar_Draw (void)
 		Sbar_DrawFace ();
 
 		// health
-		Sbar_DrawNum (136, 0, cl.stats[STAT_HEALTH], 3
-			, cl.stats[STAT_HEALTH] <= 25);
+		Sbar_DrawNum (136, 0, cl.stats[STAT_HEALTH], 3, cl.stats[STAT_HEALTH] <= 25);
 
 		// ammo icon
 		if (rogue)
@@ -1009,8 +1014,7 @@ void Sbar_Draw (void)
 				Sbar_DrawPic (224, 0, sb_ammo[3]);
 		}
 
-		Sbar_DrawNum (248, 0, cl.stats[STAT_AMMO], 3,
-			cl.stats[STAT_AMMO] <= 10);
+		Sbar_DrawNum (248, 0, cl.stats[STAT_AMMO], 3, cl.stats[STAT_AMMO] <= 10);
 	}
 
 	// johnfitz -- removed the vid.width > 320 check here
@@ -1215,6 +1219,42 @@ void Sbar_MiniDeathmatchOverlay (void)
 	}
 }
 
+
+void Sbar_DrawIntermissionStat (int x, int y, char *str)
+{
+	for (int i = 0;; i++)
+	{
+		qpic_t *pic = NULL;
+
+		if (!str[i]) break;
+
+		if (str[i] == '-')
+			pic = sb_nums[0][STAT_MINUS];
+		else if (str[i] == '/')
+			pic = sb_slash;
+		else if (str[i] == ':')
+			pic = sb_colon;
+		else
+		{
+			int frame = str[i] - '0';
+
+			if (frame >= 0 && frame < 10)
+				pic = sb_nums[0][frame];
+			else pic = NULL;
+		}
+
+		if (!pic)
+		{
+			x += 24;
+			continue;
+		}
+
+		M_DrawPic (x, y, pic);
+		x += pic->width;
+	}
+}
+
+
 /*
 ==================
 Sbar_IntermissionOverlay
@@ -1222,10 +1262,6 @@ Sbar_IntermissionOverlay
 */
 void Sbar_IntermissionOverlay (void)
 {
-	qpic_t *pic;
-	int	dig;
-	int	num;
-
 	if (cl.gametype == GAME_DEATHMATCH)
 	{
 		Sbar_DeathmatchOverlay ();
@@ -1234,26 +1270,18 @@ void Sbar_IntermissionOverlay (void)
 
 	GL_SetCanvas (CANVAS_MENU); // johnfitz
 
-	pic = Draw_CachePic ("gfx/complete.lmp");
-	Draw_Pic (64, 24, pic);
+	Draw_Pic (64, 24, Draw_CachePic ("gfx/complete.lmp"));
+	Draw_Pic (0, 56, Draw_CachePic ("gfx/inter.lmp"));
 
-	pic = Draw_CachePic ("gfx/inter.lmp");
-	Draw_Pic (0, 56, pic);
+	Sbar_DrawIntermissionStat (160, 64, Sbar_TimeToString (cl.completed_time));
 
-	dig = cl.completed_time / 60;
-	Sbar_IntermissionNumber (152, 64, dig, 3, 0); // johnfitz -- was 160
-	num = cl.completed_time - dig * 60;
-	Draw_Pic (224, 64, sb_colon); // johnfitz -- was 234
-	Draw_Pic (240, 64, sb_nums[0][num / 10]); // johnfitz -- was 246
-	Draw_Pic (264, 64, sb_nums[0][num % 10]); // johnfitz -- was 266
+	if (cl.stats[STAT_TOTALSECRETS])
+		Sbar_DrawIntermissionStat (136, 104, va ("%4i/%i", cl.stats[STAT_SECRETS], cl.stats[STAT_TOTALSECRETS]));
+	else Sbar_DrawIntermissionStat (136, 104, va ("%4i", cl.stats[STAT_SECRETS]));
 
-	Sbar_IntermissionNumber (152, 104, cl.stats[STAT_SECRETS], 3, 0); // johnfitz -- was 160
-	Draw_Pic (224, 104, sb_slash); // johnfitz -- was 232
-	Sbar_IntermissionNumber (240, 104, cl.stats[STAT_TOTALSECRETS], 3, 0); // johnfitz -- was 248
-
-	Sbar_IntermissionNumber (152, 144, cl.stats[STAT_MONSTERS], 3, 0); // johnfitz -- was 160
-	Draw_Pic (224, 144, sb_slash); // johnfitz -- was 232
-	Sbar_IntermissionNumber (240, 144, cl.stats[STAT_TOTALMONSTERS], 3, 0); // johnfitz -- was 248
+	if (cl.stats[STAT_TOTALMONSTERS])
+		Sbar_DrawIntermissionStat (136, 144, va ("%4i/%i", cl.stats[STAT_MONSTERS], cl.stats[STAT_TOTALMONSTERS]));
+	else Sbar_DrawIntermissionStat (136, 144, va ("%4i", cl.stats[STAT_MONSTERS]));
 }
 
 

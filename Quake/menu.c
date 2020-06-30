@@ -1681,7 +1681,7 @@ qboolean M_Quit_TextEntry (void)
 void M_Quit_Draw (void) // johnfitz -- modified for new quit message
 {
 	char	msg1[40];
-	char	msg2[] = "by Ozkan Sezer, Eric Wasylishen, others";/* msg2/msg3 are mostly [40] */
+	char	msg2[] = "by Ozkan Sezer/Eric Wasylishen/others";/* msg2/msg3 are mostly [40] */
 	char	msg3[] = "Press y to quit";
 	int		boxlen;
 
@@ -1693,19 +1693,23 @@ void M_Quit_Draw (void) // johnfitz -- modified for new quit message
 		m_state = m_quit;
 	}
 
-	sprintf (msg1, "QuakeSpasm " QUAKESPASM_VER_STRING);
+	sprintf (msg1, "mhQuakeSpasm " QUAKESPASM_VER_STRING);
 
 	// okay, this is kind of fucked up.  M_DrawTextBox will always act as if
 	// width is even. Also, the width and lines values are for the interior of the box,
 	// but the x and y values include the border.
 	boxlen = q_max (strlen (msg1), q_max ((sizeof (msg2) - 1), (sizeof (msg3) - 1))) + 1;
 	if (boxlen & 1) boxlen++;
-	M_DrawTextBox (160 - 4 * (boxlen + 2), 76, boxlen, 4);
+
+	// mh - boxlen > 38 will clip the left edge of the box by the canvas viewport, so we constrain the length and adjust the text
+	// this is not as flexible and elegant as the original, but at least it looks correct now
+	boxlen = 38;
+	M_DrawTextBox (160 - 4 * (boxlen + 2), 76, boxlen, 5);
 
 	// now do the text
 	M_Print (160 - 4 * strlen (msg1), 88, msg1);
-	M_Print (160 - 4 * (sizeof (msg2) - 1), 96, msg2);
-	M_PrintWhite (160 - 4 * (sizeof (msg3) - 1), 104, msg3);
+	M_Print (160 - 4 * (sizeof (msg2) - 1), 100, msg2);
+	M_PrintWhite (160 - 4 * (sizeof (msg3) - 1), 112, msg3);
 }
 
 // =============================================================================

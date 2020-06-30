@@ -100,7 +100,7 @@ void R_DrawBrushModel (entity_t *e)
 	for (i = 0; i < clmodel->nummodelsurfaces; i++, psurf++)
 	{
 		pplane = psurf->plane;
-		dot = DotProduct (modelorg, pplane->normal) - pplane->dist;
+		dot = Vector3Dot (modelorg, pplane->normal) - pplane->dist;
 
 		if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) || (!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
 		{
@@ -130,6 +130,7 @@ void R_DrawBrushModel (entity_t *e)
 
 GLuint r_surfaces_vbo = 0;
 
+
 /*
 ================
 GL_BuildPolygonForSurface -- called at level load time
@@ -156,46 +157,43 @@ void GL_BuildPolygonForSurface (qmodel_t *mod, msurface_t *surf, brushpolyvert_t
 
 		if (surf->flags & SURF_DRAWTURB)
 		{
-			// diffuse texture coordinates
-			verts->st[0] = DotProduct (verts->xyz, surf->texinfo->vecs[0]) * 0.015625f;
-			verts->st[1] = DotProduct (verts->xyz, surf->texinfo->vecs[1]) * 0.015625f;
-
-			// warp texture coordinates
-			verts->lm[0] = DotProduct (verts->xyz, surf->texinfo->vecs[1]) * M_PI / 64.0f;
-			verts->lm[1] = DotProduct (verts->xyz, surf->texinfo->vecs[0]) * M_PI / 64.0f;
+			// diffuse texture coordinates only
+			verts->st[0] = Vector3Dot (verts->xyz, surf->texinfo->vecs[0]) * 0.015625f;
+			verts->st[1] = Vector3Dot (verts->xyz, surf->texinfo->vecs[1]) * 0.015625f;
 		}
 		else if (!(surf->flags & SURF_DRAWSKY))
 		{
 			// diffuse texture coordinates
-			verts->st[0] = (DotProduct (verts->xyz, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3]) / surf->texinfo->texture->width;
-			verts->st[1] = (DotProduct (verts->xyz, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3]) / surf->texinfo->texture->height;
+			verts->st[0] = (Vector3Dot (verts->xyz, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3]) / surf->texinfo->texture->width;
+			verts->st[1] = (Vector3Dot (verts->xyz, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3]) / surf->texinfo->texture->height;
 
-			// lightmap texture coordinates
-			verts->lm[0] = DotProduct (verts->xyz, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3];
-			verts->lm[0] -= surf->texturemins[0];
-			verts->lm[0] += surf->light_s * 16;
-			verts->lm[0] += 8;
-			verts->lm[0] /= LIGHTMAP_SIZE * 16; // surf->texinfo->texture->width;
+			// lightmap coords are always in the 0..1 range; this allows us to store them as DXGI_FORMAT_R16G16_UNORM
+			// which in turn allows for further compression of the brushpolyvert_t struct down to a nice cache-friendly 32 bytes.
+			int s = (int) ((Vector3Dot (verts->xyz, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3]) + 0.5f);
+			int t = (int) ((Vector3Dot (verts->xyz, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3]) + 0.5f);
 
-			verts->lm[1] = DotProduct (verts->xyz, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3];
-			verts->lm[1] -= surf->texturemins[1];
-			verts->lm[1] += surf->light_t * 16;
-			verts->lm[1] += 8;
-			verts->lm[1] /= LIGHTMAP_SIZE * 16; // surf->texinfo->texture->height;
+			s -= surf->texturemins[0];
+			s += surf->light_s * 16;
+
+			t -= surf->texturemins[1];
+			t += surf->light_t * 16;
+
+			verts->lm[0] = (s + 8) * (4096 / LIGHTMAP_SIZE);
+			verts->lm[1] = (t + 8) * (4096 / LIGHTMAP_SIZE);
 		}
 
 		// copy over the normals for dynamic lighting
 		if (surf->flags & SURF_PLANEBACK)
 		{
-			verts->normal[0] = -surf->plane->normal[0];
-			verts->normal[1] = -surf->plane->normal[1];
-			verts->normal[2] = -surf->plane->normal[2];
+			verts->norm[0] = 127 * -surf->plane->normal[0];
+			verts->norm[1] = 127 * -surf->plane->normal[1];
+			verts->norm[2] = 127 * -surf->plane->normal[2];
 		}
 		else
 		{
-			verts->normal[0] = surf->plane->normal[0];
-			verts->normal[1] = surf->plane->normal[1];
-			verts->normal[2] = surf->plane->normal[2];
+			verts->norm[0] = 127 * surf->plane->normal[0];
+			verts->norm[1] = 127 * surf->plane->normal[1];
+			verts->norm[2] = 127 * surf->plane->normal[2];
 		}
 	}
 }

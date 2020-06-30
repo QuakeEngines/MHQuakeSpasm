@@ -666,6 +666,25 @@ void Draw_String (int x, int y, const char *str)
 }
 
 
+void Draw_ScrollString (int x, int y, int width, char *str)
+{
+	// this doesn't scroll smooth like the original but the one-char-at-a-time scroll feels more "Quakey"
+	char buf[41];
+	char *str2 = va ("%s %c%c ", str, '\35', '\37');
+	int len = strlen (str2);
+	int start = (int) (realtime * 5) % len;
+
+	for (int i = 0; i < 40; i++)
+		buf[i] = str2[(start + i) % len];
+
+	// terminate at the sbar max length
+	buf[39] = 0;
+
+	Draw_String (x, y, buf);
+}
+
+
+
 void Draw_AlphaPic (int x, int y, qpic_t *pic, float alpha)
 {
 	glpic_t *gl;

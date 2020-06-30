@@ -130,8 +130,8 @@ typedef struct gl_rect_s {
 typedef struct brushpolyvert_s {
 	float xyz[3];
 	float st[2];
-	float lm[2];
-	float normal[3];
+	unsigned short lm[2];
+	signed char norm[4];
 } brushpolyvert_t;
 
 
@@ -284,7 +284,7 @@ typedef struct aliasmesh_s {
 
 typedef struct meshxyz_s {
 	byte position[4];
-	float normal[3];
+	signed char normal[4];
 } meshxyz_t;
 
 typedef struct meshst_s {
