@@ -261,6 +261,9 @@ void R_ClearParticles (void)
 {
 	free_particles = NULL;
 	active_particles = NULL;
+
+	// allocate an initial batch and immediately kill the returned particle so that we don't hit an allocation first time at run time
+	R_AllocParticle ()->die = -1;
 }
 
 
