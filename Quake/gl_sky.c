@@ -390,7 +390,7 @@ void GLSky_CreateShaders (void)
 		"TEMP diff;\n"
 		"\n"
 		"# perform the texturing\n"
-		"TEX diff, fragment.texcoord[0], texture[3], CUBE;\n"
+		"TEX diff, fragment.texcoord[0], texture[5], CUBE;\n"
 		"\n"
 		"# perform the skyfogging\n"
 		"LRP diff.rgb, program.local[0].w, state.fog.color, diff;\n"
@@ -478,7 +478,7 @@ void R_DrawSkychain_ARB (msurface_t *s)
 		glMatrixMode (GL_MODELVIEW);
 
 		// explicitly bind to TMU 3 to bypass the texture manager
-		glActiveTexture (GL_TEXTURE3);
+		glActiveTexture (GL_TEXTURE5);
 		glBindTexture (GL_TEXTURE_CUBE_MAP, r_skybox_cubemap);
 
 		// this is only done once per frame so it's OK to explicitly call each time

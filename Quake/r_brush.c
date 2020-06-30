@@ -27,9 +27,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // to do - move all of the lighting stuff to gl_rlight.c
 extern cvar_t gl_fullbrights; // johnfitz
 
-#define MAX_LIGHTMAPS		1024
 
-lightmap_t gl_lightmaps[MAX_LIGHTMAPS];
+gltexture_t *gl_lightmaps[3][MAX_LIGHTMAPS];
 unsigned	lm_blocklights[LIGHTMAP_SIZE * LIGHTMAP_SIZE][3]; // johnfitz -- was 18*18, added lit support (*3) and loosened surface extents maximum (LIGHTMAP_SIZE*LIGHTMAP_SIZE)
 int			lm_lightproperty = 1;
 
@@ -136,62 +135,6 @@ void R_DrawBrushModel (entity_t *e)
 */
 
 
-void LM_ClearDirtyRect (gl_rect_t *dirtyrect)
-{
-	dirtyrect->left = LIGHTMAP_SIZE;
-	dirtyrect->right = 0;
-	dirtyrect->top = LIGHTMAP_SIZE;
-	dirtyrect->bottom = 0;
-}
-
-
-qboolean R_ShouldModifyLightmap (msurface_t *surf)
-{
-	// johnfitz -- not a lightmapped surface
-	if (surf->flags & SURF_DRAWTILED) return false;
-
-	// gl_overbright toggle; always rebuild, even if r_dynamic is false
-	if (surf->lightproperty != lm_lightproperty) return true;
-
-	// no updates
-	if (!r_dynamic.value) return false;
-
-	// check for lightmap modification
-	for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
-		if (d_lightstylevalue[surf->styles[maps]] != surf->cached_light[maps])
-			return true;
-
-	// not modified
-	return false;
-}
-
-
-/*
-================
-R_RenderDynamicLightmaps
-called during rendering
-================
-*/
-void R_RenderDynamicLightmaps (msurface_t *surf)
-{
-	if (R_ShouldModifyLightmap (surf))
-	{
-		struct lightmap_s *lm = &gl_lightmaps[surf->lightmaptexturenum];
-		gl_rect_t *dirtyrect = &lm->dirtyrect;
-
-		R_BuildLightMap (surf, lm->lm_data + (surf->light_t * LIGHTMAP_SIZE + surf->light_s) * 4, LIGHTMAP_SIZE * 4);
-
-		if (surf->lightrect.left < dirtyrect->left) dirtyrect->left = surf->lightrect.left;
-		if (surf->lightrect.right > dirtyrect->right) dirtyrect->right = surf->lightrect.right;
-		if (surf->lightrect.top < dirtyrect->top) dirtyrect->top = surf->lightrect.top;
-		if (surf->lightrect.bottom > dirtyrect->bottom) dirtyrect->bottom = surf->lightrect.bottom;
-
-		surf->lightproperty = lm_lightproperty;
-		lm->modified = true;
-	}
-}
-
-
 /*
 =============================================================================
 
@@ -200,29 +143,62 @@ LIGHTMAP ALLOCATION
 =============================================================================
 */
 
+typedef struct lighttexel_s {
+	byte styles[4];
+} lighttexel_t;
+
+
+static lighttexel_t lm_block[3][LIGHTMAP_SIZE * LIGHTMAP_SIZE];
 static int lm_allocated[LIGHTMAP_SIZE];
+
 int lm_currenttexture = 0;
+
+
+void R_NewBuildLightmap (msurface_t *surf, int ch)
+{
+	int smax = (surf->extents[0] >> 4) + 1;
+	int tmax = (surf->extents[1] >> 4) + 1;
+
+	if (surf->samples)
+	{
+		// copy over the lightmap beginning at the appropriate colour channel
+		byte *lightmap = surf->samples;
+
+		for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
+		{
+			lighttexel_t *dest = lm_block[ch] + (surf->light_t * LIGHTMAP_SIZE) + surf->light_s;
+
+			for (int t = 0; t < tmax; t++)
+			{
+				for (int s = 0; s < smax; s++)
+				{
+					dest[s].styles[maps] = lightmap[ch];	// 'ch' is intentional here
+					lightmap += 3;
+				}
+
+				dest += LIGHTMAP_SIZE;
+			}
+		}
+	}
+}
+
 
 static void LM_InitBlock (void)
 {
 	memset (lm_allocated, 0, sizeof (lm_allocated));
+	memset (lm_block, 0, sizeof (lm_block));
 }
 
 
 static void LM_UploadBlock (void)
 {
 	char	name[24];
-	lightmap_t *lm = &gl_lightmaps[lm_currenttexture];
-
-	// unused
-	if (!lm->lm_data)
-		Sys_Error ("LM_UploadBlock : NULL lm->data");
-
-	LM_ClearDirtyRect (&lm->dirtyrect);
-	lm->modified = false;
 
 	sprintf (name, "lightmap%07i", lm_currenttexture);
-	lm->texture = TexMgr_LoadImage (cl.worldmodel, name, LIGHTMAP_SIZE, LIGHTMAP_SIZE, SRC_LIGHTMAP, lm->lm_data, "", (src_offset_t) lm->lm_data, TEXPREF_LINEAR);
+
+	gl_lightmaps[0][lm_currenttexture] = TexMgr_LoadImage (cl.worldmodel, va ("%s_r", name), LIGHTMAP_SIZE, LIGHTMAP_SIZE, SRC_LIGHTMAP, (byte *) lm_block[0], "", (src_offset_t) lm_block[0], TEXPREF_LINEAR);
+	gl_lightmaps[1][lm_currenttexture] = TexMgr_LoadImage (cl.worldmodel, va ("%s_g", name), LIGHTMAP_SIZE, LIGHTMAP_SIZE, SRC_LIGHTMAP, (byte *) lm_block[1], "", (src_offset_t) lm_block[1], TEXPREF_LINEAR);
+	gl_lightmaps[2][lm_currenttexture] = TexMgr_LoadImage (cl.worldmodel, va ("%s_b", name), LIGHTMAP_SIZE, LIGHTMAP_SIZE, SRC_LIGHTMAP, (byte *) lm_block[2], "", (src_offset_t) lm_block[2], TEXPREF_LINEAR);
 
 	if (++lm_currenttexture >= MAX_LIGHTMAPS)
 		Sys_Error ("LM_UploadBlock : MAX_LIGHTMAPS exceeded");
@@ -273,8 +249,6 @@ GL_CreateSurfaceLightmap
 */
 void GL_CreateSurfaceLightmap (msurface_t *surf)
 {
-	byte *base;
-
 	if (surf->flags & SURF_DRAWTILED)
 		return;
 
@@ -294,21 +268,9 @@ void GL_CreateSurfaceLightmap (msurface_t *surf)
 
 	surf->lightmaptexturenum = lm_currenttexture;
 
-	// fill in the lightrect for this surf
-	surf->lightrect.left = surf->light_s;
-	surf->lightrect.right = smax + surf->light_s;
-	surf->lightrect.top = surf->light_t;
-	surf->lightrect.bottom = tmax + surf->light_t;
-
-	// alloc data for it if needed
-	if (!gl_lightmaps[surf->lightmaptexturenum].lm_data)
-		gl_lightmaps[surf->lightmaptexturenum].lm_data = (byte *) Hunk_Alloc (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4);
-
-	// and build the lightmap
-	base = gl_lightmaps[surf->lightmaptexturenum].lm_data;
-	base += (surf->light_t * LIGHTMAP_SIZE + surf->light_s) * 4;
-
-	R_BuildLightMap (surf, base, LIGHTMAP_SIZE * 4);
+	R_NewBuildLightmap (surf, 0); // red
+	R_NewBuildLightmap (surf, 1); // green
+	R_NewBuildLightmap (surf, 2); // blue
 }
 
 
@@ -421,7 +383,6 @@ void GL_BuildLightmaps (void)
 		{
 			msurface_t *surf = &m->surfaces[i];
 			GL_CreateSurfaceLightmap (surf);
-			surf->lightproperty = lm_lightproperty;
 		}
 	}
 
@@ -486,136 +447,4 @@ void GL_DeleteBModelVertexBuffer (void)
 	GL_ClearBufferBindings ();
 }
 
-
-/*
-===============
-R_BuildLightMap -- johnfitz -- revised for lit support via lordhavoc
-
-Combine and scale multiple lightmaps into the 8.8 format in blocklights
-===============
-*/
-void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
-{
-	int smax = (surf->extents[0] >> 4) + 1;
-	int tmax = (surf->extents[1] >> 4) + 1;
-	int size = smax * tmax;
-	byte *lightmap = surf->samples;
-
-	if (r_fullbright.value || !cl.worldmodel->lightdata)
-	{
-		for (int i = 0; i < size; i++)
-		{
-			// overbrighting
-			lm_blocklights[i][0] = 255 * 128;
-			lm_blocklights[i][1] = 255 * 128;
-			lm_blocklights[i][2] = 255 * 128;
-		}
-	}
-	else
-	{
-		// clear to no light
-		for (int i = 0; i < size; i++)
-		{
-			lm_blocklights[i][0] = 0;
-			lm_blocklights[i][1] = 0;
-			lm_blocklights[i][2] = 0;
-		}
-
-		// add all the lightmaps
-		if (lightmap)
-		{
-			for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
-			{
-				unsigned scale = d_lightstylevalue[surf->styles[maps]];
-
-				for (int i = 0; i < size; i++, lightmap += 3)
-				{
-					lm_blocklights[i][0] += lightmap[0] * scale;
-					lm_blocklights[i][1] += lightmap[1] * scale;
-					lm_blocklights[i][2] += lightmap[2] * scale;
-				}
-
-				surf->cached_light[maps] = scale;	// 8.8 fraction
-			}
-		}
-	}
-
-	// bound, invert, and shift
-	stride -= smax * 4;
-
-	int shift = 7 + (int) gl_overbright.value;
-
-	for (int i = 0, k = 0; i < tmax; i++, dest += stride)
-	{
-		for (int j = 0; j < smax; j++, k++, dest += 4)
-		{
-			int r = lm_blocklights[k][0] >> shift;
-			int g = lm_blocklights[k][1] >> shift;
-			int b = lm_blocklights[k][2] >> shift;
-
-			dest[0] = (b > 255) ? 255 : b;
-			dest[1] = (g > 255) ? 255 : g;
-			dest[2] = (r > 255) ? 255 : r;
-			dest[3] = 255;
-		}
-	}
-}
-
-
-/*
-===============
-R_UploadLightmaps -- johnfitz -- uploads the modified lightmap to opengl if necessary
-
-===============
-*/
-void R_UploadLightmaps (void)
-{
-	// this lets us load subrects properly (presumably it wasn't in GL1.0 or id would have done it)
-	glPixelStorei (GL_UNPACK_ROW_LENGTH, LIGHTMAP_SIZE);
-
-	for (int lmap = 0; lmap < lm_currenttexture; lmap++)
-	{
-		struct lightmap_s *lm = &gl_lightmaps[lmap];
-		gl_rect_t *dirtyrect = &lm->dirtyrect;
-
-		if (!lm->modified)
-			continue;
-
-		GL_BindTexture (GL_TEXTURE1, lm->texture);
-
-		// doing the proper subrect here
-		glTexSubImage2D (
-			GL_TEXTURE_2D,
-			0,
-			dirtyrect->left,
-			dirtyrect->top,
-			(dirtyrect->right - dirtyrect->left),
-			(dirtyrect->bottom - dirtyrect->top),
-			GL_BGRA,
-			GL_UNSIGNED_INT_8_8_8_8_REV,
-			lm->lm_data + (dirtyrect->top * LIGHTMAP_SIZE + dirtyrect->left) * 4
-		);
-
-		LM_ClearDirtyRect (dirtyrect);
-
-		rs_dynamiclightmaps++;
-
-		lm->modified = false;
-	}
-
-	// back to normal loading
-	glPixelStorei (GL_UNPACK_ROW_LENGTH, 0);
-}
-
-
-/*
-================
-R_RebuildAllLightmaps -- johnfitz -- called when gl_overbright gets toggled
-================
-*/
-void R_RebuildAllLightmaps (void)
-{
-	// this toggles a rebuild of all lightmaps next time they're seen
-	lm_lightproperty++;
-}
 

@@ -50,17 +50,6 @@ extern gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz
 
 /*
 ====================
-GL_Overbright_f -- johnfitz
-====================
-*/
-static void GL_Overbright_f (cvar_t *var)
-{
-	R_RebuildAllLightmaps ();
-}
-
-
-/*
-====================
 R_SetClearColor_f -- johnfitz
 ====================
 */
@@ -193,8 +182,6 @@ void R_Init (void)
 	Cvar_RegisterVariable (&gl_fullbrights);
 	Cvar_RegisterVariable (&gl_overbright);
 	Cvar_SetCallback (&gl_fullbrights, NULL);
-	Cvar_SetCallback (&gl_overbright, GL_Overbright_f);
-	Cvar_SetCallback (&r_fullbright, GL_Overbright_f);
 	Cvar_RegisterVariable (&r_lerpmodels);
 	Cvar_RegisterVariable (&r_lerpmove);
 	Cvar_RegisterVariable (&r_nolerp_list);

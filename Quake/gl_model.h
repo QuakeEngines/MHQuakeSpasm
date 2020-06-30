@@ -150,7 +150,6 @@ typedef struct msurface_s {
 	short		extents[2];
 
 	int			light_s, light_t;	// gl lightmap coordinates
-	gl_rect_t	lightrect;
 
 	struct	msurface_s *texturechain;
 
@@ -163,9 +162,11 @@ typedef struct msurface_s {
 	int			dlightframe;
 
 	int			lightmaptexturenum;
-	byte		styles[MAXLIGHTMAPS];
-	int			cached_light[MAXLIGHTMAPS];	// values currently used in lightmap
-	int			lightproperty;
+
+	union {
+		byte		styles[MAXLIGHTMAPS];
+		unsigned	fullstyle;
+	};
 
 	byte *samples;		// [numstyles*surfsize]
 } msurface_t;

@@ -60,14 +60,10 @@ R_ChainSurface -- ericw -- adds the given surface to its texture chain
 */
 void R_ChainSurface (msurface_t *surf, texchain_t chain)
 {
-	// run dynamic lighting if we're not collecting dlight surfaces
-	if (!(surf->flags & SURF_DRAWTILED) && chain != chain_dlight)
-	{
-		// marks this surf as having been seen in this dlight frame
-		surf->dlightframe = r_dlightframecount;
-		R_RenderDynamicLightmaps (surf);
-	}
+	// marks this surf as having been seen in this dlight frame
+	surf->dlightframe = r_dlightframecount;
 
+	// and chain it normally
 	surf->texturechain = surf->texinfo->texture->texturechains[chain];
 	surf->texinfo->texture->texturechains[chain] = surf;
 }
@@ -192,14 +188,25 @@ void GLWorld_CreateShaders (void)
 		"!!ARBfp1.0\n"
 		"\n"
 		"TEMP diff, lmap, fence;\n"
+		"TEMP lmr, lmg, lmb;\n\n"
 		"\n"
 		"# perform the texturing\n"
 		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
-		"TEX lmap, fragment.texcoord[1], texture[1], 2D;\n"
 		"\n"
 		"# fence texture test\n"
 		"SUB fence, diff, 0.666;\n"
 		"KIL fence.a;\n"
+		"\n"
+		"# read the lightmaps\n"
+		"TEX lmr, fragment.texcoord[1], texture[1], 2D;\n"
+		"TEX lmg, fragment.texcoord[1], texture[2], 2D;\n"
+		"TEX lmb, fragment.texcoord[1], texture[3], 2D;\n"
+		"\n"
+		"# apply the lightstyles\n"
+		"DP4 lmap.r, lmr, program.local[0];\n"
+		"DP4 lmap.g, lmg, program.local[0];\n"
+		"DP4 lmap.b, lmb, program.local[0];\n"
+		"MIN lmap, lmap, 1.0; # allow them to switch off overbrights here too\n"
 		"\n"
 		"# perform the lightmapping\n"
 		"MUL diff.rgb, diff, lmap;\n"
@@ -229,15 +236,26 @@ void GLWorld_CreateShaders (void)
 		"!!ARBfp1.0\n"
 		"\n"
 		"TEMP diff, lmap, luma, fence;\n"
+		"TEMP lmr, lmg, lmb;\n\n"
 		"\n"
 		"# perform the texturing\n"
 		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
-		"TEX lmap, fragment.texcoord[1], texture[1], 2D;\n"
-		"TEX luma, fragment.texcoord[0], texture[2], 2D;\n"
+		"TEX luma, fragment.texcoord[0], texture[4], 2D;\n"
 		"\n"
 		"# fence texture test\n"
 		"SUB fence, diff, 0.666;\n"
 		"KIL fence.a;\n"
+		"\n"
+		"# read the lightmaps\n"
+		"TEX lmr, fragment.texcoord[1], texture[1], 2D;\n"
+		"TEX lmg, fragment.texcoord[1], texture[2], 2D;\n"
+		"TEX lmb, fragment.texcoord[1], texture[3], 2D;\n"
+		"\n"
+		"# apply the lightstyles\n"
+		"DP4 lmap.r, lmr, program.local[0];\n"
+		"DP4 lmap.g, lmg, program.local[0];\n"
+		"DP4 lmap.b, lmb, program.local[0];\n"
+		"MIN lmap, lmap, 1.0; # allow them to switch off overbrights here too\n"
 		"\n"
 		"# perform the lightmapping\n"
 		"MUL diff.rgb, diff, lmap;\n"
@@ -361,25 +379,60 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 	// Enable/disable TMU 2 (fullbrights)
 	if (gl_fullbrights.value && t->fullbright)
 	{
-		GL_BindTexture (GL_TEXTURE2, t->fullbright);
+		GL_BindTexture (GL_TEXTURE4, t->fullbright);
 		GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[1]);
 	}
 	else GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[0]);
 
+	// beginning with an empty batch
 	R_ClearBatch ();
 
-	for (gltexture_t *currentlightmap = NULL; s; s = s->texturechain)
+	// set these up so that they will trigger a set first time it's seen
+	unsigned oldstyle = ~s->fullstyle;
+	unsigned currentlightmap = ~s->lightmaptexturenum;
+
+	for (; s; s = s->texturechain)
 	{
-		if (gl_lightmaps[s->lightmaptexturenum].texture != currentlightmap)
+		// check for lightmap change
+		if (s->lightmaptexturenum != currentlightmap)
 		{
 			R_FlushBatch (); // first time through there will be nothing in the batch
-			GL_BindTexture (GL_TEXTURE1, gl_lightmaps[s->lightmaptexturenum].texture);
-			currentlightmap = gl_lightmaps[s->lightmaptexturenum].texture;
+
+			// bind all the lightmaps
+			GL_BindTexture (GL_TEXTURE1, gl_lightmaps[0][s->lightmaptexturenum]);
+			GL_BindTexture (GL_TEXTURE2, gl_lightmaps[1][s->lightmaptexturenum]);
+			GL_BindTexture (GL_TEXTURE3, gl_lightmaps[2][s->lightmaptexturenum]);
+
+			currentlightmap = s->lightmaptexturenum;
 		}
 
+		// check for lightstyle change
+		if (s->fullstyle != oldstyle)
+		{
+			R_FlushBatch (); // first time through there will be nothing in the batch
+
+			// build the new style
+			float fstyles[4] = { 0, 0, 0, 0 };
+
+			for (int maps = 0; maps < MAXLIGHTMAPS && s->styles[maps] != 255; maps++)
+			{
+				// scale and overbright range
+				unsigned scale = d_lightstylevalue[s->styles[maps]];
+				fstyles[maps] = (scale >> (int) gl_overbright.value) * 0.0078125f;
+			}
+
+			// write them out
+			// (to do - benchmark this vs sending them as a glVertexAttrib call)
+			glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, fstyles);
+
+			oldstyle = s->fullstyle;
+		}
+
+		// batch this surface
 		R_BatchSurface (s);
 	}
 
+	// draw the batch
 	R_FlushBatch ();
 }
 
@@ -464,9 +517,6 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 {
 	// entity alpha
 	float		entalpha = (ent != NULL) ? ENTALPHA_DECODE (ent->alpha) : 1.0f;
-
-	// upload any lightmaps that were modified
-	R_UploadLightmaps ();
 
 	// enable blending / disable depth writes
 	if (entalpha < 1)

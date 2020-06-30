@@ -173,28 +173,14 @@ extern overflowtimes_t dev_overflows; // this stores the last time overflow mess
 
 #define CONSOLE_RESPAM_TIME 3 // seconds between repeated warning messages
 
+
+// lightmap stuff
 #define LIGHTMAP_SIZE	256	// FIXME: make dynamic. if we have a decent card there's no real reason not to use 4k or 16k (assuming there's no lightstyles/dynamics that need uploading...)
+#define MAX_LIGHTMAPS	1024
 
-
-typedef struct lightmap_s {
-	gltexture_t *texture;
-	qboolean	modified;
-	gl_rect_t	dirtyrect;
-
-	// the lightmap texture data needs to be kept in
-	// main memory so texsubimage can update properly
-	byte *lm_data; // [4*LMBLOCK_WIDTH*LMBLOCK_HEIGHT];
-} lightmap_t;
-
-
-extern lightmap_t gl_lightmaps[];
+extern gltexture_t *gl_lightmaps[3][MAX_LIGHTMAPS];
 extern int lm_currenttexture;	// allocated lightmaps
 
-
-typedef struct glsl_attrib_binding_s {
-	const char *name;
-	GLuint attrib;
-} glsl_attrib_binding_t;
 
 extern float	map_wateralpha, map_lavaalpha, map_telealpha, map_slimealpha; // ericw
 
@@ -237,13 +223,8 @@ void GL_DeleteBModelVertexBuffer (void);
 void GL_BuildBModelVertexBuffer (void);
 void GLMesh_LoadVertexBuffers (void);
 void GLMesh_DeleteVertexBuffers (void);
-void R_RebuildAllLightmaps (void);
 
 int R_LightPoint (vec3_t p);
-
-void R_BuildLightMap (msurface_t *surf, byte *dest, int stride);
-void R_RenderDynamicLightmaps (msurface_t *surf);
-void R_UploadLightmaps (void);
 
 qboolean R_AllocBlock (int w, int h, int *x, int *y, int *allocated, int block_width, int block_height);
 

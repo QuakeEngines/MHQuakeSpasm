@@ -1215,7 +1215,7 @@ static void TexMgr_LoadLightmap (gltexture_t *glt, byte *data)
 {
 	// upload it
 	GL_BindTexture (GL_TEXTURE1, glt);
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, glt->width, glt->height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, glt->width, glt->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
 	// set filter modes
 	TexMgr_SetFilterModes (glt);
@@ -1493,7 +1493,7 @@ GLuint TexMgr_LoadCubemap (byte *data[6], int width[6], int height[6])
 		glGenTextures (1, &cubemap_texture);
 
 		// explicitly bind to TMU 3 to bypass the texture manager
-		glActiveTexture (GL_TEXTURE3);
+		glActiveTexture (GL_TEXTURE5);
 		glBindTexture (GL_TEXTURE_CUBE_MAP, cubemap_texture);
 
 		for (int i = 0; i < 6; i++)
@@ -1558,7 +1558,7 @@ void TexMgr_SetCubemapFilterModes (void)
 */
 
 // MH - made these GL_INVALID_VALUE
-static GLuint	currenttexture[3] = { GL_INVALID_VALUE, GL_INVALID_VALUE, GL_INVALID_VALUE }; // to avoid unnecessary texture sets
+static GLuint	currenttexture[5] = { GL_INVALID_VALUE, GL_INVALID_VALUE, GL_INVALID_VALUE, GL_INVALID_VALUE, GL_INVALID_VALUE }; // to avoid unnecessary texture sets
 static GLenum	currenttarget = GL_INVALID_VALUE;
 
 
@@ -1611,9 +1611,9 @@ static void GL_DeleteTexture (gltexture_t *texture)
 {
 	glDeleteTextures (1, &texture->texnum);
 
-	if (texture->texnum == currenttexture[0]) currenttexture[0] = GL_INVALID_VALUE;
-	if (texture->texnum == currenttexture[1]) currenttexture[1] = GL_INVALID_VALUE;
-	if (texture->texnum == currenttexture[2]) currenttexture[2] = GL_INVALID_VALUE;
+	for (int i = 0; i < 5; i++)
+		if (texture->texnum == currenttexture[i])
+			currenttexture[i] = GL_INVALID_VALUE;
 
 	texture->texnum = 0;
 }
@@ -1631,7 +1631,7 @@ MH - also invalidates the current TMU so the next binding will explicitly activa
 */
 void GL_ClearTextureBindings (void)
 {
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 5; i++)
 		currenttexture[i] = GL_INVALID_VALUE;
 
 	currenttarget = GL_INVALID_VALUE;
