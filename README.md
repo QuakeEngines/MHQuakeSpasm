@@ -36,7 +36,9 @@ The GLSL C interface at this API level sucks.  The main problems with it are:
 True, most of these problems are solved in newer GL versions, but that would entail reaching beyond the API level I'm targetting.  ARB assembly programs, on the other hand, don't have these problems at all (which does make the claimed advantages of GLSL seem more like an attempt to retroactively justify a bad initial design).  While they do have some shortcomings (the ones most relevant to me being lack of the texGrad instruction and no array texture support) on balance they are just a more productive tool.
 
 ### Where's r_drawflat? Your engine sucks! I hate you forever!
-Relax.  Like I said above, this is work in progress and features are sometimes temporarily removed to allow for simplification of the key drawing routines before adding them back.  r_drawflat just happens to be one of those features.
+That's OK.
+
+More seriously, if you need functionality like r_drawflat, r_fullbright, r_showtris, etc, then I'd suggest that just using QuakeSpasm instead may be a more suitable option for you.  As part of a code simplification pass these features were removed, and while it wouldn't necessarily be a huge imposition to add them back, there's likewise no real requirement to do so either.
 
 ### How do you compile this?
 On Windows, MHQuakeSpasm is a Visual Studio 2019 project.  It has been built and tested with a stock Visual Studio 2019 Community Edition installation, with no other tools or components being required.  So the build procedure is:
