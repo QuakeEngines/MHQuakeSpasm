@@ -9,7 +9,7 @@ However, there are - in my opinion - certain serious issues with the QuakeSpasm 
 
 The primary purpose of this fork is to take this renderer and lift it up to a higher-quality and higher-performance implementation.  QuakeSpasm itself already takes steps in that direction with it's lightmapped surface and alias model paths, so this is just a logical evolution towards the rest of the way.  At the same time the various legacy codepaths will be removed to clean up and simplify the renderer.
 
-The intent is feature-parity with QuakeSpasm, but it is a work in progress.  At times some features may be removed to allow for simplification of the critical codepaths, with the removed features then being brought back in once the key work is complete.  This temporary removal is not and should not be interpreted as meaning that the removed feature is permanently gone.
+The intent is feature-parity with QuakeSpasm, but it is a work in progress.  At times some features may be removed to allow for simplification of critical codepaths, with removed features then being brought back in once key work is complete.  This temporary removal does not mean and should not be misinterpreted as meaning that any removed feature is permanently gone.  Likewise there is no implicit promise that a removed feature will definitely be restored.
 
 ## FAQ
 
@@ -22,7 +22,7 @@ mhQuakeSpasm is built around an approximate OpenGL 1.5 level; in it's current in
 
 This is roughly equivalent to what (the original, not BFG) Doom 3 uses, so as a general rule if you can run Doom 3, you can probably run this too. Bear in mind that Doom 3 is now a 16-year-old game so what it requires should no longer be considered high-end. 
 
-You should NOT misinterpret the above as indicating that this will have stencil shadows and normal maps. 
+You should NOT misinterpret the above as indicating that this will have stencil shadow volumes and normal maps. 
 
 ### Can you switch off interpolation?
 Yes.
@@ -33,7 +33,7 @@ The GLSL C interface at this API level sucks.  The main problems with it are:
  - No standalone shared uniforms, uniforms are part of per-program state.
  - Everything needs to be queried rather than explicitly set.
  
-True, most of these problems are solved in newer GL versions, but that would entail reaching beyond the API level I'm targetting.  ARB assembly programs, on the other hand, don't have these problems at all (which does make the claimed advantages of GLSL seem more like an attempt to retroactively justify a bad initial design).  While they do have some shortcomings (the ones most relevant to me being lack of the texGrad instruction and no array texture support) on balance they are just a more productive tool.
+True, most of these problems are solved in newer GL versions, but that would entail reaching beyond the API level I'm targetting.  ARB assembly programs, on the other hand, don't have these problems at all (which does make the claimed advantages of GLSL seem more like an attempt to retroactively justify a bad initial design).  While they do have other shortcomings (the ones most relevant to me being lack of the texGrad instruction and no array texture support) on balance they are just a more productive tool.
 
 ### Where's r_drawflat? Your engine sucks! I hate you forever!
 That's OK.
@@ -46,7 +46,7 @@ On Windows, mhQuakeSpasm is a Visual Studio 2019 project.  It has been built and
  - Download the source code.
  - Build it.
 
-Github filters exclude the third-party libs and dlls you'll need to link and run, so I recommend you copy them over from another copy of the QuakeSpasm source. These are located in the "Windows" folder of the source repository, and you should copy over everything aside from the "VisualStudio" folder.  If you do copy the "VisualStudio" folder you'll break the project files.
+Github filters exclude the third-party .libs and .dlls you'll need to link and run, so I recommend you grab them from another copy of the QuakeSpasm source. These are located in the "Windows" folder of the source repository, and you should copy over everything aside from the "VisualStudio" folder.  If you do copy the "VisualStudio" folder you'll break the project files.
 
 The SDL2 build should be used; the regular SDL build has been exercised very little, if at all, and I'll probably remove it from the project some time.
 
