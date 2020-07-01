@@ -1,4 +1,4 @@
-# MHQuakeSpasm
+# mhQuakeSpasm
 ## MH fork of latest QuakeSpasm
 
 This is my personal fork of QuakeSpasm.  Whereas back in 2010 it made sense to have a high-performance Direct3D engine, the problems with OpenGL from that time no longer exist.  OpenGL drivers are now available by default on all Windows machines, the version supported is sufficiently high that you can use a reasonable API baseline, and driver stability is massively improved.
@@ -14,7 +14,7 @@ The intent is feature-parity with QuakeSpasm, but it is a work in progress.  At 
 ## FAQ
 
 ### What API level does this use?
-MHQuakeSpasm is built around an approximate OpenGL 1.5 level; in it's current incarnation the following OpenGL extensions are mandatory:
+mhQuakeSpasm is built around an approximate OpenGL 1.5 level; in it's current incarnation the following OpenGL extensions are mandatory:
  - GL_ARB_multitexture
  - GL_ARB_vertex_buffer_object
  - GL_ARB_vertex_program
@@ -41,7 +41,7 @@ That's OK.
 More seriously, if you need functionality like r_drawflat, r_fullbright, r_showtris, etc, then I'd suggest that just using QuakeSpasm instead may be a more suitable option for you.  As part of a code simplification pass these features were removed, and while it wouldn't necessarily be a huge imposition to add them back, there's likewise no real requirement to do so either.
 
 ### How do you compile this?
-On Windows, MHQuakeSpasm is a Visual Studio 2019 project.  It has been built and tested with a stock Visual Studio 2019 Community Edition installation, with no other tools or components being required.  So the build procedure is:
+On Windows, mhQuakeSpasm is a Visual Studio 2019 project.  It has been built and tested with a stock Visual Studio 2019 Community Edition installation, with no other tools or components being required.  So the build procedure is:
  - Download and install Visual Studio 2019 Community.
  - Download the source code.
  - Build it.
