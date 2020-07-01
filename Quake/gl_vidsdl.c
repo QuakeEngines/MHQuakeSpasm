@@ -117,6 +117,14 @@ static cvar_t	vid_desktopfullscreen = { "vid_desktopfullscreen", "0", CVAR_ARCHI
 static cvar_t	vid_borderless = { "vid_borderless", "0", CVAR_ARCHIVE }; // QuakeSpasm
 // johnfitz
 
+
+#if defined(USE_SDL2)
+// mh - improved vsync; under D3D11 swap interval is a param on the Present call and we just check the value to use when calling present at the
+// end of the frame; under other APIs is explicit state that must be set, so we need handling for it.
+// valid swap interval values are -1, 0 or 1, so set this to a value that will be triggered first time it's seen
+static int vid_currentvsync = 666;
+#endif
+
 cvar_t		vid_gamma = { "gamma", "1", CVAR_ARCHIVE }; // johnfitz -- moved here from view.c
 cvar_t		vid_contrast = { "contrast", "1", CVAR_ARCHIVE }; // QuakeSpasm, MarkV
 
@@ -549,6 +557,7 @@ static qboolean VID_SetMode (int width, int height, int refreshrate, int bpp, qb
 			Sys_Error ("Couldn't create GL context");
 	}
 
+	vid_currentvsync = 666; // trigger a vsync change in GL_BeginRendering first time it's seen
 	gl_swap_control = true;
 	if (SDL_GL_SetSwapInterval ((vid_vsync.value) ? 1 : 0) == -1)
 		gl_swap_control = false;
@@ -1033,6 +1042,11 @@ static void GL_Init (void)
 }
 
 
+void VID_CheckVsync (void)
+{
+}
+
+
 /*
 =================
 GL_BeginRendering -- sets values of glx, gly, glwidth, glheight
@@ -1042,6 +1056,27 @@ returns false if the frame should be skipped for any reason
 */
 qboolean GL_BeginRendering (int *x, int *y, int *width, int *height)
 {
+#if defined(USE_SDL2)
+	// valid swapinterval values are -1, 0 or 1
+	int requestedvsync = 0;
+
+	// check for vsync change - timerefresh and timedemo should never vsync
+	if (scr_timerefresh)
+		requestedvsync = 0;
+	else if (cls.timedemo)
+		requestedvsync = 0;
+	else requestedvsync = (vid_vsync.value) ? 1 : 0;
+
+	if (requestedvsync != vid_currentvsync)
+	{
+		// make the change
+		if (SDL_GL_SetSwapInterval (requestedvsync) == -1)
+			gl_swap_control = false;
+
+		vid_currentvsync = requestedvsync;
+	}
+#endif
+
 	*x = *y = 0;
 
 	// using the correct window with and height
@@ -1298,11 +1333,14 @@ void	VID_Init (void)
 		"vid_height",
 		"vid_refreshrate",
 		"vid_bpp",
+#if !defined(USE_SDL2)
+		// under SDL2 vsync doesn't need a mode change and doesn't need to be read early
 		"vid_vsync",
+#endif
 		"vid_fsaa",
 		"vid_desktopfullscreen",
 		"vid_borderless" };
-#define num_readvars	( sizeof(read_vars)/sizeof(read_vars[0]) )
+#define num_readvars	(sizeof (read_vars) / sizeof (read_vars[0]))
 
 	Cvar_RegisterVariable (&vid_fullscreen); // johnfitz
 	Cvar_RegisterVariable (&vid_width); // johnfitz
@@ -1318,7 +1356,14 @@ void	VID_Init (void)
 	Cvar_SetCallback (&vid_height, VID_Changed_f);
 	Cvar_SetCallback (&vid_refreshrate, VID_Changed_f);
 	Cvar_SetCallback (&vid_bpp, VID_Changed_f);
+
+#if defined(USE_SDL2)
+	// under SDL2 vsync doesn't need a mode change
+	Cvar_SetCallback (&vid_vsync, NULL);
+#else
 	Cvar_SetCallback (&vid_vsync, VID_Changed_f);
+#endif
+
 	Cvar_SetCallback (&vid_fsaa, VID_FSAA_f);
 	Cvar_SetCallback (&vid_desktopfullscreen, VID_Changed_f);
 	Cvar_SetCallback (&vid_borderless, VID_Changed_f);
