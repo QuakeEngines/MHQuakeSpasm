@@ -70,7 +70,6 @@ extern gltexture_t *nulltexture;
 
 extern unsigned int d_8to24table[256];
 extern unsigned int d_8to24table_fbright[256];
-extern unsigned int d_8to24table_nobright[256];
 extern unsigned int d_8to24table_conchars[256];
 extern unsigned int d_8to24table_shirt[256];
 extern unsigned int d_8to24table_pants[256];

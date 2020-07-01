@@ -673,6 +673,18 @@ void R_SetupAliasLighting (entity_t *e)
 	VectorScale (shadelight, 1.0f / 320.0f, shadelight);
 }
 
+
+aliasskin_t *R_GetAliasSkin (entity_t *e, aliashdr_t *hdr)
+{
+	aliasskingroup_t *group = (aliasskingroup_t *) ((byte *) hdr + hdr->skingroups) + (e->skinnum < 0 ? 0 : (e->skinnum >= hdr->numskingroups ? 0 : e->skinnum));
+	float *intervals = (float *) ((byte *) hdr + group->intervals);
+	int groupskin = Mod_GetAutoAnimation (intervals, group->numskins, e->syncbase);
+	aliasskin_t *skin = (aliasskin_t *) ((byte *) hdr + group->skins) + groupskin;
+
+	return skin;
+}
+
+
 /*
 =================
 R_DrawAliasModel -- johnfitz -- almost completely rewritten
@@ -682,8 +694,6 @@ void R_DrawAliasModel (entity_t *e)
 {
 	QMATRIX localMatrix;
 	aliashdr_t *hdr = (aliashdr_t *) Mod_Extradata (e->model);
-	int			i, anim, skinnum;
-	gltexture_t *tx, *fb;
 	lerpdata_t	lerpdata;
 
 	// setup pose/lerp data -- do it first so we don't miss updates due to culling
@@ -721,22 +731,13 @@ void R_DrawAliasModel (entity_t *e)
 	R_SetupAliasLighting (e);
 
 	// set up textures
-	anim = (int) (cl.time * 10) & 3;
-	skinnum = e->skinnum;
-
-	if ((skinnum >= hdr->numskins) || (skinnum < 0))
-	{
-		Con_DPrintf ("R_DrawAliasModel: no such skin # %d for '%s'\n", skinnum, e->model->name);
-		// ericw -- display skin 0 for winquake compatibility
-		skinnum = 0;
-	}
-
-	tx = hdr->gltextures[skinnum][anim];
-	fb = hdr->fbtextures[skinnum][anim];
+	aliasskin_t *skin = R_GetAliasSkin (e, hdr);
+	gltexture_t *tx = skin->gltexture;
+	gltexture_t *fb = skin->fbtexture;
 
 	if (e->colormap != vid.colormap && !gl_nocolors.value)
 	{
-		i = e - cl_entities;
+		int i = e - cl_entities;
 		if (i >= 1 && i <= cl.maxclients /* && !strcmp (e->model->name, "progs/player.mdl") */)
 			tx = playertextures[i - 1];
 	}

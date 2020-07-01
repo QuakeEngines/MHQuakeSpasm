@@ -216,10 +216,8 @@ R_TranslatePlayerSkin -- johnfitz -- rewritten.  also, only handles new colors, 
 */
 void R_TranslatePlayerSkin (int playernum)
 {
-	int			top, bottom;
-
-	top = (cl.scores[playernum].colors & 0xf0) >> 4;
-	bottom = cl.scores[playernum].colors & 15;
+	int top = (cl.scores[playernum].colors & 0xf0) >> 4;
+	int bottom = cl.scores[playernum].colors & 15;
 
 	// FIXME: if gl_nocolors is on, then turned off, the textures may be out of sync with the scoreboard colors.
 	if (!gl_nocolors.value)
@@ -237,19 +235,18 @@ added bug fix from bengt jardup
 void R_TranslateNewPlayerSkin (int playernum)
 {
 	char		name[64];
-	byte *pixels;
 	aliashdr_t *paliashdr;
 	int		skinnum;
 
 	// get correct texture pixels
-	currententity = &cl_entities[1 + playernum];
+	entity_t *e = &cl_entities[1 + playernum];
 
-	if (!currententity->model || currententity->model->type != mod_alias)
+	if (!e->model || e->model->type != mod_alias)
 		return;
 
-	paliashdr = (aliashdr_t *) Mod_Extradata (currententity->model);
+	paliashdr = (aliashdr_t *) Mod_Extradata (e->model);
 
-	skinnum = currententity->skinnum;
+	skinnum = e->skinnum;
 
 	// TODO: move these tests to the place where skinnum gets received from the server
 	if (skinnum < 0 || skinnum >= paliashdr->numskins)
@@ -258,12 +255,20 @@ void R_TranslateNewPlayerSkin (int playernum)
 		skinnum = 0;
 	}
 
-	pixels = (byte *) paliashdr + paliashdr->texels[skinnum]; // This is not a persistent place!
+	// you just know there's a mod somewhere that has animating player skins
+	// this isn't quite right yet - playertextures[playernum] will be overwritten for each skin in the animation sequence
+	aliasskingroup_t *group = (aliasskingroup_t *) ((byte *) paliashdr + paliashdr->skingroups) + skinnum;
 
-// upload new image
-	q_snprintf (name, sizeof (name), "player_%i", playernum);
-	playertextures[playernum] = TexMgr_LoadImage (currententity->model, name, paliashdr->skinwidth, paliashdr->skinheight,
-		SRC_INDEXED, pixels, paliashdr->gltextures[skinnum][0]->source_file, paliashdr->gltextures[skinnum][0]->source_offset, TEXPREF_PAD | TEXPREF_OVERWRITE);
+	for (int i = 0; i < group->numskins; i++)
+	{
+		aliasskin_t *skin = (aliasskin_t *) ((byte *) paliashdr + group->skins) + i;
+		byte *pixels = (byte *) paliashdr + skin->texels;
+
+		// upload new image
+		q_snprintf (name, sizeof (name), "player_%i%i", playernum, i);
+		playertextures[playernum] = TexMgr_LoadImage (e->model, name, paliashdr->skinwidth, paliashdr->skinheight,
+			SRC_INDEXED, pixels, skin->gltexture->source_file, skin->gltexture->source_offset, TEXPREF_MIPMAP | TEXPREF_FLOODFILL | TEXPREF_PAD | TEXPREF_OVERWRITE);
+	}
 
 	// now recolor it
 	R_TranslatePlayerSkin (playernum);
@@ -276,10 +281,8 @@ R_NewGame -- johnfitz -- handle a game switch
 */
 void R_NewGame (void)
 {
-	int i;
-
 	// clear playertexture pointers (the textures themselves were freed by texmgr_newgame)
-	for (i = 0; i < MAX_SCOREBOARD; i++)
+	for (int i = 0; i < MAX_SCOREBOARD; i++)
 		playertextures[i] = NULL;
 }
 

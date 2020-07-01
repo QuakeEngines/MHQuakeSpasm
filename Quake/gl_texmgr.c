@@ -37,9 +37,6 @@ gltexture_t *notexture, *nulltexture;
 
 unsigned int d_8to24table[256];
 unsigned int d_8to24table_fbright[256];
-unsigned int d_8to24table_fbright_fence[256];
-unsigned int d_8to24table_nobright[256];
-unsigned int d_8to24table_nobright_fence[256];
 unsigned int d_8to24table_conchars[256];
 unsigned int d_8to24table_shirt[256];
 unsigned int d_8to24table_pants[256];
@@ -469,76 +466,36 @@ TexMgr_LoadPalette -- johnfitz -- was VID_SetPalette, moved here, renamed, rewri
 */
 void TexMgr_LoadPalette (void)
 {
-	byte *pal, *src, *dst;
-	int i, mark;
+	// mh - i think jf must have been on drugs when he wrote this
 	FILE *f;
 
 	COM_FOpenFile ("gfx/palette.lmp", &f, NULL);
 	if (!f)
 		Sys_Error ("Couldn't load gfx/palette.lmp");
 
-	mark = Hunk_LowMark ();
-	pal = (byte *) Hunk_Alloc (768);
+	int mark = Hunk_LowMark ();
+	byte *pal = (byte *) Hunk_Alloc (768);
 	fread (pal, 1, 768, f);
 	fclose (f);
 
-	// standard palette, 255 is transparent
-	dst = (byte *) d_8to24table;
-	src = pal;
-	for (i = 0; i < 256; i++)
+	for (int i = 0; i < 256; i++, pal += 3)
 	{
-		*dst++ = *src++;
-		*dst++ = *src++;
-		*dst++ = *src++;
-		*dst++ = 255;
-	}
-	((byte *) &d_8to24table[255])[3] = 0;
+		int r = pal[0];
+		int g = pal[1];
+		int b = pal[2];
 
-	// fullbright palette, 0-223 are black (for additive blending)
-	src = pal + 224 * 3;
-	dst = (byte *) &d_8to24table_fbright[224];
-	for (i = 224; i < 256; i++)
-	{
-		*dst++ = *src++;
-		*dst++ = *src++;
-		*dst++ = *src++;
-		*dst++ = 255;
-	}
-	for (i = 0; i < 224; i++)
-	{
-		dst = (byte *) &d_8to24table_fbright[i];
-		dst[3] = 255;
-		dst[2] = dst[1] = dst[0] = 0;
+		d_8to24table[i] = (255 << 24) | (r << 0) | (g << 8) | (b << 16);
+		d_8to24table_conchars[i] = (255 << 24) | (r << 0) | (g << 8) | (b << 16);
+
+		if (i > 223)
+			d_8to24table_fbright[i] = d_8to24table[i];
+		else d_8to24table_fbright[i] = 0;
 	}
 
-	// nobright palette, 224-255 are black (for additive blending)
-	dst = (byte *) d_8to24table_nobright;
-	src = pal;
-	for (i = 0; i < 256; i++)
-	{
-		*dst++ = *src++;
-		*dst++ = *src++;
-		*dst++ = *src++;
-		*dst++ = 255;
-	}
-	for (i = 224; i < 256; i++)
-	{
-		dst = (byte *) &d_8to24table_nobright[i];
-		dst[3] = 255;
-		dst[2] = dst[1] = dst[0] = 0;
-	}
-
-	// fullbright palette, for fence textures
-	memcpy (d_8to24table_fbright_fence, d_8to24table_fbright, 256 * 4);
-	d_8to24table_fbright_fence[255] = 0; // Alpha of zero.
-
-	// nobright palette, for fence textures
-	memcpy (d_8to24table_nobright_fence, d_8to24table_nobright, 256 * 4);
-	d_8to24table_nobright_fence[255] = 0; // Alpha of zero.
-
-	// conchars palette, 0 and 255 are transparent
-	memcpy (d_8to24table_conchars, d_8to24table, 256 * 4);
-	((byte *) &d_8to24table_conchars[0])[3] = 0;
+	// alpha colour
+	d_8to24table[255] = 0;
+	d_8to24table_fbright[255] = 0;
+	d_8to24table_conchars[0] = 0;
 
 	Hunk_FreeToLowMark (mark);
 }
@@ -806,55 +763,63 @@ TexMgr_ResampleTexture -- bilinear resample
 */
 static unsigned *TexMgr_ResampleTextureToSize (unsigned *in, int inwidth, int inheight, int outwidth, int outheight, qboolean alpha)
 {
-	// general case - resamples up or down to arbitrary size
-	byte *nwpx, *nepx, *swpx, *sepx, *dest;
-	unsigned xfrac, yfrac, x, y, modx, mody, imodx, imody, injump, outjump;
-	unsigned *out;
-	int i, j;
+	int mark, i, j;
+	unsigned *out, *p1, *p2, fracstep, frac;
 
-	if (inwidth == outwidth && inheight == outheight)
-		return in;
+	// can this ever happen???
+	if (outwidth == inwidth && outheight == inheight) return in;
 
+	// allocating the out buffer before the hunk mark so that we can return it
 	out = (unsigned *) Hunk_Alloc (outwidth * outheight * 4);
 
-	xfrac = ((inwidth - 1) << 16) / (outwidth - 1);
-	yfrac = ((inheight - 1) << 16) / (outheight - 1);
-	y = outjump = 0;
+	// and now get the mark because all allocations after this will be released
+	mark = Hunk_LowMark ();
+
+	p1 = (unsigned *) Hunk_Alloc (outwidth * 4);
+	p2 = (unsigned *) Hunk_Alloc (outwidth * 4);
+
+	fracstep = inwidth * 0x10000 / outwidth;
+	frac = fracstep >> 2;
+
+	for (i = 0; i < outwidth; i++)
+	{
+		p1[i] = 4 * (frac >> 16);
+		frac += fracstep;
+	}
+
+	frac = 3 * (fracstep >> 2);
+
+	for (i = 0; i < outwidth; i++)
+	{
+		p2[i] = 4 * (frac >> 16);
+		frac += fracstep;
+	}
 
 	for (i = 0; i < outheight; i++)
 	{
-		mody = (y >> 8) & 0xFF;
-		imody = 256 - mody;
-		injump = (y >> 16) * inwidth;
-		x = 0;
+		unsigned *outrow = out + (i * outwidth);
+		unsigned *inrow0 = in + inwidth * (int) (((i + 0.25f) * inheight) / outheight);
+		unsigned *inrow1 = in + inwidth * (int) (((i + 0.75f) * inheight) / outheight);
 
 		for (j = 0; j < outwidth; j++)
 		{
-			modx = (x >> 8) & 0xFF;
-			imodx = 256 - modx;
+			byte *pix1 = (byte *) inrow0 + p1[j];
+			byte *pix2 = (byte *) inrow0 + p2[j];
+			byte *pix3 = (byte *) inrow1 + p1[j];
+			byte *pix4 = (byte *) inrow1 + p2[j];
 
-			nwpx = (byte *) (in + (x >> 16) + injump);
-			nepx = nwpx + 4;
-			swpx = nwpx + inwidth * 4;
-			sepx = swpx + 4;
+			((byte *) &outrow[j])[0] = AverageMip4GC (pix1[0], pix2[0], pix3[0], pix4[0]);
+			((byte *) &outrow[j])[1] = AverageMip4GC (pix1[1], pix2[1], pix3[1], pix4[1]);
+			((byte *) &outrow[j])[2] = AverageMip4GC (pix1[2], pix2[2], pix3[2], pix4[2]);
 
-			dest = (byte *) (out + outjump + j);
-
-			dest[0] = (nwpx[0] * imodx * imody + nepx[0] * modx * imody + swpx[0] * imodx * mody + sepx[0] * modx * mody) >> 16;
-			dest[1] = (nwpx[1] * imodx * imody + nepx[1] * modx * imody + swpx[1] * imodx * mody + sepx[1] * modx * mody) >> 16;
-			dest[2] = (nwpx[2] * imodx * imody + nepx[2] * modx * imody + swpx[2] * imodx * mody + sepx[2] * modx * mody) >> 16;
-
+			// don't gamma correct the alpha channel
 			if (alpha)
-				dest[3] = (nwpx[3] * imodx * imody + nepx[3] * modx * imody + swpx[3] * imodx * mody + sepx[3] * modx * mody) >> 16;
-			else
-				dest[3] = 255;
-
-			x += xfrac;
+				((byte *) &outrow[j])[3] = AverageMip4 (pix1[3], pix2[3], pix3[3], pix4[3]);
+			else ((byte *) &outrow[j])[3] = 255;
 		}
-
-		outjump += outwidth;
-		y += yfrac;
 	}
+
+	Hunk_FreeToLowMark (mark);
 
 	return out;
 }
@@ -867,6 +832,19 @@ static unsigned *TexMgr_ResampleTexture (unsigned *in, int inwidth, int inheight
 	int outheight = TexMgr_Pad (inheight);
 
 	return TexMgr_ResampleTextureToSize (in, inwidth, inheight, outwidth, outheight, alpha);
+}
+
+
+unsigned *TexMgr_ResampleMip (unsigned *in, int inwidth, int inheight, qboolean alpha)
+{
+	// round down to meet np2 specification
+	int outwidth = (inwidth > 1) ? (inwidth >> 1) : 1;
+	int outheight = (inheight > 1) ? (inheight >> 1) : 1;
+
+	// can this ever happen???
+	if (outwidth == inwidth && outheight == inheight)
+		return in;
+	else return TexMgr_ResampleTextureToSize (in, inwidth, inheight, outwidth, outheight, alpha);
 }
 
 
@@ -1171,7 +1149,7 @@ TexMgr_LoadImage32 -- handles 32bit source data
 */
 static void TexMgr_LoadImage32 (gltexture_t *glt, unsigned *data)
 {
-	int	internalformat, miplevel, mipwidth, mipheight;
+	int	internalformat;
 
 	if (!GLEW_ARB_texture_non_power_of_two)
 	{
@@ -1182,8 +1160,8 @@ static void TexMgr_LoadImage32 (gltexture_t *glt, unsigned *data)
 	}
 
 	// mipmap down
-	mipwidth = TexMgr_SafeTextureSize (glt->width);
-	mipheight = TexMgr_SafeTextureSize (glt->height);
+	int mipwidth = TexMgr_SafeTextureSize (glt->width);
+	int mipheight = TexMgr_SafeTextureSize (glt->height);
 
 	while ((int) glt->width > mipwidth)
 	{
@@ -1209,25 +1187,35 @@ static void TexMgr_LoadImage32 (gltexture_t *glt, unsigned *data)
 	// upload mipmaps
 	if (glt->flags & TEXPREF_MIPMAP)
 	{
+		// this can make hunk allocs if we resample an np2 tex so take a mark
+		int mark = Hunk_LowMark ();
+
 		mipwidth = glt->width;
 		mipheight = glt->height;
 
-		for (miplevel = 1; mipwidth > 1 || mipheight > 1; miplevel++)
+		for (int miplevel = 1; mipwidth > 1 || mipheight > 1; miplevel++)
 		{
+			// choose the appropriate filter
 			if (mipwidth > 1)
 			{
-				TexMgr_MipMapW (data, mipwidth, mipheight);
+				if (mipwidth & 1)
+					;
+				else TexMgr_MipMapW (data, mipwidth, mipheight);
 				mipwidth >>= 1;
 			}
 
 			if (mipheight > 1)
 			{
-				TexMgr_MipMapH (data, mipwidth, mipheight);
+				if (mipheight & 1)
+					;
+				else TexMgr_MipMapH (data, mipwidth, mipheight);
 				mipheight >>= 1;
 			}
 
 			glTexImage2D (GL_TEXTURE_2D, miplevel, internalformat, mipwidth, mipheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		}
+
+		Hunk_FreeToLowMark (mark);
 	}
 
 	// set filter modes
@@ -1274,10 +1262,7 @@ static void TexMgr_LoadImage8 (gltexture_t *glt, byte *data)
 	// choose palette and padbyte
 	if (glt->flags & TEXPREF_FULLBRIGHT)
 	{
-		if (glt->flags & TEXPREF_ALPHA)
-			usepal = d_8to24table_fbright_fence;
-		else
-			usepal = d_8to24table_fbright;
+		usepal = d_8to24table_fbright;
 		padbyte = 0;
 	}
 	else if (glt->flags & TEXPREF_CONCHARS)

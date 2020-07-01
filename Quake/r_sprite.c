@@ -97,50 +97,25 @@ void GLSprite_CreateShaders (void)
 R_GetSpriteFrame
 ================
 */
-mspriteframe_t *R_GetSpriteFrame (entity_t *currentent)
+mspriteframe_t *R_GetSpriteFrame (entity_t *e)
 {
-	msprite_t *psprite;
-	mspritegroup_t *pspritegroup;
-	mspriteframe_t *pspriteframe;
-	int				i, numframes, frame;
-	float *pintervals, fullinterval, targettime, time;
-
-	psprite = (msprite_t *) currentent->model->cache.data;
-	frame = currentent->frame;
+	msprite_t *psprite = (msprite_t *) e->model->cache.data;
+	int frame = e->frame;
 
 	if ((frame >= psprite->numframes) || (frame < 0))
 	{
-		Con_DPrintf ("R_DrawSprite: no such frame %d for '%s'\n", frame, currentent->model->name);
+		Con_DPrintf ("R_DrawSprite: no such frame %d for '%s'\n", frame, e->model->name);
 		frame = 0;
 	}
 
 	if (psprite->frames[frame].type == SPR_SINGLE)
-	{
-		pspriteframe = psprite->frames[frame].frameptr;
-	}
+		return psprite->frames[frame].frameptr;
 	else
 	{
-		pspritegroup = (mspritegroup_t *) psprite->frames[frame].frameptr;
-		pintervals = pspritegroup->intervals;
-		numframes = pspritegroup->numframes;
-		fullinterval = pintervals[numframes - 1];
-
-		time = cl.time + currentent->syncbase;
-
-		// when loading in Mod_LoadSpriteGroup, we guaranteed all interval values
-		// are positive, so we don't have to worry about division by 0
-		targettime = time - ((int) (time / fullinterval)) * fullinterval;
-
-		for (i = 0; i < (numframes - 1); i++)
-		{
-			if (pintervals[i] > targettime)
-				break;
-		}
-
-		pspriteframe = pspritegroup->frames[i];
+		mspritegroup_t *pspritegroup = (mspritegroup_t *) psprite->frames[frame].frameptr;
+		int groupframe = Mod_GetAutoAnimation (pspritegroup->intervals, pspritegroup->numframes, e->syncbase);
+		return pspritegroup->frames[groupframe];
 	}
-
-	return pspriteframe;
 }
 
 
@@ -171,7 +146,7 @@ void R_DrawSpriteModel (entity_t *e)
 	// TODO: frustum cull it?
 
 	frame = R_GetSpriteFrame (e);
-	psprite = (msprite_t *) currententity->model->cache.data;
+	psprite = (msprite_t *) e->model->cache.data;
 
 	switch (psprite->type)
 	{
@@ -182,8 +157,9 @@ void R_DrawSpriteModel (entity_t *e)
 		s_up = v_up;
 		s_right = vright;
 		break;
+
 	case SPR_FACING_UPRIGHT: // faces camera origin, up is towards the heavens
-		VectorSubtract (currententity->origin, r_origin, v_forward);
+		VectorSubtract (e->origin, r_origin, v_forward);
 		v_forward[2] = 0;
 		VectorNormalize (v_forward);
 		v_right[0] = v_forward[1];
@@ -195,17 +171,20 @@ void R_DrawSpriteModel (entity_t *e)
 		s_up = v_up;
 		s_right = v_right;
 		break;
+
 	case SPR_VP_PARALLEL: // faces view plane, up is towards the top of the screen
 		s_up = vup;
 		s_right = vright;
 		break;
+
 	case SPR_ORIENTED: // pitch yaw roll are independent of camera
-		AngleVectors (currententity->angles, v_forward, v_right, v_up);
+		AngleVectors (e->angles, v_forward, v_right, v_up);
 		s_up = v_up;
 		s_right = v_right;
 		break;
+
 	case SPR_VP_PARALLEL_ORIENTED: // faces view plane, but obeys roll value
-		angle = currententity->angles[ROLL] * M_PI_DIV_180;
+		angle = e->angles[ROLL] * M_PI_DIV_180;
 		sr = sin (angle);
 		cr = cos (angle);
 		v_right[0] = vright[0] * cr + vup[0] * sr;
@@ -217,6 +196,7 @@ void R_DrawSpriteModel (entity_t *e)
 		s_up = v_up;
 		s_right = v_right;
 		break;
+
 	default:
 		return;
 	}
@@ -248,4 +228,5 @@ void R_DrawSpriteModel (entity_t *e)
 	if (psprite->type == SPR_ORIENTED)
 		GL_PolygonOffset (OFFSET_NONE);
 }
+
 

@@ -250,29 +250,24 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr)
 			// check for back side and adjust texcoord s
 			if (!triangles[i].facesfront && stverts[vertindex].onseam) s += hdr->skinwidth / 2;
 
-			// see does this vert already exist
+			// see does this vert already exist (it could use the same xyz but have different s and t)
 			for (v = 0; v < hdr->numverts_vbo; v++)
-			{
-				// it could use the same xyz but have different s and t
 				if (desc[v].vertindex == vertindex && (int) desc[v].st[0] == s && (int) desc[v].st[1] == t)
-				{
-					// exists; emit an index for it
-					indexes[hdr->numindexes++] = v;
-
-					// no need to check any more
 					break;
-				}
-			}
 
 			if (v == hdr->numverts_vbo)
 			{
-				// doesn't exist; emit a new vert and index
-				indexes[hdr->numindexes++] = hdr->numverts_vbo;
-
+				// doesn't exist; emit a new vert
 				desc[hdr->numverts_vbo].vertindex = vertindex;
 				desc[hdr->numverts_vbo].st[0] = s;
-				desc[hdr->numverts_vbo++].st[1] = t;
+				desc[hdr->numverts_vbo].st[1] = t;
+
+				// go to the next vert
+				hdr->numverts_vbo++;
 			}
+
+			// emit an index for it
+			indexes[hdr->numindexes++] = v;
 		}
 	}
 

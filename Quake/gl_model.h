@@ -278,7 +278,7 @@ Alias models are position independent, so the cache manager can move them.
 // -- from RMQEngine
 // split out to keep vertex sizes down
 typedef struct aliasmesh_s {
-	float st[2];
+	int st[2];
 	unsigned short vertindex;
 } aliasmesh_t;
 
@@ -310,7 +310,7 @@ typedef struct maliasgroupframedesc_s {
 
 typedef struct maliasgroup_s {
 	int						numframes;
-	int						intervals;
+	intptr_t				intervals;
 	maliasgroupframedesc_t	frames[1];
 } maliasgroup_t;
 
@@ -322,6 +322,20 @@ typedef struct mtriangle_s {
 
 
 #define	MAX_SKINS	32
+
+typedef struct aliasskin_s {
+	struct gltexture_s *gltexture; // johnfitz
+	struct gltexture_s *fbtexture; // johnfitz
+
+	// needed for reloading colormapped skins
+	intptr_t texels;
+} aliasskin_t;
+
+typedef struct aliasskingroup_s {
+	intptr_t skins;
+	intptr_t intervals;
+	int numskins;
+} aliasskingroup_t;
 
 typedef struct aliashdr_s {
 	int			ident;
@@ -342,16 +356,18 @@ typedef struct aliashdr_s {
 
 	// ericw -- used to populate vbo
 	int			numverts_vbo;   // number of verts with unique x,y,z,s,t
-	intptr_t		meshdesc;       // offset into extradata: numverts_vbo aliasmesh_t
+	intptr_t	meshdesc;       // offset into extradata: numverts_vbo aliasmesh_t
 	int			numindexes;
-	intptr_t		indexes;        // offset into extradata: numindexes unsigned shorts
-	intptr_t		vertexes;       // offset into extradata: numposes*vertsperframe trivertx_t
+	intptr_t	indexes;        // offset into extradata: numindexes unsigned shorts
+	intptr_t	vertexes;       // offset into extradata: numposes*vertsperframe trivertx_t
 	// ericw --
 
-	int					numposes;
-	struct gltexture_s *gltextures[MAX_SKINS][4]; // johnfitz
-	struct gltexture_s *fbtextures[MAX_SKINS][4]; // johnfitz
-	int					texels[MAX_SKINS];	// only for player skins
+	int			numposes;
+
+	// mh - fix skin auto-animation
+	intptr_t	skingroups;
+	int			numskingroups;
+
 	maliasframedesc_t	frames[1];	// variable sized
 } aliashdr_t;
 

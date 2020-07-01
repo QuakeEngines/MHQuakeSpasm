@@ -2129,16 +2129,60 @@ void *Mod_LoadAliasGroup (void *pin, maliasframedesc_t *frame)
 }
 
 
+void Mod_LoadAliasSkin (aliashdr_t *hdr, aliasskingroup_t *skingroup, int skinnum, byte *data, char *name, char *fbr_mask_name, int offset, int texflags)
+{
+	// save 8 bit texels for the player model to remap
+	int size = hdr->skinwidth * hdr->skinheight;
+	byte *texels = (byte *) Hunk_AllocName (size, loadname);
+	aliasskin_t *skin = (aliasskin_t *) ((byte *) hdr + skingroup->skins) + skinnum;
+
+	skin->texels = (intptr_t) texels - (intptr_t) pheader;
+	memcpy (texels, data, size);
+
+	if (Mod_CheckFullbrights (data, size))
+	{
+		skin->gltexture = TexMgr_LoadImage (loadmodel, name, pheader->skinwidth, pheader->skinheight, SRC_INDEXED, data, loadmodel->name, offset, texflags);
+		skin->fbtexture = TexMgr_LoadImage (loadmodel, fbr_mask_name, pheader->skinwidth, pheader->skinheight, SRC_INDEXED, data, loadmodel->name, offset, texflags | TEXPREF_FULLBRIGHT);
+	}
+	else
+	{
+		skin->gltexture = TexMgr_LoadImage (loadmodel, name, pheader->skinwidth, pheader->skinheight, SRC_INDEXED, data, loadmodel->name, offset, texflags);
+		skin->fbtexture = NULL;
+	}
+}
+
+
+void Mod_LoadSkinGroupIntervals (aliashdr_t *hdr, aliasskingroup_t *skingroup, daliasskininterval_t *intervals, int numintervals)
+{
+	float *groupintervals = (float *) ((byte *) hdr + skingroup->intervals);
+
+	for (int i = 0; i < numintervals; i++)
+		groupintervals[i] = LittleFloat (intervals[i].interval);
+}
+
+
+void Mod_AllocateSkinGroup (aliashdr_t *hdr, aliasskingroup_t *skingroup, int numskins)
+{
+	aliasskin_t *skins = (aliasskin_t *) Hunk_Alloc (sizeof (aliasskin_t) * numskins);
+	float *intervals = (float *) Hunk_Alloc (sizeof (float) * numskins);
+
+	skingroup->skins = (intptr_t) skins - (intptr_t) hdr;
+	skingroup->intervals = (intptr_t) intervals - (intptr_t) hdr;
+
+	skingroup->numskins = numskins;
+}
+
+
 /*
 ===============
 Mod_LoadAllSkins
 ===============
 */
-void *Mod_LoadAllSkins (int numskins, daliasskintype_t *pskintype)
+void *Mod_LoadAllSkins (aliashdr_t *hdr, int numskins, daliasskintype_t *pskintype)
 {
-	int			i, j, k, size, groupskins;
+	int			i, j, size, groupskins;
 	char			name[MAX_QPATH];
-	byte *skin, *texels;
+	byte *skin;
 	daliasskingroup_t *pinskingroup;
 	daliasskininterval_t *pinskinintervals;
 	char			fbr_mask_name[MAX_QPATH]; // johnfitz -- added for fullbright support
@@ -2150,7 +2194,7 @@ void *Mod_LoadAllSkins (int numskins, daliasskintype_t *pskintype)
 	if (numskins < 1 || numskins > MAX_SKINS)
 		Sys_Error ("Mod_LoadAliasModel: Invalid # of skins: %d\n", numskins);
 
-	size = pheader->skinwidth * pheader->skinheight;
+	size = hdr->skinwidth * hdr->skinheight;
 
 	if (loadmodel->flags & MF_HOLEY)
 		texflags |= TEXPREF_ALPHA;
@@ -2161,36 +2205,25 @@ void *Mod_LoadAllSkins (int numskins, daliasskintype_t *pskintype)
 	// alias skins need to floodfill both on initial load and following a vid_restart, so we just flag the floodfill here but run it from TexMgr_LoadImage8
 	texflags |= TEXPREF_FLOODFILL;
 
+	// alloc and store out the skin groups
+	aliasskingroup_t *skingroups = (aliasskingroup_t *) Hunk_Alloc (sizeof (aliasskingroup_t) * numskins);
+
+	hdr->skingroups = (intptr_t) skingroups - (intptr_t) hdr;
+	hdr->numskingroups = numskins;
+
 	for (i = 0; i < numskins; i++)
 	{
 		if (pskintype->type == ALIAS_SKIN_SINGLE)
 		{
-			// save 8 bit texels for the player model to remap
-			texels = (byte *) Hunk_AllocName (size, loadname);
-			pheader->texels[i] = texels - (byte *) pheader;
-			memcpy (texels, (byte *) (pskintype + 1), size);
+			daliasskininterval_t singleinterval = { 1 }; // the value doesn't matter because it won't be animating
 
-			// johnfitz -- rewritten
 			q_snprintf (name, sizeof (name), "%s:frame%i", loadmodel->name, i);
+			q_snprintf (fbr_mask_name, sizeof (fbr_mask_name), "%s:frame%i_glow", loadmodel->name, i);
 			offset = (src_offset_t) (pskintype + 1) - (src_offset_t) mod_base;
-			if (Mod_CheckFullbrights ((byte *) (pskintype + 1), size))
-			{
-				pheader->gltextures[i][0] = TexMgr_LoadImage (loadmodel, name, pheader->skinwidth, pheader->skinheight,
-					SRC_INDEXED, (byte *) (pskintype + 1), loadmodel->name, offset, texflags);
-				q_snprintf (fbr_mask_name, sizeof (fbr_mask_name), "%s:frame%i_glow", loadmodel->name, i);
-				pheader->fbtextures[i][0] = TexMgr_LoadImage (loadmodel, fbr_mask_name, pheader->skinwidth, pheader->skinheight,
-					SRC_INDEXED, (byte *) (pskintype + 1), loadmodel->name, offset, texflags | TEXPREF_FULLBRIGHT);
-			}
-			else
-			{
-				pheader->gltextures[i][0] = TexMgr_LoadImage (loadmodel, name, pheader->skinwidth, pheader->skinheight,
-					SRC_INDEXED, (byte *) (pskintype + 1), loadmodel->name, offset, texflags);
-				pheader->fbtextures[i][0] = NULL;
-			}
 
-			pheader->gltextures[i][3] = pheader->gltextures[i][2] = pheader->gltextures[i][1] = pheader->gltextures[i][0];
-			pheader->fbtextures[i][3] = pheader->fbtextures[i][2] = pheader->fbtextures[i][1] = pheader->fbtextures[i][0];
-			// johnfitz
+			Mod_AllocateSkinGroup (hdr, &skingroups[i], 1);
+			Mod_LoadSkinGroupIntervals (hdr, &skingroups[i], &singleinterval, 1);
+			Mod_LoadAliasSkin (hdr, &skingroups[i], 0, (byte *) (pskintype + 1), name, fbr_mask_name, offset, texflags);
 
 			pskintype = (daliasskintype_t *) ((byte *) (pskintype + 1) + size);
 		}
@@ -2201,42 +2234,21 @@ void *Mod_LoadAllSkins (int numskins, daliasskintype_t *pskintype)
 			pinskingroup = (daliasskingroup_t *) pskintype;
 			groupskins = LittleLong (pinskingroup->numskins);
 			pinskinintervals = (daliasskininterval_t *) (pinskingroup + 1);
+			pskintype = (void *) (pinskinintervals + groupskins);
 
-			pskintype = (daliasskintype_t *) (pinskinintervals + groupskins);
+			Mod_AllocateSkinGroup (hdr, &skingroups[i], groupskins);
+			Mod_LoadSkinGroupIntervals (hdr, &skingroups[i], pinskinintervals, groupskins);
 
 			for (j = 0; j < groupskins; j++)
 			{
-				if (j == 0)
-				{
-					texels = (byte *) Hunk_AllocName (size, loadname);
-					pheader->texels[i] = texels - (byte *) pheader;
-					memcpy (texels, (byte *) (pskintype), size);
-				}
-
-				// johnfitz -- rewritten
 				q_snprintf (name, sizeof (name), "%s:frame%i_%i", loadmodel->name, i, j);
-				offset = (src_offset_t) (pskintype) -(src_offset_t) mod_base; // johnfitz
-				if (Mod_CheckFullbrights ((byte *) (pskintype), size))
-				{
-					pheader->gltextures[i][j & 3] = TexMgr_LoadImage (loadmodel, name, pheader->skinwidth, pheader->skinheight,
-						SRC_INDEXED, (byte *) (pskintype), loadmodel->name, offset, texflags);
-					q_snprintf (fbr_mask_name, sizeof (fbr_mask_name), "%s:frame%i_%i_glow", loadmodel->name, i, j);
-					pheader->fbtextures[i][j & 3] = TexMgr_LoadImage (loadmodel, fbr_mask_name, pheader->skinwidth, pheader->skinheight,
-						SRC_INDEXED, (byte *) (pskintype), loadmodel->name, offset, texflags | TEXPREF_FULLBRIGHT);
-				}
-				else
-				{
-					pheader->gltextures[i][j & 3] = TexMgr_LoadImage (loadmodel, name, pheader->skinwidth, pheader->skinheight,
-						SRC_INDEXED, (byte *) (pskintype), loadmodel->name, offset, texflags);
-					pheader->fbtextures[i][j & 3] = NULL;
-				}
-				// johnfitz
+				q_snprintf (fbr_mask_name, sizeof (fbr_mask_name), "%s:frame%i_%i_glow", loadmodel->name, i, j);
+				offset = (src_offset_t) (pskintype) - (src_offset_t) mod_base; // johnfitz
 
-				pskintype = (daliasskintype_t *) ((byte *) (pskintype) +size);
+				Mod_LoadAliasSkin (hdr, &skingroups[i], j, (byte *) (pskintype), name, fbr_mask_name, offset, texflags);
+
+				pskintype = (daliasskintype_t *) ((byte *) (pskintype) + size);
 			}
-			k = j;
-			for (/**/; j < 4; j++)
-				pheader->gltextures[i][j & 3] = pheader->gltextures[i][j - k];
 		}
 	}
 
@@ -2385,7 +2397,7 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 
 	// load the skins
 	pskintype = (daliasskintype_t *) &pinmodel[1];
-	pskintype = (daliasskintype_t *) Mod_LoadAllSkins (pheader->numskins, pskintype);
+	pskintype = (daliasskintype_t *) Mod_LoadAllSkins (pheader, pheader->numskins, pskintype);
 
 	// load base s and t vertices
 	pinstverts = (stvert_t *) pskintype;
