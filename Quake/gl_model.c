@@ -2066,7 +2066,6 @@ void *Mod_LoadAliasFrame (void *pin, maliasframedesc_t *frame)
 		frame->bboxmax.v[i] = pdaliasframe->bboxmax.v[i];
 	}
 
-
 	pinframe = (trivertx_t *) (pdaliasframe + 1);
 
 	poseverts[posenum] = pinframe;
@@ -2086,8 +2085,9 @@ Mod_LoadAliasGroup
 void *Mod_LoadAliasGroup (void *pin, maliasframedesc_t *frame)
 {
 	daliasgroup_t *pingroup;
-	int					i, numframes;
+	int		i, numframes;
 	daliasinterval_t *pin_intervals;
+	float *poutintervals;
 	void *ptemp;
 
 	pingroup = (daliasgroup_t *) pin;
@@ -2104,13 +2104,15 @@ void *Mod_LoadAliasGroup (void *pin, maliasframedesc_t *frame)
 		frame->bboxmax.v[i] = pingroup->bboxmax.v[i];
 	}
 
-
 	pin_intervals = (daliasinterval_t *) (pingroup + 1);
+	poutintervals = (float *) Hunk_Alloc (numframes * sizeof (float));
+	frame->intervals = (intptr_t) poutintervals - (intptr_t) pheader;
 
-	frame->interval = LittleFloat (pin_intervals->interval);
+	// must copy these over now because we're going to advance pin_intervals
+	for (i = 0; i < numframes; i++)
+		poutintervals[i] = LittleFloat (pin_intervals[i].interval);
 
 	pin_intervals += numframes;
-
 	ptemp = (void *) pin_intervals;
 
 	for (i = 0; i < numframes; i++)
@@ -2334,8 +2336,7 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 
 	// allocate space for a working header, plus all the data except the frames,
 	// skin and group info
-	size = sizeof (aliashdr_t) +
-		(LittleLong (pinmodel->numframes) - 1) * sizeof (pheader->frames[0]);
+	size = sizeof (aliashdr_t) + (LittleLong (pinmodel->numframes) - 1) * sizeof (pheader->frames[0]);
 	pheader = (aliashdr_t *) Hunk_AllocName (size, loadname);
 
 	mod->flags = LittleLong (pinmodel->flags);

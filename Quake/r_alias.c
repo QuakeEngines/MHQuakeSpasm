@@ -311,73 +311,6 @@ void GLAlias_CreateShaders (void)
 }
 
 
-void GL_DrawAliasShadow (entity_t *e, aliashdr_t *hdr, lerpdata_t *lerpdata)
-{
-//johnfitz -- values for shadow matrix
-#define SHADOW_SKEW_X -0.7 //skew along x axis. -0.7 to mimic glquake shadows
-#define SHADOW_SKEW_Y 0 //skew along y axis. 0 to mimic glquake shadows
-#define SHADOW_VSCALE 0 //0=completely flat
-#define SHADOW_HEIGHT 0.1 //how far above the floor to render the shadow
-//johnfitz
-
-	QMATRIX	shadowmatrix = {
-		1,				0,				0,				0,
-		0,				1,				0,				0,
-		SHADOW_SKEW_X,	SHADOW_SKEW_Y,	SHADOW_VSCALE,	0,
-		0,				0,				SHADOW_HEIGHT,	1
-	};
-
-	float	lheight;
-	QMATRIX	localMatrix;
-
-	if (e == &cl.viewent || e->model->flags & MOD_NOSHADOW)
-		return;
-
-	entalpha = ENTALPHA_DECODE (e->alpha);
-	if (entalpha == 0) return;
-
-	lheight = lerpdata->origin[2] - lightspot[2];
-
-	// position the shadow
-	R_IdentityMatrix (&localMatrix);
-	R_TranslateMatrix (&localMatrix, lerpdata->origin[0], lerpdata->origin[1], lerpdata->origin[2]);
-	R_TranslateMatrix (&localMatrix, 0, 0, -lheight);
-	R_MultMatrix (&localMatrix, &shadowmatrix, &localMatrix);
-	R_TranslateMatrix (&localMatrix, 0, 0, lheight);
-	R_RotateMatrix (&localMatrix, 0, lerpdata->angles[1], 0);
-
-	// state and shaders
-	GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);
-
-	// this is the only stencil stuff in the engine so we don't need state tracking for it
-	// glClearStencil, glStencilFunc and glStencilOp are set in GL_SetupState
-	if (gl_stencilbits)
-		glEnable (GL_STENCIL_TEST);
-
-	// we can just reuse the lightmapped vp because it does everything we need without much extra overhead
-	GL_BindPrograms (r_alias_lightmapped_vp, r_alias_shadow_fp);
-
-	// shadow colour - allow different values of r_shadows to change the colour
-	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 0, 0, 0, entalpha * 0.5f * r_shadows.value);
-
-	// move it
-	glPushMatrix ();
-	glMultMatrixf (localMatrix.m16);
-
-	// draw it
-	glDrawElements (GL_TRIANGLES, hdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) e->model->vboindexofs);
-	rs_aliaspasses += hdr->numtris;
-
-	// revert the transform
-	glPopMatrix ();
-
-	// this is the only stencil stuff in the engine so we don't need state tracking for it
-	if (gl_stencilbits)
-		glDisable (GL_STENCIL_TEST);
-}
-
-
 void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, lerpdata_t *lerpdata, gltexture_t *tx, gltexture_t *fb)
 {
 	float	blend;
@@ -462,6 +395,88 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 }
 
 
+void GL_DrawAliasShadow (entity_t *e, aliashdr_t *hdr, lerpdata_t *lerpdata)
+{
+	//johnfitz -- values for shadow matrix
+#define SHADOW_SKEW_X -0.7 //skew along x axis. -0.7 to mimic glquake shadows
+#define SHADOW_SKEW_Y 0 //skew along y axis. 0 to mimic glquake shadows
+#define SHADOW_VSCALE 0 //0=completely flat
+#define SHADOW_HEIGHT 0.1 //how far above the floor to render the shadow
+//johnfitz
+
+	/*
+	orient onto lightplane:
+
+	s1 = sin(ent->angles[1] / 180 * M_PI);
+	c1 = cos(ent->angles[1] / 180 * M_PI);
+
+	interpolated[2] += ((interpolated[1] * (s1 * lightplane->normal[0])) -
+				(interpolated[0] * (c1 * lightplane->normal[0])) -
+				(interpolated[0] * (s1 * lightplane->normal[1])) -
+				(interpolated[1] * (c1 * lightplane->normal[1]))) +
+				((1 - lightplane->normal[2]) * 20) + 0.2;
+
+	there's probably a friendlier way of doing this via the matrix transform....
+	*/
+
+	QMATRIX	shadowmatrix = {
+		1,				0,				0,				0,
+		0,				1,				0,				0,
+		SHADOW_SKEW_X,	SHADOW_SKEW_Y,	SHADOW_VSCALE,	0,
+		0,				0,				SHADOW_HEIGHT,	1
+	};
+
+	float	lheight;
+	QMATRIX	localMatrix;
+
+	if (e == &cl.viewent || e->model->flags & MOD_NOSHADOW)
+		return;
+
+	entalpha = ENTALPHA_DECODE (e->alpha);
+	if (entalpha == 0) return;
+
+	lheight = lerpdata->origin[2] - lightspot[2];
+
+	// position the shadow
+	R_IdentityMatrix (&localMatrix);
+	R_TranslateMatrix (&localMatrix, lerpdata->origin[0], lerpdata->origin[1], lerpdata->origin[2]);
+	R_TranslateMatrix (&localMatrix, 0, 0, -lheight);
+	R_MultMatrix (&localMatrix, &shadowmatrix, &localMatrix);
+	R_TranslateMatrix (&localMatrix, 0, 0, lheight);
+	R_RotateMatrix (&localMatrix, 0, lerpdata->angles[1], 0);
+
+	// state and shaders
+	GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);
+
+	// this is the only stencil stuff in the engine so we don't need state tracking for it
+	// glClearStencil, glStencilFunc and glStencilOp are set in GL_SetupState
+	if (gl_stencilbits)
+		glEnable (GL_STENCIL_TEST);
+
+	// we can just reuse the lightmapped vp because it does everything we need without much extra overhead
+	GL_BindPrograms (r_alias_lightmapped_vp, r_alias_shadow_fp);
+
+	// shadow colour - allow different values of r_shadows to change the colour
+	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 0, 0, 0, entalpha * 0.5f * r_shadows.value);
+
+	// move it
+	glPushMatrix ();
+	glMultMatrixf (localMatrix.m16);
+
+	// draw it
+	glDrawElements (GL_TRIANGLES, hdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) e->model->vboindexofs);
+	rs_aliaspasses += hdr->numtris;
+
+	// revert the transform
+	glPopMatrix ();
+
+	// this is the only stencil stuff in the engine so we don't need state tracking for it
+	if (gl_stencilbits)
+		glDisable (GL_STENCIL_TEST);
+}
+
+
 /*
 =================
 R_SetupAliasFrame -- johnfitz -- rewritten to support lerping
@@ -482,18 +497,28 @@ void R_SetupAliasFrame (entity_t *e, aliashdr_t *hdr, int frame, lerpdata_t *ler
 
 	if (numposes > 1)
 	{
-		e->lerptime = hdr->frames[frame].interval;
-		posenum += (int) (cl.time / e->lerptime) % numposes;
+		// get the intervals
+		float *intervals = (float *) ((byte *) hdr + hdr->frames[frame].intervals);
+
+		// get the correct group frame
+		int groupframe = Mod_GetAutoAnimation (intervals, numposes, e->syncbase);
+
+		// get the correct interval
+		if (groupframe == 0)
+			e->lerptime = intervals[groupframe];
+		else e->lerptime = intervals[groupframe] - intervals[groupframe - 1];
+
+		// advance to this frame
+		posenum += groupframe;
 	}
-	else
-		e->lerptime = 0.1;
+	else e->lerptime = 0.1;
 
 	if (e->lerpflags & LERP_RESETANIM) // kill any lerp in progress
 	{
 		e->lerpstart = 0;
 		e->previouspose = posenum;
 		e->currentpose = posenum;
-		e->lerpflags -= LERP_RESETANIM;
+		e->lerpflags &= ~LERP_RESETANIM;
 	}
 	else if (e->currentpose != posenum) // pose changed, start new lerp
 	{
@@ -502,7 +527,7 @@ void R_SetupAliasFrame (entity_t *e, aliashdr_t *hdr, int frame, lerpdata_t *ler
 			e->lerpstart = 0;
 			e->previouspose = posenum;
 			e->currentpose = posenum;
-			e->lerpflags -= LERP_RESETANIM2;
+			e->lerpflags &= ~LERP_RESETANIM2;
 		}
 		else
 		{
@@ -513,9 +538,9 @@ void R_SetupAliasFrame (entity_t *e, aliashdr_t *hdr, int frame, lerpdata_t *ler
 	}
 
 	// set up values
-	if (r_lerpmodels.value && !(e->model->flags & MOD_NOLERP && r_lerpmodels.value != 2))
+	if (r_lerpmodels.value && !((e->model->flags & MOD_NOLERP) && r_lerpmodels.value != 2))
 	{
-		if (e->lerpflags & LERP_FINISH && numposes == 1)
+		if ((e->lerpflags & LERP_FINISH) && numposes == 1)
 			lerpdata->blend = CLAMP (0, (cl.time - e->lerpstart) / (e->lerpfinish - e->lerpstart), 1);
 		else
 			lerpdata->blend = CLAMP (0, (cl.time - e->lerpstart) / e->lerptime, 1);
@@ -549,7 +574,7 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 		VectorCopy (e->origin, e->currentorigin);
 		VectorCopy (e->angles, e->previousangles);
 		VectorCopy (e->angles, e->currentangles);
-		e->lerpflags -= LERP_RESETMOVE;
+		e->lerpflags &= ~LERP_RESETMOVE;
 	}
 	else if (!VectorCompare (e->origin, e->currentorigin) || !VectorCompare (e->angles, e->currentangles)) // origin/angles changed, start new lerp
 	{
@@ -561,7 +586,7 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 	}
 
 	// set up values
-	if (r_lerpmove.value && e != &cl.viewent && e->lerpflags & LERP_MOVESTEP)
+	if (r_lerpmove.value && e != &cl.viewent && (e->lerpflags & LERP_MOVESTEP))
 	{
 		if (e->lerpflags & LERP_FINISH)
 			blend = CLAMP (0, (cl.time - e->movelerpstart) / (e->lerpfinish - e->movelerpstart), 1);
@@ -576,11 +601,13 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 
 		// rotation
 		VectorSubtract (e->currentangles, e->previousangles, d);
+
 		for (i = 0; i < 3; i++)
 		{
 			if (d[i] > 180)  d[i] -= 360;
 			if (d[i] < -180) d[i] += 360;
 		}
+
 		lerpdata->angles[0] = e->previousangles[0] + d[0] * blend;
 		lerpdata->angles[1] = e->previousangles[1] + d[1] * blend;
 		lerpdata->angles[2] = e->previousangles[2] + d[2] * blend;

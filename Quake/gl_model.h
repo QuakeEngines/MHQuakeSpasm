@@ -295,7 +295,7 @@ typedef struct meshst_s {
 typedef struct maliasframedesc_s {
 	int					firstpose;
 	int					numposes;
-	float				interval;
+	int					intervals;
 	trivertx_t			bboxmin;
 	trivertx_t			bboxmax;
 	int					frame;

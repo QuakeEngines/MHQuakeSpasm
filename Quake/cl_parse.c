@@ -892,6 +892,10 @@ void CL_ParseStatic (int version) // johnfitz -- added a parameter
 	ent->effects = ent->baseline.effects;
 	ent->alpha = ent->baseline.alpha; // johnfitz -- alpha
 
+	if (ent->model->synctype == ST_RAND)
+		ent->syncbase = (float) (rand () & 0x7fff) / 0x7fff;
+	else ent->syncbase = 0.0;
+
 	VectorCopy (ent->baseline.origin, ent->origin);
 	VectorCopy (ent->baseline.angles, ent->angles);
 	R_AddEfrags (ent);
