@@ -248,10 +248,10 @@ void COM_LoadCacheFile (const char *path, struct cache_user_s *cu,
 	unsigned int *path_id);
 // uses cache mem for allocating the buffer.
 byte *COM_LoadMallocFile (const char *path, unsigned int *path_id);
-// allocates the buffer on the system mem (malloc).
+// allocates the buffer on the system mem (Q_zmalloc).
 
 // Opens the given path directly, ignoring search paths.
-// Returns NULL on failure, or else a '\0'-terminated malloc'ed buffer.
+// Returns NULL on failure, or else a '\0'-terminated Q_zmalloc'ed buffer.
 // Loads in "t" mode so CRLF to LF translation is performed on Windows.
 byte *COM_LoadMallocFile_TextMode_OSPath (const char *path, long *len_out);
 

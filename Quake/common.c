@@ -915,7 +915,7 @@ void SZ_Alloc (sizebuf_t *buf, int startsize)
 
 void SZ_Free (sizebuf_t *buf)
 {
-	//	Z_Free (buf->data);
+	//	free (buf->data);
 	//	buf->data = NULL;
 	//	buf->maxsize = 0;
 	buf->cursize = 0;
@@ -1778,7 +1778,7 @@ byte *COM_LoadFile (const char *path, int usehunk, unsigned int *path_id)
 		buf = (byte *) Hunk_TempAlloc (len + 1);
 		break;
 	case LOADFILE_ZONE:
-		buf = (byte *) Z_Malloc (len + 1);
+		buf = (byte *) Q_zmalloc (len + 1);
 		break;
 	case LOADFILE_CACHE:
 		buf = (byte *) Cache_Alloc (loadcache, len + 1, base);
@@ -1790,7 +1790,7 @@ byte *COM_LoadFile (const char *path, int usehunk, unsigned int *path_id)
 			buf = (byte *) Hunk_TempAlloc (len + 1);
 		break;
 	case LOADFILE_MALLOC:
-		buf = (byte *) malloc (len + 1);
+		buf = (byte *) Q_zmalloc (len + 1);
 		break;
 	default:
 		Sys_Error ("COM_LoadFile: bad usehunk");
@@ -1840,7 +1840,7 @@ byte *COM_LoadStackFile (const char *path, void *buffer, int bufsize, unsigned i
 	return buf;
 }
 
-// returns malloc'd memory
+// returns Q_zmalloc'd memory
 byte *COM_LoadMallocFile (const char *path, unsigned int *path_id)
 {
 	return COM_LoadFile (path, LOADFILE_MALLOC, path_id);
@@ -1864,7 +1864,7 @@ byte *COM_LoadMallocFile_TextMode_OSPath (const char *path, long *len_out)
 	if (len < 0)
 		return NULL;
 
-	data = (byte *) malloc (len + 1);
+	data = (byte *) Q_zmalloc (len + 1);
 	if (data == NULL)
 		return NULL;
 
@@ -1954,7 +1954,7 @@ static pack_t *COM_LoadPackFile (const char *packfile)
 	if (numpackfiles != PAK0_COUNT)
 		com_modified = true;	// not the original file
 
-	newfiles = (packfile_t *) Z_Malloc (numpackfiles * sizeof (packfile_t));
+	newfiles = (packfile_t *) Q_zmalloc (numpackfiles * sizeof (packfile_t));
 
 	Sys_FileSeek (packhandle, header.dirofs);
 	Sys_FileRead (packhandle, (void *) info, header.dirlen);
@@ -1974,7 +1974,7 @@ static pack_t *COM_LoadPackFile (const char *packfile)
 		newfiles[i].filelen = LittleLong (info[i].filelen);
 	}
 
-	pack = (pack_t *) Z_Malloc (sizeof (pack_t));
+	pack = (pack_t *) Q_zmalloc (sizeof (pack_t));
 	q_strlcpy (pack->filename, packfile, sizeof (pack->filename));
 	pack->handle = packhandle;
 	pack->numfiles = numpackfiles;
@@ -2007,7 +2007,7 @@ static void COM_AddGameDirectory (const char *base, const char *dir)
 
 _add_path:
 	// add the directory to the search path
-	search = (searchpath_t *) Z_Malloc (sizeof (searchpath_t));
+	search = (searchpath_t *) Q_zmalloc (sizeof (searchpath_t));
 	search->path_id = path_id;
 	q_strlcpy (search->filename, com_gamedir, sizeof (search->filename));
 	search->next = com_searchpaths;
@@ -2020,7 +2020,7 @@ _add_path:
 
 		if ((pak = COM_LoadPackFile (pakfile)) != NULL)
 		{
-			search = (searchpath_t *) Z_Malloc (sizeof (searchpath_t));
+			search = (searchpath_t *) Q_zmalloc (sizeof (searchpath_t));
 			search->path_id = path_id;
 			search->pack = pak;
 			search->next = com_searchpaths;
@@ -2115,11 +2115,11 @@ _same:
 			if (com_searchpaths->pack)
 			{
 				Sys_FileClose (com_searchpaths->pack->handle);
-				Z_Free (com_searchpaths->pack->files);
-				Z_Free (com_searchpaths->pack);
+				free (com_searchpaths->pack->files);
+				free (com_searchpaths->pack);
 			}
 			search = com_searchpaths->next;
-			Z_Free (com_searchpaths);
+			free (com_searchpaths);
 			com_searchpaths = search;
 		}
 		hipnotic = false;

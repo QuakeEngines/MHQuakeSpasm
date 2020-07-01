@@ -289,8 +289,8 @@ snd_stream_t *S_CodecUtilOpen (const char *filename, snd_codec_t *codec)
 		return NULL;
 	}
 
-	/* Allocate a stream, Z_Malloc zeroes its content */
-	stream = (snd_stream_t *) Z_Malloc (sizeof (snd_stream_t));
+	/* Allocate a stream, Q_zmalloc zeroes its content */
+	stream = (snd_stream_t *) Q_zmalloc (sizeof (snd_stream_t));
 	stream->codec = codec;
 	stream->fh.file = handle;
 	stream->fh.start = ftell (handle);
@@ -305,7 +305,7 @@ snd_stream_t *S_CodecUtilOpen (const char *filename, snd_codec_t *codec)
 void S_CodecUtilClose (snd_stream_t **stream)
 {
 	fclose ((*stream)->fh.file);
-	Z_Free (*stream);
+	free (*stream);
 	*stream = NULL;
 }
 

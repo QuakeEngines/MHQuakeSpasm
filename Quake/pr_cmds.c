@@ -737,7 +737,7 @@ static void PF_checkpos (void)
 
 // ============================================================================
 
-static byte *checkpvs;	// ericw -- changed to malloc
+static byte *checkpvs;	// ericw -- changed to Q_zmalloc
 static int	checkpvs_capacity;
 
 static int PF_newcheckclient (int check)

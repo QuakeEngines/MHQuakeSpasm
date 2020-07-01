@@ -246,13 +246,13 @@ static void TexMgr_Imagedump_f (void)
 
 		if (glt->flags & TEXPREF_ALPHA)
 		{
-			buffer = (byte *) malloc (glt->width * glt->height * 4);
+			buffer = (byte *) Q_zmalloc (glt->width * glt->height * 4);
 			glGetTexImage (GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 			Image_WriteTGA (tganame, buffer, glt->width, glt->height, 32, true);
 		}
 		else
 		{
-			buffer = (byte *) malloc (glt->width * glt->height * 3);
+			buffer = (byte *) Q_zmalloc (glt->width * glt->height * 3);
 			glGetTexImage (GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer);
 			Image_WriteTGA (tganame, buffer, glt->width, glt->height, 24, true);
 		}
@@ -331,7 +331,7 @@ gltexture_t *TexMgr_NewTexture (void)
 	// alloc a new texture if needed
 	if (!free_gltextures)
 	{
-		free_gltextures = (gltexture_t *) malloc (sizeof (gltexture_t));
+		free_gltextures = (gltexture_t *) Q_zmalloc (sizeof (gltexture_t));
 		memset (free_gltextures, 0, sizeof (gltexture_t));
 		free_gltextures->next = NULL;
 	}

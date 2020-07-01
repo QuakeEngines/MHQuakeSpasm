@@ -129,7 +129,7 @@ edict_t *ED_Alloc (void)
 
 	sv.num_edicts++;
 	e = EDICT_NUM (i);
-	memset (e, 0, pr_edict_size); // ericw -- switched sv.edicts to malloc(), so we are accessing uninitialized memory and must fully zero it, not just ED_ClearEdict
+	memset (e, 0, pr_edict_size); // ericw -- switched sv.edicts to Q_zmalloc(), so we are accessing uninitialized memory and must fully zero it, not just ED_ClearEdict
 
 	return e;
 }
@@ -1081,7 +1081,7 @@ void PR_LoadProgs (void)
 	pr_maxknownstrings = 0;
 	pr_stringssize = progs->numstrings;
 	if (pr_knownstrings)
-		Z_Free ((void *) pr_knownstrings);
+		free ((void *) pr_knownstrings);
 	pr_knownstrings = NULL;
 	PR_SetEngineString ("");
 
@@ -1199,7 +1199,7 @@ static void PR_AllocStringSlots (void)
 {
 	pr_maxknownstrings += PR_STRING_ALLOCSLOTS;
 	Con_DPrintf2 ("PR_AllocStringSlots: realloc'ing for %d slots\n", pr_maxknownstrings);
-	pr_knownstrings = (const char **) Z_Realloc ((void *) pr_knownstrings, pr_maxknownstrings * sizeof (char *));
+	pr_knownstrings = (const char **) realloc ((void *) pr_knownstrings, pr_maxknownstrings * sizeof (char *));
 }
 
 const char *PR_GetString (int num)

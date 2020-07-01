@@ -95,6 +95,7 @@
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
       <CompileAs>CompileAsC</CompileAs>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libvorbisfile.lib;libvorbis.lib;libopusfile.lib;libopus.lib;libFLAC.lib;libogg.lib;libmad.lib;libmikmod.lib;wsock32.lib;opengl32.lib;winmm.lib;SDL.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -123,6 +124,7 @@ copy "$(SolutionDir)\..\SDL\lib\*.dll" "$(TargetDir)"
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
       <CompileAs>CompileAsC</CompileAs>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libvorbisfile.lib;libvorbis.lib;libopusfile.lib;libopus.lib;libFLAC.lib;libogg.lib;libmad.lib;libmikmod.lib;wsock32.lib;opengl32.lib;winmm.lib;SDL.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -151,6 +153,7 @@ copy "$(SolutionDir)\..\SDL\lib\*.dll" "$(TargetDir)"
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
       <CompileAs>CompileAsC</CompileAs>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libvorbisfile.lib;libvorbis.lib;libopusfile.lib;libopus.lib;libFLAC.lib;libogg.lib;libmad.lib;libmikmod.lib;wsock32.lib;opengl32.lib;winmm.lib;SDL2.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -179,6 +182,7 @@ copy "$(SolutionDir)\..\SDL2\lib\*.dll" "$(TargetDir)"
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
       <CompileAs>CompileAsC</CompileAs>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libvorbisfile.lib;libvorbis.lib;libopusfile.lib;libopus.lib;libFLAC.lib;libogg.lib;libmad.lib;libmikmod.lib;wsock32.lib;opengl32.lib;winmm.lib;SDL2.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>

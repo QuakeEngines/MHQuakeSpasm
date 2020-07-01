@@ -243,7 +243,7 @@ static void S_ApplyFilter (filter_t *filter, int *data, int stride, int count)
 	const float *kernel = filter->kernel;
 	int parity;
 
-	input = (float *) malloc (sizeof (float) * (filter->kernelsize + count));
+	input = (float *) Q_zmalloc (sizeof (float) * (filter->kernelsize + count));
 
 	// set up the input buffer
 	// memory holds the previous filter->kernelsize samples of input.

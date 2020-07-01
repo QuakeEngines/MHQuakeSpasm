@@ -73,7 +73,7 @@ void W_LoadWadFile (void) // johnfitz -- filename is now hard-coded for honesty
 	int			infotableofs;
 	const char *filename = WADFILENAME;
 
-	// johnfitz -- modified to use malloc
+	// johnfitz -- modified to use Q_zmalloc
 	// TODO: use cache_alloc
 	if (wad_base)
 		free (wad_base);

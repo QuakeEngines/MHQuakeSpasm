@@ -80,7 +80,7 @@ static qboolean S_VORBIS_CodecOpenStream (snd_stream_t *stream)
 	long numstreams;
 	int res;
 
-	ovFile = (OggVorbis_File *) Z_Malloc (sizeof (OggVorbis_File));
+	ovFile = (OggVorbis_File *) Q_zmalloc (sizeof (OggVorbis_File));
 	stream->priv = ovFile;
 	res = ov_open_callbacks (&stream->fh, ovFile, NULL, 0, ovc_qfs);
 	if (res != 0)
@@ -128,7 +128,7 @@ static qboolean S_VORBIS_CodecOpenStream (snd_stream_t *stream)
 _fail:
 	if (res == 0)
 		ov_clear (ovFile);
-	Z_Free (ovFile);
+	free (ovFile);
 	return false;
 }
 
@@ -173,7 +173,7 @@ static int S_VORBIS_CodecReadStream (snd_stream_t *stream, int bytes, void *buff
 static void S_VORBIS_CodecCloseStream (snd_stream_t *stream)
 {
 	ov_clear ((OggVorbis_File *) stream->priv);
-	Z_Free (stream->priv);
+	free (stream->priv);
 	S_CodecUtilClose (&stream);
 }
 

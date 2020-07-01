@@ -118,7 +118,7 @@ void Cbuf_InsertText (const char *text)
 	templen = cmd_text.cursize;
 	if (templen)
 	{
-		temp = (char *) Z_Malloc (templen);
+		temp = (char *) Q_zmalloc (templen);
 		Q_memcpy (temp, cmd_text.data, templen);
 		SZ_Clear (&cmd_text);
 	}
@@ -132,7 +132,7 @@ void Cbuf_InsertText (const char *text)
 	if (templen)
 	{
 		SZ_Write (&cmd_text, temp, templen);
-		Z_Free (temp);
+		free (temp);
 	}
 }
 
@@ -339,14 +339,14 @@ void Cmd_Alias_f (void)
 		{
 			if (!strcmp (s, a->name))
 			{
-				Z_Free (a->value);
+				free (a->value);
 				break;
 			}
 		}
 
 		if (!a)
 		{
-			a = (cmdalias_t *) Z_Malloc (sizeof (cmdalias_t));
+			a = (cmdalias_t *) Q_zmalloc (sizeof (cmdalias_t));
 			a->next = cmd_alias;
 			cmd_alias = a;
 		}
@@ -368,7 +368,7 @@ void Cmd_Alias_f (void)
 			cmd[1] = 0;
 		}
 
-		a->value = Z_Strdup (cmd);
+		a->value = strdup (cmd);
 		break;
 	}
 }
@@ -399,8 +399,8 @@ void Cmd_Unalias_f (void)
 				else
 					cmd_alias = a->next;
 
-				Z_Free (a->value);
-				Z_Free (a);
+				free (a->value);
+				free (a);
 				return;
 			}
 			prev = a;
@@ -422,8 +422,8 @@ void Cmd_Unaliasall_f (void)
 	while (cmd_alias)
 	{
 		blah = cmd_alias->next;
-		Z_Free (cmd_alias->value);
-		Z_Free (cmd_alias);
+		free (cmd_alias->value);
+		free (cmd_alias);
 		cmd_alias = blah;
 	}
 }
@@ -446,7 +446,7 @@ typedef struct cmd_function_s {
 #define	MAX_ARGS		80
 
 static	int			cmd_argc;
-static	char *cmd_argv[MAX_ARGS];
+static	char cmd_argv[MAX_ARGS][1024]; // this is a major cause of memory fragmentation so just make it static
 static	char		cmd_null_string[] = "";
 static	const char *cmd_args = NULL;
 
@@ -618,12 +618,7 @@ Parses the given string into command line tokens.
 */
 void Cmd_TokenizeString (const char *text)
 {
-	int		i;
-
 	// clear the args from the last string
-	for (i = 0; i < cmd_argc; i++)
-		Z_Free (cmd_argv[i]);
-
 	cmd_argc = 0;
 	cmd_args = NULL;
 
@@ -631,9 +626,7 @@ void Cmd_TokenizeString (const char *text)
 	{
 		// skip whitespace up to a /n
 		while (*text && *text <= ' ' && *text != '\n')
-		{
 			text++;
-		}
 
 		if (*text == '\n')
 		{
@@ -654,19 +647,19 @@ void Cmd_TokenizeString (const char *text)
 
 		if (cmd_argc < MAX_ARGS)
 		{
-			cmd_argv[cmd_argc] = Z_Strdup (com_token);
+			strcpy (cmd_argv[cmd_argc], com_token);
 			cmd_argc++;
 		}
 	}
-
 }
+
 
 /*
 ============
 Cmd_AddCommand
 ============
 */
-void	Cmd_AddCommand (const char *cmd_name, xcommand_t function)
+void Cmd_AddCommand (const char *cmd_name, xcommand_t function)
 {
 	cmd_function_t *cmd;
 	cmd_function_t *cursor, *prev; // johnfitz -- sorted list insert

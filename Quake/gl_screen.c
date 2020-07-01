@@ -785,7 +785,7 @@ void SCR_ScreenShot_f (void)
 	}
 
 	// get data
-	if (!(buffer = (byte *) malloc (glwidth * glheight * 3)))
+	if (!(buffer = (byte *) Q_zmalloc (glwidth * glheight * 3)))
 	{
 		Con_Printf ("SCR_ScreenShot_f: Couldn't allocate memory\n");
 		return;

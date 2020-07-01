@@ -793,26 +793,26 @@ static char *GL_MakeNiceExtensionsList (const char *in)
 	char *copy, *token, *out;
 	int i, count;
 
-	if (!in) return Z_Strdup ("(none)");
+	if (!in) return strdup ("(none)");
 
-	// each space will be replaced by 4 chars, so count the spaces before we malloc
+	// each space will be replaced by 4 chars, so count the spaces before we Q_zmalloc
 	for (i = 0, count = 1; i < (int) strlen (in); i++)
 	{
 		if (in[i] == ' ')
 			count++;
 	}
 
-	out = (char *) Z_Malloc (strlen (in) + count * 3 + 1); // usually about 1-2k
+	out = (char *) Q_zmalloc (strlen (in) + count * 3 + 1); // usually about 1-2k
 	out[0] = 0;
 
-	copy = (char *) Z_Strdup (in);
+	copy = (char *) strdup (in);
 	for (token = strtok (copy, " "); token; token = strtok (NULL, " "))
 	{
 		strcat (out, "\n   ");
 		strcat (out, token);
 	}
 
-	Z_Free (copy);
+	free (copy);
 	return out;
 }
 
@@ -1013,7 +1013,7 @@ static void GL_Init (void)
 	}
 
 	if (gl_extensions_nice != NULL)
-		Z_Free (gl_extensions_nice);
+		free (gl_extensions_nice);
 	gl_extensions_nice = GL_MakeNiceExtensionsList (gl_extensions);
 
 	GL_CheckExtensions (); // johnfitz

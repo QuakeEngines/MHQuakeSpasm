@@ -385,7 +385,7 @@ void Cvar_SetQuick (cvar_t *var, const char *value)
 		return;
 
 	if (!var->string)
-		var->string = Z_Strdup (value);
+		var->string = strdup (value);
 	else
 	{
 		int	len;
@@ -397,8 +397,8 @@ void Cvar_SetQuick (cvar_t *var, const char *value)
 		len = Q_strlen (value);
 		if (len != Q_strlen (var->string))
 		{
-			Z_Free ((void *) var->string);
-			var->string = (char *) Z_Malloc (len + 1);
+			free ((void *) var->string);
+			var->string = (char *) Q_zmalloc (len + 1);
 		}
 		memcpy ((char *) var->string, value, len + 1);
 	}
@@ -407,14 +407,14 @@ void Cvar_SetQuick (cvar_t *var, const char *value)
 
 	// johnfitz -- save initial value for "reset" command
 	if (!var->default_string)
-		var->default_string = Z_Strdup (var->string);
+		var->default_string = strdup (var->string);
 	// johnfitz -- during initialization, update default too
 	else if (!host_initialized)
 	{
 		//	Sys_Printf("changing default of %s: %s -> %s\n",
 		//		   var->name, var->default_string, var->string);
-		Z_Free ((void *) var->default_string);
-		var->default_string = Z_Strdup (var->string);
+		free ((void *) var->default_string);
+		var->default_string = strdup (var->string);
 	}
 	// johnfitz
 
@@ -567,7 +567,7 @@ void Cvar_RegisterVariable (cvar_t *variable)
 	// johnfitz
 	variable->flags |= CVAR_REGISTERED;
 
-	// copy the value off, because future sets will Z_Free it
+	// copy the value off, because future sets will free it
 	q_strlcpy (value, variable->string, sizeof (value));
 	variable->string = NULL;
 	variable->default_string = NULL;

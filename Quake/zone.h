@@ -91,10 +91,7 @@ Zone block
 
 void Memory_Init (void *buf, int size);
 
-void Z_Free (void *ptr);
-void *Z_Malloc (int size);			// returns 0 filled memory
-void *Z_Realloc (void *ptr, int size);
-char *Z_Strdup (const char *s);
+void *Q_zmalloc (size_t size);
 
 void *Hunk_Alloc (int size);		// returns 0 filled memory
 void *Hunk_AllocName (int size, const char *name);

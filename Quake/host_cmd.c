@@ -75,7 +75,7 @@ void FileList_Add (const char *name, filelist_item_t **list)
 			return;
 	}
 
-	item = (filelist_item_t *) Z_Malloc (sizeof (filelist_item_t));
+	item = (filelist_item_t *) Q_zmalloc (sizeof (filelist_item_t));
 	q_strlcpy (item->name, name, sizeof (item->name));
 
 	// insert each entry in alphabetical order
@@ -106,7 +106,7 @@ static void FileList_Clear (filelist_item_t **list)
 	while (*list)
 	{
 		blah = (*list)->next;
-		Z_Free (*list);
+		free (*list);
 		*list = blah;
 	}
 }

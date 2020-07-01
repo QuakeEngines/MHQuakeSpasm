@@ -45,7 +45,7 @@ typedef struct stdio_buffer_s {
 
 static stdio_buffer_t *Buf_Alloc (FILE *f)
 {
-	stdio_buffer_t *buf = (stdio_buffer_t *) calloc (1, sizeof (stdio_buffer_t));
+	stdio_buffer_t *buf = (stdio_buffer_t *) Q_zmalloc (sizeof (stdio_buffer_t));
 	buf->f = f;
 	return buf;
 }
@@ -484,7 +484,7 @@ static byte *CopyFlipped (const byte *data, int width, int height, int bpp)
 	byte *flipped;
 
 	rowsize = width * (bpp / 8);
-	flipped = (byte *) malloc (height * rowsize);
+	flipped = (byte *) Q_zmalloc (height * rowsize);
 	if (!flipped)
 		return NULL;
 
@@ -550,7 +550,7 @@ qboolean Image_WritePNG (const char *name, byte *data, int width, int height, in
 	q_snprintf (pathname, sizeof (pathname), "%s/%s", com_gamedir, name);
 
 	flipped = (!upsidedown) ? CopyFlipped (data, width, height, bpp) : data;
-	filters = (unsigned char *) malloc (height);
+	filters = (unsigned char *) Q_zmalloc (height);
 	if (!filters || !flipped)
 	{
 		if (!upsidedown)

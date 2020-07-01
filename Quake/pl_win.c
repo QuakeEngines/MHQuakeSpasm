@@ -93,10 +93,10 @@ char *PL_GetClipboardData (void)
 				size_t size = GlobalSize (hClipboardData) + 1;
 				/* this is intended for simple small text copies
 				 * such as an ip address, etc:  do chop the size
-				 * here, otherwise we may experience Z_Malloc()
+				 * here, otherwise we may experience Q_zmalloc()
 				 * failures and all other not-oh-so-fun stuff. */
 				size = q_min (MAX_CLIPBOARDTXT, size);
-				data = (char *) Z_Malloc (size);
+				data = (char *) Q_zmalloc (size);
 				q_strlcpy (data, cliptext, size);
 				GlobalUnlock (hClipboardData);
 			}

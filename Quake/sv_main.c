@@ -87,7 +87,7 @@ void SV_Init (void)
 	extern	cvar_t	sv_aim;
 	extern	cvar_t	sv_altnoclip; // johnfitz
 
-	sv.edicts = NULL; // ericw -- sv.edicts switched to use malloc()
+	sv.edicts = NULL; // ericw -- sv.edicts switched to use Q_zmalloc()
 
 	Cvar_RegisterVariable (&sv_maxvelocity);
 	Cvar_RegisterVariable (&sv_gravity);
@@ -1360,7 +1360,7 @@ void SV_SpawnServer (const char *server)
 	// allocate server memory
 		/* Host_ClearMemory() called above already cleared the whole sv structure */
 	sv.max_edicts = CLAMP (MIN_EDICTS, (int) max_edicts.value, MAX_EDICTS); // johnfitz -- max_edicts cvar
-	sv.edicts = (edict_t *) malloc (sv.max_edicts * pr_edict_size); // ericw -- sv.edicts switched to use malloc()
+	sv.edicts = (edict_t *) Q_zmalloc (sv.max_edicts * pr_edict_size); // ericw -- sv.edicts switched to use Q_zmalloc()
 
 	sv.datagram.maxsize = sizeof (sv.datagram_buf);
 	sv.datagram.cursize = 0;
@@ -1376,7 +1376,7 @@ void SV_SpawnServer (const char *server)
 
 	// leave slots at start for clients only
 	sv.num_edicts = svs.maxclients + 1;
-	memset (sv.edicts, 0, sv.num_edicts * pr_edict_size); // ericw -- sv.edicts switched to use malloc()
+	memset (sv.edicts, 0, sv.num_edicts * pr_edict_size); // ericw -- sv.edicts switched to use Q_zmalloc()
 	for (i = 0; i < svs.maxclients; i++)
 	{
 		ent = EDICT_NUM (i + 1);
