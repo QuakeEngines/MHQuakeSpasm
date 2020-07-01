@@ -792,6 +792,7 @@ void SCR_ScreenShot_f (void)
 
 	glPixelStorei (GL_PACK_ALIGNMENT, 1);/* for widths that aren't a multiple of 4 */
 	glReadPixels (glx, gly, glwidth, glheight, GL_RGB, GL_UNSIGNED_BYTE, buffer);
+	glPixelStorei (GL_PACK_ALIGNMENT, 0);
 
 	// now write the file
 	if (!q_strncasecmp (ext, "png", sizeof (ext)))

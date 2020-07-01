@@ -31,9 +31,8 @@ static cvar_t	gl_texturemode = { "gl_texturemode", "", CVAR_ARCHIVE };
 static cvar_t	gl_texture_anisotropy = { "gl_texture_anisotropy", "1", CVAR_ARCHIVE };
 static GLint	gl_hardware_maxsize;
 
-#define	MAX_GLTEXTURES	2048
 static int numgltextures;
-static gltexture_t *active_gltextures, *free_gltextures;
+static gltexture_t *active_gltextures = NULL, *free_gltextures = NULL;
 gltexture_t *notexture, *nulltexture;
 
 unsigned int d_8to24table[256];
@@ -178,12 +177,12 @@ static void TexMgr_Anisotropy_f (cvar_t *var)
 	}
 	else
 	{
-		gltexture_t *glt;
-		for (glt = active_gltextures; glt; glt = glt->next)
+		for (gltexture_t *glt = active_gltextures; glt; glt = glt->next)
 		{
 			/*  TexMgr_SetFilterModes (glt);*/
 			if (glt->flags & TEXPREF_MIPMAP)
 			{
+				// fixme - switch to linear if anisotropic > 1
 				GL_BindTexture (GL_TEXTURE0, glt);
 				glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glmodes[glmode_idx].magfilter);
 				glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glmodes[glmode_idx].minfilter);
@@ -257,7 +256,9 @@ static void TexMgr_Imagedump_f (void)
 			glGetTexImage (GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer);
 			Image_WriteTGA (tganame, buffer, glt->width, glt->height, 24, true);
 		}
+
 		free (buffer);
+		glPixelStorei (GL_PACK_ALIGNMENT, 0);
 	}
 
 	Con_Printf ("dumped %i textures to %s\n", numgltextures, dirname);
@@ -327,9 +328,15 @@ gltexture_t *TexMgr_NewTexture (void)
 {
 	gltexture_t *glt;
 
-	if (numgltextures == MAX_GLTEXTURES)
-		Sys_Error ("numgltextures == MAX_GLTEXTURES\n");
+	// alloc a new texture if needed
+	if (!free_gltextures)
+	{
+		free_gltextures = (gltexture_t *) malloc (sizeof (gltexture_t));
+		memset (free_gltextures, 0, sizeof (gltexture_t));
+		free_gltextures->next = NULL;
+	}
 
+	// and now take the texture
 	glt = free_gltextures;
 	free_gltextures = glt->next;
 	glt->next = active_gltextures;
@@ -337,6 +344,7 @@ gltexture_t *TexMgr_NewTexture (void)
 
 	glGenTextures (1, &glt->texnum);
 	numgltextures++;
+
 	return glt;
 }
 
@@ -653,13 +661,8 @@ void TexMgr_Init (void)
 	extern texture_t *r_notexture_mip, *r_notexture_mip2;
 
 	// init texture list
-	free_gltextures = (gltexture_t *) Hunk_AllocName (MAX_GLTEXTURES * sizeof (gltexture_t), "gltextures");
+	free_gltextures = NULL;
 	active_gltextures = NULL;
-
-	for (int i = 1; i < MAX_GLTEXTURES; i++)
-		free_gltextures[i - 1].next = &free_gltextures[i];
-
-	free_gltextures[MAX_GLTEXTURES - 1].next = NULL;
 	numgltextures = 0;
 
 	// gamma-correct to 16-bit precision, average, then mix back down to 8-bit precision so that we don't lose ultra-darks in the correction process
