@@ -46,5 +46,7 @@ On Windows, MHQuakeSpasm is a Visual Studio 2019 project.  It has been built and
  - Download the source code.
  - Build it.
 
+Github filters exclude the third-party libs and dlls you'll need to link and run, so I recommend you copy them over from another copy of the QuakeSpasm source. 
+
 ### What about Linux?  Mac OSX?  Other platforms?
 I consider the Visual Studio project to be the "master" version and I haven't bothered keeping makefiles/etc for other platforms up to date.  The only real change made to the project was the addition of the GLEW header and source files; aside from that I haven't knowingly done anything to explicitly break a build on any other platform, so you should be able to manually edit the makefiles and get a build.  To be honest, if you can't do this kind of thing yourself, you probably have no business building on Linux anyway.
