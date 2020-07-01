@@ -172,6 +172,8 @@ void R_Init (void)
 	Cvar_RegisterVariable (&gl_polyblend);
 	Cvar_RegisterVariable (&gl_nocolors);
 
+	Cvar_RegisterVariable (&r_shadows);
+
 	// johnfitz -- new cvars
 	Cvar_RegisterVariable (&r_clearcolor);
 	Cvar_SetCallback (&r_clearcolor, R_SetClearColor_f);

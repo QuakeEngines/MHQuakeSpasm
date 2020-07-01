@@ -117,6 +117,8 @@ extern	cvar_t	gl_cull;
 extern	cvar_t	gl_polyblend;
 extern	cvar_t	gl_nocolors;
 
+extern	cvar_t	r_shadows;
+
 extern int		gl_stencilbits;
 
 extern cvar_t gl_overbright;

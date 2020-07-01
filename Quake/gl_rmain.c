@@ -70,6 +70,8 @@ cvar_t	gl_cull = { "gl_cull", "1", CVAR_NONE };
 cvar_t	gl_polyblend = { "gl_polyblend", "1", CVAR_NONE };
 cvar_t	gl_nocolors = { "gl_nocolors", "0", CVAR_NONE };
 
+cvar_t	r_shadows = { "r_shadows", "0", CVAR_NONE };
+
 // johnfitz -- new cvars
 cvar_t	r_clearcolor = { "r_clearcolor", "2", CVAR_ARCHIVE };
 cvar_t	r_flatlightstyles = { "r_flatlightstyles", "0", CVAR_NONE };

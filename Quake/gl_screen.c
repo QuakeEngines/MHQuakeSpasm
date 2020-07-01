@@ -106,8 +106,6 @@ cvar_t		scr_showturtle = { "showturtle", "0", CVAR_NONE };
 cvar_t		scr_showpause = { "showpause", "1", CVAR_NONE };
 cvar_t		scr_printspeed = { "scr_printspeed", "8", CVAR_NONE };
 
-extern	cvar_t	crosshair;
-
 qboolean	scr_initialized;		// ready to draw
 qboolean	scr_timerefresh;
 
@@ -607,23 +605,6 @@ void SCR_DrawLoading (void)
 }
 
 
-/*
-==============
-SCR_DrawCrosshair -- johnfitz
-==============
-*/
-void SCR_DrawCrosshair (void)
-{
-	extern qpic_t *pic_crosshair;
-
-	if (!crosshair.value)
-		return;
-
-	GL_SetCanvas (CANVAS_CROSSHAIR);
-	Draw_Pic ((-pic_crosshair->width) / 2, (-pic_crosshair->height) / 2, pic_crosshair); // johnfitz -- stretched menus
-}
-
-
 // =============================================================================
 
 
@@ -1070,7 +1051,7 @@ void SCR_UpdateScreen (void)
 	}
 	else
 	{
-		SCR_DrawCrosshair (); // johnfitz
+		Draw_Crosshair (); // johnfitz
 		SCR_DrawPause ();
 		SCR_CheckDrawCenterString ();
 		Sbar_Draw ();

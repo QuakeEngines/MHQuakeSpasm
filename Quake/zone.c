@@ -23,41 +23,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-#define	DYNAMIC_SIZE	(4 * 1024 * 1024) // ericw -- was 512KB (64-bit) / 384KB (32-bit)
-
-#define	ZONEID	0x1d4a11
-#define MINFRAGMENT	64
-
-typedef struct memblock_s {
-	int	size;		// including the header and possibly tiny fragments
-	int	tag;		// a tag of 0 is a free block
-	int	id;		// should be ZONEID
-	int	pad;		// pad to 64 bit boundary
-	struct	memblock_s *next, *prev;
-} memblock_t;
-
-typedef struct memzone_s {
-	int		size;		// total bytes malloced, including header
-	memblock_t	blocklist;	// start / end cap for linked list
-	memblock_t *rover;
-} memzone_t;
-
-void Cache_FreeLow (int new_low_hunk);
-void Cache_FreeHigh (int new_high_hunk);
-
 
 /*
 ==============================================================================
 
 						ZONE MEMORY ALLOCATION
 
-There is never any space between memblocks, and there will never be two
-contiguous free memblocks.
+		This is just cleared malloc these days.  calloc would work too
+		but I'm just feeling too lazy to go through each allocation and 
+		change it's params.
 
-The rover can be left pointing at a non-empty block
-
-The zone calls are pretty much only used for small strings and structures,
-all big things are allocated on the hunk.
 ==============================================================================
 */
 
@@ -71,10 +46,17 @@ void *Q_zmalloc (size_t size)
 }
 
 
-static memzone_t *mainzone;
+/*
+==============================================================================
 
+						HUNK MEMORY ALLOCATION
 
-// ============================================================================
+==============================================================================
+*/
+
+void Cache_FreeLow (int new_low_hunk);
+void Cache_FreeHigh (int new_high_hunk);
+
 
 #define	HUNK_SENTINAL	0x1df001ed
 
@@ -115,6 +97,7 @@ void Hunk_Check (void)
 		h = (hunk_t *) ((byte *) h + h->size);
 	}
 }
+
 
 /*
 ==============
@@ -192,6 +175,7 @@ void Hunk_Print (qboolean all)
 
 }
 
+
 /*
 ===================
 Hunk_Print_f -- johnfitz -- console command to call hunk_print
@@ -201,6 +185,7 @@ void Hunk_Print_f (void)
 {
 	Hunk_Print (false);
 }
+
 
 /*
 ===================
@@ -237,6 +222,7 @@ void *Hunk_AllocName (int size, const char *name)
 	return (void *) (h + 1);
 }
 
+
 /*
 ===================
 Hunk_Alloc
@@ -247,10 +233,12 @@ void *Hunk_Alloc (int size)
 	return Hunk_AllocName (size, "unknown");
 }
 
+
 int	Hunk_LowMark (void)
 {
 	return hunk_low_used;
 }
+
 
 void Hunk_FreeToLowMark (int mark)
 {
@@ -259,6 +247,7 @@ void Hunk_FreeToLowMark (int mark)
 	memset (hunk_base + mark, 0, hunk_low_used - mark);
 	hunk_low_used = mark;
 }
+
 
 int	Hunk_HighMark (void)
 {
@@ -270,6 +259,7 @@ int	Hunk_HighMark (void)
 
 	return hunk_high_used;
 }
+
 
 void Hunk_FreeToHighMark (int mark)
 {
@@ -357,6 +347,7 @@ void *Hunk_TempAlloc (int size)
 	return buf;
 }
 
+
 char *Hunk_Strdup (const char *s, const char *name)
 {
 	size_t sz = strlen (s) + 1;
@@ -365,10 +356,11 @@ char *Hunk_Strdup (const char *s, const char *name)
 	return ptr;
 }
 
+
 /*
 ===============================================================================
 
-CACHE MEMORY
+							CACHE MEMORY
 
 ===============================================================================
 */
@@ -609,6 +601,7 @@ void Cache_Report (void)
 	Con_DPrintf ("%4.1f megabyte data cache\n", (hunk_size - hunk_high_used - hunk_low_used) / (float) (1024 * 1024));
 }
 
+
 /*
 ============
 Cache_Init
@@ -622,6 +615,7 @@ void Cache_Init (void)
 
 	Cmd_AddCommand ("flush", Cache_Flush);
 }
+
 
 /*
 ==============
@@ -653,7 +647,6 @@ void Cache_Free (cache_user_t *c, qboolean freetextures) // johnfitz -- added se
 	if (freetextures)
 		TexMgr_FreeTexturesForOwner ((qmodel_t *) (c + 1) - 1);
 }
-
 
 
 /*
@@ -717,27 +710,9 @@ void *Cache_Alloc (cache_user_t *c, int size, const char *name)
 	return Cache_Check (c);
 }
 
+
 // ============================================================================
 
-
-static void Memory_InitZone (memzone_t *zone, int size)
-{
-	memblock_t *block;
-
-	// set the entire zone to one free block
-
-	zone->blocklist.next = zone->blocklist.prev = block =
-		(memblock_t *) ((byte *) zone + sizeof (memzone_t));
-	zone->blocklist.tag = 1;	// in use block
-	zone->blocklist.id = 0;
-	zone->blocklist.size = 0;
-	zone->rover = block;
-
-	block->prev = block->next = &zone->blocklist;
-	block->tag = 0;			// free block
-	block->id = ZONEID;
-	block->size = size - sizeof (memzone_t);
-}
 
 /*
 ========================
@@ -746,26 +721,12 @@ Memory_Init
 */
 void Memory_Init (void *buf, int size)
 {
-	int p;
-	int zonesize = DYNAMIC_SIZE;
-
 	hunk_base = (byte *) buf;
 	hunk_size = size;
 	hunk_low_used = 0;
 	hunk_high_used = 0;
 
 	Cache_Init ();
-	p = COM_CheckParm ("-zone");
-	if (p)
-	{
-		if (p < com_argc - 1)
-			zonesize = Q_atoi (com_argv[p + 1]) * 1024;
-		else
-			Sys_Error ("Memory_Init: you must specify a size in KB after -zone");
-	}
-	mainzone = (memzone_t *) Hunk_AllocName (zonesize, "zone");
-	Memory_InitZone (mainzone, zonesize);
-
 	Cmd_AddCommand ("hunk_print", Hunk_Print_f); // johnfitz
 }
 
