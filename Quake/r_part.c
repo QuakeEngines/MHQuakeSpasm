@@ -93,22 +93,28 @@ void GLParticles_CreateShaders (void)
 		"!!ARBvp1.0\n"
 		"\n"
 		"# pick friendly names for the params\n"
+		"PARAM scales = program.local[0];\n"
 		"PARAM r_origin = program.local[1];\n"
 		"PARAM vpn = program.local[2];\n"
 		"PARAM vup = program.local[3];\n"
 		"PARAM vright = program.local[4];\n"
-		"PARAM scales = program.local[5];\n"
-		"PARAM grav = program.local[6];\n"
 		"\n"
 		"# pick friendly names for the attribs\n"
 		"ATTRIB offsets = vertex.attrib[0];\n"
 		"ATTRIB colour = vertex.attrib[1];\n"
 		"ATTRIB origin = vertex.attrib[2];\n"
+		"ATTRIB vel = vertex.attrib[3];\n"
+		"ATTRIB accel = vertex.attrib[4];\n"
+		"ATTRIB time = vertex.attrib[5];\n"
 		"\n"
-		"TEMP pscale, NewPosition, accel;\n"
+		"TEMP pscale, NewPosition;\n"
+		"\n"
+		"# move the particle in a framerate-independent manner\n"
+		"MAD NewPosition, accel, time.x, vel;\n"
+		"MAD NewPosition, NewPosition, time.x, origin;\n"
 		"\n"
 		"# hack a scale up to prevent particles from disappearing\n"
-		"SUB pscale, origin, r_origin;\n"
+		"SUB pscale, NewPosition, r_origin;\n"
 		"DP3 pscale.x, pscale, vpn;\n"
 		"MAD pscale.x, pscale.x, scales.y, scales.z;\n"
 		"MUL pscale, offsets, pscale.x;\n"
@@ -116,8 +122,8 @@ void GLParticles_CreateShaders (void)
 		"# scale down for large quad size\n"
 		"MUL pscale, pscale, scales.x;\n"
 		"\n"
-		"# compute new particle origin\n"
-		"MAD NewPosition, vright, pscale.x, origin;\n"
+		"# compute billboard quad corner\n"
+		"MAD NewPosition, vright, pscale.x, NewPosition;\n"
 		"MAD NewPosition, vup, pscale.y, NewPosition;\n"
 		"\n"
 		"# ensure\n"
@@ -143,21 +149,15 @@ void GLParticles_CreateShaders (void)
 	const GLchar *fp_source_circle = \
 		"!!ARBfp1.0\n"
 		"\n"
-		"TEMP diff, offset;\n"
-		"\n"
-		"# initialize the particle\n"
-		"MOV offset, { 1.0, 1.0, 1.0, 1.0 };\n"
+		"TEMP diff;\n"
 		"\n"
 		"# make a circle\n"
-		"DP3 offset.a, fragment.texcoord[0], fragment.texcoord[0];\n"
-		"SUB offset.a, 1.0, offset.a;\n"
-		"MUL offset.a, 1.5, offset.a;\n"
-		"\n"
-		"# clamp the circle\n"
-		"MIN offset.a, offset.a, 1.0;\n"
+		"DP3 diff.a, fragment.texcoord[0], fragment.texcoord[0];\n"
+		"SUB diff.a, 1.0, diff.a;\n"
+		"MUL diff.a, 1.5, diff.a;\n"
 		"\n"
 		"# blend to output\n"
-		"MUL diff, fragment.color, offset;\n"
+		"MOV diff.rgb, fragment.color;\n"
 		"\n"
 		"# perform the fogging\n"
 		"TEMP fogFactor;\n"
@@ -739,11 +739,15 @@ void R_RocketTrail (vec3_t start, vec3_t end, int type)
 
 /*
 ===============
-CL_RunParticles -- johnfitz -- all the particle behavior, separated from R_DrawParticles
+R_DrawParticles
+
 ===============
 */
-void CL_RunParticles (void)
+void R_DrawParticlesARB (void)
 {
+	if (!r_particles.value)
+		return;
+
 	// remove expired particles from the front of the list
 	for (;; )
 	{
@@ -759,37 +763,6 @@ void CL_RunParticles (void)
 
 		break;
 	}
-
-	// run the remaining active particles
-	for (particle_t *p = active_particles; p; p = p->next)
-	{
-		// remove expired particles from the middle of the list
-		for (;; )
-		{
-			particle_t *kill = p->next;
-
-			if (kill && kill->die < cl.time)
-			{
-				p->next = kill->next;
-				kill->next = free_particles;
-				free_particles = kill;
-				continue;
-			}
-
-			break;
-		}
-	}
-}
-
-/*
-===============
-R_DrawParticles -- johnfitz -- moved all non-drawing code to CL_RunParticles
-===============
-*/
-void R_DrawParticlesARB (void)
-{
-	if (!r_particles.value)
-		return;
 
 	// ericw -- avoid empty glBegin(),glEnd() pair below; causes issues on AMD
 	if (!active_particles)
@@ -814,12 +787,12 @@ void R_DrawParticlesARB (void)
 	{
 	case 1:
 		GL_BindPrograms (r_particle_vp, r_particle_fp_circle);
-		glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 5, 0.666f, 0.002f, 1.0f, 0.0f);
+		glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, 0.666f, 0.002f, 1.0f, 0.0f);
 		break;
 
 	default:
 		GL_BindPrograms (r_particle_vp, r_particle_fp_square);
-		glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 5, 0.5f, 0.002f, 1.0f, 0.0f);
+		glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, 0.5f, 0.002f, 1.0f, 0.0f);
 		break;
 	}
 
@@ -844,6 +817,22 @@ void R_DrawParticlesARB (void)
 
 	for (particle_t *p = active_particles; p; p = p->next)
 	{
+		// remove expired particles from the middle of the list
+		for (;; )
+		{
+			particle_t *kill = p->next;
+
+			if (kill && kill->die < cl.time)
+			{
+				p->next = kill->next;
+				kill->next = free_particles;
+				free_particles = kill;
+				continue;
+			}
+
+			break;
+		}
+
 		// get the emitter properties for this particle
 		ptypedef_t *pt = &p_typedefs[p->type];
 		float etime = cl.time - p->time;
@@ -863,13 +852,11 @@ void R_DrawParticlesARB (void)
 				p->die = -1;
 		}
 
-		// move the particle in a framerate-independent manner
-		glVertexAttrib3f (
-			2,
-			p->org[0] + (p->vel[0] + (pt->accel[0] * etime)) * etime,
-			p->org[1] + (p->vel[1] + (pt->accel[1] * etime)) * etime,
-			p->org[2] + (p->vel[2] + (pt->accel[2] * etime)) * etime
-		);
+		// movement factors
+		glVertexAttrib1f  (5, etime);
+		glVertexAttrib3fv (4, pt->accel);
+		glVertexAttrib3fv (3, p->vel);
+		glVertexAttrib3fv (2, p->org);
 
 		// colour
 		glVertexAttrib4Nubv (1, (byte *) &d_8to24table[p->color & 255]);

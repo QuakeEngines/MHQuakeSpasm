@@ -208,7 +208,6 @@ qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix);
 
 void R_InitParticles (void);
 void R_DrawParticlesARB (void);
-void CL_RunParticles (void);
 void R_ClearParticles (void);
 
 void R_TranslatePlayerSkin (int playernum);

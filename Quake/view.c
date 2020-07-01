@@ -801,9 +801,6 @@ void V_RenderView (void)
 
 	// johnfitz -- removed lcd code
 
-	// MH - deferred until after the refdef is calced so that it has access to the correct view origin
-	CL_RunParticles ();
-
 	R_RenderView ();
 }
 
