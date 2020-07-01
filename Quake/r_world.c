@@ -345,16 +345,6 @@ extern GLuint r_surfaces_vbo;
 
 void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 {
-	// test for alternative modes
-	if (r_fullbright_cheatsafe || !cl.worldmodel->lightdata)
-	{
-		// the r_fullbright case just draws the same as the notexture case
-		GL_BindTexture (GL_TEXTURE0, t->gltexture);
-		GL_BindPrograms (r_brush_notexture_vp, r_brush_notexture_fp);
-		R_DrawSimpleTexturechain (s);
-		return;
-	}
-
 	// and now we can draw it
 	GL_BindTexture (GL_TEXTURE0, t->gltexture);
 
@@ -539,6 +529,11 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 			// sky; either layers or cubemap
 			R_DrawSkychain_ARB (s);
 		}
+		else if (!cl.worldmodel->lightdata)
+		{
+			// the no lightdata case just draws the same as the notexture case
+			R_DrawNoTextureChain (s, t);
+		}
 		else if (!(s->flags & SURF_DRAWTURB))
 		{
 			// normal lightmapped surface - turbs are drawn separately because of alpha
@@ -549,7 +544,7 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 	// set up dynamic lighting correctly for the entity type
 	if (!r_dynamic.value)
 		return;
-	else if (r_fullbright_cheatsafe)
+	else if (!cl.worldmodel->lightdata)
 		return;
 	else if (!ent)
 		R_PushDlights_New (NULL, NULL, model, cl.worldmodel->nodes);

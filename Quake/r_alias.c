@@ -320,7 +320,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	// set textures
 	GL_BindTexture (GL_TEXTURE0, tx);
 
-	if (r_fullbright_cheatsafe || !cl.worldmodel->lightdata)
+	if (!cl.worldmodel->lightdata)
 		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_fullbright_fp);
 	else if (fb)
 	{
@@ -345,7 +345,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 
 	// add dynamic lights
 	if (!r_dynamic.value) return;
-	if (r_fullbright_cheatsafe) return;
+	if (!cl.worldmodel->lightdata) return;
 
 	for (int i = 0; i < MAX_DLIGHTS; i++)
 	{

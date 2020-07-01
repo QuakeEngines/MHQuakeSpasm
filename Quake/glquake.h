@@ -109,7 +109,6 @@ extern	cvar_t	r_lavaalpha;
 extern	cvar_t	r_telealpha;
 extern	cvar_t	r_slimealpha;
 extern	cvar_t	r_dynamic;
-extern	cvar_t	r_fullbright;
 extern	cvar_t	r_novis;
 extern	cvar_t	r_scale;
 
@@ -181,8 +180,6 @@ extern overflowtimes_t dev_overflows; // this stores the last time overflow mess
 extern gltexture_t *gl_lightmaps[3][MAX_LIGHTMAPS];
 extern int lm_currenttexture;	// allocated lightmaps
 
-
-extern qboolean r_drawflat_cheatsafe, r_fullbright_cheatsafe, r_lightmap_cheatsafe, r_drawworld_cheatsafe; // johnfitz
 extern float	map_wateralpha, map_lavaalpha, map_telealpha, map_slimealpha; // ericw
 
 
