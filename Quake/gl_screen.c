@@ -109,6 +109,7 @@ cvar_t		scr_printspeed = { "scr_printspeed", "8", CVAR_NONE };
 extern	cvar_t	crosshair;
 
 qboolean	scr_initialized;		// ready to draw
+qboolean	scr_timerefresh;
 
 qpic_t *scr_ram;
 qpic_t *scr_net;
@@ -313,7 +314,7 @@ Must be called whenever vid changes
 Internal use only
 =================
 */
-static void SCR_CalcRefdef (void)
+void SCR_CalcRefdef (void)
 {
 	// bound viewsize
 	if (scr_viewsize.value < 30) Cvar_SetQuick (&scr_viewsize, "30");

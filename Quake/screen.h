@@ -36,6 +36,7 @@ void SCR_SizeDown (void);
 void SCR_BringDownConsole (void);
 void SCR_CenterPrint (const char *str);
 void SCR_RemoveConsole (void);
+void SCR_CalcRefdef (void);
 
 void SCR_BeginLoadingPlaque (void);
 void SCR_EndLoadingPlaque (void);
@@ -50,6 +51,7 @@ extern	int			sb_lines;
 extern	int			clearnotify;	// set to 0 whenever notify text is drawn
 extern	qboolean	scr_disabled_for_loading;
 extern	qboolean	scr_skipupdate;
+extern	qboolean	scr_timerefresh;
 
 extern	cvar_t		scr_viewsize;
 

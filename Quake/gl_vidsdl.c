@@ -1036,9 +1036,11 @@ static void GL_Init (void)
 /*
 =================
 GL_BeginRendering -- sets values of glx, gly, glwidth, glheight
+
+returns false if the frame should be skipped for any reason
 =================
 */
-void GL_BeginRendering (int *x, int *y, int *width, int *height)
+qboolean GL_BeginRendering (int *x, int *y, int *width, int *height)
 {
 	*x = *y = 0;
 
@@ -1075,6 +1077,8 @@ void GL_BeginRendering (int *x, int *y, int *width, int *height)
 
 	// and set them all
 	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 10, contrastval, gammaval, overbright, 0);
+
+	return true;
 }
 
 

@@ -560,6 +560,9 @@ void R_DrawViewModel (void)
 	if (cl.items & IT_INVISIBILITY || cl.stats[STAT_HEALTH] <= 0)
 		return;
 
+	if (scr_timerefresh)
+		return;
+
 	currententity = &cl.viewent;
 	if (!currententity->model)
 		return;
@@ -716,7 +719,10 @@ void R_RenderView (void)
 		Sys_Error ("R_RenderView: NULL worldmodel");
 
 	time1 = 0; /* avoid compiler warning */
-	if (r_speeds.value)
+
+	if (scr_timerefresh)
+		; // no speed-tracking in timerefresh mode
+	else if (r_speeds.value)
 	{
 		glFinish ();
 		time1 = Sys_DoubleTime ();
@@ -758,7 +764,11 @@ void R_RenderView (void)
 
 	// johnfitz -- modified r_speeds output
 	time2 = Sys_DoubleTime ();
-	if (r_pos.value)
+
+	if (scr_timerefresh)
+		; // no speed-tracking in timerefresh mode
+	else if (r_pos.value)
+	{
 		Con_Printf ("x %i y %i z %i (pitch %i yaw %i roll %i)\n",
 			(int) cl_entities[cl.viewentity].origin[0],
 			(int) cl_entities[cl.viewentity].origin[1],
@@ -766,7 +776,9 @@ void R_RenderView (void)
 			(int) cl.viewangles[PITCH],
 			(int) cl.viewangles[YAW],
 			(int) cl.viewangles[ROLL]);
+	}
 	else if (r_speeds.value == 2)
+	{
 		Con_Printf ("%3i ms  %4i/%4i wpoly %4i/%4i epoly %3i lmap %4i/%4i sky %1.1f mtex\n",
 			(int) ((time2 - time1) * 1000),
 			rs_brushpolys,
@@ -777,12 +789,15 @@ void R_RenderView (void)
 			rs_skypolys,
 			rs_skypasses,
 			TexMgr_FrameUsage ());
+	}
 	else if (r_speeds.value)
+	{
 		Con_Printf ("%3i ms  %4i wpoly %4i epoly %3i lmap\n",
 			(int) ((time2 - time1) * 1000),
 			rs_brushpolys,
 			rs_aliaspolys,
 			rs_dynamiclightmaps);
+	}
 	// johnfitz
 }
 

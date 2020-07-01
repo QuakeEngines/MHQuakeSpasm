@@ -343,7 +343,7 @@ void R_NewMap (void)
 	for (int i = 0; i < cl.worldmodel->numleafs; i++)
 		cl.worldmodel->leafs[i].efrags = NULL;
 
-	r_viewleaf = NULL;
+	r_viewleaf = r_oldviewleaf = NULL;
 	R_ClearParticles ();
 
 	GL_BuildLightmaps ();
@@ -372,6 +372,44 @@ For program optimization
 */
 void R_TimeRefresh_f (void)
 {
+	int i;
+	float startangle = r_refdef.viewangles[1];
+	float start = Sys_DoubleTime ();
+	float		stop, time;
+	float		timeRefreshTime = 2.75;
+
+	glFinish ();
+
+	scr_timerefresh = true;
+	SCR_CalcRefdef ();
+
+	// do a 360 in timeRefreshTime seconds
+	for (i = 0;; i++)
+	{
+		if (GL_BeginRendering (&glx, &gly, &glwidth, &glheight))
+		{
+			r_refdef.viewangles[1] = startangle + (Sys_DoubleTime () - start) * (360.0 / timeRefreshTime);
+
+			while (r_refdef.viewangles[1] > 360.0)
+				r_refdef.viewangles[1] -= 360.0;
+
+			R_RenderView ();
+			GL_EndRendering ();
+		}
+
+		if ((time = Sys_DoubleTime () - start) >= timeRefreshTime) break;
+	}
+
+	glFinish ();
+
+	stop = Sys_DoubleTime ();
+	time = stop - start;
+	scr_timerefresh = false;
+	r_refdef.viewangles[1] = startangle;
+
+	Con_Printf ("%i frames, %f seconds (%f fps)\n", i, time, (float) i / time);
+
+#if 0
 	int		i;
 	float		start, stop, time;
 
@@ -394,6 +432,7 @@ void R_TimeRefresh_f (void)
 	stop = Sys_DoubleTime ();
 	time = stop - start;
 	Con_Printf ("%f seconds (%f fps)\n", time, 128 / time);
+#endif
 }
 
 
