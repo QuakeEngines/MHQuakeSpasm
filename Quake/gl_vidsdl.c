@@ -987,6 +987,14 @@ static void GL_SetupState (void)
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	glDepthRange (0, 1); // johnfitz -- moved here becuase gl_ztrick is gone.
+
+	if (gl_stencilbits)
+	{
+		// for GL_DrawAliasShadow
+		glClearStencil (1);
+		glStencilFunc (GL_EQUAL, 1, 2);
+		glStencilOp (GL_KEEP, GL_KEEP, GL_INCR);
+	}
 }
 
 

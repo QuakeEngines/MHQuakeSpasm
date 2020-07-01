@@ -44,6 +44,7 @@ extern cvar_t r_waterwarp;
 extern cvar_t r_lerpmodels;
 extern cvar_t r_lerpmove;
 extern cvar_t r_nolerp_list;
+extern cvar_t r_noshadow_list;
 
 extern gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz
 
@@ -185,8 +186,12 @@ void R_Init (void)
 	Cvar_SetCallback (&gl_fullbrights, NULL);
 	Cvar_RegisterVariable (&r_lerpmodels);
 	Cvar_RegisterVariable (&r_lerpmove);
+
 	Cvar_RegisterVariable (&r_nolerp_list);
 	Cvar_SetCallback (&r_nolerp_list, R_Model_ExtraFlags_List_f);
+
+	Cvar_RegisterVariable (&r_noshadow_list);
+	Cvar_SetCallback (&r_noshadow_list, R_Model_ExtraFlags_List_f);
 	// johnfitz
 
 	Cvar_RegisterVariable (&r_lavaalpha);

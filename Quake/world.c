@@ -282,8 +282,7 @@ Spike -- just builds a list of entities within the area, rather than walking
 them and risking the list getting corrupt.
 ====================
 */
-static void
-SV_AreaTriggerEdicts (edict_t *ent, areanode_t *node, edict_t **list, int *listcount, const int listspace)
+static void SV_AreaTriggerEdicts (edict_t *ent, areanode_t *node, edict_t **list, int *listcount, const int listspace)
 {
 	link_t *l, *next;
 	edict_t *touch;
@@ -321,6 +320,7 @@ SV_AreaTriggerEdicts (edict_t *ent, areanode_t *node, edict_t **list, int *listc
 	if (ent->v.absmin[node->axis] < node->dist)
 		SV_AreaTriggerEdicts (ent, node->children[1], list, listcount, listspace);
 }
+
 
 /*
 ====================
@@ -423,6 +423,7 @@ void SV_FindTouchedLeafs (edict_t *ent, mnode_t *node)
 		SV_FindTouchedLeafs (ent, node->children[1]);
 }
 
+
 /*
 ===============
 SV_LinkEdict
@@ -443,8 +444,27 @@ void SV_LinkEdict (edict_t *ent, qboolean touch_triggers)
 		return;
 
 	// set the abs box
-	VectorAdd (ent->v.origin, ent->v.mins, ent->v.absmin);
-	VectorAdd (ent->v.origin, ent->v.maxs, ent->v.absmax);
+	if (ent->v.solid == SOLID_BSP && (ent->v.angles[0] || ent->v.angles[1] || ent->v.angles[2]) && ent != sv.edicts)
+	{
+		float max = DotProduct (ent->v.mins, ent->v.mins);
+		float v = DotProduct (ent->v.maxs, ent->v.maxs);
+
+		if (max < v)
+			max = v;
+
+		max = sqrt (max);
+
+		for (int i = 0; i < 3; i++)
+		{
+			ent->v.absmin[i] = ent->v.origin[i] - max;
+			ent->v.absmax[i] = ent->v.origin[i] + max;
+		}
+	}
+	else
+	{
+		VectorAdd (ent->v.origin, ent->v.mins, ent->v.absmin);
+		VectorAdd (ent->v.origin, ent->v.maxs, ent->v.absmax);
+	}
 
 	// to make items easier to pick up and allow them to be grabbed off
 	// of shelves, the abs sizes are expanded
@@ -760,12 +780,64 @@ trace_t SV_ClipMoveToEntity (edict_t *ent, vec3_t start, vec3_t mins, vec3_t max
 	VectorSubtract (start, offset, start_l);
 	VectorSubtract (end, offset, end_l);
 
+	// ROTATE START
+	// rotate start and end into the models frame of reference
+	if (ent->v.solid == SOLID_BSP && (ent->v.angles[0] || ent->v.angles[1] || ent->v.angles[2]) && ent != sv.edicts)
+	{
+		vec3_t   forward, right, up;
+		vec3_t   temp;
+
+		AngleVectors (ent->v.angles, forward, right, up);
+
+		VectorCopy (start_l, temp);
+		start_l[0] = Vector3Dot (temp, forward);
+		start_l[1] = -Vector3Dot (temp, right);
+		start_l[2] = Vector3Dot (temp, up);
+
+		VectorCopy (end_l, temp);
+		end_l[0] = Vector3Dot (temp, forward);
+		end_l[1] = -Vector3Dot (temp, right);
+		end_l[2] = Vector3Dot (temp, up);
+	}
+	// ROTATE END
+
 	// trace a line through the apropriate clipping hull
 	SV_RecursiveHullCheck (hull, hull->firstclipnode, 0, 1, start_l, end_l, &trace);
 
-	// fix trace up by the offset
-	if (trace.fraction != 1)
-		VectorAdd (trace.endpos, offset, trace.endpos);
+	// ROTATE START
+	// rotate endpos back to world frame of reference
+	if (ent->v.solid == SOLID_BSP && (ent->v.angles[0] || ent->v.angles[1] || ent->v.angles[2]) && ent != sv.edicts)
+	{
+		vec3_t   a;
+		vec3_t   forward, right, up;
+		vec3_t   temp;
+
+		if (trace.fraction != 1)
+		{
+			VectorSubtract (vec3_origin, ent->v.angles, a);
+			AngleVectors (a, forward, right, up);
+
+			VectorCopy (trace.endpos, temp);
+			trace.endpos[0] = Vector3Dot (temp, forward);
+			trace.endpos[1] = -Vector3Dot (temp, right);
+			trace.endpos[2] = Vector3Dot (temp, up);
+
+			VectorCopy (trace.plane.normal, temp);
+			trace.plane.normal[0] = Vector3Dot (temp, forward);
+			trace.plane.normal[1] = -Vector3Dot (temp, right);
+			trace.plane.normal[2] = Vector3Dot (temp, up);
+		}
+	}
+#if 1 // Baker addition
+	// Cases where not Solid BSP or no avelocity
+	// Otherwise backpacks from dead monsters and such can fall through the floor
+	else
+	{
+		if (trace.fraction != 1)
+			VectorAdd (trace.endpos, offset, trace.endpos);
+	}
+#endif
+	// ROTATE END
 
 	// did we clip the move?
 	if (trace.fraction < 1 || trace.startsolid)

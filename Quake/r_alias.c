@@ -91,6 +91,7 @@ GLuint r_alias_dynamic_vp = 0;
 GLuint r_alias_dynamic_fp = 0;
 
 GLuint r_alias_fullbright_fp = 0;
+GLuint r_alias_shadow_fp = 0;
 
 /*
 =============
@@ -282,6 +283,22 @@ void GLAlias_CreateShaders (void)
 		"END\n"
 		"\n";
 
+	// fogged shadows don't look great, but the shadows aren't particularly robust anyway, so what the hey
+	const GLchar *fp_shadow_source = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"# perform the fogging\n"
+		"TEMP fogFactor;\n"
+		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
+		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
+		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
+		"LRP result.color.rgb, fogFactor.x, program.local[0], state.fog.color;\n"
+		"MOV result.color.a, program.local[0].a;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
 	r_alias_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_lightmapped_source);
 	r_alias_lightmapped_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source0);
 	r_alias_lightmapped_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source1);
@@ -290,6 +307,74 @@ void GLAlias_CreateShaders (void)
 	r_alias_dynamic_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDynamicLightFragmentProgramSource ());
 
 	r_alias_fullbright_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFullbrightFragmentProgramSource ());
+	r_alias_shadow_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_shadow_source);
+}
+
+
+void GL_DrawAliasShadow (entity_t *e, aliashdr_t *hdr, lerpdata_t *lerpdata)
+{
+//johnfitz -- values for shadow matrix
+#define SHADOW_SKEW_X -0.7 //skew along x axis. -0.7 to mimic glquake shadows
+#define SHADOW_SKEW_Y 0 //skew along y axis. 0 to mimic glquake shadows
+#define SHADOW_VSCALE 0 //0=completely flat
+#define SHADOW_HEIGHT 0.1 //how far above the floor to render the shadow
+//johnfitz
+
+	QMATRIX	shadowmatrix = {
+		1,				0,				0,				0,
+		0,				1,				0,				0,
+		SHADOW_SKEW_X,	SHADOW_SKEW_Y,	SHADOW_VSCALE,	0,
+		0,				0,				SHADOW_HEIGHT,	1
+	};
+
+	float	lheight;
+	QMATRIX	localMatrix;
+
+	if (e == &cl.viewent || e->model->flags & MOD_NOSHADOW)
+		return;
+
+	entalpha = ENTALPHA_DECODE (e->alpha);
+	if (entalpha == 0) return;
+
+	lheight = lerpdata->origin[2] - lightspot[2];
+
+	// position the shadow
+	R_IdentityMatrix (&localMatrix);
+	R_TranslateMatrix (&localMatrix, lerpdata->origin[0], lerpdata->origin[1], lerpdata->origin[2]);
+	R_TranslateMatrix (&localMatrix, 0, 0, -lheight);
+	R_MultMatrix (&localMatrix, &shadowmatrix, &localMatrix);
+	R_TranslateMatrix (&localMatrix, 0, 0, lheight);
+	R_RotateMatrix (&localMatrix, 0, lerpdata->angles[1], 0);
+
+	// state and shaders
+	GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);
+
+	// this is the only stencil stuff in the engine so we don't need state tracking for it
+	// glClearStencil, glStencilFunc and glStencilOp are set in GL_SetupState
+	if (gl_stencilbits)
+		glEnable (GL_STENCIL_TEST);
+
+	// we can just reuse the lightmapped vp because it does everything we need without much extra overhead
+	GL_BindPrograms (r_alias_lightmapped_vp, r_alias_shadow_fp);
+
+	// shadow colour - allow different values of r_shadows to change the colour
+	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 0, 0, 0, entalpha * 0.5f * r_shadows.value);
+
+	// move it
+	glPushMatrix ();
+	glMultMatrixf (localMatrix.m16);
+
+	// draw it
+	glDrawElements (GL_TRIANGLES, hdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) e->model->vboindexofs);
+	rs_aliaspasses += hdr->numtris;
+
+	// revert the transform
+	glPopMatrix ();
+
+	// this is the only stencil stuff in the engine so we don't need state tracking for it
+	if (gl_stencilbits)
+		glDisable (GL_STENCIL_TEST);
 }
 
 
@@ -641,6 +726,10 @@ void R_DrawAliasModel (entity_t *e)
 
 	// revert the transform
 	glPopMatrix ();
+
+	// add shadow
+	if (r_shadows.value)
+		GL_DrawAliasShadow (e, hdr, &lerpdata);
 }
 
 
