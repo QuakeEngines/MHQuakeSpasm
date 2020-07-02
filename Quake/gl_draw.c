@@ -170,8 +170,7 @@ void Scrap_Upload (void)
 	for (i = 0; i < MAX_SCRAPS; i++)
 	{
 		sprintf (name, "scrap%i", i);
-		scrap_textures[i] = TexMgr_LoadImage (NULL, name, BLOCK_WIDTH, BLOCK_HEIGHT, SRC_INDEXED, scrap_texels[i],
-			"", (src_offset_t) scrap_texels[i], TEXPREF_ALPHA | TEXPREF_OVERWRITE);
+		scrap_textures[i] = TexMgr_LoadImage (NULL, name, BLOCK_WIDTH, BLOCK_HEIGHT, SRC_INDEXED, scrap_texels[i], "", (src_offset_t) scrap_texels[i], TEXPREF_ALPHA | TEXPREF_OVERWRITE);
 	}
 
 	scrap_dirty = false;
@@ -221,8 +220,7 @@ qpic_t *Draw_PicFromWad (const char *name)
 
 		offset = (src_offset_t) p - (src_offset_t) wad_base + sizeof (int) * 2; // johnfitz
 
-		gl.gltexture = TexMgr_LoadImage (NULL, texturename, p->width, p->height, SRC_INDEXED, p->data, WADFILENAME,
-			offset, TEXPREF_ALPHA | TEXPREF_PAD); // johnfitz -- TexMgr
+		gl.gltexture = TexMgr_LoadImage (NULL, texturename, p->width, p->height, SRC_INDEXED, p->data, WADFILENAME, offset, TEXPREF_ALPHA | TEXPREF_PAD); // johnfitz -- TexMgr
 		gl.sl = 0;
 		gl.sh = (float) p->width / (float) Image_PadConditional (p->width); // johnfitz
 		gl.tl = 0;
@@ -271,8 +269,7 @@ qpic_t *Draw_CachePic (const char *path)
 	pic->pic.width = dat->width;
 	pic->pic.height = dat->height;
 
-	gl.gltexture = TexMgr_LoadImage (NULL, path, dat->width, dat->height, SRC_INDEXED, dat->data, path,
-		sizeof (int) * 2, TEXPREF_ALPHA | TEXPREF_PAD); // johnfitz -- TexMgr
+	gl.gltexture = TexMgr_LoadImage (NULL, path, dat->width, dat->height, SRC_INDEXED, dat->data, path, sizeof (int) * 2, TEXPREF_ALPHA | TEXPREF_PAD); // johnfitz -- TexMgr
 	gl.sl = 0;
 	gl.sh = (float) dat->width / (float) Image_PadConditional (dat->width); // johnfitz
 	gl.tl = 0;

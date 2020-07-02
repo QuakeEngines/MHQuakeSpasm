@@ -309,6 +309,7 @@ void GL_SetupDynamicLight (dlight_t *dl);
 
 void R_DrawSimpleTexturechain (msurface_t *s);
 
+void GLWarp_CreateTextures (void);
 void R_UnderwaterWarp (void);
 
 #endif	/* __GLQUAKE_H */

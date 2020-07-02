@@ -657,6 +657,9 @@ void R_ScaleView (void)
 	glTexParameterf (GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf (GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+	// clear cached binding
+	GL_ClearTextureBindings ();
+
 	// draw the texture back to the framebuffer
 	glDisable (GL_CULL_FACE);
 
@@ -676,9 +679,6 @@ void R_ScaleView (void)
 	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 0, texcoords);
 
 	glDrawArrays (GL_QUADS, 0, 4);
-
-	// clear cached binding
-	GL_ClearTextureBindings ();
 }
 
 /*

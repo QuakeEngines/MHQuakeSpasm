@@ -510,6 +510,9 @@ void TexMgr_Init (void)
 	notexture = TexMgr_LoadImage (NULL, "notexture", 2, 2, SRC_RGBA, notexture_data, "", (src_offset_t) notexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST);
 	nulltexture = TexMgr_LoadImage (NULL, "nulltexture", 2, 2, SRC_RGBA, nulltexture_data, "", (src_offset_t) nulltexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST);
 
+	// create other textures we need
+	GLWarp_CreateTextures ();
+
 	// have to assign these here becuase Mod_Init is called before TexMgr_Init
 	r_notexture_mip->gltexture = r_notexture_mip2->gltexture = notexture;
 }

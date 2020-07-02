@@ -63,10 +63,6 @@ typedef struct vmode_s {
 static const char *gl_vendor;
 static const char *gl_renderer;
 static const char *gl_version;
-static int gl_version_major;
-static int gl_version_minor;
-static const char *gl_extensions;
-static char *gl_extensions_nice;
 
 static vmode_t	modelist[MAX_MODE_LIST];
 static int		nummodes;
@@ -784,39 +780,6 @@ void VID_Lock (void)
 
 /*
 ===============
-GL_MakeNiceExtensionsList -- johnfitz
-===============
-*/
-static char *GL_MakeNiceExtensionsList (const char *in)
-{
-	char *copy, *token, *out;
-	int i, count;
-
-	if (!in) return strdup ("(none)");
-
-	// each space will be replaced by 4 chars, so count the spaces before we Q_zmalloc
-	for (i = 0, count = 1; i < (int) strlen (in); i++)
-	{
-		if (in[i] == ' ')
-			count++;
-	}
-
-	out = (char *) Q_zmalloc (strlen (in) + count * 3 + 1); // usually about 1-2k
-	out[0] = 0;
-
-	copy = (char *) strdup (in);
-	for (token = strtok (copy, " "); token; token = strtok (NULL, " "))
-	{
-		strcat (out, "\n   ");
-		strcat (out, token);
-	}
-
-	free (copy);
-	return out;
-}
-
-/*
-===============
 GL_Info_f -- johnfitz
 ===============
 */
@@ -825,6 +788,29 @@ static void GL_Info_f (void)
 	Con_SafePrintf ("GL_VENDOR: %s\n", gl_vendor);
 	Con_SafePrintf ("GL_RENDERER: %s\n", gl_renderer);
 	Con_SafePrintf ("GL_VERSION: %s\n", gl_version);
+	Con_SafePrintf ("GL_EXTENSIONS:\n");
+
+	// mh - print GL_EXTENSIONS safely
+	const char *extensions = glGetString (GL_EXTENSIONS);
+	char oneextension[1024] = { 0 };
+
+	for (int i = 0, j = 0; ; i++)
+	{
+		if (!extensions[i])
+		{
+			oneextension[j++] = 0;
+			break;
+		}
+		else if (extensions[i] == ' ')
+		{
+			oneextension[j++] = 0;
+			Con_SafePrintf ("  %s\n", oneextension);
+			j = 0;
+		}
+		else oneextension[j++] = extensions[i];
+	}
+
+	Con_SafePrintf ("  %s\n", oneextension);
 }
 
 /*
@@ -1032,21 +1018,10 @@ static void GL_Init (void)
 	gl_vendor = (const char *) glGetString (GL_VENDOR);
 	gl_renderer = (const char *) glGetString (GL_RENDERER);
 	gl_version = (const char *) glGetString (GL_VERSION);
-	gl_extensions = (const char *) glGetString (GL_EXTENSIONS);
 
 	Con_SafePrintf ("GL_VENDOR: %s\n", gl_vendor);
 	Con_SafePrintf ("GL_RENDERER: %s\n", gl_renderer);
 	Con_SafePrintf ("GL_VERSION: %s\n", gl_version);
-
-	if (gl_version == NULL || sscanf (gl_version, "%d.%d", &gl_version_major, &gl_version_minor) < 2)
-	{
-		gl_version_major = 0;
-		gl_version_minor = 0;
-	}
-
-	if (gl_extensions_nice != NULL)
-		free (gl_extensions_nice);
-	gl_extensions_nice = GL_MakeNiceExtensionsList (gl_extensions);
 
 	GL_CheckExtensions (); // johnfitz
 
