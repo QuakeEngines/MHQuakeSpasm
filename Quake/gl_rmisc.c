@@ -39,7 +39,6 @@ fp	env		0		overbright & alpha
 extern cvar_t r_clearcolor;
 extern cvar_t r_flatlightstyles;
 extern cvar_t gl_fullbrights;
-extern cvar_t gl_farclip;
 extern cvar_t r_waterwarp;
 extern cvar_t r_lerpmodels;
 extern cvar_t r_lerpmove;
@@ -180,7 +179,6 @@ void R_Init (void)
 	Cvar_SetCallback (&r_clearcolor, R_SetClearColor_f);
 	Cvar_RegisterVariable (&r_waterwarp);
 	Cvar_RegisterVariable (&r_flatlightstyles);
-	Cvar_RegisterVariable (&gl_farclip);
 	Cvar_RegisterVariable (&gl_fullbrights);
 	Cvar_RegisterVariable (&gl_overbright);
 	Cvar_SetCallback (&gl_fullbrights, NULL);

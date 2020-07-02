@@ -29,7 +29,8 @@ const int	gl_alpha_format = 4;
 
 static cvar_t	gl_texturemode = { "gl_texturemode", "", CVAR_ARCHIVE };
 static cvar_t	gl_texture_anisotropy = { "gl_texture_anisotropy", "1", CVAR_ARCHIVE };
-static GLint	gl_hardware_maxsize;
+
+GLint	gl_hardware_maxsize;
 
 static int numgltextures;
 static gltexture_t *active_gltextures = NULL, *free_gltextures = NULL;
@@ -203,15 +204,16 @@ static void TexMgr_Imagelist_f (void)
 	for (glt = active_gltextures; glt; glt = glt->next)
 	{
 		Con_SafePrintf ("   %4i x%4i %s\n", glt->width, glt->height, glt->name);
+
 		if (glt->flags & TEXPREF_MIPMAP)
 			texels += glt->width * glt->height * 4.0f / 3.0f;
-		else
-			texels += (glt->width * glt->height);
+		else texels += (glt->width * glt->height);
 	}
 
 	mb = texels * (Cvar_VariableValue ("vid_bpp") / 8.0f) / 0x100000;
 	Con_Printf ("%i textures %i pixels %1.1f megabytes\n", numgltextures, (int) texels, mb);
 }
+
 
 /*
 ===============
@@ -260,6 +262,7 @@ static void TexMgr_Imagedump_f (void)
 
 	Con_Printf ("dumped %i textures to %s\n", numgltextures, dirname);
 }
+
 
 /*
 ===============
@@ -357,8 +360,6 @@ TexMgr_FreeTexture
 */
 void TexMgr_FreeTexture (gltexture_t *kill)
 {
-	gltexture_t *glt;
-
 	if (in_reload_images)
 		return;
 
@@ -379,7 +380,7 @@ void TexMgr_FreeTexture (gltexture_t *kill)
 		return;
 	}
 
-	for (glt = active_gltextures; glt; glt = glt->next)
+	for (gltexture_t *glt = active_gltextures; glt; glt = glt->next)
 	{
 		if (glt->next == kill)
 		{
@@ -417,6 +418,7 @@ void TexMgr_FreeTextures (unsigned int flags, unsigned int mask)
 	Sky_FreeSkybox ();
 }
 
+
 /*
 ================
 TexMgr_FreeTexturesForOwner
@@ -434,6 +436,7 @@ void TexMgr_FreeTexturesForOwner (qmodel_t *owner)
 	}
 }
 
+
 /*
 ================
 TexMgr_DeleteTextureObjects
@@ -441,12 +444,8 @@ TexMgr_DeleteTextureObjects
 */
 void TexMgr_DeleteTextureObjects (void)
 {
-	gltexture_t *glt;
-
-	for (glt = active_gltextures; glt; glt = glt->next)
-	{
+	for (gltexture_t *glt = active_gltextures; glt; glt = glt->next)
 		GL_DeleteTexture (glt);
-	}
 
 	Sky_FreeSkybox ();
 }
@@ -459,46 +458,9 @@ void TexMgr_DeleteTextureObjects (void)
 ================================================================================
 */
 
-/*
-=================
-TexMgr_LoadPalette -- johnfitz -- was VID_SetPalette, moved here, renamed, rewritten
-=================
-*/
-void TexMgr_LoadPalette (void)
-{
-	// mh - i think jf must have been on drugs when he wrote this
-	FILE *f;
 
-	COM_FOpenFile ("gfx/palette.lmp", &f, NULL);
-	if (!f)
-		Sys_Error ("Couldn't load gfx/palette.lmp");
-
-	int mark = Hunk_LowMark ();
-	byte *pal = (byte *) Hunk_Alloc (768);
-	fread (pal, 1, 768, f);
-	fclose (f);
-
-	for (int i = 0; i < 256; i++, pal += 3)
-	{
-		int r = pal[0];
-		int g = pal[1];
-		int b = pal[2];
-
-		d_8to24table[i] = (255 << 24) | (r << 0) | (g << 8) | (b << 16);
-		d_8to24table_conchars[i] = (255 << 24) | (r << 0) | (g << 8) | (b << 16);
-
-		if (i > 223)
-			d_8to24table_fbright[i] = d_8to24table[i];
-		else d_8to24table_fbright[i] = 0;
-	}
-
-	// alpha colour
-	d_8to24table[255] = 0;
-	d_8to24table_fbright[255] = 0;
-	d_8to24table_conchars[0] = 0;
-
-	Hunk_FreeToLowMark (mark);
-}
+void Image_LoadPalette (void);
+void Image_Init (void);
 
 /*
 ================
@@ -508,99 +470,7 @@ TexMgr_NewGame
 void TexMgr_NewGame (void)
 {
 	TexMgr_FreeTextures (0, TEXPREF_PERSIST); // deletes all textures where TEXPREF_PERSIST is unset
-	TexMgr_LoadPalette ();
-}
-
-
-// gamma-correct to 16-bit precision, average, then mix back down to 8-bit precision so that we don't lose ultra-darks in the correction process
-unsigned short image_mipgammatable[256];
-byte image_mipinversegamma[65536];
-
-
-int AverageMip2 (int _1, int _2)
-{
-	return (_1 + _2) >> 1;
-}
-
-
-int AverageMip2GC (int _1, int _2)
-{
-	// http://filmicgames.com/archives/327
-	// gamma-correct to 16-bit precision, average, then mix back down to 8-bit precision so that we don't lose ultra-darks in the correction process
-	return image_mipinversegamma[(image_mipgammatable[_1] + image_mipgammatable[_2]) >> 1];
-}
-
-
-int AverageMip4 (int _1, int _2, int _3, int _4)
-{
-	return (_1 + _2 + _3 + _4) >> 2;
-}
-
-
-int AverageMip4GC (int _1, int _2, int _3, int _4)
-{
-	// http://filmicgames.com/archives/327
-	// gamma-correct to 16-bit precision, average, then mix back down to 8-bit precision so that we don't lose ultra-darks in the correction process
-	return image_mipinversegamma[(image_mipgammatable[_1] + image_mipgammatable[_2] + image_mipgammatable[_3] + image_mipgammatable[_4]) >> 2];
-}
-
-
-byte Image_GammaVal8to8 (byte val, float gamma)
-{
-	float f = powf ((val + 1) / 256.0, gamma);
-	float inf = f * 255 + 0.5;
-
-	if (inf < 0) inf = 0;
-	if (inf > 255) inf = 255;
-
-	return inf;
-}
-
-
-byte Image_ContrastVal8to8 (byte val, float contrast)
-{
-	float f = (float) val * contrast;
-
-	if (f < 0) f = 0;
-	if (f > 255) f = 255;
-
-	return f;
-}
-
-
-unsigned short Image_GammaVal8to16 (byte val, float gamma)
-{
-	float f = powf ((val + 1) / 256.0, gamma);
-	float inf = f * 65535 + 0.5;
-
-	if (inf < 0) inf = 0;
-	if (inf > 65535) inf = 65535;
-
-	return inf;
-}
-
-
-byte Image_GammaVal16to8 (unsigned short val, float gamma)
-{
-	float f = powf ((val + 1) / 65536.0, gamma);
-	float inf = (f * 255) + 0.5;
-
-	if (inf < 0) inf = 0;
-	if (inf > 255) inf = 255;
-
-	return inf;
-}
-
-
-unsigned short Image_GammaVal16to16 (unsigned short val, float gamma)
-{
-	float f = powf ((val + 1) / 65536.0, gamma);
-	float inf = (f * 65535) + 0.5;
-
-	if (inf < 0) inf = 0;
-	if (inf > 65535) inf = 65535;
-
-	return inf;
+	Image_LoadPalette ();
 }
 
 
@@ -622,12 +492,7 @@ void TexMgr_Init (void)
 	active_gltextures = NULL;
 	numgltextures = 0;
 
-	// gamma-correct to 16-bit precision, average, then mix back down to 8-bit precision so that we don't lose ultra-darks in the correction process
-	for (int i = 0; i < 256; i++) image_mipgammatable[i] = Image_GammaVal8to16 (i, 2.2f);
-	for (int i = 0; i < 65536; i++) image_mipinversegamma[i] = Image_GammaVal16to8 (i, 1.0f / 2.2f);
-
-	// palette
-	TexMgr_LoadPalette ();
+	Image_Init ();
 
 	Cvar_RegisterVariable (&gl_texture_anisotropy);
 	Cvar_SetCallback (&gl_texture_anisotropy, &TexMgr_Anisotropy_f);
@@ -658,489 +523,19 @@ void TexMgr_Init (void)
 ================================================================================
 */
 
-/*
-================
-TexMgr_Pad -- return smallest power of two greater than or equal to s
-================
-*/
-int TexMgr_Pad (int s)
-{
-	int i;
-	for (i = 1; i < s; i <<= 1)
-		;
-	return i;
-}
+unsigned *Image_ResampleTextureToSize (unsigned *in, int inwidth, int inheight, int outwidth, int outheight, qboolean alpha);
+unsigned *Image_ResampleTexture (unsigned *in, int inwidth, int inheight, qboolean alpha);
+void Image_AlphaEdgeFix (byte *data, int width, int height);
+void Image_FloodFillSkin (byte *skin, int skinwidth, int skinheight);
+void Image_PadEdgeFixW (byte *data, int width, int height);
+void Image_PadEdgeFixH (byte *data, int width, int height);
+unsigned *Image_8to32 (byte *in, int pixels, unsigned int *usepal);
+byte *Image_PadImageW (byte *in, int width, int height, byte padbyte);
+byte *Image_PadImageH (byte *in, int width, int height, byte padbyte);
+unsigned *Image_MipMapW (unsigned *data, int width, int height);
+unsigned *Image_MipMapH (unsigned *data, int width, int height);
+void Image_NewTranslation (int top, int bottom, byte *translation);
 
-/*
-===============
-TexMgr_SafeTextureSize -- return a size with hardware and user prefs in mind
-===============
-*/
-int TexMgr_SafeTextureSize (int s)
-{
-	if (!GLEW_ARB_texture_non_power_of_two)
-		s = TexMgr_Pad (s);
-	s = q_min (gl_hardware_maxsize, s);
-	return s;
-}
-
-/*
-================
-TexMgr_PadConditional -- only pad if a texture of that size would be padded. (used for tex coords)
-================
-*/
-int TexMgr_PadConditional (int s)
-{
-	if (s < TexMgr_SafeTextureSize (s))
-		return TexMgr_Pad (s);
-	else
-		return s;
-}
-
-
-int AverageMip2 (int _1, int _2);
-int AverageMip2GC (int _1, int _2);
-int AverageMip4 (int _1, int _2, int _3, int _4);
-int AverageMip4GC (int _1, int _2, int _3, int _4);
-
-
-/*
-================
-TexMgr_MipMapW
-================
-*/
-static unsigned *TexMgr_MipMapW (unsigned *data, int width, int height)
-{
-	int	i, size;
-	byte *out, *in;
-
-	out = in = (byte *) data;
-	size = (width * height) >> 1;
-
-	for (i = 0; i < size; i++, out += 4, in += 8)
-	{
-		out[0] = AverageMip2GC (in[0], in[4]);
-		out[1] = AverageMip2GC (in[1], in[5]);
-		out[2] = AverageMip2GC (in[2], in[6]);
-		out[3] = AverageMip2GC (in[3], in[7]);
-	}
-
-	return data;
-}
-
-/*
-================
-TexMgr_MipMapH
-================
-*/
-static unsigned *TexMgr_MipMapH (unsigned *data, int width, int height)
-{
-	int	i, j;
-	byte *out, *in;
-
-	out = in = (byte *) data;
-	height >>= 1;
-	width <<= 2;
-
-	for (i = 0; i < height; i++, in += width)
-	{
-		for (j = 0; j < width; j += 4, out += 4, in += 4)
-		{
-			out[0] = AverageMip2GC (in[0], in[width + 0]);
-			out[1] = AverageMip2GC (in[1], in[width + 1]);
-			out[2] = AverageMip2GC (in[2], in[width + 2]);
-			out[3] = AverageMip2GC (in[3], in[width + 3]);
-		}
-	}
-
-	return data;
-}
-
-/*
-================
-TexMgr_ResampleTexture -- bilinear resample
-================
-*/
-static unsigned *TexMgr_ResampleTextureToSize (unsigned *in, int inwidth, int inheight, int outwidth, int outheight, qboolean alpha)
-{
-	int mark, i, j;
-	unsigned *out, *p1, *p2, fracstep, frac;
-
-	// can this ever happen???
-	if (outwidth == inwidth && outheight == inheight) return in;
-
-	// allocating the out buffer before the hunk mark so that we can return it
-	out = (unsigned *) Hunk_Alloc (outwidth * outheight * 4);
-
-	// and now get the mark because all allocations after this will be released
-	mark = Hunk_LowMark ();
-
-	p1 = (unsigned *) Hunk_Alloc (outwidth * 4);
-	p2 = (unsigned *) Hunk_Alloc (outwidth * 4);
-
-	fracstep = inwidth * 0x10000 / outwidth;
-	frac = fracstep >> 2;
-
-	for (i = 0; i < outwidth; i++)
-	{
-		p1[i] = 4 * (frac >> 16);
-		frac += fracstep;
-	}
-
-	frac = 3 * (fracstep >> 2);
-
-	for (i = 0; i < outwidth; i++)
-	{
-		p2[i] = 4 * (frac >> 16);
-		frac += fracstep;
-	}
-
-	for (i = 0; i < outheight; i++)
-	{
-		unsigned *outrow = out + (i * outwidth);
-		unsigned *inrow0 = in + inwidth * (int) (((i + 0.25f) * inheight) / outheight);
-		unsigned *inrow1 = in + inwidth * (int) (((i + 0.75f) * inheight) / outheight);
-
-		for (j = 0; j < outwidth; j++)
-		{
-			byte *pix1 = (byte *) inrow0 + p1[j];
-			byte *pix2 = (byte *) inrow0 + p2[j];
-			byte *pix3 = (byte *) inrow1 + p1[j];
-			byte *pix4 = (byte *) inrow1 + p2[j];
-
-			((byte *) &outrow[j])[0] = AverageMip4GC (pix1[0], pix2[0], pix3[0], pix4[0]);
-			((byte *) &outrow[j])[1] = AverageMip4GC (pix1[1], pix2[1], pix3[1], pix4[1]);
-			((byte *) &outrow[j])[2] = AverageMip4GC (pix1[2], pix2[2], pix3[2], pix4[2]);
-
-			// don't gamma correct the alpha channel
-			if (alpha)
-				((byte *) &outrow[j])[3] = AverageMip4 (pix1[3], pix2[3], pix3[3], pix4[3]);
-			else ((byte *) &outrow[j])[3] = 255;
-		}
-	}
-
-	Hunk_FreeToLowMark (mark);
-
-	return out;
-}
-
-
-static unsigned *TexMgr_ResampleTexture (unsigned *in, int inwidth, int inheight, qboolean alpha)
-{
-	// special case - just resamples up to next POT
-	int outwidth = TexMgr_Pad (inwidth);
-	int outheight = TexMgr_Pad (inheight);
-
-	return TexMgr_ResampleTextureToSize (in, inwidth, inheight, outwidth, outheight, alpha);
-}
-
-
-unsigned *TexMgr_ResampleMip (unsigned *in, int inwidth, int inheight, qboolean alpha)
-{
-	// round down to meet np2 specification
-	int outwidth = (inwidth > 1) ? (inwidth >> 1) : 1;
-	int outheight = (inheight > 1) ? (inheight >> 1) : 1;
-
-	// can this ever happen???
-	if (outwidth == inwidth && outheight == inheight)
-		return in;
-	else return TexMgr_ResampleTextureToSize (in, inwidth, inheight, outwidth, outheight, alpha);
-}
-
-
-/*
-===============
-TexMgr_AlphaEdgeFix
-
-eliminate pink edges on sprites, etc.
-operates in place on 32bit data
-===============
-*/
-static void TexMgr_AlphaEdgeFix (byte *data, int width, int height)
-{
-	int	i, j, n = 0, b, c[3] = { 0, 0, 0 },
-		lastrow, thisrow, nextrow,
-		lastpix, thispix, nextpix;
-	byte *dest = data;
-
-	for (i = 0; i < height; i++)
-	{
-		lastrow = width * 4 * ((i == 0) ? height - 1 : i - 1);
-		thisrow = width * 4 * i;
-		nextrow = width * 4 * ((i == height - 1) ? 0 : i + 1);
-
-		for (j = 0; j < width; j++, dest += 4)
-		{
-			if (dest[3]) // not transparent
-				continue;
-
-			lastpix = 4 * ((j == 0) ? width - 1 : j - 1);
-			thispix = 4 * j;
-			nextpix = 4 * ((j == width - 1) ? 0 : j + 1);
-
-			b = lastrow + lastpix; if (data[b + 3]) { c[0] += data[b]; c[1] += data[b + 1]; c[2] += data[b + 2]; n++; }
-			b = thisrow + lastpix; if (data[b + 3]) { c[0] += data[b]; c[1] += data[b + 1]; c[2] += data[b + 2]; n++; }
-			b = nextrow + lastpix; if (data[b + 3]) { c[0] += data[b]; c[1] += data[b + 1]; c[2] += data[b + 2]; n++; }
-			b = lastrow + thispix; if (data[b + 3]) { c[0] += data[b]; c[1] += data[b + 1]; c[2] += data[b + 2]; n++; }
-			b = nextrow + thispix; if (data[b + 3]) { c[0] += data[b]; c[1] += data[b + 1]; c[2] += data[b + 2]; n++; }
-			b = lastrow + nextpix; if (data[b + 3]) { c[0] += data[b]; c[1] += data[b + 1]; c[2] += data[b + 2]; n++; }
-			b = thisrow + nextpix; if (data[b + 3]) { c[0] += data[b]; c[1] += data[b + 1]; c[2] += data[b + 2]; n++; }
-			b = nextrow + nextpix; if (data[b + 3]) { c[0] += data[b]; c[1] += data[b + 1]; c[2] += data[b + 2]; n++; }
-
-			// average all non-transparent neighbors
-			if (n)
-			{
-				dest[0] = (byte) (c[0] / n);
-				dest[1] = (byte) (c[1] / n);
-				dest[2] = (byte) (c[2] / n);
-
-				n = c[0] = c[1] = c[2] = 0;
-			}
-		}
-	}
-}
-
-
-/*
-=================
-TexMgr_FloodFillSkin
-
-Fill background pixels so mipmapping doesn't have haloes - Ed
-=================
-*/
-
-typedef struct floodfill_s {
-	short		x, y;
-} floodfill_t;
-
-// must be a power of 2
-#define	FLOODFILL_FIFO_SIZE		0x1000
-#define	FLOODFILL_FIFO_MASK		(FLOODFILL_FIFO_SIZE - 1)
-
-#define FLOODFILL_STEP( off, dx, dy )				\
-do {								\
-	if (pos[off] == fillcolor)				\
-	{							\
-		pos[off] = 255;					\
-		fifo[inpt].x = x + (dx), fifo[inpt].y = y + (dy); \
-		inpt = (inpt + 1) & FLOODFILL_FIFO_MASK;	\
-	}							\
-	else if (pos[off] != 255) fdc = pos[off];		\
-} while (0)
-
-void TexMgr_FloodFillSkin (byte *skin, int skinwidth, int skinheight)
-{
-	byte		fillcolor = *skin; // assume this is the pixel to fill
-	floodfill_t	fifo[FLOODFILL_FIFO_SIZE];
-	int			inpt = 0, outpt = 0;
-	int			filledcolor = -1;
-	int			i;
-
-	// scan the data to see if it's single-colour; if so assume a fill is invalid and stop
-	// data[0] has already been stored to fillcolor so use that to check for a match
-	for (i = 1; i < skinwidth * skinheight; i++)
-		if (skin[i] != fillcolor)
-			break;
-
-	// everything matched
-	if (i == skinwidth * skinheight) return;
-
-	if (filledcolor == -1)
-	{
-		filledcolor = 0;
-
-		// attempt to find opaque black
-		for (i = 0; i < 256; ++i)
-		{
-			if (d_8to24table[i] == (255 << 0)) // alpha 1.0
-			{
-				filledcolor = i;
-				break;
-			}
-		}
-	}
-
-	// can't fill to filled color or to transparent color (used as visited marker)
-	if ((fillcolor == filledcolor) || (fillcolor == 255))
-	{
-		// printf( "not filling skin from %d to %d\n", fillcolor, filledcolor );
-		return;
-	}
-
-	fifo[inpt].x = 0, fifo[inpt].y = 0;
-	inpt = (inpt + 1) & FLOODFILL_FIFO_MASK;
-
-	while (outpt != inpt)
-	{
-		int			x = fifo[outpt].x, y = fifo[outpt].y;
-		int			fdc = filledcolor;
-		byte *pos = &skin[x + skinwidth * y];
-
-		outpt = (outpt + 1) & FLOODFILL_FIFO_MASK;
-
-		if (x > 0)				FLOODFILL_STEP (-1, -1, 0);
-		if (x < skinwidth - 1)	FLOODFILL_STEP (1, 1, 0);
-		if (y > 0)				FLOODFILL_STEP (-skinwidth, 0, -1);
-		if (y < skinheight - 1)	FLOODFILL_STEP (skinwidth, 0, 1);
-		skin[x + skinwidth * y] = fdc;
-	}
-}
-
-
-
-/*
-===============
-TexMgr_PadEdgeFixW -- special case of AlphaEdgeFix for textures that only need it because they were padded
-
-operates in place on 32bit data, and expects unpadded height and width values
-===============
-*/
-static void TexMgr_PadEdgeFixW (byte *data, int width, int height)
-{
-	byte *src, *dst;
-	int i, padw, padh;
-
-	padw = TexMgr_PadConditional (width);
-	padh = TexMgr_PadConditional (height);
-
-	// copy last full column to first empty column, leaving alpha byte at zero
-	src = data + (width - 1) * 4;
-
-	for (i = 0; i < padh; i++)
-	{
-		src[4] = src[0];
-		src[5] = src[1];
-		src[6] = src[2];
-		src += padw * 4;
-	}
-
-	// copy first full column to last empty column, leaving alpha byte at zero
-	src = data;
-	dst = data + (padw - 1) * 4;
-
-	for (i = 0; i < padh; i++)
-	{
-		dst[0] = src[0];
-		dst[1] = src[1];
-		dst[2] = src[2];
-		src += padw * 4;
-		dst += padw * 4;
-	}
-}
-
-/*
-===============
-TexMgr_PadEdgeFixH -- special case of AlphaEdgeFix for textures that only need it because they were padded
-
-operates in place on 32bit data, and expects unpadded height and width values
-===============
-*/
-static void TexMgr_PadEdgeFixH (byte *data, int width, int height)
-{
-	byte *src, *dst;
-	int i, padw, padh;
-
-	padw = TexMgr_PadConditional (width);
-	padh = TexMgr_PadConditional (height);
-
-	// copy last full row to first empty row, leaving alpha byte at zero
-	dst = data + height * padw * 4;
-	src = dst - padw * 4;
-
-	for (i = 0; i < padw; i++)
-	{
-		dst[0] = src[0];
-		dst[1] = src[1];
-		dst[2] = src[2];
-		src += 4;
-		dst += 4;
-	}
-
-	// copy first full row to last empty row, leaving alpha byte at zero
-	dst = data + (padh - 1) * padw * 4;
-	src = data;
-
-	for (i = 0; i < padw; i++)
-	{
-		dst[0] = src[0];
-		dst[1] = src[1];
-		dst[2] = src[2];
-		src += 4;
-		dst += 4;
-	}
-}
-
-/*
-================
-TexMgr_8to32
-================
-*/
-static unsigned *TexMgr_8to32 (byte *in, int pixels, unsigned int *usepal)
-{
-	int i;
-	unsigned *out, *data;
-
-	out = data = (unsigned *) Hunk_Alloc (pixels * 4);
-
-	for (i = 0; i < pixels; i++)
-		*out++ = usepal[*in++];
-
-	return data;
-}
-
-/*
-================
-TexMgr_PadImageW -- return image with width padded up to power-of-two dimentions
-================
-*/
-static byte *TexMgr_PadImageW (byte *in, int width, int height, byte padbyte)
-{
-	int i, j, outwidth;
-	byte *out, *data;
-
-	if (width == TexMgr_Pad (width))
-		return in;
-
-	outwidth = TexMgr_Pad (width);
-
-	out = data = (byte *) Hunk_Alloc (outwidth * height);
-
-	for (i = 0; i < height; i++)
-	{
-		for (j = 0; j < width; j++)
-			*out++ = *in++;
-		for (; j < outwidth; j++)
-			*out++ = padbyte;
-	}
-
-	return data;
-}
-
-/*
-================
-TexMgr_PadImageH -- return image with height padded up to power-of-two dimentions
-================
-*/
-static byte *TexMgr_PadImageH (byte *in, int width, int height, byte padbyte)
-{
-	int i, srcpix, dstpix;
-	byte *data, *out;
-
-	if (height == TexMgr_Pad (height))
-		return in;
-
-	srcpix = width * height;
-	dstpix = width * TexMgr_Pad (height);
-
-	out = data = (byte *) Hunk_Alloc (dstpix);
-
-	for (i = 0; i < srcpix; i++)
-		*out++ = *in++;
-	for (; i < dstpix; i++)
-		*out++ = padbyte;
-
-	return data;
-}
 
 /*
 ================
@@ -1154,29 +549,29 @@ static void TexMgr_LoadImage32 (gltexture_t *glt, unsigned *data)
 	if (!GLEW_ARB_texture_non_power_of_two)
 	{
 		// resample up
-		data = TexMgr_ResampleTexture (data, glt->width, glt->height, glt->flags & TEXPREF_ALPHA);
-		glt->width = TexMgr_Pad (glt->width);
-		glt->height = TexMgr_Pad (glt->height);
+		data = Image_ResampleTexture (data, glt->width, glt->height, glt->flags & TEXPREF_ALPHA);
+		glt->width = Image_Pad (glt->width);
+		glt->height = Image_Pad (glt->height);
 	}
 
 	// mipmap down
-	int mipwidth = TexMgr_SafeTextureSize (glt->width);
-	int mipheight = TexMgr_SafeTextureSize (glt->height);
+	int mipwidth = Image_SafeTextureSize (glt->width);
+	int mipheight = Image_SafeTextureSize (glt->height);
 
 	while ((int) glt->width > mipwidth)
 	{
-		TexMgr_MipMapW (data, glt->width, glt->height);
+		Image_MipMapW (data, glt->width, glt->height);
 		glt->width >>= 1;
 		if (glt->flags & TEXPREF_ALPHA)
-			TexMgr_AlphaEdgeFix ((byte *) data, glt->width, glt->height);
+			Image_AlphaEdgeFix ((byte *) data, glt->width, glt->height);
 	}
 
 	while ((int) glt->height > mipheight)
 	{
-		TexMgr_MipMapH (data, glt->width, glt->height);
+		Image_MipMapH (data, glt->width, glt->height);
 		glt->height >>= 1;
 		if (glt->flags & TEXPREF_ALPHA)
-			TexMgr_AlphaEdgeFix ((byte *) data, glt->width, glt->height);
+			Image_AlphaEdgeFix ((byte *) data, glt->width, glt->height);
 	}
 
 	// upload
@@ -1198,20 +593,31 @@ static void TexMgr_LoadImage32 (gltexture_t *glt, unsigned *data)
 			// choose the appropriate filter
 			if (mipwidth > 1)
 			{
+				// 2x2 box filter doesn't work on np2 textures where a dimension is not evenly divisible by 2, so resample it down first
 				if (mipwidth & 1)
-					;
-				else TexMgr_MipMapW (data, mipwidth, mipheight);
+				{
+					data = Image_ResampleTextureToSize (data, mipwidth, mipheight, mipwidth - 1, mipheight, (glt->flags & TEXPREF_ALPHA));
+					mipwidth--;
+				}
+
+				Image_MipMapW (data, mipwidth, mipheight);
 				mipwidth >>= 1;
 			}
 
 			if (mipheight > 1)
 			{
+				// 2x2 box filter doesn't work on np2 textures where a dimension is not evenly divisible by 2, so resample it down first
 				if (mipheight & 1)
-					;
-				else TexMgr_MipMapH (data, mipwidth, mipheight);
+				{
+					data = Image_ResampleTextureToSize (data, mipwidth, mipheight, mipwidth, mipheight - 1, (glt->flags & TEXPREF_ALPHA));
+					mipheight--;
+				}
+
+				Image_MipMapH (data, mipwidth, mipheight);
 				mipheight >>= 1;
 			}
 
+			// and load this miplevel
 			glTexImage2D (GL_TEXTURE_2D, miplevel, internalformat, mipwidth, mipheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		}
 
@@ -1221,6 +627,7 @@ static void TexMgr_LoadImage32 (gltexture_t *glt, unsigned *data)
 	// set filter modes
 	TexMgr_SetFilterModes (glt);
 }
+
 
 /*
 ================
@@ -1246,7 +653,7 @@ static void TexMgr_LoadImage8 (gltexture_t *glt, byte *data)
 
 	// perform the floodfill here so that it will run on both initial load and video restart
 	if (glt->flags & TEXPREF_FLOODFILL)
-		TexMgr_FloodFillSkin (data, glt->width, glt->height);
+		Image_FloodFillSkin (data, glt->width, glt->height);
 
 	// detect false alpha cases
 	if ((glt->flags & TEXPREF_ALPHA) && !(glt->flags & TEXPREF_CONCHARS))
@@ -1276,34 +683,35 @@ static void TexMgr_LoadImage8 (gltexture_t *glt, byte *data)
 		padbyte = 255;
 	}
 
+	// fixme - shouldn't all this be done in TexMgr_LoadImage32 so that it more generally applies to 8-bit and 
 	// pad each dimention, but only if it's not going to be downsampled later
 	if (glt->flags & TEXPREF_PAD)
 	{
-		if ((int) glt->width < TexMgr_SafeTextureSize (glt->width))
+		if ((int) glt->width < Image_SafeTextureSize (glt->width))
 		{
-			data = TexMgr_PadImageW (data, glt->width, glt->height, padbyte);
-			glt->width = TexMgr_Pad (glt->width);
+			data = Image_PadImageW (data, glt->width, glt->height, padbyte);
+			glt->width = Image_Pad (glt->width);
 			padw = true;
 		}
 
-		if ((int) glt->height < TexMgr_SafeTextureSize (glt->height))
+		if ((int) glt->height < Image_SafeTextureSize (glt->height))
 		{
-			data = TexMgr_PadImageH (data, glt->width, glt->height, padbyte);
-			glt->height = TexMgr_Pad (glt->height);
+			data = Image_PadImageH (data, glt->width, glt->height, padbyte);
+			glt->height = Image_Pad (glt->height);
 			padh = true;
 		}
 	}
 
 	// convert to 32bit
-	data = (byte *) TexMgr_8to32 (data, glt->width * glt->height, usepal);
+	data = (byte *) Image_8to32 (data, glt->width * glt->height, usepal);
 
 	// fix edges
 	if (glt->flags & TEXPREF_ALPHA)
-		TexMgr_AlphaEdgeFix (data, glt->width, glt->height);
+		Image_AlphaEdgeFix (data, glt->width, glt->height);
 	else
 	{
-		if (padw) TexMgr_PadEdgeFixW (data, glt->source_width, glt->source_height);
-		if (padh) TexMgr_PadEdgeFixH (data, glt->source_width, glt->source_height);
+		if (padw) Image_PadEdgeFixW (data, glt->source_width, glt->source_height);
+		if (padh) Image_PadEdgeFixH (data, glt->source_width, glt->source_height);
 	}
 
 	// upload it
@@ -1389,9 +797,11 @@ gltexture_t *TexMgr_LoadImage (qmodel_t *owner, const char *name, int width, int
 	case SRC_INDEXED:
 		TexMgr_LoadImage8 (glt, data);
 		break;
+
 	case SRC_LIGHTMAP:
 		TexMgr_LoadLightmap (glt, data);
 		break;
+
 	case SRC_RGBA:
 		TexMgr_LoadImage32 (glt, (unsigned *) data);
 		break;
@@ -1417,9 +827,8 @@ TexMgr_ReloadImage -- reloads a texture, and colormaps it if needed
 */
 void TexMgr_ReloadImage (gltexture_t *glt, int shirt, int pants)
 {
-	byte	translation[256];
-	byte *src, *dst, *data = NULL, *translated;
-	int	mark, size, i;
+	byte *data = NULL;
+	int	mark;
 
 	// get source data
 	mark = Hunk_LowMark ();
@@ -1478,43 +887,20 @@ invalid:;
 
 	if (glt->shirt > -1 && glt->pants > -1)
 	{
+		byte translation[256];
+
 		// create new translation table
-		for (i = 0; i < 256; i++)
-			translation[i] = i;
-
 		shirt = glt->shirt * 16;
-
-		if (shirt < 128)
-		{
-			for (i = 0; i < 16; i++)
-				translation[TOP_RANGE + i] = shirt + i;
-		}
-		else
-		{
-			for (i = 0; i < 16; i++)
-				translation[TOP_RANGE + i] = shirt + 15 - i;
-		}
-
 		pants = glt->pants * 16;
 
-		if (pants < 128)
-		{
-			for (i = 0; i < 16; i++)
-				translation[BOTTOM_RANGE + i] = pants + i;
-		}
-		else
-		{
-			for (i = 0; i < 16; i++)
-				translation[BOTTOM_RANGE + i] = pants + 15 - i;
-		}
+		Image_NewTranslation (shirt, pants, translation);
 
 		// translate texture
-		size = glt->width * glt->height;
-		dst = translated = (byte *) Hunk_Alloc (size);
-		src = data;
+		int size = glt->width * glt->height;
+		byte *translated = (byte *) Hunk_Alloc (size);
 
-		for (i = 0; i < size; i++)
-			*dst++ = translation[*src++];
+		for (int i = 0; i < size; i++)
+			translated[i] = translation[data[i]];
 
 		data = translated;
 	}
@@ -1605,7 +991,7 @@ GLuint TexMgr_LoadCubemap (byte *data[6], int width[6], int height[6])
 	if (maxsize > 0)
 	{
 		// adjust for POT and hardware limits
-		maxsize = TexMgr_SafeTextureSize (maxsize);
+		maxsize = Image_SafeTextureSize (maxsize);
 
 		// make a texture for it
 		glGenTextures (1, &cubemap_texture);
@@ -1630,7 +1016,7 @@ GLuint TexMgr_LoadCubemap (byte *data[6], int width[6], int height[6])
 				if (width[i] != maxsize || height[i] != maxsize)
 				{
 					// resample the face
-					data[i] = (byte *) TexMgr_ResampleTextureToSize ((unsigned *) data[i], width[i], height[i], maxsize, maxsize, false);
+					data[i] = (byte *) Image_ResampleTextureToSize ((unsigned *) data[i], width[i], height[i], maxsize, maxsize, false);
 				}
 
 				// load this face

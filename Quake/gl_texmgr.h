@@ -92,9 +92,9 @@ gltexture_t *TexMgr_LoadImage (qmodel_t *owner, const char *name, int width, int
 void TexMgr_ReloadImage (gltexture_t *glt, int shirt, int pants);
 void TexMgr_ReloadImages (void);
 
-int TexMgr_Pad (int s);
-int TexMgr_SafeTextureSize (int s);
-int TexMgr_PadConditional (int s);
+int Image_Pad (int s);
+int Image_SafeTextureSize (int s);
+int Image_PadConditional (int s);
 
 // TEXTURE BINDING & TEXTURE UNIT SWITCHING
 

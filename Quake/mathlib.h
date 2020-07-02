@@ -92,7 +92,7 @@ QMATRIX *R_IdentityMatrix (QMATRIX *m);
 QMATRIX *R_MultMatrix (QMATRIX *out, QMATRIX *m1, QMATRIX *m2);
 QMATRIX *R_LoadMatrix (QMATRIX *m, float _11, float _12, float _13, float _14, float _21, float _22, float _23, float _24, float _31, float _32, float _33, float _34, float _41, float _42, float _43, float _44);
 QMATRIX *R_CopyMatrix (QMATRIX *dst, QMATRIX *src);
-QMATRIX *R_FrustumMatrix (QMATRIX *m, float fovx, float fovy);
+QMATRIX *R_FrustumMatrix (QMATRIX *m, float fovx, float fovy, float zNear, float zFar);
 QMATRIX *R_OrthoMatrix (QMATRIX *m, float left, float right, float bottom, float top, float zNear, float zFar);
 QMATRIX *R_TranslateMatrix (QMATRIX *m, float x, float y, float z);
 QMATRIX *R_ScaleMatrix (QMATRIX *m, float x, float y, float z);
@@ -667,6 +667,36 @@ __inline qboolean Vector4Compare (const float *v1, const float *v2)
 	if (v1[3] != v2[3]) return false;
 
 	return true;
+}
+
+
+__inline float Vector2Dist (const float *v1, const float *v2)
+{
+	float dist[2];
+
+	Vector2Subtract (dist, v1, v2);
+
+	return Vector2Length (dist);
+}
+
+
+__inline float Vector3Dist (const float *v1, const float *v2)
+{
+	float dist[3];
+
+	Vector3Subtract (dist, v1, v2);
+
+	return Vector3Length (dist);
+}
+
+
+__inline float Vector4Dist (const float *v1, const float *v2)
+{
+	float dist[4];
+
+	Vector4Subtract (dist, v1, v2);
+
+	return Vector4Length (dist);
 }
 
 

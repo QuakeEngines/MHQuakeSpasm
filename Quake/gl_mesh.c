@@ -174,8 +174,8 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr)
 		float hscale, vscale;
 
 		// johnfitz -- padded skins
-		hscale = (float) hdr->skinwidth / (float) TexMgr_PadConditional (hdr->skinwidth);
-		vscale = (float) hdr->skinheight / (float) TexMgr_PadConditional (hdr->skinheight);
+		hscale = (float) hdr->skinwidth / (float) Image_PadConditional (hdr->skinwidth);
+		vscale = (float) hdr->skinheight / (float) Image_PadConditional (hdr->skinheight);
 		// johnfitz
 
 		st = (meshst_t *) (vbodata + m->vbostofs);

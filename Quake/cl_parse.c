@@ -835,6 +835,8 @@ void CL_ParseClientdata (void)
 CL_NewTranslation
 =====================
 */
+void Image_NewTranslation (int top, int bottom, byte *translation);
+
 void CL_NewTranslation (int slot)
 {
 	int		i, j;

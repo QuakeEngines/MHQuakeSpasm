@@ -76,7 +76,6 @@ cvar_t	r_shadows = { "r_shadows", "0", CVAR_NONE };
 cvar_t	r_clearcolor = { "r_clearcolor", "2", CVAR_ARCHIVE };
 cvar_t	r_flatlightstyles = { "r_flatlightstyles", "0", CVAR_NONE };
 cvar_t	gl_fullbrights = { "gl_fullbrights", "1", CVAR_ARCHIVE };
-cvar_t	gl_farclip = { "gl_farclip", "16384", CVAR_ARCHIVE };
 cvar_t	gl_overbright = { "gl_overbright", "1", CVAR_ARCHIVE };
 cvar_t	r_lerpmodels = { "r_lerpmodels", "1", CVAR_NONE };
 cvar_t	r_lerpmove = { "r_lerpmove", "1", CVAR_NONE };
@@ -384,6 +383,32 @@ void R_ExtractFrustum (mplane_t *f, QMATRIX *m)
 }
 
 
+float R_GetFarClip (void)
+{
+	float farclip = 0;
+
+	if (!cl.worldmodel)
+		return 4096.0f;
+
+	// this provides the maximum far clip per view position and worldmodel bounds
+	for (int i = 0; i < 8; i++)
+	{
+		float dist;
+		vec3_t corner;
+
+		// get this corner point
+		if (i & 1) corner[0] = cl.worldmodel->mins[0]; else corner[0] = cl.worldmodel->maxs[0];
+		if (i & 2) corner[1] = cl.worldmodel->mins[1]; else corner[1] = cl.worldmodel->maxs[1];
+		if (i & 4) corner[2] = cl.worldmodel->mins[2]; else corner[2] = cl.worldmodel->maxs[2];
+
+		if ((dist = Vector3Dist (r_refdef.vieworg, corner)) > farclip)
+			farclip = dist;
+	}
+
+	return farclip;
+}
+
+
 /*
 =============
 R_SetupGL
@@ -407,7 +432,7 @@ void R_SetupGL (void)
 	// johnfitz
 
 	R_IdentityMatrix (&proj);
-	R_FrustumMatrix (&proj, r_fovx, r_fovy);
+	R_FrustumMatrix (&proj, r_fovx, r_fovy, 4.0f, R_GetFarClip ());
 
 	R_IdentityMatrix (&view);
 	R_CameraMatrix (&view, r_refdef.vieworg, r_refdef.viewangles);
@@ -666,8 +691,8 @@ void R_ScaleView (void)
 
 		if (!GLEW_ARB_texture_non_power_of_two)
 		{
-			r_scaleview_texture_width = TexMgr_Pad (r_scaleview_texture_width);
-			r_scaleview_texture_height = TexMgr_Pad (r_scaleview_texture_height);
+			r_scaleview_texture_width = Image_Pad (r_scaleview_texture_width);
+			r_scaleview_texture_height = Image_Pad (r_scaleview_texture_height);
 		}
 
 		glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, r_scaleview_texture_width, r_scaleview_texture_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);

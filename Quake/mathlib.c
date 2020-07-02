@@ -278,24 +278,25 @@ QMATRIX *R_IdentityMatrix (QMATRIX *m)
 
 QMATRIX *R_MultMatrix (QMATRIX *out, QMATRIX *m1, QMATRIX *m2)
 {
-	QMATRIX tmp;
-
-	// C version - I had an SSE variant here but it only worked with the SDL2 build.
-	// in practice this is called so few times per frame that it's a dubious optimization anyhow
-	for (int i = 0; i < 4; i++)
-	{
-		for (int j = 0; j < 4; j++)
-		{
-			tmp.m4x4[i][j] =  m1->m4x4[i][0] * m2->m4x4[0][j];
-			tmp.m4x4[i][j] += m1->m4x4[i][1] * m2->m4x4[1][j];
-			tmp.m4x4[i][j] += m1->m4x4[i][2] * m2->m4x4[2][j];
-			tmp.m4x4[i][j] += m1->m4x4[i][3] * m2->m4x4[3][j];
-		}
-	}
-
-	// copy it over
-	R_CopyMatrix (out, &tmp);
-	return out;
+	return R_LoadMatrix (
+		out,
+		(m1->m4x4[0][0] * m2->m4x4[0][0]) + (m1->m4x4[0][1] * m2->m4x4[1][0]) + (m1->m4x4[0][2] * m2->m4x4[2][0]) + (m1->m4x4[0][3] * m2->m4x4[3][0]),
+		(m1->m4x4[0][0] * m2->m4x4[0][1]) + (m1->m4x4[0][1] * m2->m4x4[1][1]) + (m1->m4x4[0][2] * m2->m4x4[2][1]) + (m1->m4x4[0][3] * m2->m4x4[3][1]),
+		(m1->m4x4[0][0] * m2->m4x4[0][2]) + (m1->m4x4[0][1] * m2->m4x4[1][2]) + (m1->m4x4[0][2] * m2->m4x4[2][2]) + (m1->m4x4[0][3] * m2->m4x4[3][2]),
+		(m1->m4x4[0][0] * m2->m4x4[0][3]) + (m1->m4x4[0][1] * m2->m4x4[1][3]) + (m1->m4x4[0][2] * m2->m4x4[2][3]) + (m1->m4x4[0][3] * m2->m4x4[3][3]),
+		(m1->m4x4[1][0] * m2->m4x4[0][0]) + (m1->m4x4[1][1] * m2->m4x4[1][0]) + (m1->m4x4[1][2] * m2->m4x4[2][0]) + (m1->m4x4[1][3] * m2->m4x4[3][0]),
+		(m1->m4x4[1][0] * m2->m4x4[0][1]) + (m1->m4x4[1][1] * m2->m4x4[1][1]) + (m1->m4x4[1][2] * m2->m4x4[2][1]) + (m1->m4x4[1][3] * m2->m4x4[3][1]),
+		(m1->m4x4[1][0] * m2->m4x4[0][2]) + (m1->m4x4[1][1] * m2->m4x4[1][2]) + (m1->m4x4[1][2] * m2->m4x4[2][2]) + (m1->m4x4[1][3] * m2->m4x4[3][2]),
+		(m1->m4x4[1][0] * m2->m4x4[0][3]) + (m1->m4x4[1][1] * m2->m4x4[1][3]) + (m1->m4x4[1][2] * m2->m4x4[2][3]) + (m1->m4x4[1][3] * m2->m4x4[3][3]),
+		(m1->m4x4[2][0] * m2->m4x4[0][0]) + (m1->m4x4[2][1] * m2->m4x4[1][0]) + (m1->m4x4[2][2] * m2->m4x4[2][0]) + (m1->m4x4[2][3] * m2->m4x4[3][0]),
+		(m1->m4x4[2][0] * m2->m4x4[0][1]) + (m1->m4x4[2][1] * m2->m4x4[1][1]) + (m1->m4x4[2][2] * m2->m4x4[2][1]) + (m1->m4x4[2][3] * m2->m4x4[3][1]),
+		(m1->m4x4[2][0] * m2->m4x4[0][2]) + (m1->m4x4[2][1] * m2->m4x4[1][2]) + (m1->m4x4[2][2] * m2->m4x4[2][2]) + (m1->m4x4[2][3] * m2->m4x4[3][2]),
+		(m1->m4x4[2][0] * m2->m4x4[0][3]) + (m1->m4x4[2][1] * m2->m4x4[1][3]) + (m1->m4x4[2][2] * m2->m4x4[2][3]) + (m1->m4x4[2][3] * m2->m4x4[3][3]),
+		(m1->m4x4[3][0] * m2->m4x4[0][0]) + (m1->m4x4[3][1] * m2->m4x4[1][0]) + (m1->m4x4[3][2] * m2->m4x4[2][0]) + (m1->m4x4[3][3] * m2->m4x4[3][0]),
+		(m1->m4x4[3][0] * m2->m4x4[0][1]) + (m1->m4x4[3][1] * m2->m4x4[1][1]) + (m1->m4x4[3][2] * m2->m4x4[2][1]) + (m1->m4x4[3][3] * m2->m4x4[3][1]),
+		(m1->m4x4[3][0] * m2->m4x4[0][2]) + (m1->m4x4[3][1] * m2->m4x4[1][2]) + (m1->m4x4[3][2] * m2->m4x4[2][2]) + (m1->m4x4[3][3] * m2->m4x4[3][2]),
+		(m1->m4x4[3][0] * m2->m4x4[0][3]) + (m1->m4x4[3][1] * m2->m4x4[1][3]) + (m1->m4x4[3][2] * m2->m4x4[2][3]) + (m1->m4x4[3][3] * m2->m4x4[3][3])
+	);
 }
 
 
@@ -317,33 +318,32 @@ QMATRIX *R_CopyMatrix (QMATRIX *dst, QMATRIX *src)
 }
 
 
-QMATRIX *R_FrustumMatrix (QMATRIX *m, float fovx, float fovy)
+QMATRIX *R_FrustumMatrix (QMATRIX *m, float fovx, float fovy, float zNear, float zFar)
 {
-#define zn 4.0f
-	float r = zn * tan ((fovx * M_PI) / 360.0);
-	float t = zn * tan ((fovy * M_PI) / 360.0);
+	float r = zNear * tan ((fovx * M_PI) / 360.0);
+	float t = zNear * tan ((fovy * M_PI) / 360.0);
 
 	float l = -r;
 	float b = -t;
 
-	// infinite projection variant without epsilon for shadows but with adjusting for LH to RH
-	// http://www.geometry.caltech.edu/pubs/UD12.pdf
+	// OpenGL frustum matrix
+	// https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glFrustum.xml
 	QMATRIX m2 = {
-		2 * zn / (r - l),
+		(2 * zNear) / (r - l),
 		0,
 		0,
 		0,
 		0,
-		2 * zn / (t - b),
+		(2 * zNear) / (t - b),
 		0,
 		0,
-		(l + r) / (r - l),
+		(r + l) / (r - l),
 		(t + b) / (t - b),
-		-1, //zf / (zn - zf),
+		-((zFar + zNear) / (zFar - zNear)),
 		-1,
 		0,
 		0,
-		-zn, //zn * zf / (zn - zf),
+		-((2 * zFar * zNear) / (zFar - zNear)),
 		0
 	};
 
@@ -354,6 +354,7 @@ QMATRIX *R_FrustumMatrix (QMATRIX *m, float fovx, float fovy)
 
 QMATRIX *R_OrthoMatrix (QMATRIX *m, float left, float right, float bottom, float top, float zNear, float zFar)
 {
+	// https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glOrtho.xml
 	QMATRIX m2 = {
 		2 / (right - left),
 		0,
@@ -365,11 +366,11 @@ QMATRIX *R_OrthoMatrix (QMATRIX *m, float left, float right, float bottom, float
 		0,
 		0,
 		0,
-		1 / (zNear - zFar),
+		-2 / (zNear - zFar),
 		0,
-		(left + right) / (left - right),
-		(top + bottom) / (bottom - top),
-		zNear / (zNear - zFar),
+		-((right + left) / (right - left)),
+		-((top + bottom) / (top - bottom)),
+		-((zFar + zNear) / (zFar - zNear)),
 		1
 	};
 
