@@ -119,7 +119,7 @@ void GLWarp_CreateShaders (void)
 		"# perform the texturing\n"
 		"TEX diff, noisecoord, texture[5], RECT;\n"
 		"\n"
-		"# apply the contrast\n"
+		"# apply the contrast (FIXME: precalc this on the CPU)\n"
 		"MUL v_blend.rgb, program.local[0], program.env[10].x;\n"
 		"\n"
 		"# apply the gamma (POW only operates on scalars)\n"
