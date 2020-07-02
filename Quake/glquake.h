@@ -80,7 +80,6 @@ typedef struct drawsurf_s {
 
 // ====================================================
 
-extern	qboolean	r_cache_thrash;		// compatability
 extern	vec3_t		modelorg, r_entorigin;
 extern	entity_t *currententity;
 extern	int		r_visframecount;	// ??? what difs?
@@ -311,6 +310,8 @@ void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl);
 void GL_SetupDynamicLight (dlight_t *dl);
 
 void R_DrawSimpleTexturechain (msurface_t *s);
+
+void R_UnderwaterWarp (void);
 
 #endif	/* __GLQUAKE_H */
 

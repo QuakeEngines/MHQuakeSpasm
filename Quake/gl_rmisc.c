@@ -358,8 +358,9 @@ void R_NewMap (void)
 	GL_BuildBModelVertexBuffer ();
 	// ericw -- no longer load alias models into a VBO here, it's done in Mod_LoadAliasModel
 
-	r_framecount = 0; // johnfitz -- paranoid?
-	r_visframecount = 0; // johnfitz -- paranoid?
+	// mh - must init these to non-zero so that they don't catch surfs, leafs and nodes after a memset-0 during load
+	r_framecount = 1; // johnfitz -- paranoid?
+	r_visframecount = 1; // johnfitz -- paranoid?
 
 	Sky_NewMap (); // johnfitz -- skybox in worldspawn
 	Fog_NewMap (); // johnfitz -- global fog in worldspawn
@@ -388,7 +389,7 @@ void R_TimeRefresh_f (void)
 
 	glFinish ();
 
-	scr_timerefresh = true;
+	scr_timerefresh = true; // runs without vsync on
 	SCR_CalcRefdef ();
 
 	// do a 360 in timeRefreshTime seconds
@@ -416,36 +417,6 @@ void R_TimeRefresh_f (void)
 	r_refdef.viewangles[1] = startangle;
 
 	Con_Printf ("%i frames, %f seconds (%f fps)\n", i, time, (float) i / time);
-
-#if 0
-	int		i;
-	float		start, stop, time;
-
-	if (cls.state != ca_connected)
-	{
-		Con_Printf ("Not connected to a server\n");
-		return;
-	}
-
-	start = Sys_DoubleTime ();
-	for (i = 0; i < 128; i++)
-	{
-		GL_BeginRendering (&glx, &gly, &glwidth, &glheight);
-		r_refdef.viewangles[1] = i / 128.0 * 360.0;
-		R_RenderView ();
-		GL_EndRendering ();
-	}
-
-	glFinish ();
-	stop = Sys_DoubleTime ();
-	time = stop - start;
-	Con_Printf ("%f seconds (%f fps)\n", time, 128 / time);
-#endif
-}
-
-
-void D_FlushCaches (void)
-{
 }
 
 

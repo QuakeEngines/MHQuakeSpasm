@@ -23,8 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-qboolean	r_cache_thrash;		// compatability
-
 vec3_t		modelorg, r_entorigin;
 entity_t *currententity;
 
@@ -43,8 +41,6 @@ float	vup[4];
 float	vpn[4];
 float	vright[4];
 float	r_origin[4];
-
-float r_fovx, r_fovy; // johnfitz -- rendering fov may be different becuase of r_waterwarp
 
 // screen size info
 refdef_t	r_refdef;
@@ -90,6 +86,7 @@ cvar_t	r_telealpha = { "r_telealpha", "0", CVAR_NONE };
 cvar_t	r_slimealpha = { "r_slimealpha", "0", CVAR_NONE };
 
 float	map_wateralpha, map_lavaalpha, map_telealpha, map_slimealpha;
+qboolean r_dowarp = false;
 
 cvar_t	r_scale = { "r_scale", "1", CVAR_ARCHIVE };
 
@@ -432,7 +429,7 @@ void R_SetupGL (void)
 	// johnfitz
 
 	R_IdentityMatrix (&proj);
-	R_FrustumMatrix (&proj, r_fovx, r_fovy, 4.0f, R_GetFarClip ());
+	R_FrustumMatrix (&proj, r_refdef.fov_x, r_refdef.fov_y, 4.0f, R_GetFarClip ());
 
 	R_IdentityMatrix (&view);
 	R_CameraMatrix (&view, r_refdef.vieworg, r_refdef.viewangles);
@@ -494,11 +491,13 @@ R_SetupView -- johnfitz -- this is the stuff that needs to be done once per fram
 */
 void R_SetupView (void)
 {
+	// going to a new frame
 	r_framecount++;
 
 	Fog_SetupFrame (); // johnfitz
 
 	// build the transformation matrix for the given view angles
+	// note: vpn, vup, vright are now derived from the view matrix rather than calced separately
 	VectorCopy (r_refdef.vieworg, r_origin);
 
 	// current viewleaf
@@ -508,23 +507,8 @@ void R_SetupView (void)
 	V_SetContentsColor (r_viewleaf->contents);
 	V_CalcBlend ();
 
-	r_cache_thrash = false;
-
-	// johnfitz -- calculate r_fovx and r_fovy here
-	r_fovx = r_refdef.fov_x;
-	r_fovy = r_refdef.fov_y;
-
-	if (r_waterwarp.value)
-	{
-		int contents = Mod_PointInLeaf (r_origin, cl.worldmodel)->contents;
-		if (contents == CONTENTS_WATER || contents == CONTENTS_SLIME || contents == CONTENTS_LAVA)
-		{
-			// variance is a percentage of width, where width = 2 * tan(fov / 2) otherwise the effect is too dramatic at high FOV and too subtle at low FOV.  what a mess!
-			r_fovx = atan (tan (DEG2RAD (r_refdef.fov_x) / 2) * (0.97 + sin (cl.time * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
-			r_fovy = atan (tan (DEG2RAD (r_refdef.fov_y) / 2) * (1.03 - sin (cl.time * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
-		}
-	}
-	// johnfitz
+	// same test as software Quake
+	r_dowarp = r_waterwarp.value && (r_viewleaf->contents <= CONTENTS_WATER);
 }
 
 
@@ -565,15 +549,18 @@ void R_DrawEntitiesOnList (qboolean alphapass) // johnfitz -- added parameter
 		case mod_alias:
 			R_DrawAliasModel (currententity);
 			break;
+
 		case mod_brush:
 			R_DrawBrushModel (currententity);
 			break;
+
 		case mod_sprite:
 			R_DrawSpriteModel (currententity);
 			break;
 		}
 	}
 }
+
 
 /*
 =============
@@ -616,7 +603,7 @@ void R_DrawPolyBlend (void)
 {
 	float verts[] = { -1.0, -1.0, -1.0, 3.0, 3.0, -1.0 };
 
-	if (!gl_polyblend.value || !v_blend[3])
+	if (!gl_polyblend.value || !(v_blend[3] > 0))
 		return;
 
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
@@ -788,7 +775,13 @@ void R_RenderView (void)
 
 	R_ScaleView ();
 
-	R_DrawPolyBlend (); // MH - put this back
+	if (r_dowarp)
+	{
+		// mh - run after the scale view as a post-process over the full screen rect
+		R_UnderwaterWarp ();
+		v_blend[3] = 0; // the blend was merged into the water warp so switch if off here
+	}
+	else R_DrawPolyBlend (); // MH - put this back here
 
 	// johnfitz -- modified r_speeds output
 	time2 = Sys_DoubleTime ();

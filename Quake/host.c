@@ -537,12 +537,15 @@ not reinitialize anything.
 void Host_ClearMemory (void)
 {
 	Con_DPrintf ("Clearing memory\n");
-	D_FlushCaches ();
 	Mod_ClearAll ();
+
 	/* host_hunklevel MUST be set at this point */
 	Hunk_FreeToLowMark (host_hunklevel);
+
 	cls.signon = 0;
+
 	free (sv.edicts); // ericw -- sv.edicts switched to use Q_zmalloc()
+
 	memset (&sv, 0, sizeof (sv));
 	memset (&cl, 0, sizeof (cl));
 }

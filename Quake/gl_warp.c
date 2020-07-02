@@ -177,3 +177,9 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 }
 
 
+void R_UnderwaterWarp (void)
+{
+
+}
+
+

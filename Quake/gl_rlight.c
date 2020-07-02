@@ -140,7 +140,9 @@ const GLchar *GL_GetDynamicLightFragmentProgramSource (void)
 }
 
 
-int	r_dlightframecount;
+// mh - must init to non-zero so that it doesn't catch surfs after a memset-0
+// advances for each entity (including world) drawn, never resets
+int	r_dlightframecount = 1;
 
 extern cvar_t r_flatlightstyles; // johnfitz
 extern cvar_t gl_fullbrights; // johnfitz
