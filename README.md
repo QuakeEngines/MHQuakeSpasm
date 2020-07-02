@@ -15,13 +15,15 @@ The intent is feature-parity with QuakeSpasm, but it is a work in progress.  At 
 
 ### What API level does this use?
 mhQuakeSpasm is built around an approximate OpenGL 1.5 level; in it's current incarnation the following OpenGL extensions are mandatory:
- - GL_ARB_multitexture
- - GL_ARB_vertex_buffer_object
+ - GL_ARB_multitexture (with a minimum of 6 texture units) or OpenGL 1.3
+ - GL_ARB_vertex_buffer_object or OpenGL 1.5
  - GL_ARB_vertex_program
  - GL_ARB_fragment_program
- - GL_ARB_texture_rectangle, GL_EXT_texture_rectangle or GL_NV_texture_rectangle
+ - One of GL_ARB_texture_rectangle or GL_EXT_texture_rectangle or GL_NV_texture_rectangle or OpenGL 3.1
+ - One of GL_ARB_texture_cube_map or GL_EXT_texture_cube_map or OpenGL 1.3
+ - One of GL_EXT_texture_edge_clamp or GL_SGIS_texture_edge_clamp or OpenGL 1.2
 
-This is roughly equivalent to what (the original, not BFG) Doom 3 uses, so as a general rule if you can run Doom 3, you can probably run this too. Bear in mind that Doom 3 is now a 16-year-old game so what it requires should no longer be considered high-end. 
+This is roughly equivalent to what (the original, not BFG) Doom 3 uses, so as a general rule if you can run Doom 3, you can probably run this too. Bear in mind that Doom 3 is now a 16-year-old game so these requirements should no longer be considered high-end. 
 
 You should NOT misinterpret the above as indicating that this will have stencil shadow volumes and normal maps. 
 

@@ -865,17 +865,35 @@ static void GL_CheckExtensions (void)
 	if (glewInit () != GLEW_NO_ERROR) Sys_Error ("Failed to initialize GLEW");
 
 	// extensions we must use
-	if (!GLEW_ARB_multitexture) Sys_Error ("GL_ARB_multitexture : not found");
-	if (!GLEW_ARB_vertex_buffer_object) Sys_Error ("GL_ARB_vertex_buffer_object : not found");
+	if (!GLEW_VERSION_1_3)
+		if (!GLEW_ARB_multitexture)
+			Sys_Error ("GL multitexture extension : not found");
+
+	if (!GLEW_VERSION_1_5)
+		if (!GLEW_ARB_vertex_buffer_object)
+			Sys_Error ("GL vertex_buffer_object extension : not found");
+
 	if (!GLEW_ARB_vertex_program) Sys_Error ("GL_ARB_vertex_program : not found");
 	if (!GLEW_ARB_fragment_program) Sys_Error ("GL_ARB_fragment_program : not found");
 
 	// we want one of the rectangle texture extensions but we don't care which - the token define (GL_TEXTURE_RECTANGLE, GL_TEXTURE_RECTANGLE_ARB,
-	// GL_TEXTURE_RECTANGLE_EXT or GL_TEXTURE_RECTANGLE_NV) is the same for all (0x84F5) so for our use cases we treat them as equivalent.
-	if (!GLEW_ARB_texture_rectangle)
-		if (!GLEW_EXT_texture_rectangle)
-			if (!GLEW_NV_texture_rectangle)
-				Sys_Error ("GL texture_rectangle extension : not found");
+	// GL_TEXTURE_RECTANGLE_EXT or GL_TEXTURE_RECTANGLE_NV) is the same for all (0x84F5), so for our use cases we treat them as equivalent.
+	if (!GLEW_VERSION_3_1)
+		if (!GLEW_ARB_texture_rectangle)
+			if (!GLEW_EXT_texture_rectangle)
+				if (!GLEW_NV_texture_rectangle)
+					Sys_Error ("GL texture_rectangle extension : not found");
+
+	// we want one of the cube map texture extensions but we don't care which - the token define is the same for all, so for our use cases we treat them as equivalent.
+	if (!GLEW_VERSION_1_3)
+		if (!GLEW_ARB_texture_cube_map)
+			if (!GLEW_EXT_texture_cube_map)
+				Sys_Error ("GL texture_cube_map extension : not found");
+
+	if (!GLEW_VERSION_1_2)
+		if (!GLEW_EXT_texture_edge_clamp)
+			if (!GLEW_SGIS_texture_edge_clamp)
+				Sys_Error ("GL texture_edge_clamp extension : not found");
 
 	// we need 6 TMUs and we query GL_MAX_TEXTURE_IMAGE_UNITS because these are the ones that are accessible in shaders via GL_ARB_fragment_program;
 	// some GPUs report a hard limit of 4 for GL_MAX_TEXTURE_UNITS which is the FFP limit

@@ -239,7 +239,7 @@ void R_UnderwaterWarp (void)
 	glActiveTexture (GL_TEXTURE5);
 	glBindTexture (GL_TEXTURE_RECTANGLE, 0);
 
-	// we enforced requiring a rectangle texture extension so we don't need to worry abour np2 stuff
+	// we enforced requiring a rectangle texture extension so we don't need to worry about np2 stuff
 	glCopyTexImage2D (GL_TEXTURE_RECTANGLE, 0, GL_RGBA, srcx, srcy, srcw, srch, 0);
 	glTexParameteri (GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri (GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -255,7 +255,7 @@ void R_UnderwaterWarp (void)
 	glViewport (srcx, srcy, r_refdef.vrect.width, r_refdef.vrect.height);
 
 	float positions[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
-	float texcoords[] = { 0, 0, srcw, 0, srcw, srch, 0, srch };
+	float texcoord1[] = { 0, 0, srcw, 0, srcw, srch, 0, srch };
 
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
 	GL_EnableVertexAttribArrays (VAA0 | VAA1);
@@ -265,7 +265,7 @@ void R_UnderwaterWarp (void)
 	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, v_blend);
 
 	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, positions);
-	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 0, texcoords);
+	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 0, texcoord1);
 
 	glDrawArrays (GL_QUADS, 0, 4);
 
