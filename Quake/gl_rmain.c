@@ -151,7 +151,7 @@ void GLMain_CreateShaders (void)
 		"!!ARBfp1.0\n"
 		"\n"
 		"# perform the texturing direct to output\n"
-		"TEX result.color, fragment.texcoord[0], texture[0], 2D;\n"
+		"TEX result.color, fragment.texcoord[0], texture[5], RECT;\n"
 		"\n"
 		"# done\n"
 		"END\n"
@@ -507,6 +507,9 @@ void R_SetupView (void)
 	V_SetContentsColor (r_viewleaf->contents);
 	V_CalcBlend ();
 
+	// allow them to scale the overall blend with gl_polyblend as well
+	v_blend[3] *= gl_polyblend.value;
+
 	// same test as software Quake
 	r_dowarp = r_waterwarp.value && (r_viewleaf->contents <= CONTENTS_WATER);
 }
@@ -620,20 +623,6 @@ void R_DrawPolyBlend (void)
 }
 
 
-static GLuint r_scaleview_texture;
-static int r_scaleview_texture_width, r_scaleview_texture_height;
-
-/*
-=============
-R_ScaleView_DeleteTexture
-=============
-*/
-void R_ScaleView_DeleteTexture (void)
-{
-	glDeleteTextures (1, &r_scaleview_texture);
-	r_scaleview_texture = 0;
-}
-
 /*
 ================
 R_ScaleView
@@ -653,42 +642,20 @@ void R_ScaleView (void)
 	int srcw = r_refdef.vrect.width / scale;
 	int srch = r_refdef.vrect.height / scale;
 
-	if (scale == 1)
+	if (!(scale > 1))
 		return;
 
-	// make sure texture unit 0 is selected
-	glActiveTexture (GL_TEXTURE0);
+	// using GL_TEXTURE5 again for binding points that are not GL_TEXTURE_2D
+	// bind to default texture object 0
+	glActiveTexture (GL_TEXTURE5);
+	glBindTexture (GL_TEXTURE_RECTANGLE, 0);
 
-	// create (if needed) and bind the render-to-texture texture
-	if (!r_scaleview_texture)
-	{
-		glGenTextures (1, &r_scaleview_texture);
-
-		r_scaleview_texture_width = 0;
-		r_scaleview_texture_height = 0;
-	}
-
-	glBindTexture (GL_TEXTURE_2D, r_scaleview_texture);
-
-	// resize render-to-texture texture if needed
-	if (r_scaleview_texture_width < srcw || r_scaleview_texture_height < srch)
-	{
-		r_scaleview_texture_width = srcw;
-		r_scaleview_texture_height = srch;
-
-		if (!GLEW_ARB_texture_non_power_of_two)
-		{
-			r_scaleview_texture_width = Image_Pad (r_scaleview_texture_width);
-			r_scaleview_texture_height = Image_Pad (r_scaleview_texture_height);
-		}
-
-		glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, r_scaleview_texture_width, r_scaleview_texture_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	}
-
-	// copy the framebuffer to the texture
-	glCopyTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, srcx, srcy, srcw, srch);
+	// we enforced requiring a rectangle texture extension so we don't need to worry abour np2 stuff
+	glCopyTexImage2D (GL_TEXTURE_RECTANGLE, 0, GL_RGBA, srcx, srcy, srcw, srch, 0);
+	glTexParameteri (GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri (GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameterf (GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf (GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// draw the texture back to the framebuffer
 	glDisable (GL_CULL_FACE);
@@ -698,12 +665,8 @@ void R_ScaleView (void)
 
 	glViewport (srcx, srcy, r_refdef.vrect.width, r_refdef.vrect.height);
 
-	// correction factor if we lack NPOT textures, normally these are 1.0f
-	float smax = srcw / (float) r_scaleview_texture_width;
-	float tmax = srch / (float) r_scaleview_texture_height;
-
 	float positions[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
-	float texcoords[] = { 0, 0, smax, 0, smax, tmax, 0, tmax };
+	float texcoords[] = { 0, 0, srcw, 0, srcw, srch, 0, srch };
 
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
 	GL_EnableVertexAttribArrays (VAA0 | VAA1);

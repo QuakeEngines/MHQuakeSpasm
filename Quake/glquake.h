@@ -255,8 +255,6 @@ void R_DrawWorld_Water (void);
 void GL_BindBuffer (GLenum target, GLuint buffer);
 void GL_ClearBufferBindings ();
 
-void R_ScaleView_DeleteTexture (void);
-
 float GL_WaterAlphaForSurface (msurface_t *surf);
 
 // array is enabled

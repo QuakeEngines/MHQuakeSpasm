@@ -28,6 +28,14 @@ cvar_t r_waterwarp = { "r_waterwarp", "1", CVAR_NONE };
 GLuint r_waterwarp_vp = 0;
 GLuint r_waterwarp_fp = 0;
 
+GLuint r_underwater_vp = 0;
+GLuint r_underwater_fp = 0;
+
+GLuint r_underwater_noise = 0;
+
+int r_underwater_width = 0;
+int r_underwater_height = 0;
+
 
 void GLWarp_CreateShaders (void)
 {
@@ -87,8 +95,49 @@ void GLWarp_CreateShaders (void)
 		"END\n"
 		"\n";
 
+	const GLchar *vp_underwater_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"# copy over position\n"
+		"MOV result.position, vertex.attrib[0];\n"
+		"\n"
+		"# copy over texcoord\n"
+		"MOV result.texcoord[0], vertex.attrib[1];\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	// this is a post-process so the input has already had gamma applied
+	const GLchar *fp_underwater_source = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"TEMP diff, v_blend;\n"
+		"\n"
+		"# perform the texturing\n"
+		"TEX diff, fragment.texcoord[0], texture[5], RECT;\n"
+		"\n"
+		"# apply the contrast\n"
+		"MUL v_blend.rgb, program.local[0], program.env[10].x;\n"
+		"\n"
+		"# apply the gamma (POW only operates on scalars)\n"
+		"POW v_blend.r, v_blend.r, program.env[10].y;\n"
+		"POW v_blend.g, v_blend.g, program.env[10].y;\n"
+		"POW v_blend.b, v_blend.b, program.env[10].y;\n"
+		"MOV v_blend.a, program.local[0].a;\n"
+		"\n"
+		"# blend to output\n"
+		"LRP result.color, v_blend.a, v_blend, diff;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
 	r_waterwarp_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_source);
 	r_waterwarp_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source);
+
+	r_underwater_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_underwater_source);
+	r_underwater_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_underwater_source);
 }
 
 
@@ -179,7 +228,49 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 
 void R_UnderwaterWarp (void)
 {
+	// set up viewport dims
+	int srcx = glx + r_refdef.vrect.x;
+	int srcy = gly + glheight - r_refdef.vrect.y - r_refdef.vrect.height;
+	int srcw = r_refdef.vrect.width;
+	int srch = r_refdef.vrect.height;
 
+	// using GL_TEXTURE5 again for binding points that are not GL_TEXTURE_2D
+	// bind to default texture object 0
+	glActiveTexture (GL_TEXTURE5);
+	glBindTexture (GL_TEXTURE_RECTANGLE, 0);
+
+	// we enforced requiring a rectangle texture extension so we don't need to worry abour np2 stuff
+	glCopyTexImage2D (GL_TEXTURE_RECTANGLE, 0, GL_RGBA, srcx, srcy, srcw, srch, 0);
+	glTexParameteri (GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri (GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameterf (GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf (GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// draw the texture back to the framebuffer
+	glDisable (GL_CULL_FACE);
+
+	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
+	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
+
+	glViewport (srcx, srcy, r_refdef.vrect.width, r_refdef.vrect.height);
+
+	float positions[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
+	float texcoords[] = { 0, 0, srcw, 0, srcw, srch, 0, srch };
+
+	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
+	GL_EnableVertexAttribArrays (VAA0 | VAA1);
+	GL_BindPrograms (r_underwater_vp, r_underwater_fp);
+
+	// merge the polyblend into the water warp for perf
+	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, v_blend);
+
+	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, positions);
+	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 0, texcoords);
+
+	glDrawArrays (GL_QUADS, 0, 4);
+
+	// clear cached binding
+	GL_ClearTextureBindings ();
 }
 
 

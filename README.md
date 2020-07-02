@@ -19,6 +19,7 @@ mhQuakeSpasm is built around an approximate OpenGL 1.5 level; in it's current in
  - GL_ARB_vertex_buffer_object
  - GL_ARB_vertex_program
  - GL_ARB_fragment_program
+ - GL_ARB_texture_rectangle, GL_EXT_texture_rectangle or GL_NV_texture_rectangle
 
 This is roughly equivalent to what (the original, not BFG) Doom 3 uses, so as a general rule if you can run Doom 3, you can probably run this too. Bear in mind that Doom 3 is now a 16-year-old game so what it requires should no longer be considered high-end. 
 

@@ -684,7 +684,6 @@ static void VID_Restart (void)
 	// which is later deleted.
 
 	TexMgr_DeleteTextureObjects ();
-	R_ScaleView_DeleteTexture ();
 	R_DeleteShaders ();
 	GL_DeleteBModelVertexBuffer ();
 	GLMesh_DeleteVertexBuffers ();
@@ -870,6 +869,13 @@ static void GL_CheckExtensions (void)
 	if (!GLEW_ARB_vertex_buffer_object) Sys_Error ("GL_ARB_vertex_buffer_object : not found");
 	if (!GLEW_ARB_vertex_program) Sys_Error ("GL_ARB_vertex_program : not found");
 	if (!GLEW_ARB_fragment_program) Sys_Error ("GL_ARB_fragment_program : not found");
+
+	// we want one of the rectangle texture extensions but we don't care which - the token define (GL_TEXTURE_RECTANGLE, GL_TEXTURE_RECTANGLE_ARB,
+	// GL_TEXTURE_RECTANGLE_EXT or GL_TEXTURE_RECTANGLE_NV) is the same for all (0x84F5) so for our use cases we treat them as equivalent.
+	if (!GLEW_ARB_texture_rectangle)
+		if (!GLEW_EXT_texture_rectangle)
+			if (!GLEW_NV_texture_rectangle)
+				Sys_Error ("GL texture_rectangle extension : not found");
 
 	// we need 6 TMUs and we query GL_MAX_TEXTURE_IMAGE_UNITS because these are the ones that are accessible in shaders via GL_ARB_fragment_program;
 	// some GPUs report a hard limit of 4 for GL_MAX_TEXTURE_UNITS which is the FFP limit
