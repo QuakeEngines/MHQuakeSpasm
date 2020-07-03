@@ -221,7 +221,7 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 void GL_BuildLightmaps (void);
 void GL_DeleteBModelVertexBuffer (void);
 void GL_BuildBModelVertexBuffer (void);
-void GLMesh_LoadVertexBuffers (void);
+void GLMesh_ReloadVertexBuffers (void);
 void GLMesh_DeleteVertexBuffers (void);
 
 int R_LightPoint (vec3_t p);

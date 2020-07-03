@@ -29,40 +29,67 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 ALIAS MODEL DISPLAY LIST GENERATION
 
+
+to do: cache a buffer set similar to textures so if a buffer set it cached it doesn't need to be rebuilt and can be reused across multiple maps
+
 =================================================================
 */
 
-#define NUMVERTEXNORMALS	162
+typedef struct vertexnormals_s {
+	int numnormals;
+	float normal[3];
+} vertexnormals_t;
 
-float	r_avertexnormals[NUMVERTEXNORMALS][3] = {
-	{ -0.525731f, 0.000000f, 0.850651f }, { -0.442863f, 0.238856f, 0.864188f }, { -0.295242f, 0.000000f, 0.955423f }, { -0.309017f, 0.500000f, 0.809017f }, { -0.162460f, 0.262866f, 0.951056f }, { 0.000000f, 0.000000f, 1.000000f },
-	{ 0.000000f, 0.850651f, 0.525731f }, { -0.147621f, 0.716567f, 0.681718f }, { 0.147621f, 0.716567f, 0.681718f }, { 0.000000f, 0.525731f, 0.850651f }, { 0.309017f, 0.500000f, 0.809017f }, { 0.525731f, 0.000000f, 0.850651f },
-	{ 0.295242f, 0.000000f, 0.955423f }, { 0.442863f, 0.238856f, 0.864188f }, { 0.162460f, 0.262866f, 0.951056f }, { -0.681718f, 0.147621f, 0.716567f }, { -0.809017f, 0.309017f, 0.500000f }, { -0.587785f, 0.425325f, 0.688191f },
-	{ -0.850651f, 0.525731f, 0.000000f }, { -0.864188f, 0.442863f, 0.238856f }, { -0.716567f, 0.681718f, 0.147621f }, { -0.688191f, 0.587785f, 0.425325f }, { -0.500000f, 0.809017f, 0.309017f }, { -0.238856f, 0.864188f, 0.442863f },
-	{ -0.425325f, 0.688191f, 0.587785f }, { -0.716567f, 0.681718f, -0.147621f }, { -0.500000f, 0.809017f, -0.309017f }, { -0.525731f, 0.850651f, 0.000000f }, { 0.000000f, 0.850651f, -0.525731f }, { -0.238856f, 0.864188f, -0.442863f },
-	{ 0.000000f, 0.955423f, -0.295242f }, { -0.262866f, 0.951056f, -0.162460f }, { 0.000000f, 1.000000f, 0.000000f }, { 0.000000f, 0.955423f, 0.295242f }, { -0.262866f, 0.951056f, 0.162460f }, { 0.238856f, 0.864188f, 0.442863f },
-	{ 0.262866f, 0.951056f, 0.162460f }, { 0.500000f, 0.809017f, 0.309017f }, { 0.238856f, 0.864188f, -0.442863f }, { 0.262866f, 0.951056f, -0.162460f }, { 0.500000f, 0.809017f, -0.309017f }, { 0.850651f, 0.525731f, 0.000000f },
-	{ 0.716567f, 0.681718f, 0.147621f }, { 0.716567f, 0.681718f, -0.147621f }, { 0.525731f, 0.850651f, 0.000000f }, { 0.425325f, 0.688191f, 0.587785f }, { 0.864188f, 0.442863f, 0.238856f }, { 0.688191f, 0.587785f, 0.425325f },
-	{ 0.809017f, 0.309017f, 0.500000f }, { 0.681718f, 0.147621f, 0.716567f }, { 0.587785f, 0.425325f, 0.688191f }, { 0.955423f, 0.295242f, 0.000000f }, { 1.000000f, 0.000000f, 0.000000f }, { 0.951056f, 0.162460f, 0.262866f },
-	{ 0.850651f, -0.525731f, 0.000000f }, { 0.955423f, -0.295242f, 0.000000f }, { 0.864188f, -0.442863f, 0.238856f }, { 0.951056f, -0.162460f, 0.262866f }, { 0.809017f, -0.309017f, 0.500000f }, { 0.681718f, -0.147621f, 0.716567f },
-	{ 0.850651f, 0.000000f, 0.525731f }, { 0.864188f, 0.442863f, -0.238856f }, { 0.809017f, 0.309017f, -0.500000f }, { 0.951056f, 0.162460f, -0.262866f }, { 0.525731f, 0.000000f, -0.850651f }, { 0.681718f, 0.147621f, -0.716567f },
-	{ 0.681718f, -0.147621f, -0.716567f }, { 0.850651f, 0.000000f, -0.525731f }, { 0.809017f, -0.309017f, -0.500000f }, { 0.864188f, -0.442863f, -0.238856f }, { 0.951056f, -0.162460f, -0.262866f }, { 0.147621f, 0.716567f, -0.681718f },
-	{ 0.309017f, 0.500000f, -0.809017f }, { 0.425325f, 0.688191f, -0.587785f }, { 0.442863f, 0.238856f, -0.864188f }, { 0.587785f, 0.425325f, -0.688191f }, { 0.688191f, 0.587785f, -0.425325f }, { -0.147621f, 0.716567f, -0.681718f },
-	{ -0.309017f, 0.500000f, -0.809017f }, { 0.000000f, 0.525731f, -0.850651f }, { -0.525731f, 0.000000f, -0.850651f }, { -0.442863f, 0.238856f, -0.864188f }, { -0.295242f, 0.000000f, -0.955423f }, { -0.162460f, 0.262866f, -0.951056f },
-	{ 0.000000f, 0.000000f, -1.000000f }, { 0.295242f, 0.000000f, -0.955423f }, { 0.162460f, 0.262866f, -0.951056f }, { -0.442863f, -0.238856f, -0.864188f }, { -0.309017f, -0.500000f, -0.809017f }, { -0.162460f, -0.262866f, -0.951056f },
-	{ 0.000000f, -0.850651f, -0.525731f }, { -0.147621f, -0.716567f, -0.681718f }, { 0.147621f, -0.716567f, -0.681718f }, { 0.000000f, -0.525731f, -0.850651f }, { 0.309017f, -0.500000f, -0.809017f }, { 0.442863f, -0.238856f, -0.864188f },
-	{ 0.162460f, -0.262866f, -0.951056f }, { 0.238856f, -0.864188f, -0.442863f }, { 0.500000f, -0.809017f, -0.309017f }, { 0.425325f, -0.688191f, -0.587785f }, { 0.716567f, -0.681718f, -0.147621f }, { 0.688191f, -0.587785f, -0.425325f },
-	{ 0.587785f, -0.425325f, -0.688191f }, { 0.000000f, -0.955423f, -0.295242f }, { 0.000000f, -1.000000f, 0.000000f }, { 0.262866f, -0.951056f, -0.162460f }, { 0.000000f, -0.850651f, 0.525731f }, { 0.000000f, -0.955423f, 0.295242f },
-	{ 0.238856f, -0.864188f, 0.442863f }, { 0.262866f, -0.951056f, 0.162460f }, { 0.500000f, -0.809017f, 0.309017f }, { 0.716567f, -0.681718f, 0.147621f }, { 0.525731f, -0.850651f, 0.000000f }, { -0.238856f, -0.864188f, -0.442863f },
-	{ -0.500000f, -0.809017f, -0.309017f }, { -0.262866f, -0.951056f, -0.162460f }, { -0.850651f, -0.525731f, 0.000000f }, { -0.716567f, -0.681718f, -0.147621f }, { -0.716567f, -0.681718f, 0.147621f }, { -0.525731f, -0.850651f, 0.000000f },
-	{ -0.500000f, -0.809017f, 0.309017f }, { -0.238856f, -0.864188f, 0.442863f }, { -0.262866f, -0.951056f, 0.162460f }, { -0.864188f, -0.442863f, 0.238856f }, { -0.809017f, -0.309017f, 0.500000f }, { -0.688191f, -0.587785f, 0.425325f },
-	{ -0.681718f, -0.147621f, 0.716567f }, { -0.442863f, -0.238856f, 0.864188f }, { -0.587785f, -0.425325f, 0.688191f }, { -0.309017f, -0.500000f, 0.809017f }, { -0.147621f, -0.716567f, 0.681718f }, { -0.425325f, -0.688191f, 0.587785f },
-	{ -0.162460f, -0.262866f, 0.951056f }, { 0.442863f, -0.238856f, 0.864188f }, { 0.162460f, -0.262866f, 0.951056f }, { 0.309017f, -0.500000f, 0.809017f }, { 0.147621f, -0.716567f, 0.681718f }, { 0.000000f, -0.525731f, 0.850651f },
-	{ 0.425325f, -0.688191f, 0.587785f }, { 0.587785f, -0.425325f, 0.688191f }, { 0.688191f, -0.587785f, 0.425325f }, { -0.955423f, 0.295242f, 0.000000f }, { -0.951056f, 0.162460f, 0.262866f }, { -1.000000f, 0.000000f, 0.000000f },
-	{ -0.850651f, 0.000000f, 0.525731f }, { -0.955423f, -0.295242f, 0.000000f }, { -0.951056f, -0.162460f, 0.262866f }, { -0.864188f, 0.442863f, -0.238856f }, { -0.951056f, 0.162460f, -0.262866f }, { -0.809017f, 0.309017f, -0.500000f },
-	{ -0.864188f, -0.442863f, -0.238856f }, { -0.951056f, -0.162460f, -0.262866f }, { -0.809017f, -0.309017f, -0.500000f }, { -0.681718f, 0.147621f, -0.716567f }, { -0.681718f, -0.147621f, -0.716567f }, { -0.850651f, 0.000000f, -0.525731f },
-	{ -0.688191f, 0.587785f, -0.425325f }, { -0.587785f, 0.425325f, -0.688191f }, { -0.425325f, 0.688191f, -0.587785f }, { -0.425325f, -0.688191f, -0.587785f }, { -0.587785f, -0.425325f, -0.688191f }, { -0.688191f, -0.587785f, -0.425325f }
-};
+
+void R_BuildFrameNormals (const aliashdr_t *hdr, const trivertx_t *verts, dtriangle_t *triangles, vertexnormals_t *vnorms)
+{
+	// this is the modelgen.c normal generation code and we regenerate correct normals for alias models
+	for (int i = 0; i < hdr->numverts; i++) {
+		// no normals initially
+		Vector3Clear (vnorms[i].normal);
+		vnorms[i].numnormals = 0;
+	}
+
+	for (int i = 0; i < hdr->numtris; i++)
+	{
+		float triverts[3][3];
+		float vtemp1[3], vtemp2[3], normal[3];
+		int *vertindexes = triangles[i].vertindex;
+
+		// undo the vertex rotation from modelgen.c here too
+		for (int j = 0; j < 3; j++) {
+			triverts[j][0] = (float) verts[vertindexes[j]].v[1] * hdr->scale[1] + hdr->scale_origin[1];
+			triverts[j][1] = -((float) verts[vertindexes[j]].v[0] * hdr->scale[0] + hdr->scale_origin[0]);
+			triverts[j][2] = (float) verts[vertindexes[j]].v[2] * hdr->scale[2] + hdr->scale_origin[2];
+		}
+
+		// calc the per-triangle normal
+		Vector3Subtract (vtemp1, triverts[0], triverts[1]);
+		Vector3Subtract (vtemp2, triverts[2], triverts[1]);
+		Vector3Cross (normal, vtemp1, vtemp2);
+		Vector3Normalize (normal);
+
+		// rotate the normal so the model faces down the positive x axis
+		float newnormal[3] = { -normal[1], normal[0], normal[2] };
+
+		// and accumulate it into the calculated normals array
+		for (int j = 0; j < 3; j++) {
+			Vector3Add (vnorms[vertindexes[j]].normal, vnorms[vertindexes[j]].normal, newnormal);
+			vnorms[vertindexes[j]].numnormals++;
+		}
+	}
+
+	// copy out normals
+	for (int i = 0; i < hdr->numverts; i++) {
+		// numnormals was checked for > 0 in modelgen.c so we shouldn't need to do it again 
+		// here but we do anyway just in case a rogue modder has used a bad modelling tool
+		if (vnorms[i].numnormals > 0) {
+			Vector3Scalef (vnorms[i].normal, vnorms[i].normal, (float) vnorms[i].numnormals);
+			Vector3Normalize (vnorms[i].normal);
+		}
+		else Vector3Set (vnorms[i].normal, 0.0f, 0.0f, 1.0f);
+	}
+}
 
 
 /*
@@ -74,12 +101,9 @@ Upload the given alias model's mesh to a VBO
 Original code by MH from RMQEngine
 ================
 */
-static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr, unsigned short *indexes, aliasmesh_t *desc, trivertx_t *poseverts[])
+static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr, dtriangle_t *triangles, unsigned short *indexes, aliasmesh_t *desc, trivertx_t *poseverts[])
 {
 	// count the sizes we need
-	// ericw -- RMQEngine stored these vbo*ofs values in aliashdr_t, but we must not
-	// mutate Mod_Extradata since it might be reloaded from disk, so I moved them to qmodel_t
-	// (test case: roman1.bsp from arwop, 64mb heap)
 	m->vboindexofs = 0;
 	m->vboxyzofs = 0;
 
@@ -100,16 +124,19 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr, unsigne
 	// create the vertex buffer (empty)
 	byte *vbodata = (byte *) Hunk_Alloc (totalvbosize);
 
+	// set up the normals
+	vertexnormals_t *vnorms = (vertexnormals_t *) Hunk_Alloc (sizeof (vertexnormals_t) * hdr->numverts);
+
 	// fill in the vertices at the start of the buffer
 	for (int f = 0; f < hdr->numposes; f++) // ericw -- what RMQEngine called nummeshframes is called numposes in QuakeSpasm
 	{
 		meshxyz_t *xyz = (meshxyz_t *) (vbodata + (f * hdr->numverts_vbo * sizeof (meshxyz_t)));
 		trivertx_t *tv = poseverts[f];
 
-		// to do - recompose triangles from the index buffer and use that to generate the normals
+		// rebuild the normals for this frame
+		R_BuildFrameNormals (hdr, tv, triangles, vnorms);
 
-		for (int v = 0; v < hdr->numverts_vbo; v++)
-		{
+		for (int v = 0; v < hdr->numverts_vbo; v++) {
 			trivertx_t *trivert = &tv[desc[v].vertindex];
 
 			xyz[v].position[0] = (float) trivert->v[0];
@@ -117,9 +144,9 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr, unsigne
 			xyz[v].position[2] = (float) trivert->v[2];
 			xyz[v].position[3] = 1;
 
-			xyz[v].normal[0] = 127 * r_avertexnormals[trivert->lightnormalindex][0];
-			xyz[v].normal[1] = 127 * r_avertexnormals[trivert->lightnormalindex][1];
-			xyz[v].normal[2] = 127 * r_avertexnormals[trivert->lightnormalindex][2];
+			xyz[v].normal[0] = 127 * vnorms[desc[v].vertindex].normal[0];
+			xyz[v].normal[1] = 127 * vnorms[desc[v].vertindex].normal[1];
+			xyz[v].normal[2] = 127 * vnorms[desc[v].vertindex].normal[2];
 		}
 	}
 
@@ -131,8 +158,7 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr, unsigne
 
 	meshst_t *st = (meshst_t *) (vbodata + m->vbostofs);
 
-	for (int f = 0; f < hdr->numverts_vbo; f++)
-	{
+	for (int f = 0; f < hdr->numverts_vbo; f++) {
 		st[f].st[0] = hscale * ((float) desc[f].st[0] + 0.5f) / (float) hdr->skinwidth;
 		st[f].st[1] = vscale * ((float) desc[f].st[1] + 0.5f) / (float) hdr->skinheight;
 	}
@@ -206,7 +232,7 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr, trivertx_t *po
 	}
 
 	// upload immediately
-	GLMesh_LoadVertexBuffer (m, hdr, indexes, desc, poseverts);
+	GLMesh_LoadVertexBuffer (m, hdr, triangles, indexes, desc, poseverts);
 	Hunk_FreeToLowMark (mark);
 }
 
@@ -300,12 +326,12 @@ void GLMesh_ReloadAliasGeometry (qmodel_t *mod)
 
 /*
 ================
-GLMesh_LoadVertexBuffers
+GLMesh_ReloadVertexBuffers
 
 Loop over all precached alias models, and upload each one to a VBO.
 ================
 */
-void GLMesh_LoadVertexBuffers (void)
+void GLMesh_ReloadVertexBuffers (void)
 {
 	int j;
 	qmodel_t *m;

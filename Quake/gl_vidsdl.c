@@ -690,7 +690,7 @@ static void VID_Restart (void)
 	GL_Init ();
 	TexMgr_ReloadImages ();
 	GL_BuildBModelVertexBuffer ();
-	GLMesh_LoadVertexBuffers ();
+	GLMesh_ReloadVertexBuffers ();
 	GL_SetupState ();
 	Fog_SetupState ();
 
