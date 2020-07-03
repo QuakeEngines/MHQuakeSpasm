@@ -487,16 +487,13 @@ void R_SetupAliasFrame (entity_t *e, aliashdr_t *hdr, int frame, lerpdata_t *ler
 
 	if (numposes > 1)
 	{
-		// get the intervals
-		float *intervals = (float *) ((byte *) hdr + hdr->pframes[frame].intervals);
-
 		// get the correct group frame
-		int groupframe = Mod_GetAutoAnimation (intervals, numposes, e->syncbase);
+		int groupframe = Mod_GetAutoAnimation (hdr->pframes[frame].pintervals, numposes, e->syncbase);
 
 		// get the correct interval
 		if (groupframe == 0)
-			e->lerptime = intervals[groupframe];
-		else e->lerptime = intervals[groupframe] - intervals[groupframe - 1];
+			e->lerptime = hdr->pframes[frame].pintervals[groupframe];
+		else e->lerptime = hdr->pframes[frame].pintervals[groupframe] - hdr->pframes[frame].pintervals[groupframe - 1];
 
 		// advance to this frame
 		posenum += groupframe;

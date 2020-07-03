@@ -2013,14 +2013,13 @@ ALIAS MODELS
 ==============================================================================
 */
 
-aliashdr_t *pheader;
+// a pose is a single set of vertexes.  a frame may be an animating sequence of poses
+#define	MAXALIASFRAMES	65536	// 64k should be enough for anyone
 
-// a pose is a single set of vertexes.  a frame may be
-// an animating sequence of poses
 trivertx_t *poseverts[MAXALIASFRAMES];
 int			posenum;
 
-void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr, trivertx_t *poseverts[], dtriangle_t *triangles, stvert_t *stverts);
+void GLMesh_LoadAliasGeometry (qmodel_t *mod, aliashdr_t *hdr, byte *buf);
 
 
 /*
@@ -2028,22 +2027,18 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr, trivertx_t *po
 Mod_LoadAliasFrame
 =================
 */
-void *Mod_LoadAliasFrame (void *pin, maliasframedesc_t *frame)
+void *Mod_LoadAliasFrame (aliashdr_t *hdr, void *pin, maliasframedesc_t *frame)
 {
-	trivertx_t *pinframe;
-	int				i;
-	daliasframe_t *pdaliasframe;
-
 	if (posenum >= MAXALIASFRAMES)
 		Sys_Error ("posenum >= MAXALIASFRAMES");
 
-	pdaliasframe = (daliasframe_t *) pin;
+	daliasframe_t *pdaliasframe = (daliasframe_t *) pin;
 
 	strcpy (frame->name, pdaliasframe->name);
 	frame->firstpose = posenum;
 	frame->numposes = 1;
 
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 	{
 		// these are byte values, so we don't have to worry about
 		// endianness
@@ -2051,14 +2046,9 @@ void *Mod_LoadAliasFrame (void *pin, maliasframedesc_t *frame)
 		frame->bboxmax.v[i] = pdaliasframe->bboxmax.v[i];
 	}
 
-	pinframe = (trivertx_t *) (pdaliasframe + 1);
-
-	poseverts[posenum] = pinframe;
 	posenum++;
 
-	pinframe += pheader->numverts;
-
-	return (void *) pinframe;
+	return (void *) (((trivertx_t *) (pdaliasframe + 1)) + hdr->numverts);
 }
 
 
@@ -2067,47 +2057,36 @@ void *Mod_LoadAliasFrame (void *pin, maliasframedesc_t *frame)
 Mod_LoadAliasGroup
 =================
 */
-void *Mod_LoadAliasGroup (void *pin, maliasframedesc_t *frame)
+void *Mod_LoadAliasGroup (aliashdr_t *hdr, void *pin, maliasframedesc_t *frame)
 {
-	daliasgroup_t *pingroup;
-	int		i, numframes;
-	daliasinterval_t *pin_intervals;
-	float *poutintervals;
-	void *ptemp;
-
-	pingroup = (daliasgroup_t *) pin;
-
-	numframes = LittleLong (pingroup->numframes);
+	daliasgroup_t *pingroup = (daliasgroup_t *) pin;
+	int numframes = LittleLong (pingroup->numframes);
 
 	frame->firstpose = posenum;
 	frame->numposes = numframes;
 
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 	{
 		// these are byte values, so we don't have to worry about endianness
 		frame->bboxmin.v[i] = pingroup->bboxmin.v[i];
 		frame->bboxmax.v[i] = pingroup->bboxmax.v[i];
 	}
 
-	pin_intervals = (daliasinterval_t *) (pingroup + 1);
-	poutintervals = (float *) Hunk_Alloc (numframes * sizeof (float));
-	frame->intervals = (intptr_t) poutintervals - (intptr_t) pheader;
+	daliasinterval_t *pin_intervals = (daliasinterval_t *) (pingroup + 1);
+	frame->pintervals = (float *) Hunk_Alloc (numframes * sizeof (float));
 
 	// must copy these over now because we're going to advance pin_intervals
-	for (i = 0; i < numframes; i++)
-		poutintervals[i] = LittleFloat (pin_intervals[i].interval);
+	for (int i = 0; i < numframes; i++)
+		frame->pintervals[i] = LittleFloat (pin_intervals[i].interval);
 
-	pin_intervals += numframes;
-	ptemp = (void *) pin_intervals;
+	void *ptemp = (void *) (pin_intervals + numframes);
 
-	for (i = 0; i < numframes; i++)
+	for (int i = 0; i < numframes; i++)
 	{
 		if (posenum >= MAXALIASFRAMES) Sys_Error ("posenum >= MAXALIASFRAMES");
 
-		poseverts[posenum] = (trivertx_t *) ((daliasframe_t *) ptemp + 1);
 		posenum++;
-
-		ptemp = (trivertx_t *) ((daliasframe_t *) ptemp + 1) + pheader->numverts;
+		ptemp = (trivertx_t *) ((daliasframe_t *) ptemp + 1) + hdr->numverts;
 	}
 
 	return ptemp;
@@ -2125,12 +2104,12 @@ void Mod_LoadAliasSkin (aliashdr_t *hdr, aliasskingroup_t *skingroup, int skinnu
 
 	if (Mod_CheckFullbrights (data, size))
 	{
-		skin->gltexture = TexMgr_LoadImage (loadmodel, name, pheader->skinwidth, pheader->skinheight, SRC_INDEXED, data, loadmodel->name, offset, texflags);
-		skin->fbtexture = TexMgr_LoadImage (loadmodel, fbr_mask_name, pheader->skinwidth, pheader->skinheight, SRC_INDEXED, data, loadmodel->name, offset, texflags | TEXPREF_FULLBRIGHT);
+		skin->gltexture = TexMgr_LoadImage (loadmodel, name, hdr->skinwidth, hdr->skinheight, SRC_INDEXED, data, loadmodel->name, offset, texflags);
+		skin->fbtexture = TexMgr_LoadImage (loadmodel, fbr_mask_name, hdr->skinwidth, hdr->skinheight, SRC_INDEXED, data, loadmodel->name, offset, texflags | TEXPREF_FULLBRIGHT);
 	}
 	else
 	{
-		skin->gltexture = TexMgr_LoadImage (loadmodel, name, pheader->skinwidth, pheader->skinheight, SRC_INDEXED, data, loadmodel->name, offset, texflags);
+		skin->gltexture = TexMgr_LoadImage (loadmodel, name, hdr->skinwidth, hdr->skinheight, SRC_INDEXED, data, loadmodel->name, offset, texflags);
 		skin->fbtexture = NULL;
 	}
 }
@@ -2316,106 +2295,87 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	int					version, numframes;
 	daliasframetype_t *pframetype;
 	daliasskintype_t *pskintype;
+	aliashdr_t *hdr;
 
 	pinmodel = (mdl_t *) buffer;
 	mod_base = (byte *) buffer; // johnfitz
 
 	version = LittleLong (pinmodel->version);
 	if (version != ALIAS_VERSION)
-		Sys_Error ("%s has wrong version number (%i should be %i)",
-			mod->name, version, ALIAS_VERSION);
+		Sys_Error ("%s has wrong version number (%i should be %i)", mod->name, version, ALIAS_VERSION);
 
 	// allocate space for a working header, plus all the data except the frames,
 	// skin and group info
-	pheader = (aliashdr_t *) Hunk_AllocName (sizeof (aliashdr_t), loadname);
+	hdr = (aliashdr_t *) Hunk_AllocName (sizeof (aliashdr_t), loadname);
 
 	mod->flags = LittleLong (pinmodel->flags);
 
 	// endian-adjust and copy the data, starting with the alias model header
-	pheader->boundingradius = LittleFloat (pinmodel->boundingradius);
-	pheader->numskins = LittleLong (pinmodel->numskins);
-	pheader->skinwidth = LittleLong (pinmodel->skinwidth);
-	pheader->skinheight = LittleLong (pinmodel->skinheight);
+	hdr->boundingradius = LittleFloat (pinmodel->boundingradius);
+	hdr->numskins = LittleLong (pinmodel->numskins);
+	hdr->skinwidth = LittleLong (pinmodel->skinwidth);
+	hdr->skinheight = LittleLong (pinmodel->skinheight);
 
-	if (pheader->skinheight > MAX_LBM_HEIGHT)
+	if (hdr->skinheight > MAX_LBM_HEIGHT)
 		Sys_Error ("model %s has a skin taller than %d", mod->name,
 			MAX_LBM_HEIGHT);
 
-	pheader->numverts = LittleLong (pinmodel->numverts);
+	hdr->numverts = LittleLong (pinmodel->numverts);
 
-	if (pheader->numverts <= 0)
+	if (hdr->numverts <= 0)
 		Sys_Error ("model %s has no vertices", mod->name);
 
-	if (pheader->numverts > MAXALIASVERTS)
-		Sys_Error ("model %s has too many vertices (%d; max = %d)", mod->name, pheader->numverts, MAXALIASVERTS);
+	hdr->numtris = LittleLong (pinmodel->numtris);
 
-	pheader->numtris = LittleLong (pinmodel->numtris);
-
-	if (pheader->numtris <= 0)
+	if (hdr->numtris <= 0)
 		Sys_Error ("model %s has no triangles", mod->name);
 
-	if (pheader->numtris > MAXALIASTRIS)
-		Sys_Error ("model %s has too many triangles (%d; max = %d)", mod->name, pheader->numtris, MAXALIASTRIS);
-
-	pheader->numframes = LittleLong (pinmodel->numframes);
-	numframes = pheader->numframes;
+	hdr->numframes = LittleLong (pinmodel->numframes);
+	numframes = hdr->numframes;
 	if (numframes < 1)
 		Sys_Error ("Mod_LoadAliasModel: Invalid # of frames: %d\n", numframes);
 
-	pheader->pframes = (maliasframedesc_t *) Hunk_AllocName (sizeof (maliasframedesc_t) * pheader->numframes, loadname);
+	hdr->pframes = (maliasframedesc_t *) Hunk_AllocName (sizeof (maliasframedesc_t) * hdr->numframes, loadname);
 
-	pheader->size = LittleFloat (pinmodel->size) * ALIAS_BASE_SIZE_RATIO;
+	hdr->size = LittleFloat (pinmodel->size) * ALIAS_BASE_SIZE_RATIO;
 	mod->synctype = (synctype_t) LittleLong (pinmodel->synctype);
-	mod->numframes = pheader->numframes;
+	mod->numframes = hdr->numframes;
 
 	for (i = 0; i < 3; i++)
 	{
-		pheader->scale[i] = LittleFloat (pinmodel->scale[i]);
-		pheader->scale_origin[i] = LittleFloat (pinmodel->scale_origin[i]);
-		pheader->eyeposition[i] = LittleFloat (pinmodel->eyeposition[i]);
+		hdr->scale[i] = LittleFloat (pinmodel->scale[i]);
+		hdr->scale_origin[i] = LittleFloat (pinmodel->scale_origin[i]);
+		hdr->eyeposition[i] = LittleFloat (pinmodel->eyeposition[i]);
 	}
 
 	// load the skins
 	pskintype = (daliasskintype_t *) &pinmodel[1];
-	pskintype = (daliasskintype_t *) Mod_LoadAllSkins (pheader, pheader->numskins, pskintype);
+	pskintype = (daliasskintype_t *) Mod_LoadAllSkins (hdr, hdr->numskins, pskintype);
 
 	// load base s and t vertices
 	pinstverts = (stvert_t *) pskintype;
-
-	for (i = 0; i < pheader->numverts; i++)
-	{
-		pinstverts[i].onseam = LittleLong (pinstverts[i].onseam);
-		pinstverts[i].s = LittleLong (pinstverts[i].s);
-		pinstverts[i].t = LittleLong (pinstverts[i].t);
-	}
+	hdr->ofs_stverts = (intptr_t) pinstverts - (intptr_t) pinmodel;
 
 	// load triangle lists
-	pintriangles = (dtriangle_t *) &pinstverts[pheader->numverts];
-
-	for (i = 0; i < pheader->numtris; i++)
-	{
-		pintriangles[i].facesfront = LittleLong (pintriangles[i].facesfront);
-
-		pintriangles[i].vertindex[0] = LittleLong (pintriangles[i].vertindex[0]);
-		pintriangles[i].vertindex[1] = LittleLong (pintriangles[i].vertindex[1]);
-		pintriangles[i].vertindex[2] = LittleLong (pintriangles[i].vertindex[2]);
-	}
+	pintriangles = (dtriangle_t *) &pinstverts[hdr->numverts];
+	hdr->ofs_triangles = (intptr_t) pintriangles - (intptr_t) pinmodel;
 
 	// load the frames
 	posenum = 0;
-	pframetype = (daliasframetype_t *) &pintriangles[pheader->numtris];
+	pframetype = (daliasframetype_t *) &pintriangles[hdr->numtris];
+	hdr->ofs_frames = (intptr_t) pframetype - (intptr_t) pinmodel;
 
-	for (i = 0; i < pheader->numframes; i++)
+	for (i = 0; i < hdr->numframes; i++)
 	{
 		aliasframetype_t	frametype;
 		frametype = (aliasframetype_t) LittleLong (pframetype->type);
 
 		if (frametype == ALIAS_SINGLE)
-			pframetype = (daliasframetype_t *) Mod_LoadAliasFrame (pframetype + 1, &pheader->pframes[i]);
-		else pframetype = (daliasframetype_t *) Mod_LoadAliasGroup (pframetype + 1, &pheader->pframes[i]);
+			pframetype = (daliasframetype_t *) Mod_LoadAliasFrame (hdr, pframetype + 1, &hdr->pframes[i]);
+		else pframetype = (daliasframetype_t *) Mod_LoadAliasGroup (hdr, pframetype + 1, &hdr->pframes[i]);
 	}
 
-	pheader->numposes = posenum;
+	hdr->numposes = posenum;
 
 	mod->type = mod_alias;
 
@@ -2426,10 +2386,10 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	mod->maxs[0] = mod->maxs[1] = mod->maxs[2] = 16;
 
 	// build the draw lists
-	GL_MakeAliasModelDisplayLists (mod, pheader, poseverts, pintriangles, pinstverts);
+	GLMesh_LoadAliasGeometry (mod, hdr, (byte *) buffer);
 
 	// alias models are no longer cached so we just store the pointer
-	mod->cache.data = pheader;
+	mod->cache.data = hdr;
 }
 
 // =============================================================================

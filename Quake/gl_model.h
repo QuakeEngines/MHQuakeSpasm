@@ -295,7 +295,7 @@ typedef struct meshst_s {
 typedef struct maliasframedesc_s {
 	int					firstpose;
 	int					numposes;
-	int					intervals;
+	float				*pintervals;
 	trivertx_t			bboxmin;
 	trivertx_t			bboxmax;
 	int					frame;
@@ -345,16 +345,11 @@ typedef struct aliashdr_s {
 	int			flags;
 	float		size;
 
-	aliasmesh_t	*pmeshdesc;       // offset into extradata: numverts_vbo aliasmesh_t
 	int			numverts_vbo;   // number of verts with unique x,y,z,s,t
 
-	unsigned short *pindexes;        // offset into extradata: numindexes unsigned shorts
 	int			numindexes;
 	int			numtris;
-
-	trivertx_t	*pvertexes;       // offset into extradata: numposes*vertsperframe trivertx_t
 	int			numverts;
-
 	int			numposes;
 
 	// mh - fix skin auto-animation
@@ -364,16 +359,15 @@ typedef struct aliashdr_s {
 	int			skinwidth;
 	int			skinheight;
 
+	// offsets into the on-disk struct for reloading base geometry data on a vid_restart
+	intptr_t	ofs_stverts;
+	intptr_t	ofs_triangles;
+	intptr_t	ofs_frames;
+
+	// frames follow
 	maliasframedesc_t	*pframes;
 	int			numframes;
 } aliashdr_t;
-
-#define	MAXALIASVERTS	2000 // johnfitz -- was 1024
-#define	MAXALIASFRAMES	256
-#define	MAXALIASTRIS	4096 // ericw -- was 2048
-
-// MH - get rid of these and move them to params
-extern	aliashdr_t *pheader;
 
 
 // ===================================================================
