@@ -106,11 +106,11 @@ void GLWarp_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	// this is a post-process so the input has already had gamma applied
+	// this is a post-process so the input has already had gamma applied; v_blend is gamma-corrected on the CPU
 	const GLchar *fp_underwater_source = \
 		"!!ARBfp1.0\n"
 		"\n"
-		"TEMP diff, noisecoord, v_blend;\n"
+		"TEMP diff, noisecoord;\n"
 		"\n"
 		"# read the noise image\n"
 		"TEX noisecoord, fragment.texcoord[1], texture[0], 2D;\n"
@@ -119,17 +119,8 @@ void GLWarp_CreateShaders (void)
 		"# perform the texturing\n"
 		"TEX diff, noisecoord, texture[5], RECT;\n"
 		"\n"
-		"# apply the contrast (FIXME: precalc this on the CPU)\n"
-		"MUL v_blend.rgb, program.local[0], program.env[10].x;\n"
-		"\n"
-		"# apply the gamma (POW only operates on scalars)\n"
-		"POW v_blend.r, v_blend.r, program.env[10].y;\n"
-		"POW v_blend.g, v_blend.g, program.env[10].y;\n"
-		"POW v_blend.b, v_blend.b, program.env[10].y;\n"
-		"MOV v_blend.a, program.local[0].a;\n"
-		"\n"
 		"# blend to output\n"
-		"LRP result.color, v_blend.a, v_blend, diff;\n"
+		"LRP result.color, program.local[0].a, program.local[0], diff;\n"
 		"\n"
 		"# done\n"
 		"END\n"
@@ -287,10 +278,6 @@ void R_UnderwaterWarp (void)
 
 	glViewport (srcx, srcy, r_refdef.vrect.width, r_refdef.vrect.height);
 
-	float positions[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
-	float texcoord1[] = { 0, 0, srcw, 0, srcw, srch, 0, srch };
-	float texcoord2[] = { 0, 0,  (float) srcw / srch, 0, (float) srcw / srch, 1, 0, 1 };
-
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
 	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2);
 	GL_BindPrograms (r_underwater_vp, r_underwater_fp);
@@ -298,11 +285,21 @@ void R_UnderwaterWarp (void)
 	// move the warp
 	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, (cl.time * 0.09f) - (int) (cl.time * 0.09f), -((cl.time * 0.11f) - (int) (cl.time * 0.11f)), 0, 0);
 
+	// gamma-correct the polyblend; the framebuffer source is a post-process that has already been gamma-corrected so it doesn't need it;
+	// correcting the polyblend here let's us just do it once for the entire screen rather than per-fragment.
+	v_blend[0] = pow ((v_blend[0] * vid_contrast.value), vid_gamma.value);
+	v_blend[1] = pow ((v_blend[1] * vid_contrast.value), vid_gamma.value);
+	v_blend[2] = pow ((v_blend[2] * vid_contrast.value), vid_gamma.value);
+
 	// merge the polyblend into the water warp for perf
 	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, v_blend);
 
 	// scale the warp to compensate for non-normalized rectangle texture sizes
 	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 1, (float) srch / 64.0f, (float) srch / 64.0f, 0, 0);
+
+	float positions[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
+	float texcoord1[] = { 0, 0, srcw, 0, srcw, srch, 0, srch };
+	float texcoord2[] = { 0, 0,  (float) srcw / srch, 0, (float) srcw / srch, 1, 0, 1 };
 
 	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, positions);
 	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 0, texcoord1);
