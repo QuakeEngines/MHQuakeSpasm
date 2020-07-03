@@ -109,6 +109,7 @@ extern	cvar_t	r_telealpha;
 extern	cvar_t	r_slimealpha;
 extern	cvar_t	r_dynamic;
 extern	cvar_t	r_novis;
+extern	cvar_t	r_lockpvs;
 extern	cvar_t	r_scale;
 
 extern	cvar_t	gl_clear;
@@ -297,6 +298,9 @@ void Warp_SetShaderConstants (void);
 
 void GL_BlendState (GLenum enable, GLenum sfactor, GLenum dfactor);
 void GL_DepthState (GLenum enable, GLenum testmode, GLenum writemode);
+
+void R_UpdateFragmentProgramAlpha (float entalpha);
+void R_BeginTransparentDrawing (float entalpha);
 
 
 // new dynamic lights

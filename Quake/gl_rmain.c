@@ -50,18 +50,20 @@ mleaf_t *r_viewleaf, *r_oldviewleaf;
 int		d_lightstylevalue[256];	// 8.8 fraction of base light value
 
 
+// MH - reverted a lot of these to Quake defaults
 cvar_t	r_norefresh = { "r_norefresh", "0", CVAR_NONE };
 cvar_t	r_drawentities = { "r_drawentities", "1", CVAR_NONE };
 cvar_t	r_drawviewmodel = { "r_drawviewmodel", "1", CVAR_NONE };
 cvar_t	r_speeds = { "r_speeds", "0", CVAR_NONE };
 cvar_t	r_pos = { "r_pos", "0", CVAR_NONE };
-cvar_t	r_wateralpha = { "r_wateralpha", "1", CVAR_ARCHIVE };
-cvar_t	r_dynamic = { "r_dynamic", "1", CVAR_ARCHIVE };
+cvar_t	r_wateralpha = { "r_wateralpha", "1", CVAR_NONE };
+cvar_t	r_dynamic = { "r_dynamic", "1", CVAR_NONE };
 
-cvar_t	r_novis = { "r_novis", "0", CVAR_ARCHIVE };
+cvar_t	r_novis = { "r_novis", "0", CVAR_NONE };
+cvar_t	r_lockpvs = { "r_lockpvs", "0", CVAR_NONE };
 
 cvar_t	gl_finish = { "gl_finish", "0", CVAR_NONE };
-cvar_t	gl_clear = { "gl_clear", "0", CVAR_NONE }; // MH - reverted Quake default
+cvar_t	gl_clear = { "gl_clear", "0", CVAR_NONE };
 cvar_t	gl_cull = { "gl_cull", "1", CVAR_NONE };
 cvar_t	gl_polyblend = { "gl_polyblend", "1", CVAR_NONE };
 cvar_t	gl_nocolors = { "gl_nocolors", "0", CVAR_NONE };
@@ -69,10 +71,10 @@ cvar_t	gl_nocolors = { "gl_nocolors", "0", CVAR_NONE };
 cvar_t	r_shadows = { "r_shadows", "0", CVAR_NONE };
 
 // johnfitz -- new cvars
-cvar_t	r_clearcolor = { "r_clearcolor", "2", CVAR_ARCHIVE };
+cvar_t	r_clearcolor = { "r_clearcolor", "2", CVAR_NONE };
 cvar_t	r_flatlightstyles = { "r_flatlightstyles", "0", CVAR_NONE };
-cvar_t	gl_fullbrights = { "gl_fullbrights", "1", CVAR_ARCHIVE };
-cvar_t	gl_overbright = { "gl_overbright", "1", CVAR_ARCHIVE };
+cvar_t	gl_fullbrights = { "gl_fullbrights", "1", CVAR_NONE };
+cvar_t	gl_overbright = { "gl_overbright", "1", CVAR_NONE };
 cvar_t	r_lerpmodels = { "r_lerpmodels", "1", CVAR_NONE };
 cvar_t	r_lerpmove = { "r_lerpmove", "1", CVAR_NONE };
 cvar_t	r_nolerp_list = { "r_nolerp_list", "progs/flame.mdl,progs/flame2.mdl,progs/braztall.mdl,progs/brazshrt.mdl,progs/longtrch.mdl,progs/flame_pyre.mdl,progs/v_saw.mdl,progs/v_xfist.mdl,progs/h2stuff/newfire.mdl", CVAR_NONE };
@@ -666,14 +668,14 @@ void R_ScaleView (void)
 	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
 	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
 
+	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
+	GL_EnableVertexAttribArrays (VAA0 | VAA1);
+	GL_BindPrograms (r_scaleview_vp, r_scaleview_fp);
+
 	glViewport (srcx, srcy, r_refdef.vrect.width, r_refdef.vrect.height);
 
 	float positions[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
 	float texcoords[] = { 0, 0, srcw, 0, srcw, srch, 0, srch };
-
-	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
-	GL_EnableVertexAttribArrays (VAA0 | VAA1);
-	GL_BindPrograms (r_scaleview_vp, r_scaleview_fp);
 
 	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, positions);
 	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 0, texcoords);

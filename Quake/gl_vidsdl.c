@@ -1120,6 +1120,9 @@ qboolean GL_BeginRendering (int *x, int *y, int *width, int *height)
 	// and set them all
 	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 10, contrastval, gammaval, overbright, 0);
 
+	// force entity alpha to set next time it's seen
+	R_UpdateFragmentProgramAlpha (-1);
+
 	return true;
 }
 

@@ -61,18 +61,6 @@ static void R_SetClearColor_f (cvar_t *var)
 
 
 /*
-====================
-R_Novis_f -- johnfitz
-====================
-*/
-static void R_VisChanged (cvar_t *var)
-{
-	extern int vis_changed;
-	vis_changed = 1;
-}
-
-
-/*
 ===============
 R_Model_ExtraFlags_List_f -- johnfitz -- called when r_nolerp_list var changes
 ===============
@@ -142,6 +130,13 @@ float GL_WaterAlphaForSurface (msurface_t *surf)
 }
 
 
+void R_NoVis_f (cvar_t *var)
+{
+	// force a regen of the PVS
+	r_oldviewleaf = NULL;
+}
+
+
 /*
 ===============
 R_Init
@@ -162,7 +157,8 @@ void R_Init (void)
 	Cvar_SetCallback (&r_wateralpha, R_SetWateralpha_f);
 	Cvar_RegisterVariable (&r_dynamic);
 	Cvar_RegisterVariable (&r_novis);
-	Cvar_SetCallback (&r_novis, R_VisChanged);
+	Cvar_SetCallback (&r_novis, R_NoVis_f);
+	Cvar_RegisterVariable (&r_lockpvs);
 	Cvar_RegisterVariable (&r_speeds);
 	Cvar_RegisterVariable (&r_pos);
 
@@ -627,6 +623,48 @@ void GL_DepthState (GLenum enable, GLenum testmode, GLenum writemode)
 		glDepthMask (writemode);
 		currentwritemode = writemode;
 	}
+}
+
+
+void R_UpdateFragmentProgramAlpha (float entalpha)
+{
+	static float oldentalpha = -1;
+
+	// this case just forces it to be reset next time it's seen, even if it otherwise would not be, but does not actually set it, and should be called at the start of each frame
+	if (entalpha < 0)
+	{
+		oldentalpha = -1;
+		return;
+	}
+
+	// this case only sets if if it had changed
+	if (entalpha != oldentalpha)
+	{
+		glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 1, 1, 1, entalpha);
+		oldentalpha = entalpha;
+	}
+}
+
+
+/*
+=============
+R_BeginTransparentDrawing -- ericw
+=============
+*/
+void R_BeginTransparentDrawing (float entalpha)
+{
+	if (entalpha < 1.0f)
+	{
+		GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);
+	}
+	else
+	{
+		GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
+		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
+	}
+
+	R_UpdateFragmentProgramAlpha (entalpha);
 }
 
 

@@ -86,7 +86,7 @@ void GLWarp_CreateShaders (void)
 		"POW result.color.r, diff.r, program.env[10].y;\n"
 		"POW result.color.g, diff.g, program.env[10].y;\n"
 		"POW result.color.b, diff.b, program.env[10].y;\n"
-		"MOV result.color.a, program.local[0].a;\n"
+		"MOV result.color.a, program.env[0].a;\n"
 		"\n"
 		"# done\n"
 		"END\n"
@@ -181,29 +181,6 @@ float GL_WaterAlphaForEntitySurface (entity_t *ent, msurface_t *s)
 }
 
 
-/*
-=============
-R_BeginTransparentDrawing -- ericw
-=============
-*/
-static void R_BeginTransparentDrawing (float entalpha)
-{
-	if (entalpha < 1.0f)
-	{
-		GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);
-
-		// water alpha
-		glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 1, 1, 1, entalpha);
-	}
-	else
-	{
-		GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
-		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
-	}
-}
-
-
 void Warp_SetShaderConstants (void)
 {
 	// water warp
@@ -276,8 +253,6 @@ void R_UnderwaterWarp (void)
 	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
 	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
 
-	glViewport (srcx, srcy, r_refdef.vrect.width, r_refdef.vrect.height);
-
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
 	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2);
 	GL_BindPrograms (r_underwater_vp, r_underwater_fp);
@@ -296,6 +271,8 @@ void R_UnderwaterWarp (void)
 
 	// scale the warp to compensate for non-normalized rectangle texture sizes
 	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 1, (float) srch / 64.0f, (float) srch / 64.0f, 0, 0);
+
+	glViewport (srcx, srcy, r_refdef.vrect.width, r_refdef.vrect.height);
 
 	float positions[] = { -1, -1, 1, -1, 1, 1, -1, 1 };
 	float texcoord1[] = { 0, 0, srcw, 0, srcw, srch, 0, srch };

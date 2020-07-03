@@ -355,8 +355,6 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, shadelight);
 	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, shadevector);
 
-	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 1, 1, 1, entalpha);
-
 	// draw
 	glDrawElements (GL_TRIANGLES, hdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) e->model->vboindexofs);
 	rs_aliaspasses += hdr->numtris;
@@ -715,16 +713,7 @@ void R_DrawAliasModel (entity_t *e)
 	if (entalpha == 0)
 		return;
 
-	if (entalpha < 1)
-	{
-		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);
-		GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	}
-	else
-	{
-		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
-		GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
-	}
+	R_BeginTransparentDrawing (entalpha);
 
 	// set up lighting
 	rs_aliaspolys += hdr->numtris;

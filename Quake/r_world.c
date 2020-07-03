@@ -28,7 +28,6 @@ extern cvar_t gl_fullbrights; // johnfitz
 
 byte *SV_FatPVS (vec3_t org, qmodel_t *worldmodel);
 
-int vis_changed; // if true, force pvs to be refreshed
 
 // ==============================================================================
 // SETUP CHAINS
@@ -490,18 +489,7 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 	float		entalpha = (ent != NULL) ? ENTALPHA_DECODE (ent->alpha) : 1.0f;
 
 	// enable blending / disable depth writes
-	if (entalpha < 1)
-	{
-		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);
-		GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	}
-	else
-	{
-		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
-		GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
-	}
-
-	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 1, 1, 1, entalpha);
+	R_BeginTransparentDrawing (entalpha);
 
 	R_SetupWorldVBOState ();
 
@@ -576,6 +564,7 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 	double		dot;
 
 	if (node->contents == CONTENTS_SOLID) return;		// solid
+	if (r_novis.value) node->visframe = r_visframecount;
 	if (node->visframe != r_visframecount) return;
 
 	if (clipflags)
@@ -681,8 +670,8 @@ void R_AddPVSLeaf (mleaf_t *leaf)
 
 void R_MarkLeaves (void)
 {
-	if (r_oldviewleaf == r_viewleaf && !vis_changed)
-		return;
+	if (r_lockpvs.value) return;
+	if (r_oldviewleaf == r_viewleaf) return;
 
 	r_visframecount++;
 
@@ -692,7 +681,6 @@ void R_MarkLeaves (void)
 		R_AddPVSLeaf (r_oldviewleaf);
 
 	r_oldviewleaf = r_viewleaf;
-	vis_changed = 0;
 }
 
 
