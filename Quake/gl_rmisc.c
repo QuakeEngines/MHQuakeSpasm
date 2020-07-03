@@ -130,10 +130,10 @@ float GL_WaterAlphaForSurface (msurface_t *surf)
 }
 
 
-void R_NoVis_f (cvar_t *var)
+static void R_VisChanged (cvar_t *var)
 {
-	// force a regen of the PVS
-	r_oldviewleaf = NULL;
+	extern int vis_changed;
+	vis_changed = 1;
 }
 
 
@@ -157,8 +157,9 @@ void R_Init (void)
 	Cvar_SetCallback (&r_wateralpha, R_SetWateralpha_f);
 	Cvar_RegisterVariable (&r_dynamic);
 	Cvar_RegisterVariable (&r_novis);
-	Cvar_SetCallback (&r_novis, R_NoVis_f);
 	Cvar_RegisterVariable (&r_lockpvs);
+	Cvar_SetCallback (&r_novis, R_VisChanged);
+	Cvar_SetCallback (&r_lockpvs, R_VisChanged);
 	Cvar_RegisterVariable (&r_speeds);
 	Cvar_RegisterVariable (&r_pos);
 

@@ -328,47 +328,50 @@ typedef struct aliasskin_s {
 	struct gltexture_s *fbtexture; // johnfitz
 
 	// needed for reloading colormapped skins
-	intptr_t texels;
+	byte *ptexels;
 } aliasskin_t;
 
 typedef struct aliasskingroup_s {
-	intptr_t skins;
-	intptr_t intervals;
+	aliasskin_t *pskins;
+	float *pintervals;
 	int numskins;
 } aliasskingroup_t;
 
 typedef struct aliashdr_s {
 	int			ident;
 	int			version;
+
 	float		scale[4];			// padded for shader params
 	float		scale_origin[4];	// padded for shader params
 	float		boundingradius;
+
 	vec3_t		eyeposition;
-	int			numskins;
-	int			skinwidth;
-	int			skinheight;
-	int			numverts;
-	int			numtris;
-	int			numframes;
 	synctype_t	synctype;
+
 	int			flags;
 	float		size;
 
-	// ericw -- used to populate vbo
+	aliasmesh_t	*pmeshdesc;       // offset into extradata: numverts_vbo aliasmesh_t
 	int			numverts_vbo;   // number of verts with unique x,y,z,s,t
-	intptr_t	meshdesc;       // offset into extradata: numverts_vbo aliasmesh_t
+
+	unsigned short *pindexes;        // offset into extradata: numindexes unsigned shorts
 	int			numindexes;
-	intptr_t	indexes;        // offset into extradata: numindexes unsigned shorts
-	intptr_t	vertexes;       // offset into extradata: numposes*vertsperframe trivertx_t
-	// ericw --
+	int			numtris;
+
+	trivertx_t	*pvertexes;       // offset into extradata: numposes*vertsperframe trivertx_t
+	int			numverts;
 
 	int			numposes;
 
 	// mh - fix skin auto-animation
-	intptr_t	skingroups;
-	int			numskingroups;
+	aliasskingroup_t	*pskingroups;
+	int			numskingroups; // same as below?????
+	int			numskins; // same as above?????
+	int			skinwidth;
+	int			skinheight;
 
-	maliasframedesc_t	frames[1];	// variable sized
+	maliasframedesc_t	*pframes;
+	int			numframes;
 } aliashdr_t;
 
 #define	MAXALIASVERTS	2000 // johnfitz -- was 1024

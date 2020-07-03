@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern cvar_t gl_fullbrights; // johnfitz
 
-byte *SV_FatPVS (vec3_t org, qmodel_t *worldmodel);
+int vis_changed;
 
 
 // ==============================================================================
@@ -671,7 +671,7 @@ void R_AddPVSLeaf (mleaf_t *leaf)
 void R_MarkLeaves (void)
 {
 	if (r_lockpvs.value) return;
-	if (r_oldviewleaf == r_viewleaf) return;
+	if (r_oldviewleaf == r_viewleaf && !vis_changed) return;
 
 	r_visframecount++;
 
@@ -681,6 +681,7 @@ void R_MarkLeaves (void)
 		R_AddPVSLeaf (r_oldviewleaf);
 
 	r_oldviewleaf = r_viewleaf;
+	vis_changed = 0;
 }
 
 

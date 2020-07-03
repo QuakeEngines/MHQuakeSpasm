@@ -130,9 +130,9 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr)
 	if (!totalvbosize) return;
 
 	// grab the pointers to data in the extradata
-	desc = (aliasmesh_t *) ((byte *) hdr + hdr->meshdesc);
-	indexes = (short *) ((byte *) hdr + hdr->indexes);
-	trivertexes = (trivertx_t *) ((byte *) hdr + hdr->vertexes);
+	desc = hdr->pmeshdesc;
+	indexes = hdr->pindexes;
+	trivertexes = hdr->pvertexes;
 
 	// upload indices buffer
 	glDeleteBuffers (1, &m->meshindexesvbo);
@@ -215,7 +215,7 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr)
 
 	// first, copy the verts onto the hunk
 	verts = (trivertx_t *) Hunk_Alloc (hdr->numposes * hdr->numverts * sizeof (trivertx_t));
-	hdr->vertexes = (byte *) verts - (byte *) hdr;
+	hdr->pvertexes = verts;
 
 	for (i = 0; i < hdr->numposes; i++)
 		for (j = 0; j < hdr->numverts; j++)
@@ -229,8 +229,8 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr)
 	indexes = (unsigned short *) Hunk_Alloc (sizeof (unsigned short) * maxverts_vbo);
 
 	// these are stored out in the alias hdr so that the buffer objects can be regenned following a video restart
-	hdr->indexes = (intptr_t) indexes - (intptr_t) hdr;
-	hdr->meshdesc = (intptr_t) desc - (intptr_t) hdr;
+	hdr->pindexes = indexes;
+	hdr->pmeshdesc = desc;
 	hdr->numindexes = 0;
 	hdr->numverts_vbo = 0;
 

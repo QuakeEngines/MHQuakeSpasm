@@ -490,13 +490,13 @@ void R_SetupAliasFrame (entity_t *e, aliashdr_t *hdr, int frame, lerpdata_t *ler
 		frame = 0;
 	}
 
-	posenum = hdr->frames[frame].firstpose;
-	numposes = hdr->frames[frame].numposes;
+	posenum = hdr->pframes[frame].firstpose;
+	numposes = hdr->pframes[frame].numposes;
 
 	if (numposes > 1)
 	{
 		// get the intervals
-		float *intervals = (float *) ((byte *) hdr + hdr->frames[frame].intervals);
+		float *intervals = (float *) ((byte *) hdr + hdr->pframes[frame].intervals);
 
 		// get the correct group frame
 		int groupframe = Mod_GetAutoAnimation (intervals, numposes, e->syncbase);
@@ -674,12 +674,8 @@ void R_SetupAliasLighting (entity_t *e)
 
 aliasskin_t *R_GetAliasSkin (entity_t *e, aliashdr_t *hdr)
 {
-	aliasskingroup_t *group = (aliasskingroup_t *) ((byte *) hdr + hdr->skingroups) + (e->skinnum < 0 ? 0 : (e->skinnum >= hdr->numskingroups ? 0 : e->skinnum));
-	float *intervals = (float *) ((byte *) hdr + group->intervals);
-	int groupskin = Mod_GetAutoAnimation (intervals, group->numskins, e->syncbase);
-	aliasskin_t *skin = (aliasskin_t *) ((byte *) hdr + group->skins) + groupskin;
-
-	return skin;
+	aliasskingroup_t *group = hdr->pskingroups + (e->skinnum < 0 ? 0 : (e->skinnum >= hdr->numskingroups ? 0 : e->skinnum));
+	return &group->pskins[Mod_GetAutoAnimation (group->pintervals, group->numskins, e->syncbase)];
 }
 
 

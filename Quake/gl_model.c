@@ -2121,11 +2121,10 @@ void Mod_LoadAliasSkin (aliashdr_t *hdr, aliasskingroup_t *skingroup, int skinnu
 {
 	// save 8 bit texels for the player model to remap
 	int size = hdr->skinwidth * hdr->skinheight;
-	byte *texels = (byte *) Hunk_AllocName (size, loadname);
-	aliasskin_t *skin = (aliasskin_t *) ((byte *) hdr + skingroup->skins) + skinnum;
+	aliasskin_t *skin = &skingroup->pskins[skinnum];
 
-	skin->texels = (intptr_t) texels - (intptr_t) pheader;
-	memcpy (texels, data, size);
+	skin->ptexels = (byte *) Hunk_AllocName (size, loadname);
+	memcpy (skin->ptexels, data, size);
 
 	if (Mod_CheckFullbrights (data, size))
 	{
@@ -2142,21 +2141,15 @@ void Mod_LoadAliasSkin (aliashdr_t *hdr, aliasskingroup_t *skingroup, int skinnu
 
 void Mod_LoadSkinGroupIntervals (aliashdr_t *hdr, aliasskingroup_t *skingroup, daliasskininterval_t *intervals, int numintervals)
 {
-	float *groupintervals = (float *) ((byte *) hdr + skingroup->intervals);
-
 	for (int i = 0; i < numintervals; i++)
-		groupintervals[i] = LittleFloat (intervals[i].interval);
+		skingroup->pintervals[i] = LittleFloat (intervals[i].interval);
 }
 
 
 void Mod_AllocateSkinGroup (aliashdr_t *hdr, aliasskingroup_t *skingroup, int numskins)
 {
-	aliasskin_t *skins = (aliasskin_t *) Hunk_Alloc (sizeof (aliasskin_t) * numskins);
-	float *intervals = (float *) Hunk_Alloc (sizeof (float) * numskins);
-
-	skingroup->skins = (intptr_t) skins - (intptr_t) hdr;
-	skingroup->intervals = (intptr_t) intervals - (intptr_t) hdr;
-
+	skingroup->pskins = (aliasskin_t *) Hunk_Alloc (sizeof (aliasskin_t) * numskins);
+	skingroup->pintervals = (float *) Hunk_Alloc (sizeof (float) * numskins);
 	skingroup->numskins = numskins;
 }
 
@@ -2196,7 +2189,7 @@ void *Mod_LoadAllSkins (aliashdr_t *hdr, int numskins, daliasskintype_t *pskinty
 	// alloc and store out the skin groups
 	aliasskingroup_t *skingroups = (aliasskingroup_t *) Hunk_Alloc (sizeof (aliasskingroup_t) * numskins);
 
-	hdr->skingroups = (intptr_t) skingroups - (intptr_t) hdr;
+	hdr->pskingroups = skingroups;
 	hdr->numskingroups = numskins;
 
 	for (i = 0; i < numskins; i++)
@@ -2319,7 +2312,6 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	stvert_t *pinstverts;
 	dtriangle_t *pintriangles;
 	int					version, numframes;
-	int					size;
 	daliasframetype_t *pframetype;
 	daliasskintype_t *pskintype;
 
@@ -2333,8 +2325,7 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 
 	// allocate space for a working header, plus all the data except the frames,
 	// skin and group info
-	size = sizeof (aliashdr_t) + (LittleLong (pinmodel->numframes) - 1) * sizeof (pheader->frames[0]);
-	pheader = (aliashdr_t *) Hunk_AllocName (size, loadname);
+	pheader = (aliashdr_t *) Hunk_AllocName (sizeof (aliashdr_t), loadname);
 
 	mod->flags = LittleLong (pinmodel->flags);
 
@@ -2368,6 +2359,8 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	numframes = pheader->numframes;
 	if (numframes < 1)
 		Sys_Error ("Mod_LoadAliasModel: Invalid # of frames: %d\n", numframes);
+
+	pheader->pframes = (maliasframedesc_t *) Hunk_AllocName (sizeof (maliasframedesc_t) * pheader->numframes, loadname);
 
 	pheader->size = LittleFloat (pinmodel->size) * ALIAS_BASE_SIZE_RATIO;
 	mod->synctype = (synctype_t) LittleLong (pinmodel->synctype);
@@ -2412,14 +2405,14 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	posenum = 0;
 	pframetype = (daliasframetype_t *) &pintriangles[pheader->numtris];
 
-	for (i = 0; i < numframes; i++)
+	for (i = 0; i < pheader->numframes; i++)
 	{
 		aliasframetype_t	frametype;
 		frametype = (aliasframetype_t) LittleLong (pframetype->type);
+
 		if (frametype == ALIAS_SINGLE)
-			pframetype = (daliasframetype_t *) Mod_LoadAliasFrame (pframetype + 1, &pheader->frames[i]);
-		else
-			pframetype = (daliasframetype_t *) Mod_LoadAliasGroup (pframetype + 1, &pheader->frames[i]);
+			pframetype = (daliasframetype_t *) Mod_LoadAliasFrame (pframetype + 1, &pheader->pframes[i]);
+		else pframetype = (daliasframetype_t *) Mod_LoadAliasGroup (pframetype + 1, &pheader->pframes[i]);
 	}
 
 	pheader->numposes = posenum;
