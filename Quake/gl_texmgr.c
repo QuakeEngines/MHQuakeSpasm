@@ -885,7 +885,8 @@ invalid:;
 			glt->shirt = shirt;
 			glt->pants = pants;
 		}
-		else Con_Printf ("TexMgr_ReloadImage: can't colormap a non SRC_INDEXED texture: %s\n", glt->name);
+		else
+			Con_Printf ("TexMgr_ReloadImage: can't colormap a non SRC_INDEXED texture: %s\n", glt->name);
 	}
 
 	if (glt->shirt > -1 && glt->pants > -1)

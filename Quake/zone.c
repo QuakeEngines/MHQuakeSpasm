@@ -714,6 +714,13 @@ void *Cache_Alloc (cache_user_t *c, int size, const char *name)
 // ============================================================================
 
 
+void Hunk_LowMark_f (void)
+{
+	int kb = (Hunk_LowMark () + 512) / 1024;
+	int mb = (kb + 512) / 1024;
+	Con_Printf ("Hunk_LowMark : %i (%ikb) (%imb)\n", Hunk_LowMark (), kb, mb);
+}
+
 /*
 ========================
 Memory_Init
@@ -727,6 +734,8 @@ void Memory_Init (void *buf, int size)
 	hunk_high_used = 0;
 
 	Cache_Init ();
+
 	Cmd_AddCommand ("hunk_print", Hunk_Print_f); // johnfitz
+	Cmd_AddCommand ("hunk_lowmark", Hunk_LowMark_f); // mh
 }
 

@@ -78,11 +78,8 @@ Caches the data if needed
 */
 void *Mod_Extradata (qmodel_t *mod)
 {
-	void *r;
-
-	r = Cache_Check (&mod->cache);
-	if (r)
-		return r;
+	if (mod->cache.data)
+		return mod->cache.data;
 
 	Mod_LoadModel (mod, true);
 
@@ -220,11 +217,10 @@ void Mod_ClearAll (void)
 	qmodel_t *mod;
 
 	for (i = 0, mod = mod_known; i < mod_numknown; i++, mod++)
-		if (mod->type != mod_alias)
-		{
-			mod->needload = true;
-			TexMgr_FreeTexturesForOwner (mod); // johnfitz
-		}
+	{
+		mod->needload = true;
+		TexMgr_FreeTexturesForOwner (mod); // johnfitz
+	}
 }
 
 void Mod_ResetAll (void)
@@ -283,16 +279,9 @@ Mod_TouchModel
 */
 void Mod_TouchModel (const char *name)
 {
-	qmodel_t *mod;
-
-	mod = Mod_FindName (name);
-
-	if (!mod->needload)
-	{
-		if (mod->type == mod_alias)
-			Cache_Check (&mod->cache);
-	}
+	Mod_FindName (name);
 }
+
 
 /*
 ==================
@@ -308,15 +297,7 @@ qmodel_t *Mod_LoadModel (qmodel_t *mod, qboolean crash)
 	int	mod_type;
 
 	if (!mod->needload)
-	{
-		if (mod->type == mod_alias)
-		{
-			if (Cache_Check (&mod->cache))
-				return mod;
-		}
-		else
-			return mod;		// not cached at all
-	}
+		return mod;		// not cached at all
 
 	// because the world is so huge, load it one piece at a time - load the file
 	buf = COM_LoadStackFile (mod->name, stackbuf, sizeof (stackbuf), &mod->path_id);
@@ -2326,7 +2307,7 @@ Mod_LoadAliasModel
 */
 void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 {
-	int					i, j;
+	int	i, j;
 	mdl_t *pinmodel;
 	stvert_t *pinstverts;
 	dtriangle_t *pintriangles;
@@ -2334,9 +2315,6 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	int					size;
 	daliasframetype_t *pframetype;
 	daliasskintype_t *pskintype;
-	int					start, end, total;
-
-	start = Hunk_LowMark ();
 
 	pinmodel = (mdl_t *) buffer;
 	mod_base = (byte *) buffer; // johnfitz
@@ -2450,16 +2428,8 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	// build the draw lists
 	GL_MakeAliasModelDisplayLists (mod, pheader);
 
-	// move the complete, relocatable alias model to the cache
-	end = Hunk_LowMark ();
-	total = end - start;
-
-	Cache_Alloc (&mod->cache, total, loadname);
-	if (!mod->cache.data)
-		return;
-	memcpy (mod->cache.data, pheader, total);
-
-	Hunk_FreeToLowMark (start);
+	// alias models are no longer cached so we just store the pointer
+	mod->cache.data = pheader;
 }
 
 // =============================================================================

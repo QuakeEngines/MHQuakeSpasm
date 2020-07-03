@@ -74,7 +74,6 @@ void W_LoadWadFile (void) // johnfitz -- filename is now hard-coded for honesty
 	const char *filename = WADFILENAME;
 
 	// johnfitz -- modified to use Q_zmalloc
-	// TODO: use cache_alloc
 	if (wad_base)
 		free (wad_base);
 	wad_base = COM_LoadMallocFile (filename, NULL);

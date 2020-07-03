@@ -232,6 +232,7 @@ added bug fix from bengt jardup
 */
 void R_TranslateNewPlayerSkin (int playernum)
 {
+	/*
 	char		name[64];
 	aliashdr_t *paliashdr;
 	int		skinnum;
@@ -270,7 +271,9 @@ void R_TranslateNewPlayerSkin (int playernum)
 
 	// now recolor it
 	R_TranslatePlayerSkin (playernum);
+	*/
 }
+
 
 /*
 ===============

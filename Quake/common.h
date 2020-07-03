@@ -244,9 +244,6 @@ byte *COM_LoadHunkFile (const char *path, unsigned int *path_id);
 // allocates the buffer on the hunk.
 byte *COM_LoadZoneFile (const char *path, unsigned int *path_id);
 // allocates the buffer on the zone.
-void COM_LoadCacheFile (const char *path, struct cache_user_s *cu,
-	unsigned int *path_id);
-// uses cache mem for allocating the buffer.
 byte *COM_LoadMallocFile (const char *path, unsigned int *path_id);
 // allocates the buffer on the system mem (Q_zmalloc).
 

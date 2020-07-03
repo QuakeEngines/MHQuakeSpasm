@@ -1744,12 +1744,10 @@ Allways appends a 0 byte.
 #define	LOADFILE_ZONE		0
 #define	LOADFILE_HUNK		1
 #define	LOADFILE_TEMPHUNK	2
-#define	LOADFILE_CACHE		3
 #define	LOADFILE_STACK		4
 #define	LOADFILE_MALLOC		5
 
 static byte *loadbuf;
-static cache_user_t *loadcache;
 static int	loadsize;
 
 byte *COM_LoadFile (const char *path, int usehunk, unsigned int *path_id)
@@ -1774,24 +1772,26 @@ byte *COM_LoadFile (const char *path, int usehunk, unsigned int *path_id)
 	case LOADFILE_HUNK:
 		buf = (byte *) Hunk_AllocName (len + 1, base);
 		break;
+
 	case LOADFILE_TEMPHUNK:
 		buf = (byte *) Hunk_TempAlloc (len + 1);
 		break;
+
 	case LOADFILE_ZONE:
 		buf = (byte *) Q_zmalloc (len + 1);
 		break;
-	case LOADFILE_CACHE:
-		buf = (byte *) Cache_Alloc (loadcache, len + 1, base);
-		break;
+
 	case LOADFILE_STACK:
 		if (len < loadsize)
 			buf = loadbuf;
 		else
 			buf = (byte *) Hunk_TempAlloc (len + 1);
 		break;
+
 	case LOADFILE_MALLOC:
 		buf = (byte *) Q_zmalloc (len + 1);
 		break;
+
 	default:
 		Sys_Error ("COM_LoadFile: bad usehunk");
 	}
@@ -1820,12 +1820,6 @@ byte *COM_LoadZoneFile (const char *path, unsigned int *path_id)
 byte *COM_LoadTempFile (const char *path, unsigned int *path_id)
 {
 	return COM_LoadFile (path, LOADFILE_TEMPHUNK, path_id);
-}
-
-void COM_LoadCacheFile (const char *path, struct cache_user_s *cu, unsigned int *path_id)
-{
-	loadcache = cu;
-	COM_LoadFile (path, LOADFILE_CACHE, path_id);
 }
 
 // uses temp hunk if larger than bufsize
