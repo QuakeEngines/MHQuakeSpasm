@@ -314,12 +314,6 @@ typedef struct maliasgroup_s {
 	maliasgroupframedesc_t	frames[1];
 } maliasgroup_t;
 
-// !!! if this is changed, it must be changed in asm_draw.h too !!!
-typedef struct mtriangle_s {
-	int					facesfront;
-	int					vertindex[3];
-} mtriangle_t;
-
 
 #define	MAX_SKINS	32
 
@@ -380,9 +374,7 @@ typedef struct aliashdr_s {
 
 // MH - get rid of these and move them to params
 extern	aliashdr_t *pheader;
-extern	stvert_t	stverts[MAXALIASVERTS];
-extern	mtriangle_t	triangles[MAXALIASTRIS];
-extern	trivertx_t *poseverts[MAXALIASFRAMES];
+
 
 // ===================================================================
 

@@ -29,12 +29,6 @@ extern cvar_t gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
 // up to 16 color translated skins
 gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz -- changed to an array of pointers
 
-#define NUMVERTEXNORMALS	162
-
-float	r_avertexnormals[NUMVERTEXNORMALS][3] = {
-#include "anorms.h"
-};
-
 extern float	shadelight[4];
 
 extern	vec3_t			lightspot;
@@ -482,16 +476,14 @@ R_SetupAliasFrame -- johnfitz -- rewritten to support lerping
 */
 void R_SetupAliasFrame (entity_t *e, aliashdr_t *hdr, int frame, lerpdata_t *lerpdata)
 {
-	int		posenum, numposes;
-
 	if ((frame >= hdr->numframes) || (frame < 0))
 	{
 		Con_DPrintf ("R_AliasSetupFrame: no such frame %d for '%s'\n", frame, e->model->name);
 		frame = 0;
 	}
 
-	posenum = hdr->pframes[frame].firstpose;
-	numposes = hdr->pframes[frame].numposes;
+	int posenum = hdr->pframes[frame].firstpose;
+	int numposes = hdr->pframes[frame].numposes;
 
 	if (numposes > 1)
 	{
@@ -540,8 +532,8 @@ void R_SetupAliasFrame (entity_t *e, aliashdr_t *hdr, int frame, lerpdata_t *ler
 	{
 		if ((e->lerpflags & LERP_FINISH) && numposes == 1)
 			lerpdata->blend = CLAMP (0, (cl.time - e->lerpstart) / (e->lerpfinish - e->lerpstart), 1);
-		else
-			lerpdata->blend = CLAMP (0, (cl.time - e->lerpstart) / e->lerptime, 1);
+		else lerpdata->blend = CLAMP (0, (cl.time - e->lerpstart) / e->lerptime, 1);
+
 		lerpdata->pose1 = e->previouspose;
 		lerpdata->pose2 = e->currentpose;
 	}
@@ -588,8 +580,7 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 	{
 		if (e->lerpflags & LERP_FINISH)
 			blend = CLAMP (0, (cl.time - e->movelerpstart) / (e->lerpfinish - e->movelerpstart), 1);
-		else
-			blend = CLAMP (0, (cl.time - e->movelerpstart) / 0.1, 1);
+		else blend = CLAMP (0, (cl.time - e->movelerpstart) / 0.1, 1);
 
 		// translation
 		VectorSubtract (e->currentorigin, e->previousorigin, d);

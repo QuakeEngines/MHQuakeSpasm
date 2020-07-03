@@ -2015,16 +2015,13 @@ ALIAS MODELS
 
 aliashdr_t *pheader;
 
-stvert_t	stverts[MAXALIASVERTS];
-mtriangle_t	triangles[MAXALIASTRIS];
-
 // a pose is a single set of vertexes.  a frame may be
 // an animating sequence of poses
 trivertx_t *poseverts[MAXALIASFRAMES];
 int			posenum;
 
-byte **player_8bit_texels_tbl;
-byte *player_8bit_texels;
+void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr, trivertx_t *poseverts[], dtriangle_t *triangles, stvert_t *stverts);
+
 
 /*
 =================
@@ -2251,22 +2248,27 @@ static qboolean nameInList (const char *list, const char *name)
 	{
 		// make a copy until the next comma or end of string
 		i = 0;
+
 		while (*s && *s != ',')
 		{
 			if (i < MAX_QPATH - 1)
 				tmp[i++] = *s;
 			s++;
 		}
+
 		tmp[i] = '\0';
+
 		// compare it to the model name
 		if (!strcmp (name, tmp))
 		{
 			return true;
 		}
+
 		// search forwards to the next comma or end of string
 		while (*s && *s == ',')
 			s++;
 	}
+
 	return false;
 }
 
@@ -2307,7 +2309,7 @@ Mod_LoadAliasModel
 */
 void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 {
-	int	i, j;
+	int	i;
 	mdl_t *pinmodel;
 	stvert_t *pinstverts;
 	dtriangle_t *pintriangles;
@@ -2382,9 +2384,9 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 
 	for (i = 0; i < pheader->numverts; i++)
 	{
-		stverts[i].onseam = LittleLong (pinstverts[i].onseam);
-		stverts[i].s = LittleLong (pinstverts[i].s);
-		stverts[i].t = LittleLong (pinstverts[i].t);
+		pinstverts[i].onseam = LittleLong (pinstverts[i].onseam);
+		pinstverts[i].s = LittleLong (pinstverts[i].s);
+		pinstverts[i].t = LittleLong (pinstverts[i].t);
 	}
 
 	// load triangle lists
@@ -2392,13 +2394,11 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 
 	for (i = 0; i < pheader->numtris; i++)
 	{
-		triangles[i].facesfront = LittleLong (pintriangles[i].facesfront);
+		pintriangles[i].facesfront = LittleLong (pintriangles[i].facesfront);
 
-		for (j = 0; j < 3; j++)
-		{
-			triangles[i].vertindex[j] =
-				LittleLong (pintriangles[i].vertindex[j]);
-		}
+		pintriangles[i].vertindex[0] = LittleLong (pintriangles[i].vertindex[0]);
+		pintriangles[i].vertindex[1] = LittleLong (pintriangles[i].vertindex[1]);
+		pintriangles[i].vertindex[2] = LittleLong (pintriangles[i].vertindex[2]);
 	}
 
 	// load the frames
@@ -2426,7 +2426,7 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	mod->maxs[0] = mod->maxs[1] = mod->maxs[2] = 16;
 
 	// build the draw lists
-	GL_MakeAliasModelDisplayLists (mod, pheader);
+	GL_MakeAliasModelDisplayLists (mod, pheader, poseverts, pintriangles, pinstverts);
 
 	// alias models are no longer cached so we just store the pointer
 	mod->cache.data = pheader;
