@@ -39,6 +39,7 @@ cvar_t	cfg_unbindall = { "cfg_unbindall", "1", CVAR_ARCHIVE };
 cvar_t	lookspring = { "lookspring", "0", CVAR_ARCHIVE };
 cvar_t	lookstrafe = { "lookstrafe", "0", CVAR_ARCHIVE };
 cvar_t	sensitivity = { "sensitivity", "3", CVAR_ARCHIVE };
+cvar_t	freelook = { "freelook", "1", CVAR_ARCHIVE };
 
 cvar_t	m_pitch = { "m_pitch", "0.022", CVAR_ARCHIVE };
 cvar_t	m_yaw = { "m_yaw", "0.022", CVAR_ARCHIVE };
@@ -842,6 +843,7 @@ void CL_Init (void)
 	Cvar_RegisterVariable (&lookspring);
 	Cvar_RegisterVariable (&lookstrafe);
 	Cvar_RegisterVariable (&sensitivity);
+	Cvar_RegisterVariable (&freelook);
 
 	Cvar_RegisterVariable (&cl_alwaysrun);
 

@@ -64,6 +64,8 @@ static SDL_JoystickID joy_active_instaceid = -1;
 static SDL_GameController *joy_active_controller = NULL;
 #endif
 
+qboolean IN_MouseLooking (void);
+
 static qboolean	no_mouse = false;
 
 static int buttonremap[] =
@@ -706,18 +708,18 @@ void IN_MouseMove (usercmd_t *cmd)
 	total_dx = 0;
 	total_dy = 0;
 
-	if ((in_strafe.state & 1) || (lookstrafe.value && (in_mlook.state & 1)))
+	if ((in_strafe.state & 1) || (lookstrafe.value && IN_MouseLooking ()))
 		cmd->sidemove += m_side.value * dmx;
 	else
 		cl.viewangles[YAW] -= m_yaw.value * dmx;
 
-	if (in_mlook.state & 1)
+	if (IN_MouseLooking ())
 	{
 		if (dmx || dmy)
 			V_StopPitchDrift ();
 	}
 
-	if ((in_mlook.state & 1) && !(in_strafe.state & 1))
+	if (IN_MouseLooking () && !(in_strafe.state & 1))
 	{
 		cl.viewangles[PITCH] += m_pitch.value * dmy;
 		/* johnfitz -- variable pitch clamping */

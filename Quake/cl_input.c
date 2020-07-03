@@ -29,6 +29,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern cvar_t cl_maxpitch; // johnfitz -- variable pitch clamping
 extern cvar_t cl_minpitch; // johnfitz -- variable pitch clamping
 
+
+qboolean IN_MouseLooking (void)
+{
+	extern cvar_t freelook;
+	return ((in_mlook.state & 1) || freelook.value);
+}
+
 /*
 ===============================================================================
 
@@ -125,7 +132,7 @@ void IN_MLookDown (void) { KeyDown (&in_mlook); }
 void IN_MLookUp (void)
 {
 	KeyUp (&in_mlook);
-	if (!(in_mlook.state & 1) && lookspring.value)
+	if (!IN_MouseLooking () && lookspring.value)
 		V_StartPitchDrift ();
 }
 void IN_UpDown (void) { KeyDown (&in_up); }
