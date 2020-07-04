@@ -161,6 +161,7 @@ typedef struct client_state_s {
 	vec3_t		velocity;		// lerped between mvelocity[0] and [1]
 
 	vec3_t		punchangle;		// temporary offset
+	double		punchtime;		// cl.time when punchangle changes
 
 	float		viewheight;
 	float		crouch;			// local amount for smoothing stepups
@@ -235,7 +236,6 @@ extern	cvar_t	cl_nolerp;
 
 extern	cvar_t	cfg_unbindall;
 
-extern	cvar_t	cl_pitchdriftspeed;
 extern	cvar_t	lookspring;
 extern	cvar_t	lookstrafe;
 extern	cvar_t	sensitivity;
@@ -304,10 +304,10 @@ extern 	kbutton_t 	in_strafe;
 extern 	kbutton_t 	in_speed;
 
 void CL_InitInput (void);
-void CL_SendCmd (void);
+void CL_SendCmd (double frametime);
 void CL_SendMove (const usercmd_t *cmd);
 int  CL_ReadFromServer (double frametime);
-void CL_BaseMove (usercmd_t *cmd);
+void CL_BaseMove (usercmd_t *cmd, double frametime);
 
 void CL_ParseTEnt (void);
 void CL_UpdateTEnts (void);
@@ -328,9 +328,6 @@ void CL_ParseServerMessage (void);
 void CL_NewTranslation (int slot);
 
 // view
-void V_StartPitchDrift (void);
-void V_StopPitchDrift (void);
-
 void V_RenderView (void);
 
 // void V_UpdatePalette (void); // johnfitz

@@ -126,15 +126,11 @@ void KeyUp (kbutton_t *b)
 	b->state |= 4; 		// impulse up
 }
 
+
 void IN_KLookDown (void) { KeyDown (&in_klook); }
 void IN_KLookUp (void) { KeyUp (&in_klook); }
 void IN_MLookDown (void) { KeyDown (&in_mlook); }
-void IN_MLookUp (void)
-{
-	KeyUp (&in_mlook);
-	if (!IN_MouseLooking () && lookspring.value)
-		V_StartPitchDrift ();
-}
+void IN_MLookUp (void) { KeyUp (&in_mlook); }
 void IN_UpDown (void) { KeyDown (&in_up); }
 void IN_UpUp (void) { KeyUp (&in_up); }
 void IN_DownDown (void) { KeyDown (&in_down); }
@@ -249,15 +245,15 @@ CL_AdjustAngles
 Moves the local angle positions
 ================
 */
-void CL_AdjustAngles (void)
+void CL_AdjustAngles (double frametime)
 {
 	float	speed;
 	float	up, down;
 
 	if ((in_speed.state & 1) ^ (cl_alwaysrun.value != 0.0))
-		speed = host_frametime * cl_anglespeedkey.value;
+		speed = frametime * cl_anglespeedkey.value;
 	else
-		speed = host_frametime;
+		speed = frametime;
 
 	if (!(in_strafe.state & 1))
 	{
@@ -265,9 +261,9 @@ void CL_AdjustAngles (void)
 		cl.viewangles[YAW] += speed * cl_yawspeed.value * CL_KeyState (&in_left);
 		cl.viewangles[YAW] = anglemod (cl.viewangles[YAW]);
 	}
+
 	if (in_klook.state & 1)
 	{
-		V_StopPitchDrift ();
 		cl.viewangles[PITCH] -= speed * cl_pitchspeed.value * CL_KeyState (&in_forward);
 		cl.viewangles[PITCH] += speed * cl_pitchspeed.value * CL_KeyState (&in_back);
 	}
@@ -278,21 +274,15 @@ void CL_AdjustAngles (void)
 	cl.viewangles[PITCH] -= speed * cl_pitchspeed.value * up;
 	cl.viewangles[PITCH] += speed * cl_pitchspeed.value * down;
 
-	if (up || down)
-		V_StopPitchDrift ();
-
 	// johnfitz -- variable pitch clamping
-	if (cl.viewangles[PITCH] > cl_maxpitch.value)
-		cl.viewangles[PITCH] = cl_maxpitch.value;
-	if (cl.viewangles[PITCH] < cl_minpitch.value)
-		cl.viewangles[PITCH] = cl_minpitch.value;
+	if (cl.viewangles[PITCH] > cl_maxpitch.value) cl.viewangles[PITCH] = cl_maxpitch.value;
+	if (cl.viewangles[PITCH] < cl_minpitch.value) cl.viewangles[PITCH] = cl_minpitch.value;
 	// johnfitz
 
-	if (cl.viewangles[ROLL] > 50)
-		cl.viewangles[ROLL] = 50;
-	if (cl.viewangles[ROLL] < -50)
-		cl.viewangles[ROLL] = -50;
+	if (cl.viewangles[ROLL] > 50) cl.viewangles[ROLL] = 50;
+	if (cl.viewangles[ROLL] < -50) cl.viewangles[ROLL] = -50;
 }
+
 
 /*
 ================
@@ -301,12 +291,12 @@ CL_BaseMove
 Send the intended movement message to the server
 ================
 */
-void CL_BaseMove (usercmd_t *cmd)
+void CL_BaseMove (usercmd_t *cmd, double frametime)
 {
 	if (cls.signon != SIGNONS)
 		return;
 
-	CL_AdjustAngles ();
+	CL_AdjustAngles (frametime);
 
 	Q_memset (cmd, 0, sizeof (*cmd));
 

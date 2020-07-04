@@ -699,6 +699,27 @@ __inline float Vector4Dist (const float *v1, const float *v2)
 	return Vector4Length (dist);
 }
 
+__inline float Q_fclamp (const float val, const float mins, const float maxs)
+{
+	if (val < mins)
+		return mins;
+	else if (val > maxs)
+		return maxs;
+	else return val;
+}
+
+
+__inline float Q_fmin (const float _1, const float _2)
+{
+	return ((_1 < _2) ? _1 : _2);
+}
+
+
+__inline float Q_fmax (const float _1, const float _2)
+{
+	return ((_1 > _2) ? _1 : _2);
+}
+
 
 #endif	/* __MATHLIB_H */
 

@@ -1046,10 +1046,10 @@ PR_LoadProgs
 */
 void PR_LoadProgs (void)
 {
-	int			i;
+	PR_RunClear ();
 
 	// flush the non-C variable lookup cache
-	for (i = 0; i < GEFV_CACHESIZE; i++)
+	for (int i = 0; i < GEFV_CACHESIZE; i++)
 		gefvCache[i].field[0] = 0;
 
 	CRC_Init (&pr_crc);
@@ -1059,11 +1059,11 @@ void PR_LoadProgs (void)
 		Host_Error ("PR_LoadProgs: couldn't load progs.dat");
 	Con_DPrintf ("Programs occupy %iK.\n", com_filesize / 1024);
 
-	for (i = 0; i < com_filesize; i++)
+	for (int i = 0; i < com_filesize; i++)
 		CRC_ProcessByte (&pr_crc, ((byte *) progs)[i]);
 
 	// byte swap the header
-	for (i = 0; i < (int) sizeof (*progs) / 4; i++)
+	for (int i = 0; i < (int) sizeof (*progs) / 4; i++)
 		((int *) progs)[i] = LittleLong (((int *) progs)[i]);
 
 	if (progs->version != PROG_VERSION)
@@ -1093,7 +1093,7 @@ void PR_LoadProgs (void)
 	pr_globals = (float *) pr_global_struct;
 
 	// byte swap the lumps
-	for (i = 0; i < progs->numstatements; i++)
+	for (int i = 0; i < progs->numstatements; i++)
 	{
 		pr_statements[i].op = LittleShort (pr_statements[i].op);
 		pr_statements[i].a = LittleShort (pr_statements[i].a);
@@ -1101,7 +1101,7 @@ void PR_LoadProgs (void)
 		pr_statements[i].c = LittleShort (pr_statements[i].c);
 	}
 
-	for (i = 0; i < progs->numfunctions; i++)
+	for (int i = 0; i < progs->numfunctions; i++)
 	{
 		pr_functions[i].first_statement = LittleLong (pr_functions[i].first_statement);
 		pr_functions[i].parm_start = LittleLong (pr_functions[i].parm_start);
@@ -1111,7 +1111,7 @@ void PR_LoadProgs (void)
 		pr_functions[i].locals = LittleLong (pr_functions[i].locals);
 	}
 
-	for (i = 0; i < progs->numglobaldefs; i++)
+	for (int i = 0; i < progs->numglobaldefs; i++)
 	{
 		pr_globaldefs[i].type = LittleShort (pr_globaldefs[i].type);
 		pr_globaldefs[i].ofs = LittleShort (pr_globaldefs[i].ofs);
@@ -1120,7 +1120,7 @@ void PR_LoadProgs (void)
 
 	pr_alpha_supported = false; // johnfitz
 
-	for (i = 0; i < progs->numfielddefs; i++)
+	for (int i = 0; i < progs->numfielddefs; i++)
 	{
 		pr_fielddefs[i].type = LittleShort (pr_fielddefs[i].type);
 		if (pr_fielddefs[i].type & DEF_SAVEGLOBAL)
@@ -1134,10 +1134,11 @@ void PR_LoadProgs (void)
 		// johnfitz
 	}
 
-	for (i = 0; i < progs->numglobals; i++)
+	for (int i = 0; i < progs->numglobals; i++)
 		((int *) pr_globals)[i] = LittleLong (((int *) pr_globals)[i]);
 
 	pr_edict_size = progs->entityfields * 4 + sizeof (edict_t) - sizeof (entvars_t);
+
 	// round off to next highest whole word address (esp for Alpha)
 	// this ensures that pointers in the engine data area are always
 	// properly aligned

@@ -266,10 +266,19 @@ void PR_RunError (const char *error, ...)
 
 	Con_Printf ("%s\n", string);
 
-	pr_depth = 0;	// dump the stack so host_error can shutdown functions
+	PR_RunClear ();
 
 	Host_Error ("Program error");
 }
+
+
+void PR_RunClear (void)
+{
+	// Clear stack variables
+	pr_depth = localstack_used = pr_xstatement = 0;
+	pr_xfunction = NULL;
+}
+
 
 /*
 ====================

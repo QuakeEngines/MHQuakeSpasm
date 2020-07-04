@@ -492,11 +492,14 @@ void Mod_LoadTextures (lump_t *l)
 			else // regular texture
 			{
 				// ericw -- fence textures
-				int	extraflags = 0;
+				int	textureflags = 0;
 
 				if (tx->name[0] == '{')
-					extraflags |= TEXPREF_ALPHA;
+					textureflags |= TEXPREF_ALPHA;
 				// ericw
+
+				// always mip these
+				textureflags |= TEXPREF_MIPMAP;
 
 				// external textures -- first look in "textures/mapname/" then look in "textures/"
 				COM_StripExtension (loadmodel->name + 5, mapname, sizeof (mapname));
@@ -512,7 +515,7 @@ void Mod_LoadTextures (lump_t *l)
 				// now load whatever we found
 				if (data) // load external image
 				{
-					tx->gltexture = TexMgr_LoadImage (loadmodel, filename, fwidth, fheight, SRC_RGBA, data, filename, 0, TEXPREF_MIPMAP | extraflags);
+					tx->gltexture = TexMgr_LoadImage (loadmodel, filename, fwidth, fheight, SRC_RGBA, data, filename, 0, textureflags);
 
 					// now try to load glow/luma image from the same place
 					Hunk_FreeToLowMark (mark);
@@ -526,7 +529,7 @@ void Mod_LoadTextures (lump_t *l)
 					}
 
 					if (data)
-						tx->fullbright = TexMgr_LoadImage (loadmodel, filename2, fwidth, fheight, SRC_RGBA, data, filename, 0, TEXPREF_MIPMAP | extraflags);
+						tx->fullbright = TexMgr_LoadImage (loadmodel, filename2, fwidth, fheight, SRC_RGBA, data, filename, 0, textureflags);
 				}
 				else // use the texture from the bsp file
 				{
@@ -535,13 +538,13 @@ void Mod_LoadTextures (lump_t *l)
 
 					if (Mod_CheckFullbrights ((byte *) (mt + 1), tx->width * tx->height))
 					{
-						tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (mt + 1), loadmodel->name, offset, TEXPREF_MIPMAP | extraflags);
+						tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (mt + 1), loadmodel->name, offset, textureflags);
 						q_snprintf (texturename, sizeof (texturename), "%s:%s_glow", loadmodel->name, tx->name);
-						tx->fullbright = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (mt + 1), loadmodel->name, offset, TEXPREF_MIPMAP | TEXPREF_FULLBRIGHT | extraflags);
+						tx->fullbright = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (mt + 1), loadmodel->name, offset, TEXPREF_FULLBRIGHT | textureflags);
 					}
 					else
 					{
-						tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (mt + 1), loadmodel->name, offset, TEXPREF_MIPMAP | extraflags);
+						tx->gltexture = TexMgr_LoadImage (loadmodel, texturename, tx->width, tx->height, SRC_INDEXED, (byte *) (mt + 1), loadmodel->name, offset, textureflags);
 					}
 				}
 			}

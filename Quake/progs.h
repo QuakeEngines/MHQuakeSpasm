@@ -133,6 +133,9 @@ FUNC_NORETURN void PR_RunError (const char *error, ...) FUNC_PRINTF (1, 2);
 #pragma aux PR_RunError aborts;
 #endif
 
+// clear the progs running state
+void PR_RunClear (void);
+
 void ED_PrintEdicts (void);
 void ED_PrintNum (int ent);
 

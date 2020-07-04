@@ -693,37 +693,38 @@ void CL_ParseClientdata (void)
 		MSG_ReadChar ();
 
 	VectorCopy (cl.mvelocity[0], cl.mvelocity[1]);
+
 	for (i = 0; i < 3; i++)
 	{
 		if (bits & (SU_PUNCH1 << i))
 			cl.punchangle[i] = MSG_ReadChar ();
-		else
-			cl.punchangle[i] = 0;
+		else cl.punchangle[i] = 0;
 
 		if (bits & (SU_VELOCITY1 << i))
 			cl.mvelocity[0][i] = MSG_ReadChar () * 16;
-		else
-			cl.mvelocity[0][i] = 0;
+		else cl.mvelocity[0][i] = 0;
 	}
 
-	// johnfitz -- update v_punchangles
+	// johnfitz -- update v_punchangles - mh - rewritten for sanity
 	if (v_punchangles[0][0] != cl.punchangle[0] || v_punchangles[0][1] != cl.punchangle[1] || v_punchangles[0][2] != cl.punchangle[2])
 	{
-		VectorCopy (v_punchangles[0], v_punchangles[1]);
-		VectorCopy (cl.punchangle, v_punchangles[0]);
+		// beginning a new punch
+		Vector3Copy (v_punchangles[1], v_punchangles[0]);
+		Vector3Copy (v_punchangles[0], cl.punchangle);
+		cl.punchtime = cl.time;
 	}
 	// johnfitz
 
-// [always sent]	if (bits & SU_ITEMS)
+	// [always sent]	if (bits & SU_ITEMS)
 	i = MSG_ReadLong ();
 
 	if (cl.items != i)
 	{
 		// set flash times
-		Sbar_Changed ();
 		for (j = 0; j < 32; j++)
 			if ((i & (1 << j)) && !(cl.items & (1 << j)))
 				cl.item_gettime[j] = cl.time;
+
 		cl.items = i;
 	}
 

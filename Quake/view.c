@@ -47,7 +47,7 @@ cvar_t	v_kicktime = { "v_kicktime", "0.5", CVAR_NONE };
 cvar_t	v_kickroll = { "v_kickroll", "0.6", CVAR_NONE };
 cvar_t	v_kickpitch = { "v_kickpitch", "0.6", CVAR_NONE };
 cvar_t	v_kickyaw = { "v_kickyaw", "0.1", CVAR_NONE };
-cvar_t	v_gunkick = { "v_gunkick", "1", CVAR_NONE }; // johnfitz
+cvar_t	v_gunkick = { "v_gunkick", "2", CVAR_NONE }; // johnfitz
 
 cvar_t	v_iyaw_cycle = { "v_iyaw_cycle", "2", CVAR_NONE };
 cvar_t	v_iroll_cycle = { "v_iroll_cycle", "0.5", CVAR_NONE };
@@ -166,32 +166,6 @@ float V_CalcBob (void)
 
 cvar_t	v_centermove = { "v_centermove", "0.15", CVAR_NONE };
 cvar_t	v_centerspeed = { "v_centerspeed", "500", CVAR_NONE };
-
-
-void V_StartPitchDrift (void)
-{
-}
-
-void V_StopPitchDrift (void)
-{
-}
-
-/*
-===============
-V_DriftPitch
-
-Moves the client pitch angle towards cl.idealpitch sent by the server.
-
-If the user is adjusting pitch manually, either with lookup/lookdown,
-mlook and mouse, or klook and keyboard, pitch drifting is constantly stopped.
-
-Drifting is enabled when the center view key is hit, mlook is released and
-lookspring is non 0, or when
-===============
-*/
-void V_DriftPitch (void)
-{
-}
 
 
 /*
@@ -647,6 +621,7 @@ void V_CalcIntermissionRefdef (void)
 	v_idlescale.value = old;
 }
 
+
 /*
 ==================
 V_CalcRefdef
@@ -660,16 +635,12 @@ void V_CalcRefdef (void)
 	vec3_t		angles;
 	float		bob;
 	static float oldz = 0;
-	static vec3_t punch = { 0, 0, 0 }; // johnfitz -- v_gunkick
-	float delta; // johnfitz -- v_gunkick
-
-	V_DriftPitch ();
+	float punchblend, punch[3]; // lerped gunkick
 
 	// ent is the player model (visible when out of body)
 	ent = &cl_entities[cl.viewentity];
 	// view is the weapon model (only visible from inside body)
 	view = &cl.viewent;
-
 
 	// transform the view offset by the model's matrix to get the offset from
 	// model origin for the view
@@ -730,24 +701,16 @@ void V_CalcRefdef (void)
 	view->frame = cl.stats[STAT_WEAPONFRAME];
 	view->colormap = vid.colormap;
 
-	// johnfitz -- v_gunkick
-	if (v_gunkick.value == 1) // original quake kick
-		VectorAdd (r_refdef.viewangles, cl.punchangle, r_refdef.viewangles);
-	if (v_gunkick.value == 2) // lerped kick
+	// johnfitz -- v_gunkick - mh - rewritten for sanity
+	if (v_gunkick.value)
 	{
-		for (i = 0; i < 3; i++)
-			if (punch[i] != v_punchangles[0][i])
-			{
-				// speed determined by how far we need to lerp in 1/10th of a second
-				delta = (v_punchangles[0][i] - v_punchangles[1][i]) * host_frametime * 10;
-
-				if (delta > 0)
-					punch[i] = q_min (punch[i] + delta, v_punchangles[0][i]);
-				else if (delta < 0)
-					punch[i] = q_max (punch[i] + delta, v_punchangles[0][i]);
-			}
-
-		VectorAdd (r_refdef.viewangles, punch, r_refdef.viewangles);
+		if (v_gunkick.value == 2)
+		{
+			punchblend = Q_fclamp ((cl.time - cl.punchtime) / 0.1f, 0, 1);
+			Vector3Lerpf (punch, v_punchangles[1], v_punchangles[0], punchblend);
+			Vector3Add (r_refdef.viewangles, punch, r_refdef.viewangles);
+		}
+		else Vector3Add (r_refdef.viewangles, cl.punchangle, r_refdef.viewangles);
 	}
 	// johnfitz
 
@@ -822,7 +785,6 @@ void V_Init (void)
 {
 	Cmd_AddCommand ("v_cshift", V_cshift_f);
 	Cmd_AddCommand ("bf", V_BonusFlash_f);
-	Cmd_AddCommand ("centerview", V_StartPitchDrift);
 
 	Cvar_RegisterVariable (&v_centermove);
 	Cvar_RegisterVariable (&v_centerspeed);
@@ -868,6 +830,13 @@ void V_NewMap (void)
 	v_oldz = v_stepz = 0;
 	v_steptime = 0;
 	v_dmg_time = 0;
+
+	// clear punch angles
+	v_punchangles[0][0] = v_punchangles[0][1] = v_punchangles[0][2] = 0.0f;
+	v_punchangles[1][0] = v_punchangles[1][1] = v_punchangles[1][2] = 0.0f;
+	cl.punchangle[0] = cl.punchangle[1] = cl.punchangle[2] = 0.0f;
+	cl.punchtime = 0;
 }
+
 
 

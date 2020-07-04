@@ -274,7 +274,6 @@ extern	cvar_t		developer;
 extern	cvar_t		max_edicts; // johnfitz
 
 extern	qboolean	host_initialized;	// true if into command execution
-extern	double		host_frametime;
 extern	byte *host_colormap;
 extern	int		host_framecount;	// incremented every frame, never reset
 extern	double		realtime;		// not bounded in any way, changed at

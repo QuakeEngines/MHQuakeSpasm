@@ -58,7 +58,6 @@ jmp_buf 	host_abortserver;
 byte *host_colormap;
 
 cvar_t	host_framerate = { "host_framerate", "0", CVAR_NONE };	// set for slow motion
-cvar_t	host_speeds = { "host_speeds", "0", CVAR_NONE };			// set for running times
 cvar_t	host_maxfps = { "host_maxfps", "72", CVAR_ARCHIVE }; // johnfitz
 cvar_t	host_timescale = { "host_timescale", "0", CVAR_NONE }; // johnfitz
 cvar_t	max_edicts = { "max_edicts", "8192", CVAR_NONE }; // johnfitz // ericw -- changed from 2048 to 8192, removed CVAR_ARCHIVE
@@ -291,7 +290,6 @@ void Host_InitLocal (void)
 	Host_InitCommands ();
 
 	Cvar_RegisterVariable (&host_framerate);
-	Cvar_RegisterVariable (&host_speeds);
 	Cvar_RegisterVariable (&host_maxfps); // johnfitz
 	Cvar_SetCallback (&host_maxfps, Max_Fps_f);
 	Cvar_RegisterVariable (&host_timescale); // johnfitz
@@ -607,19 +605,20 @@ Add them exactly as if they had been typed at the console
 */
 void Host_GetConsoleCommands (void)
 {
-	const char *cmd;
-
 	if (!isDedicated)
 		return;	// no stdin necessary in graphical mode
 
 	while (1)
 	{
-		cmd = Sys_ConsoleInput ();
+		const char *cmd = Sys_ConsoleInput ();
+
 		if (!cmd)
 			break;
+
 		Cbuf_AddText (cmd);
 	}
 }
+
 
 /*
 ==================
@@ -628,45 +627,80 @@ Host_ServerFrame
 */
 void Host_ServerFrame (double frametime)
 {
-	int		i, active; // johnfitz
-	edict_t *ent; // johnfitz
+	// these are really client operations but they must run synchronized with the server tick rate so run them here
+	Cbuf_Execute ();
+	NET_Poll ();
+	CL_SendCmd (host_frametime);
 
-// run the world state
-	pr_global_struct->frametime = frametime;
+	// only if a server is active
+	if (sv.active)
+	{
+		PR_RunClear ();
 
-	// set the time and clear the general datagram
-	SV_ClearDatagram ();
+		// run the world state
+		pr_global_struct->frametime = frametime;
 
-	// check for new clients
-	SV_CheckForNewClients ();
+		// set the time and clear the general datagram
+		SV_ClearDatagram ();
 
-	// read client messages
-	SV_RunClients (frametime);
+		// check for new clients
+		SV_CheckForNewClients ();
 
-	// move things around and think
-	// always pause in single player if in console or menus
-	if (!sv.paused && (svs.maxclients > 1 || key_dest == key_game))
-		SV_Physics (frametime);
+		// read client messages
+		SV_RunClients (frametime);
 
-	// johnfitz -- devstats
+		// move things around and think
+		// always pause in single player if in console or menus
+		if (!sv.paused && (svs.maxclients > 1 || key_dest == key_game))
+			SV_Physics (frametime);
+
+		// johnfitz -- devstats
+		if (cls.signon == SIGNONS)
+		{
+			int active = 0;
+
+			for (int i = 0; i < sv.num_edicts; i++)
+			{
+				edict_t *ent = EDICT_NUM (i);
+				if (!ent->free)
+					active++;
+			}
+
+			if (active > 600 && dev_peakstats.edicts <= 600)
+				Con_DWarning ("%i edicts exceeds standard limit of 600 (max = %d).\n", active, sv.max_edicts);
+
+			dev_stats.edicts = active;
+			dev_peakstats.edicts = q_max (active, dev_peakstats.edicts);
+		}
+		// johnfitz
+
+		// send all messages to the clients
+		SV_SendClientMessages ();
+	}
+}
+
+
+void Host_ClientFrame (double frametime)
+{
+	// fetch results from server
+	if (cls.state == ca_connected)
+		CL_ReadFromServer (frametime);
+
+	SCR_UpdateScreen ();
+
+	// update audio
+	BGM_Update ();	// adds music raw samples and/or advances midi driver
+
 	if (cls.signon == SIGNONS)
 	{
-		for (i = 0, active = 0; i < sv.num_edicts; i++)
-		{
-			ent = EDICT_NUM (i);
-			if (!ent->free)
-				active++;
-		}
-		if (active > 600 && dev_peakstats.edicts <= 600)
-			Con_DWarning ("%i edicts exceeds standard limit of 600 (max = %d).\n", active, sv.max_edicts);
-		dev_stats.edicts = active;
-		dev_peakstats.edicts = q_max (active, dev_peakstats.edicts);
+		S_Update (r_origin, vpn, vright, vup);
+		CL_DecayLights ();
 	}
-	// johnfitz
+	else S_Update (vec3_origin, vec3_origin, vec3_origin, vec3_origin);
 
-	// send all messages to the clients
-	SV_SendClientMessages ();
+	CDAudio_Update ();
 }
+
 
 /*
 ==================
@@ -677,22 +711,13 @@ Runs all active servers
 */
 void _Host_Frame (void)
 {
-	static double		time1 = 0;
-	static double		time2 = 0;
-	static double		time3 = 0;
-	int			pass1, pass2, pass3;
-
 	if (setjmp (host_abortserver))
 		return;			// something bad happened, or the server disconnected
 
-// keep the random time dependent
+	// keep the random time dependent
 	rand ();
 
-	// decide the simulation time
-	if (!Host_FilterTime ())
-		return;			// don't run too fast, or packets will flood out
-
-// get new key events
+	// get new key events
 	Key_UpdateForDest ();
 	IN_UpdateInputMode ();
 	Sys_SendKeyEvents ();
@@ -700,69 +725,27 @@ void _Host_Frame (void)
 	// allow mice or other external controllers to add commands
 	IN_Commands ();
 
-	// process console commands
-	Cbuf_Execute ();
+	// check for commands typed to the host
+	Host_GetConsoleCommands ();
 
-	NET_Poll ();
-
-	// if running the server locally, make intentions now
-	if (sv.active)
-		CL_SendCmd ();
+	// decide the simulation time
+	if (!Host_FilterTime ())
+		return;			// don't run too fast, or packets will flood out
 
 	// -------------------
 	// server operations
 	// -------------------
 
-	// check for commands typed to the host
-	Host_GetConsoleCommands ();
-
-	if (sv.active)
-		Host_ServerFrame (host_frametime);
+	Host_ServerFrame (host_frametime);
 
 	// -------------------
 	// client operations
 	// -------------------
 
-	// if running the server remotely, send intentions now after
-	// the incoming messages have been read
-	if (!sv.active)
-		CL_SendCmd ();
 
-	// fetch results from server
-	if (cls.state == ca_connected)
-		CL_ReadFromServer (host_frametime);
+	Host_ClientFrame (host_frametime);
 
-	// update video
-	if (host_speeds.value)
-		time1 = Sys_DoubleTime ();
-
-	SCR_UpdateScreen ();
-
-	if (host_speeds.value)
-		time2 = Sys_DoubleTime ();
-
-	// update audio
-	BGM_Update ();	// adds music raw samples and/or advances midi driver
-	if (cls.signon == SIGNONS)
-	{
-		S_Update (r_origin, vpn, vright, vup);
-		CL_DecayLights ();
-	}
-	else
-		S_Update (vec3_origin, vec3_origin, vec3_origin, vec3_origin);
-
-	CDAudio_Update ();
-
-	if (host_speeds.value)
-	{
-		pass1 = (time1 - time3) * 1000;
-		time3 = Sys_DoubleTime ();
-		pass2 = (time2 - time1) * 1000;
-		pass3 = (time3 - time2) * 1000;
-		Con_Printf ("%3i tot %3i server %3i gfx %3i snd\n",
-			pass1 + pass2 + pass3, pass1, pass2, pass3);
-	}
-
+	// count frames for timedemos
 	host_framecount++;
 
 }
