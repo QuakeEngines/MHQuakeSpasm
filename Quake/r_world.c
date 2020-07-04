@@ -146,7 +146,7 @@ void R_BatchSurface (msurface_t *s)
 
 
 static GLuint r_brush_lightmapped_vp = 0;
-static GLuint r_brush_lightmapped_fp[2] = { 0, 0 }; // luma, no luma
+static GLuint r_brush_lightmapped_fp[8] = { 0 };
 
 static GLuint r_brush_dynamic_vp = 0;
 static GLuint r_brush_dynamic_fp = 0;
@@ -183,59 +183,11 @@ void GLWorld_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	const GLchar *fp_lightmapped_source0 = \
-		"!!ARBfp1.0\n"
-		"\n"
-		"TEMP diff, lmap, fence;\n"
-		"TEMP lmr, lmg, lmb;\n\n"
-		"\n"
-		"# perform the texturing\n"
-		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
-		"\n"
-		"# fence texture test\n"
-		"SUB fence, diff, 0.666;\n"
-		"KIL fence.a;\n"
-		"\n"
-		"# read the lightmaps\n"
-		"TEX lmr, fragment.texcoord[1], texture[1], 2D;\n"
-		"TEX lmg, fragment.texcoord[1], texture[2], 2D;\n"
-		"TEX lmb, fragment.texcoord[1], texture[3], 2D;\n"
-		"\n"
-		"# apply the lightstyles\n"
-		"DP4 lmap.r, lmr, program.local[0];\n"
-		"DP4 lmap.g, lmg, program.local[0];\n"
-		"DP4 lmap.b, lmb, program.local[0];\n"
-		"MIN lmap, lmap, 1.0; # allow them to switch off overbrights here too\n"
-		"\n"
-		"# perform the lightmapping\n"
-		"MUL diff.rgb, diff, lmap;\n"
-		"MUL diff.rgb, diff, program.env[10].z; # overbright factor\n"
-		"\n"
-		"# perform the fogging\n"
-		"TEMP fogFactor;\n"
-		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
-		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
-		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
-		"LRP diff.rgb, fogFactor.x, diff, state.fog.color;\n"
-		"\n"
-		"# apply the contrast\n"
-		"MUL diff.rgb, diff, program.env[10].x;\n"
-		"\n"
-		"# apply the gamma (POW only operates on scalars)\n"
-		"POW result.color.r, diff.r, program.env[10].y;\n"
-		"POW result.color.g, diff.g, program.env[10].y;\n"
-		"POW result.color.b, diff.b, program.env[10].y;\n"
-		"MOV result.color.a, program.env[0].a;\n"
-		"\n"
-		"# done\n"
-		"END\n"
-		"\n";
-
-	const GLchar *fp_lightmapped_source1 = \
+	const GLchar *fp_lightmapped_source = \
 		"!!ARBfp1.0\n"
 		"\n"
 		"TEMP diff, lmap, luma, fence;\n"
-		"TEMP lmr, lmg, lmb;\n\n"
+		"TEMP lmr, lmg, lmb;\n"
 		"\n"
 		"# perform the texturing\n"
 		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
@@ -328,8 +280,9 @@ void GLWorld_CreateShaders (void)
 		"\n";
 
 	r_brush_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_lightmapped_source);
-	r_brush_lightmapped_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source0);
-	r_brush_lightmapped_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source1);
+
+	for (int shaderflag = 0; shaderflag < 8; shaderflag++)
+		r_brush_lightmapped_fp[shaderflag] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFragmentProgram (fp_lightmapped_source, shaderflag));
 
 	r_brush_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_dynamic_source);
 	r_brush_dynamic_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDynamicLightFragmentProgramSource ());
@@ -344,6 +297,8 @@ extern GLuint r_surfaces_vbo;
 
 void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 {
+	int shaderflag = SHADERFLAG_NONE;
+
 	// and now we can draw it
 	GL_BindTexture (GL_TEXTURE0, t->gltexture);
 
@@ -351,9 +306,17 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 	if (gl_fullbrights.value && t->fullbright)
 	{
 		GL_BindTexture (GL_TEXTURE4, t->fullbright);
-		GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[1]);
+		shaderflag |= SHADERFLAG_LUMA;
 	}
-	else GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[0]);
+
+	// fence texture test
+	if (s->flags & SURF_DRAWFENCE) shaderflag |= SHADERFLAG_FENCE;
+
+	// fog on/off
+	if (Fog_GetDensity () > 0) shaderflag |= SHADERFLAG_FOG;
+
+	// bind the selected programs
+	GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[shaderflag]);
 
 	// beginning with an empty batch
 	R_ClearBatch ();
@@ -519,8 +482,8 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 		}
 		else if (!cl.worldmodel->lightdata)
 		{
-			// the no lightdata case just draws the same as the notexture case
-			R_DrawNoTextureChain (s, t);
+			// the no lightdata case just draws the same as the notexture case, but should animate the texture
+			R_DrawNoTextureChain (s, R_TextureAnimation (t, ent != NULL ? ent->frame : 0));
 		}
 		else if (!(s->flags & SURF_DRAWTURB))
 		{

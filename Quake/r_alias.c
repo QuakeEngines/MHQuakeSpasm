@@ -79,7 +79,7 @@ static void *GLARB_GetNormalOffset (entity_t *e, aliashdr_t *hdr, int pose)
 
 
 GLuint r_alias_lightmapped_vp = 0;
-GLuint r_alias_lightmapped_fp[2] = { 0, 0 }; // luma, no luma
+GLuint r_alias_lightmapped_fp[8] = { 0 };
 
 GLuint r_alias_dynamic_vp = 0;
 GLuint r_alias_dynamic_fp = 0;
@@ -130,59 +130,7 @@ void GLAlias_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	const GLchar *fp_lightmapped_source0 = \
-		"!!ARBfp1.0\n"
-		"\n"
-		"PARAM shadelight = program.local[0];\n"
-		"PARAM shadevector = program.local[1];\n"
-		"\n"
-		"TEMP diff, fence;\n"
-		"TEMP normal, shadedot, dothi, dotlo;\n"
-		"\n"
-		"# normalize incoming normal\n"
-		"DP3 normal.w, fragment.texcoord[1], fragment.texcoord[1];\n"
-		"RSQ normal.w, normal.w;\n"
-		"MUL normal.xyz, normal.w, fragment.texcoord[1];\n"
-		"\n"
-		"# perform the texturing\n"
-		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
-		"\n"
-		"# fence texture test\n"
-		"SUB fence, diff, 0.666;\n"
-		"KIL fence.a;\n"
-		"\n"
-		"# perform the lighting\n"
-		"DP3 shadedot, normal, shadevector;\n"
-		"ADD dothi, shadedot, 1.0;\n"
-		"MAD dotlo, shadedot, 0.2954545, 1.0;\n"
-		"MAX shadedot, dothi, dotlo;\n"
-		"\n"
-		"# perform the lightmapping to output\n"
-		"MUL diff.rgb, diff, shadedot;\n"
-		"MUL diff.rgb, diff, shadelight;\n"
-		"MUL diff.rgb, diff, program.env[10].z; # overbright factor\n"
-		"\n"
-		"# perform the fogging\n"
-		"TEMP fogFactor;\n"
-		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
-		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
-		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
-		"LRP diff.rgb, fogFactor.x, diff, state.fog.color;\n"
-		"\n"
-		"# apply the contrast\n"
-		"MUL diff.rgb, diff, program.env[10].x;\n"
-		"\n"
-		"# apply the gamma (POW only operates on scalars)\n"
-		"POW result.color.r, diff.r, program.env[10].y;\n"
-		"POW result.color.g, diff.g, program.env[10].y;\n"
-		"POW result.color.b, diff.b, program.env[10].y;\n"
-		"MOV result.color.a, program.env[0].a;\n"
-		"\n"
-		"# done\n"
-		"END\n"
-		"\n";
-
-	const GLchar *fp_lightmapped_source1 = \
+	const GLchar *fp_lightmapped_source = \
 		"!!ARBfp1.0\n"
 		"\n"
 		"PARAM shadelight = program.local[0];\n"
@@ -294,8 +242,9 @@ void GLAlias_CreateShaders (void)
 		"\n";
 
 	r_alias_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_lightmapped_source);
-	r_alias_lightmapped_fp[0] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source0);
-	r_alias_lightmapped_fp[1] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_lightmapped_source1);
+
+	for (int shaderflag = 0; shaderflag < 8; shaderflag++)
+		r_alias_lightmapped_fp[shaderflag] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFragmentProgram (fp_lightmapped_source, shaderflag));
 
 	r_alias_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_dynamic_source);
 	r_alias_dynamic_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDynamicLightFragmentProgramSource ());
@@ -334,12 +283,26 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 
 	if (!cl.worldmodel->lightdata)
 		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_fullbright_fp);
-	else if (fb)
+	else
 	{
-		GL_BindTexture (GL_TEXTURE1, fb);
-		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_lightmapped_fp[1]);
+		// select the shader to use
+		int shaderflag = SHADERFLAG_NONE;
+
+		if (fb)
+		{
+			GL_BindTexture (GL_TEXTURE1, fb);
+			shaderflag |= SHADERFLAG_LUMA;
+		}
+
+		// fence texture test
+		if (e->model->flags & MF_HOLEY) shaderflag |= SHADERFLAG_FENCE;
+
+		// fog on/off
+		if (Fog_GetDensity () > 0) shaderflag |= SHADERFLAG_FOG;
+
+		// bind the selected programs
+		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_lightmapped_fp[shaderflag]);
 	}
-	else GL_BindPrograms (r_alias_lightmapped_vp, r_alias_lightmapped_fp[0]);
 
 	// set uniforms - these need to be env params so that the dynamic program can also access them
 	glProgramEnvParameter4fARB (GL_VERTEX_PROGRAM_ARB, 10, blend, blend, blend, 0);

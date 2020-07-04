@@ -229,7 +229,13 @@ int R_LightPoint (vec3_t p);
 qboolean R_AllocBlock (int w, int h, int *x, int *y, int *allocated, int block_width, int block_height);
 
 // MH - ARB programs
+#define SHADERFLAG_NONE		0
+#define SHADERFLAG_FENCE	(1 << 0)
+#define SHADERFLAG_LUMA		(1 << 1)
+#define SHADERFLAG_FOG		(1 << 2)
+
 GLuint GL_CreateARBProgram (GLenum mode, const GLchar *progstr);
+const GLchar *GL_GetFragmentProgram (const GLchar *base, int shaderflag);
 void R_DeleteShaders (void);
 
 

@@ -438,6 +438,44 @@ void R_DeleteShaders (void)
 }
 
 
+const GLchar *GL_GetFragmentProgram (const GLchar *base, int shaderflag)
+{
+	// shader combinations are dealth with by keeping a single copy of the shader source and selectively commenting out parts of it
+	char *test = NULL;
+	char *modified = (char *) Hunk_Alloc (strlen (base) + 1);
+
+	// copy off the shader because we're going to modify it
+	strcpy (modified, base);
+
+	if (!(shaderflag & SHADERFLAG_FENCE))
+	{
+		// remove fence texture test
+		if ((test = strstr (modified, "SUB fence")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "KIL fence")) != NULL) test[0] = '#';
+	}
+
+	if (!(shaderflag & SHADERFLAG_LUMA))
+	{
+		// remove luma mask
+		if ((test = strstr (modified, "TEX luma, fragment.t")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "MAX diff, diff, luma")) != NULL) test[0] = '#';
+	}
+
+	if (!(shaderflag & SHADERFLAG_FOG))
+	{
+		// remove fog instructions (this optimization is a bit bogus because ALU at this level is virtually free, but if feels "right" to do, nonetheless)
+		if ((test = strstr (modified, "TEMP fogFactor;")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "MUL fogFactor.x, fogFactor.x, fogFactor.x;")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "EX2_SAT fogFactor.x, -fogFactor.x;")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "LRP diff.rgb, fogFactor.x, diff, state.fog.color;")) != NULL) test[0] = '#';
+	}
+
+	// hand back the modified shader source
+	return modified;
+}
+
+
 GLuint GL_CreateARBProgram (GLenum mode, const GLchar *progstr)
 {
 	GLuint progid = 0;
