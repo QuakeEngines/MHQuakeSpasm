@@ -593,9 +593,9 @@ void R_SetupAliasLighting (entity_t *e)
 	if (e > cl_entities && e <= cl_entities + cl.maxclients)
 		R_MinimumLight (shadelight, 8 >> (int) gl_overbright.value);
 
-	// minimum light value on pickups (64)
+	// minimum light value on pickups (128)
 	if (e->model->flags & EF_ROTATE)
-		R_MinimumLight (shadelight, 64 >> (int) gl_overbright.value);
+		R_MinimumLight (shadelight, 128 >> (int) gl_overbright.value);
 
 	// hack up the brightness when fullbrights but no overbrights (256)
 	// MH - the new "max-blending" removes the need for this
