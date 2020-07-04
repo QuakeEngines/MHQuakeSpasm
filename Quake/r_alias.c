@@ -573,35 +573,29 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 R_SetupAliasLighting -- johnfitz -- broken out from R_DrawAliasModel and rewritten
 =================
 */
+void R_MinimumLight (float *light, float minlight)
+{
+	light[0] = 255.0f * ((light[0] + minlight) / (255.0f + minlight));
+	light[1] = 255.0f * ((light[1] + minlight) / (255.0f + minlight));
+	light[2] = 255.0f * ((light[2] + minlight) / (255.0f + minlight));
+}
+
+
 void R_SetupAliasLighting (entity_t *e)
 {
 	R_LightPoint (e->origin);
 
 	// minimum light value on gun (24)
 	if (e == &cl.viewent)
-	{
-		float add = (float) (72 >> (int) gl_overbright.value) - (shadelight[0] + shadelight[1] + shadelight[2]);
-
-		if (add > 0.0f)
-		{
-			shadelight[0] += add / 3.0f;
-			shadelight[1] += add / 3.0f;
-			shadelight[2] += add / 3.0f;
-		}
-	}
+		R_MinimumLight (shadelight, 24 >> (int) gl_overbright.value);
 
 	// minimum light value on players (8)
 	if (e > cl_entities && e <= cl_entities + cl.maxclients)
-	{
-		float add = (float) (24 >> (int) gl_overbright.value) - (shadelight[0] + shadelight[1] + shadelight[2]);
+		R_MinimumLight (shadelight, 8 >> (int) gl_overbright.value);
 
-		if (add > 0.0f)
-		{
-			shadelight[0] += add / 3.0f;
-			shadelight[1] += add / 3.0f;
-			shadelight[2] += add / 3.0f;
-		}
-	}
+	// minimum light value on pickups (64)
+	if (e->model->flags & EF_ROTATE)
+		R_MinimumLight (shadelight, 64 >> (int) gl_overbright.value);
 
 	// hack up the brightness when fullbrights but no overbrights (256)
 	// MH - the new "max-blending" removes the need for this
