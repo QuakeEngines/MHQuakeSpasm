@@ -1035,6 +1035,9 @@ static void GL_Init (void)
 	}
 #endif
 
+	// we alloc hunk memory for temporary copies of shader combinations, so...
+	int mark = Hunk_LowMark ();
+
 	// create all of our shaders
 	GLDraw_CreateShaders ();
 	GLAlias_CreateShaders ();
@@ -1044,6 +1047,9 @@ static void GL_Init (void)
 	GLSky_CreateShaders ();
 	GLSprite_CreateShaders ();
 	GLMain_CreateShaders ();
+
+	// ...and hand back the memory we used for temps
+	Hunk_FreeToLowMark (mark);
 
 	GL_ClearBufferBindings ();
 }

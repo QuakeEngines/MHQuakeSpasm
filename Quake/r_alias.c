@@ -358,14 +358,20 @@ void GL_DrawAliasShadow (entity_t *e, aliashdr_t *hdr, lerpdata_t *lerpdata)
 #define SHADOW_VSCALE 0 //0=completely flat
 #define SHADOW_HEIGHT 0.1 //how far above the floor to render the shadow
 //johnfitz
+	float s1 = sin (lerpdata->angles[1] / 180 * M_PI);
+	float c1 = cos (lerpdata->angles[1] / 180 * M_PI);
 
+	extern mplane_t *lightplane;
+
+	float s1n0 = s1 * lightplane->normal[0];
+	float c1n0 = c1 * lightplane->normal[0];
+	float s1n1 = s1 * lightplane->normal[1];
+	float c1n1 = c1 * lightplane->normal[1];
 	/*
 	orient onto lightplane:
 
-	s1 = sin(ent->angles[1] / 180 * M_PI);
-	c1 = cos(ent->angles[1] / 180 * M_PI);
-
-	interpolated[2] += ((interpolated[1] * (s1 * lightplane->normal[0])) -
+	interpolated[2] += (
+				(interpolated[1] * (s1 * lightplane->normal[0])) -
 				(interpolated[0] * (c1 * lightplane->normal[0])) -
 				(interpolated[0] * (s1 * lightplane->normal[1])) -
 				(interpolated[1] * (c1 * lightplane->normal[1]))) +
@@ -419,7 +425,7 @@ void GL_DrawAliasShadow (entity_t *e, aliashdr_t *hdr, lerpdata_t *lerpdata)
 	glPushMatrix ();
 	glMultMatrixf (localMatrix.m16);
 
-	// draw it
+	// draw it - the vertex array state is already set
 	glDrawElements (GL_TRIANGLES, hdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) e->model->vboindexofs);
 	rs_aliaspasses += hdr->numtris;
 

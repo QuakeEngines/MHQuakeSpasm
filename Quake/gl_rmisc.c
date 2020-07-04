@@ -23,16 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // r_misc.c
 
 
-/*
-
-params
-
-fp	env		10		contrast & gamma
-fp	env		0		overbright & alpha
-
-*/
-
-
 #include "quakedef.h"
 
 // johnfitz -- new cvars
@@ -440,8 +430,10 @@ void R_DeleteShaders (void)
 
 const GLchar *GL_GetFragmentProgram (const GLchar *base, int shaderflag)
 {
-	// shader combinations are dealth with by keeping a single copy of the shader source and selectively commenting out parts of it
+	// shader combinations are dealt with by keeping a single copy of the shader source and selectively commenting out parts of it
 	char *test = NULL;
+
+	// putting the temporary copy in hunk memory; this is handed back in GL_Init after all shaders are created
 	char *modified = (char *) Hunk_Alloc (strlen (base) + 1);
 
 	// copy off the shader because we're going to modify it
