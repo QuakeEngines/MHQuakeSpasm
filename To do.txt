@@ -1,0 +1,5 @@
+Log of stuff to be done.
+
+Fix player textures. 
+Shadow plane orientation. 
+Drawflat/lightmap/fullbright/triangles/bboxes crap. 
