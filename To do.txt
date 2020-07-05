@@ -12,3 +12,4 @@ cl_entities to array of pointers.
 Extra dynamic lights (but needs a check for AD overloading/abusing trail types).
 Green dynamic light is too bright???
 Sprites with no alpha
+Separate cshift for cshift command
