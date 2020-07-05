@@ -319,7 +319,7 @@ void GL_SetupDynamicLight (dlight_t *dl)
 
 	// fragment program params
 	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, dl->radius, dl->radius, dl->radius, 0);
-	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, dl->color);
+	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, dl->rgba);
 }
 
 

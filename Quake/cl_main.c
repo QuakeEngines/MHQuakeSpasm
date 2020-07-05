@@ -332,7 +332,7 @@ dlight_t *CL_GetDlight (int key)
 }
 
 
-dlight_t *CL_AllocDlight (int key, float radius)
+dlight_t *CL_AllocDlight (int key, float radius, int r, int g, int b)
 {
 	// get a dl
 	dlight_t *dl = CL_GetDlight (key);
@@ -340,7 +340,14 @@ dlight_t *CL_AllocDlight (int key, float radius)
 	// fill it in
 	memset (dl, 0, sizeof (*dl));
 	dl->key = key;
-	dl->color[0] = dl->color[1] = dl->color[2] = 1; // johnfitz -- lit support via lordhavoc
+
+	if (cl.worldmodel->colouredlight)
+	{
+		dl->rgba[0] = (float) r / 255.0f;
+		dl->rgba[1] = (float) g / 255.0f;
+		dl->rgba[2] = (float) b / 255.0f;
+	}
+	else dl->rgba[0] = dl->rgba[1] = dl->rgba[2] = 1; // johnfitz -- lit support via lordhavoc
 
 	// start time so that we can drop the radius framerate-independently
 	dl->starttime = cl.time;
@@ -350,6 +357,30 @@ dlight_t *CL_AllocDlight (int key, float radius)
 
 	// and return it
 	return dl;
+}
+
+
+dlight_t *CL_AllocDLightForModelFlags (entity_t *ent, float radius, int key)
+{
+	if (ent->model->flags & EF_WIZARDFLASH)
+		return CL_AllocDlight (key, radius, DL_COLOR_GREEN);
+	else if (ent->model->flags & EF_SHALRATHFLASH)
+		return CL_AllocDlight (key, radius, DL_COLOR_PURPLE);
+	else if (ent->model->flags & EF_SHAMBLERFLASH)
+		return CL_AllocDlight (key, radius, DL_COLOR_BLUE);
+	else if (ent->model->flags & EF_ORANGEFLASH)
+		return CL_AllocDlight (key, radius, DL_COLOR_ORANGE);
+	else if (ent->model->flags & EF_REDFLASH)
+		return CL_AllocDlight (key, radius, DL_COLOR_RED);
+	else if (ent->model->flags & EF_YELLOWFLASH)
+		return CL_AllocDlight (key, radius, DL_COLOR_YELLOW);
+	else if (ent->model->flags & EF_GREENFLASH)
+		return CL_AllocDlight (key, radius, DL_COLOR_GREEN);
+	else if (ent->model->flags & EF_PURPLEFLASH)
+		return CL_AllocDlight (key, radius, DL_COLOR_PURPLE);
+	else if (ent->model->flags & EF_BLUEFLASH)
+		return CL_AllocDlight (key, radius, DL_COLOR_BLUE);
+	else return NULL;
 }
 
 
@@ -558,7 +589,12 @@ void CL_RelinkEntities (void)
 
 		// rotate binary objects locally
 		if (ent->model->flags & EF_ROTATE)
+		{
+			// there was a mod, can't remember which, messed this up.
+			ent->angles[0] = 0;
 			ent->angles[1] = bobjrotate;
+			ent->angles[2] = 0;
+		}
 
 		if (ent->effects & EF_BRIGHTFIELD)
 			R_EntityParticles (ent);
@@ -567,7 +603,33 @@ void CL_RelinkEntities (void)
 		{
 			vec3_t		fv, rv, uv;
 
-			dl = CL_AllocDlight (i, 200 + (rand () & 31));
+			if (i == cl.viewentity)
+			{
+				// player - select the flash colour based on the currently active ammo
+				if (rogue)
+				{
+					if (cl.items & RIT_CELLS)
+						dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_BLUE);
+					else if (cl.items & RIT_LAVA_NAILS)
+						dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_RED);
+					else if (cl.items & RIT_PLASMA_AMMO)
+						dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_BLUE);
+					else dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_WHITE);
+				}
+				else
+				{
+					if (cl.items & IT_CELLS)
+						dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_BLUE);
+					else dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_WHITE);
+				}
+			}
+			else
+			{
+				// monster - to do...
+				if ((dl = CL_AllocDLightForModelFlags (ent, i, 200 + (rand () & 31))) == NULL)
+					dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_ORANGE);
+			}
+
 			VectorCopy (ent->origin, dl->origin);
 			dl->origin[2] += 16;
 			AngleVectors (ent->angles, fv, rv, uv);
@@ -586,20 +648,39 @@ void CL_RelinkEntities (void)
 			}
 			// johnfitz
 		}
+
 		if (ent->effects & EF_BRIGHTLIGHT)
 		{
-			dl = CL_AllocDlight (i, 400 + (rand () & 31));
+			// to do - check where this is used....
+			if ((dl = CL_AllocDLightForModelFlags (ent, i, 400 + (rand () & 31))) == NULL)
+				dl = CL_AllocDlight (i, 400 + (rand () & 31), DL_COLOR_WHITE);
+
 			VectorCopy (ent->origin, dl->origin);
 			dl->origin[2] += 16;
 			dl->die = cl.time + 0.001;
 		}
+
 		if (ent->effects & EF_DIMLIGHT)
 		{
-			dl = CL_AllocDlight (i, 200 + (rand () & 31));
+			if (i == cl.viewentity)
+			{
+				// powerup - select the light colour based on the powerup type
+				if ((cl.items & IT_QUAD) && (cl.items & IT_INVULNERABILITY))
+					dl = CL_AllocDlight (i, 400 + (rand () & 31), DL_COLOR_PURPLE);
+				else if (cl.items & IT_QUAD)
+					dl = CL_AllocDlight (i, 400 + (rand () & 31), DL_COLOR_BLUE);
+				else if (cl.items & IT_INVULNERABILITY)
+					dl = CL_AllocDlight (i, 400 + (rand () & 31), DL_COLOR_RED);
+				else dl = CL_AllocDlight (i, 400 + (rand () & 31), DL_COLOR_WHITE);
+			}
+			else if ((dl = CL_AllocDLightForModelFlags (ent, i, 200 + (rand () & 31))) == NULL)
+				dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_WHITE);
+
 			VectorCopy (ent->origin, dl->origin);
 			dl->die = cl.time + 0.001;
 		}
 
+		// i'd like to put dlights on some of the trail types but AD overloads some of them for e.g. simulating green blood, so i can't
 		if (ent->model->flags & EF_GIB)
 			CL_RocketTrail (ent, RT_BLOOD);
 		else if (ent->model->flags & EF_ZOMGIB)
@@ -611,7 +692,7 @@ void CL_RelinkEntities (void)
 		else if (ent->model->flags & EF_ROCKET)
 		{
 			CL_RocketTrail (ent, RT_ROCKETTRAIL);
-			dl = CL_AllocDlight (i, 200);
+			dl = CL_AllocDlight (i, 200, DL_COLOR_ORANGE);
 			VectorCopy (ent->origin, dl->origin);
 			dl->die = cl.time + 0.01;
 		}

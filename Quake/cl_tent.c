@@ -122,6 +122,8 @@ void CL_ParseTEnt (void)
 	int		colorStart, colorLength;
 
 	type = MSG_ReadByte ();
+
+	// i'd like to put dlights on some of these effects but i no longer trust AD to not screw it up...
 	switch (type)
 	{
 	case TE_WIZSPIKE:			// spike hitting wall
@@ -190,7 +192,7 @@ void CL_ParseTEnt (void)
 		pos[1] = MSG_ReadCoord (cl.protocolflags);
 		pos[2] = MSG_ReadCoord (cl.protocolflags);
 		R_ParticleExplosion (pos);
-		dl = CL_AllocDlight (0, 350);
+		dl = CL_AllocDlight (0, 350, DL_COLOR_ORANGE);
 		VectorCopy (pos, dl->origin);
 		dl->die = cl.time + 0.5;
 		dl->decay = 300;
@@ -245,7 +247,7 @@ void CL_ParseTEnt (void)
 		colorStart = MSG_ReadByte ();
 		colorLength = MSG_ReadByte ();
 		R_ParticleExplosion2 (pos, colorStart, colorLength);
-		dl = CL_AllocDlight (0, 350);
+		dl = CL_AllocDlight (0, 350, DL_COLOR_WHITE);
 		VectorCopy (pos, dl->origin);
 		dl->die = cl.time + 0.5;
 		dl->decay = 300;

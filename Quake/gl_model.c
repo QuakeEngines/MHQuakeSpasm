@@ -664,12 +664,15 @@ void Mod_LoadLighting (lump_t *l)
 	unsigned int path_id;
 
 	loadmodel->lightdata = NULL;
+	loadmodel->colouredlight = false;
+
 	// LordHavoc: check for a .lit file
 	q_strlcpy (litfilename, loadmodel->name, sizeof (litfilename));
 	COM_StripExtension (litfilename, litfilename, sizeof (litfilename));
 	q_strlcat (litfilename, ".lit", sizeof (litfilename));
 	mark = Hunk_LowMark ();
 	data = (byte *) COM_LoadHunkFile (litfilename, &path_id);
+
 	if (data)
 	{
 		// use lit file only from the same gamedir as the map
@@ -680,17 +683,21 @@ void Mod_LoadLighting (lump_t *l)
 			Con_DPrintf ("ignored %s from a gamedir with lower priority\n", litfilename);
 		}
 		else
+		{
 			if (data[0] == 'Q' && data[1] == 'L' && data[2] == 'I' && data[3] == 'T')
 			{
 				i = LittleLong (((int *) data)[1]);
+
 				if (i == 1)
 				{
 					if (8 + l->filelen * 3 == com_filesize)
 					{
 						Con_DPrintf2 ("%s loaded\n", litfilename);
 						loadmodel->lightdata = data + 8;
+						loadmodel->colouredlight = true;
 						return;
 					}
+
 					Hunk_FreeToLowMark (mark);
 					Con_Printf ("Outdated .lit file (%s should be %u bytes, not %u)\n", litfilename, 8 + l->filelen * 3, com_filesize);
 				}
@@ -705,14 +712,18 @@ void Mod_LoadLighting (lump_t *l)
 				Hunk_FreeToLowMark (mark);
 				Con_Printf ("Corrupt .lit file (old version?), ignoring\n");
 			}
+		}
 	}
+
 	// LordHavoc: no .lit found, expand the white lighting data to color
 	if (!l->filelen)
 		return;
+
 	loadmodel->lightdata = (byte *) Hunk_AllocName (l->filelen * 3, litfilename);
 	in = loadmodel->lightdata + l->filelen * 2; // place the file at the end, so it will not be overwritten until the very last write
 	out = loadmodel->lightdata;
 	memcpy (in, mod_base + l->fileofs, l->filelen);
+
 	for (i = 0; i < l->filelen; i++)
 	{
 		d = *in++;
@@ -2393,6 +2404,12 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 
 	// alias models are no longer cached so we just store the pointer
 	mod->cache.data = hdr;
+
+	// muzzleflash colour flags and other hard-coded crapness
+	if (!strcmp (&mod->name[6], "wizard.mdl")) mod->flags |= EF_WIZARDFLASH;
+	if (!strcmp (&mod->name[6], "shalrath.mdl")) mod->flags |= EF_SHALRATHFLASH;
+	if (!strcmp (&mod->name[6], "shambler.mdl")) mod->flags |= EF_SHAMBLERFLASH;
+	if (!strcmp (&mod->name[6], "laser.mdl")) mod->flags |= EF_REDFLASH;
 }
 
 // =============================================================================

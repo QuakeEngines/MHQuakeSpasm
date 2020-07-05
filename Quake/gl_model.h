@@ -384,7 +384,21 @@ typedef enum { mod_brush, mod_sprite, mod_alias } modtype_t;
 #define	EF_ZOMGIB	32			// small blood trail
 #define	EF_TRACER2	64			// orange split trail + rotate
 #define	EF_TRACER3	128			// purple trail
-#define	MF_HOLEY	(1u<<14)		// MarkV/QSS -- make index 255 transparent on mdl's
+#define	MF_HOLEY	(1 << 14)		// MarkV/QSS -- make index 255 transparent on mdl's
+
+// bad guy muzzle flashes
+#define EF_WIZARDFLASH		(1 << 22)
+#define EF_SHALRATHFLASH	(1 << 23)
+#define EF_SHAMBLERFLASH	(1 << 24)
+
+// generic flashes (the first 3 of these line up with the id bad guys)
+#define EF_GREENFLASH		(1 << 22)
+#define EF_PURPLEFLASH		(1 << 23)
+#define EF_BLUEFLASH		(1 << 24)
+#define EF_ORANGEFLASH		(1 << 25)
+#define EF_REDFLASH			(1 << 26)
+#define EF_YELLOWFLASH		(1 << 27)
+
 
 // johnfitz -- extra flags for rendering
 #define	MOD_NOLERP		256		// don't lerp when animating
@@ -455,6 +469,9 @@ typedef struct qmodel_s {
 	byte *visdata;
 	byte *lightdata;
 	char *entities;
+
+	// true if the model has coloured light loaded from a .LIT file, and switch on coloured dynamics if so
+	qboolean	colouredlight;
 
 	qboolean	viswarn; // for Mod_DecompressVis()
 

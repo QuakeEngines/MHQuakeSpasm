@@ -69,7 +69,7 @@ typedef struct dlight_s {
 	float	decay;				// drop this each second
 	float	minlight;			// don't add when contributing less
 	int		key;
-	float	color[4];				// johnfitz -- lit support via lordhavoc, MH - padded for shader params
+	float	rgba[4];				// johnfitz -- lit support via lordhavoc, MH - padded for shader params
 	int		numsurfaces;		// mh - track number of surfaces hit by this dlight
 } dlight_t;
 
@@ -265,7 +265,15 @@ extern	int				cl_max_edicts; // johnfitz -- only changes when new map loads
 // =============================================================================
 
 // cl_main
-dlight_t *CL_AllocDlight (int key, float radius);
+#define DL_COLOR_GREEN		282, 304, 182
+#define DL_COLOR_PURPLE		328, 198, 242
+#define DL_COLOR_BLUE		160, 244, 363
+#define DL_COLOR_ORANGE		332, 249, 186
+#define DL_COLOR_RED		358, 205, 205
+#define DL_COLOR_YELLOW		320, 282, 166
+#define DL_COLOR_WHITE		256, 256, 256
+
+dlight_t *CL_AllocDlight (int key, float radius, int r, int g, int b);
 void	CL_DecayLights (void);
 
 // trail types

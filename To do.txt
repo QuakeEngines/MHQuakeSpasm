@@ -7,7 +7,7 @@ Host timers.
 Remove non-SDL2 stuff.
 Move sounds to hunk & remove cache memory.
 Different move speed with vsync on or off. 
-EF_ROTATE should set angles 0 and 2 as well.
-Add coloured dlight if the world was loaded with colour. Base colour on currently active ammo for players. 
-CL_Tracepos_f traces server worldmodel - what if there is no server?
 cl_entities to array of pointers. 
+.vis file support
+Extra dynamic lights (but needs a check for AD overloading/abusing trail types).
+Green dynamic light is too bright???
