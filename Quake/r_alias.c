@@ -358,27 +358,6 @@ void GL_DrawAliasShadow (entity_t *e, aliashdr_t *hdr, lerpdata_t *lerpdata)
 #define SHADOW_VSCALE 0 //0=completely flat
 #define SHADOW_HEIGHT 0.1 //how far above the floor to render the shadow
 //johnfitz
-	float s1 = sin (lerpdata->angles[1] / 180 * M_PI);
-	float c1 = cos (lerpdata->angles[1] / 180 * M_PI);
-
-	extern mplane_t *lightplane;
-
-	float s1n0 = s1 * lightplane->normal[0];
-	float c1n0 = c1 * lightplane->normal[0];
-	float s1n1 = s1 * lightplane->normal[1];
-	float c1n1 = c1 * lightplane->normal[1];
-	/*
-	orient onto lightplane:
-
-	interpolated[2] += (
-				(interpolated[1] * (s1 * lightplane->normal[0])) -
-				(interpolated[0] * (c1 * lightplane->normal[0])) -
-				(interpolated[0] * (s1 * lightplane->normal[1])) -
-				(interpolated[1] * (c1 * lightplane->normal[1]))) +
-				((1 - lightplane->normal[2]) * 20) + 0.2;
-
-	there's probably a friendlier way of doing this via the matrix transform....
-	*/
 
 	QMATRIX	shadowmatrix = {
 		1,				0,				0,				0,
@@ -387,6 +366,16 @@ void GL_DrawAliasShadow (entity_t *e, aliashdr_t *hdr, lerpdata_t *lerpdata)
 		0,				0,				SHADOW_HEIGHT,	1
 	};
 
+	/*
+P = normalize(Plane);
+L = Light;
+d = -dot(P, L)
+
+P.a * L.x + d  P.a * L.y      P.a * L.z      P.a * L.w
+P.b * L.x      P.b * L.y + d  P.b * L.z      P.b * L.w
+P.c * L.x      P.c * L.y      P.c * L.z + d  P.c * L.w
+P.d * L.x      P.d * L.y      P.d * L.z      P.d * L.w + d
+	*/
 	float	lheight;
 	QMATRIX	localMatrix;
 
