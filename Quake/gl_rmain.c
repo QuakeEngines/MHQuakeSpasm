@@ -577,7 +577,7 @@ void R_DrawViewModel (void)
 	if (!r_drawviewmodel.value || !r_drawentities.value || chase_active.value)
 		return;
 
-	if (cl.items & IT_INVISIBILITY || cl.stats[STAT_HEALTH] <= 0)
+	if (cl.stats[STAT_HEALTH] <= 0)
 		return;
 
 	if (scr_timerefresh)
@@ -592,6 +592,13 @@ void R_DrawViewModel (void)
 		return;
 	// johnfitz
 
+	// interacts with SU_WEAPONALPHA bit in CL_ParseClientdata; this is overwritten/reset each frame so we don't need to cache & restore it
+	if (currententity->alpha != ENTALPHA_DEFAULT)
+		; // server has sent alpha for the viewmodel so never override it
+	else if (cl.items & IT_INVISIBILITY)
+		currententity->alpha = ENTALPHA_ENCODE (0.25);
+	else currententity->alpha = ENTALPHA_DEFAULT;
+
 	// hack the depth range to prevent view model from poking into walls
 	glDepthRange (0, 0.3);
 	R_DrawAliasModel (currententity);
@@ -602,6 +609,8 @@ void R_DrawViewModel (void)
 /*
 ============
 R_DrawPolyBlend -- johnfitz -- moved here from gl_rmain.c, and rewritten to use glOrtho
+
+mh - put it back and using no matrices so it doesn't corrupt current matrix state
 ============
 */
 void R_DrawPolyBlend (void)

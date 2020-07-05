@@ -816,6 +816,7 @@ void CL_ParseClientdata (void)
 		cl.stats[STAT_CELLS] |= (MSG_ReadByte () << 8);
 	if (bits & SU_WEAPONFRAME2)
 		cl.stats[STAT_WEAPONFRAME] |= (MSG_ReadByte () << 8);
+
 	if (bits & SU_WEAPONALPHA)
 		cl.viewent.alpha = MSG_ReadByte ();
 	else
