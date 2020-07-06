@@ -37,56 +37,56 @@ const char *svc_strings[] =
 	"svc_time",			// [float] server time
 	"svc_print",			// [string] null terminated string
 	"svc_stufftext",		// [string] stuffed into client's console buffer
-						// the string should be \n terminated
-						"svc_setangle",		// [vec3] set the view angle to this absolute value
+	// the string should be \n terminated
+	"svc_setangle",		// [vec3] set the view angle to this absolute value
 
-						"svc_serverinfo",		// [long] version
-											// [string] signon string
-											// [string]..[0]model cache [string]...[0]sounds cache
-											// [string]..[0]item cache
-											"svc_lightstyle",		// [byte] [string]
-											"svc_updatename",		// [byte] [string]
-											"svc_updatefrags",	// [byte] [short]
-											"svc_clientdata",		// <shortbits + data>
-											"svc_stopsound",		// <see code>
-											"svc_updatecolors",	// [byte] [byte]
-											"svc_particle",		// [vec3] <variable>
-											"svc_damage",			// [byte] impact [byte] blood [vec3] from
+	"svc_serverinfo",		// [long] version
+	// [string] signon string
+	// [string]..[0]model cache [string]...[0]sounds cache
+	// [string]..[0]item cache
+	"svc_lightstyle",		// [byte] [string]
+	"svc_updatename",		// [byte] [string]
+	"svc_updatefrags",	// [byte] [short]
+	"svc_clientdata",		// <shortbits + data>
+	"svc_stopsound",		// <see code>
+	"svc_updatecolors",	// [byte] [byte]
+	"svc_particle",		// [vec3] <variable>
+	"svc_damage",			// [byte] impact [byte] blood [vec3] from
 
-											"svc_spawnstatic",
-											"OBSOLETE svc_spawnbinary",
-											"svc_spawnbaseline",
+	"svc_spawnstatic",
+	"OBSOLETE svc_spawnbinary",
+	"svc_spawnbaseline",
 
-											"svc_temp_entity",		// <variable>
-											"svc_setpause",
-											"svc_signonnum",
-											"svc_centerprint",
-											"svc_killedmonster",
-											"svc_foundsecret",
-											"svc_spawnstaticsound",
-											"svc_intermission",
-											"svc_finale",			// [string] music [string] text
-											"svc_cdtrack",			// [byte] track [byte] looptrack
-											"svc_sellscreen",
-											"svc_cutscene",
-											// johnfitz -- new server messages
-											"",	// 35
-											"",	// 36
-											"svc_skybox", // 37					// [string] skyname
-											"", // 38
-											"", // 39
-											"svc_bf", // 40						// no data
-											"svc_fog", // 41					// [byte] density [byte] red [byte] green [byte] blue [float] time
-											"svc_spawnbaseline2", // 42			// support for large modelindex, large framenum, alpha, using flags
-											"svc_spawnstatic2", // 43			// support for large modelindex, large framenum, alpha, using flags
-											"svc_spawnstaticsound2", //	44		// [coord3] [short] samp [byte] vol [byte] aten
-											"", // 44
-											"", // 45
-											"", // 46
-											"", // 47
-											"", // 48
-											"", // 49
-										// johnfitz
+	"svc_temp_entity",		// <variable>
+	"svc_setpause",
+	"svc_signonnum",
+	"svc_centerprint",
+	"svc_killedmonster",
+	"svc_foundsecret",
+	"svc_spawnstaticsound",
+	"svc_intermission",
+	"svc_finale",			// [string] music [string] text
+	"svc_cdtrack",			// [byte] track [byte] looptrack
+	"svc_sellscreen",
+	"svc_cutscene",
+	// johnfitz -- new server messages
+	"",	// 35
+	"",	// 36
+	"svc_skybox", // 37					// [string] skyname
+	"", // 38
+	"", // 39
+	"svc_bf", // 40						// no data
+	"svc_fog", // 41					// [byte] density [byte] red [byte] green [byte] blue [float] time
+	"svc_spawnbaseline2", // 42			// support for large modelindex, large framenum, alpha, using flags
+	"svc_spawnstatic2", // 43			// support for large modelindex, large framenum, alpha, using flags
+	"svc_spawnstaticsound2", //	44		// [coord3] [short] samp [byte] vol [byte] aten
+	"", // 44
+	"", // 45
+	"", // 46
+	"", // 47
+	"", // 48
+	"", // 49
+	// johnfitz
 };
 
 qboolean warn_about_nehahra_protocol; // johnfitz
@@ -111,18 +111,27 @@ entity_t *CL_EntityNum (int num)
 
 	if (num >= cl.num_entities)
 	{
-		if (num >= cl_max_edicts) // johnfitz -- no more MAX_EDICTS
+		if (num >= MAX_EDICTS)
 			Host_Error ("CL_EntityNum: %i is an invalid number", num);
 		while (cl.num_entities <= num)
 		{
-			cl_entities[cl.num_entities].colormap = vid.colormap;
-			cl_entities[cl.num_entities].lerpflags |= LERP_RESETMOVE | LERP_RESETANIM; // johnfitz
-			CL_ClearRocketTrail (&cl_entities[cl.num_entities]);
+			// allocate or clear the entity
+			if (!cl_entities[cl.num_entities])
+				cl_entities[cl.num_entities] = (entity_t *) Hunk_Alloc (sizeof (entity_t));
+			else memset (cl_entities[cl.num_entities], 0, sizeof (entity_t));
+
+			// set up initial values
+			cl_entities[cl.num_entities]->entitynum = cl.num_entities;
+			cl_entities[cl.num_entities]->colormap = vid.colormap;
+			cl_entities[cl.num_entities]->lerpflags |= LERP_RESETMOVE | LERP_RESETANIM; // johnfitz
+			CL_ClearRocketTrail (cl_entities[cl.num_entities]);
+
+			// this is a new entity now
 			cl.num_entities++;
 		}
 	}
 
-	return &cl_entities[num];
+	return cl_entities[num];
 }
 
 
@@ -176,9 +185,6 @@ void CL_ParseStartSoundPacket (void)
 	if (sound_num >= MAX_SOUNDS)
 		Host_Error ("CL_ParseStartSoundPacket: %i > MAX_SOUNDS", sound_num);
 	// johnfitz
-
-	if (ent > cl_max_edicts) // johnfitz -- no more MAX_EDICTS
-		Host_Error ("CL_ParseStartSoundPacket: ent = %i", ent);
 
 	for (i = 0; i < 3; i++)
 		pos[i] = MSG_ReadCoord (cl.protocolflags);
@@ -386,7 +392,8 @@ void CL_ParseServerInfo (void)
 	S_EndPrecaching ();
 
 	// local state
-	cl_entities[0].model = cl.worldmodel = cl.model_precache[1];
+	CL_EntityNum (0); // allocate the initial entity for the world
+	cl_entities[0]->model = cl.worldmodel = cl.model_precache[1];
 
 	R_NewMap ();
 

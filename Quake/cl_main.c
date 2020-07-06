@@ -56,8 +56,7 @@ client_state_t	cl;
 lightstyle_t	cl_lightstyle[MAX_LIGHTSTYLES];
 dlight_t		cl_dlights[MAX_DLIGHTS];
 
-entity_t		*cl_entities; // johnfitz -- was a static array, now on hunk
-int				cl_max_edicts; // johnfitz -- only changes when new map loads
+entity_t		*cl_entities[MAX_EDICTS]; // mh - doing this right
 
 int				cl_numvisedicts;
 entity_t		*cl_visedicts[MAX_VISEDICTS];
@@ -87,11 +86,7 @@ void CL_ClearState (void)
 	memset (cl_lightstyle, 0, sizeof (cl_lightstyle));
 	memset (cl_temp_entities, 0, sizeof (cl_temp_entities));
 	memset (cl_beams, 0, sizeof (cl_beams));
-
-	// johnfitz -- cl_entities is now dynamically allocated
-	cl_max_edicts = CLAMP (MIN_EDICTS, (int) max_edicts.value, MAX_EDICTS);
-	cl_entities = (entity_t *) Hunk_AllocName (cl_max_edicts * sizeof (entity_t), "cl_entities");
-	// johnfitz
+	memset (cl_entities, 0, sizeof (cl_entities));
 
 	// clear this here as well in case there isn't a server
 	scr_centertime_off = 0;
@@ -264,14 +259,13 @@ CL_PrintEntities_f
 */
 void CL_PrintEntities_f (void)
 {
-	entity_t *ent;
-	int			i;
-
 	if (cls.state != ca_connected)
 		return;
 
-	for (i = 0, ent = cl_entities; i < cl.num_entities; i++, ent++)
+	for (int i = 0; i < cl.num_entities; i++)
 	{
+		entity_t *ent = cl_entities[i];
+
 		Con_Printf ("%3i:", i);
 
 		if (!ent->model)
@@ -488,8 +482,7 @@ CL_RelinkEntities
 */
 void CL_RelinkEntities (void)
 {
-	entity_t *ent;
-	int			i, j;
+	int			j;
 	float		frac, f, d;
 	vec3_t		delta;
 	float		bobjrotate;
@@ -502,9 +495,8 @@ void CL_RelinkEntities (void)
 	cl_numvisedicts = 0;
 
 	// interpolate player info
-	for (i = 0; i < 3; i++)
-		cl.velocity[i] = cl.mvelocity[1][i] +
-		frac * (cl.mvelocity[0][i] - cl.mvelocity[1][i]);
+	for (int i = 0; i < 3; i++)
+		cl.velocity[i] = cl.mvelocity[1][i] + frac * (cl.mvelocity[0][i] - cl.mvelocity[1][i]);
 
 	if (cls.demoplayback)
 	{
@@ -512,10 +504,12 @@ void CL_RelinkEntities (void)
 		for (j = 0; j < 3; j++)
 		{
 			d = cl.mviewangles[0][j] - cl.mviewangles[1][j];
+
 			if (d > 180)
 				d -= 360;
 			else if (d < -180)
 				d += 360;
+
 			cl.viewangles[j] = cl.mviewangles[1][j] + frac * d;
 		}
 	}
@@ -523,8 +517,10 @@ void CL_RelinkEntities (void)
 	bobjrotate = anglemod (100 * cl.time);
 
 	// start on the entity after the world
-	for (i = 1, ent = cl_entities + 1; i < cl.num_entities; i++, ent++)
+	for (int i = 1; i < cl.num_entities; i++)
 	{
+		entity_t *ent = cl_entities[i];
+
 		if (!ent->model)
 		{
 			// empty slot
@@ -641,7 +637,7 @@ void CL_RelinkEntities (void)
 			// johnfitz -- assume muzzle flash accompanied by muzzle flare, which looks bad when lerped
 			if (r_lerpmodels.value != 2)
 			{
-				if (ent == &cl_entities[cl.viewentity])
+				if (ent == cl_entities[cl.viewentity])
 					cl.viewent.lerpflags |= LERP_RESETANIM | LERP_RESETANIM2; // no lerping for two frames
 				else
 					ent->lerpflags |= LERP_RESETANIM | LERP_RESETANIM2; // no lerping for two frames
@@ -888,9 +884,9 @@ void CL_Viewpos_f (void)
 #else
 	// player position
 	Con_Printf ("Viewpos: (%i %i %i) %i %i %i\n",
-		(int) cl_entities[cl.viewentity].origin[0],
-		(int) cl_entities[cl.viewentity].origin[1],
-		(int) cl_entities[cl.viewentity].origin[2],
+		(int) cl_entities[cl.viewentity]->origin[0],
+		(int) cl_entities[cl.viewentity]->origin[1],
+		(int) cl_entities[cl.viewentity]->origin[2],
 		(int) cl.viewangles[PITCH],
 		(int) cl.viewangles[YAW],
 		(int) cl.viewangles[ROLL]);

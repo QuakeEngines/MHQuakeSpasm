@@ -98,6 +98,7 @@ void R_FreeUnusedBufferSets (void)
 		if (r_buffersets[i].name[0]) Con_Printf ("Releasing bufferset for %s\n", r_buffersets[i].name);
 		if (r_buffersets[i].vertexbuffer) glDeleteBuffers (1, &r_buffersets[i].vertexbuffer);
 		if (r_buffersets[i].indexbuffer) glDeleteBuffers (1, &r_buffersets[i].indexbuffer);
+
 		memset (&r_buffersets[i], 0, sizeof (r_buffersets[i]));
 	}
 }

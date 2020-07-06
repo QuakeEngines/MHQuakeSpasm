@@ -540,12 +540,11 @@ void R_DrawEntitiesOnList (qboolean alphapass) // johnfitz -- added parameter
 
 		// johnfitz -- if alphapass is true, draw only alpha entites this time
 		// if alphapass is false, draw only nonalpha entities this time
-		if ((ENTALPHA_DECODE (currententity->alpha) < 1 && !alphapass) ||
-			(ENTALPHA_DECODE (currententity->alpha) == 1 && alphapass))
+		if ((ENTALPHA_DECODE (currententity->alpha) < 1 && !alphapass) || (ENTALPHA_DECODE (currententity->alpha) == 1 && alphapass))
 			continue;
 
 		// johnfitz -- chasecam
-		if (currententity == &cl_entities[cl.viewentity])
+		if (currententity == cl_entities[cl.viewentity])
 			currententity->angles[0] *= 0.3;
 		// johnfitz
 
@@ -765,9 +764,9 @@ void R_RenderView (void)
 	else if (r_pos.value)
 	{
 		Con_Printf ("x %i y %i z %i (pitch %i yaw %i roll %i)\n",
-			(int) cl_entities[cl.viewentity].origin[0],
-			(int) cl_entities[cl.viewentity].origin[1],
-			(int) cl_entities[cl.viewentity].origin[2],
+			(int) cl_entities[cl.viewentity]->origin[0],
+			(int) cl_entities[cl.viewentity]->origin[1],
+			(int) cl_entities[cl.viewentity]->origin[2],
 			(int) cl.viewangles[PITCH],
 			(int) cl.viewangles[YAW],
 			(int) cl.viewangles[ROLL]);

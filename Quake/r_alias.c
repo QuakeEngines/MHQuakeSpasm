@@ -587,7 +587,7 @@ void R_SetupAliasLighting (entity_t *e)
 		R_MinimumLight (shadelight, 24 >> (int) gl_overbright.value);
 
 	// minimum light value on players (8)
-	if (e > cl_entities && e <= cl_entities + cl.maxclients)
+	if (e->entitynum >= 1 && e->entitynum <= cl.maxclients)
 		R_MinimumLight (shadelight, 8 >> (int) gl_overbright.value);
 
 	// minimum light value on pickups (128)
@@ -663,11 +663,8 @@ void R_DrawAliasModel (entity_t *e)
 	gltexture_t *fb = skin->fbtexture;
 
 	if (e->colormap != vid.colormap && !gl_nocolors.value)
-	{
-		int i = e - cl_entities;
-		if (i >= 1 && i <= cl.maxclients /* && !strcmp (e->model->name, "progs/player.mdl") */)
-			tx = playertextures[i - 1];
-	}
+		if (e->entitynum >= 1 && e->entitynum <= cl.maxclients)
+			tx = playertextures[e->entitynum - 1];
 
 	if (!gl_fullbrights.value)
 		fb = NULL;

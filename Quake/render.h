@@ -49,6 +49,7 @@ typedef struct entity_s {
 	qboolean				forcelink;		// model changed
 
 	int						update_type;
+	int						entitynum;		// order allocated
 
 	entity_state_t			baseline;		// to fill in defaults in updates
 

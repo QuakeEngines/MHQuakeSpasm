@@ -237,7 +237,7 @@ void V_ParseDamage (void)
 	}
 
 	// calculate view angle kicks
-	ent = &cl_entities[cl.viewentity];
+	ent = cl_entities[cl.viewentity];
 
 	VectorSubtract (from, ent->origin, from);
 	VectorNormalize (from);
@@ -533,9 +533,7 @@ V_BoundOffsets
 */
 void V_BoundOffsets (void)
 {
-	entity_t *ent;
-
-	ent = &cl_entities[cl.viewentity];
+	entity_t *ent = cl_entities[cl.viewentity];
 
 	// absolutely bound refresh reletive to entity clipping hull
 	// so the view can never be inside a solid wall
@@ -578,7 +576,7 @@ Roll is induced by movement and damage
 */
 void V_CalcViewRoll (void)
 {
-	r_refdef.viewangles[ROLL] += V_CalcRoll (cl_entities[cl.viewentity].angles, cl.velocity);
+	r_refdef.viewangles[ROLL] += V_CalcRoll (cl_entities[cl.viewentity]->angles, cl.velocity);
 
 	if (v_dmg_time > cl.time && v_kicktime.value > 0)
 	{
@@ -606,7 +604,7 @@ void V_CalcIntermissionRefdef (void)
 	float		old;
 
 	// ent is the player model (visible when out of body)
-	ent = &cl_entities[cl.viewentity];
+	ent = cl_entities[cl.viewentity];
 	// view is the weapon model (only visible from inside body)
 	view = &cl.viewent;
 
@@ -638,7 +636,8 @@ void V_CalcRefdef (void)
 	float punchblend, punch[3]; // lerped gunkick
 
 	// ent is the player model (visible when out of body)
-	ent = &cl_entities[cl.viewentity];
+	ent = cl_entities[cl.viewentity];
+
 	// view is the weapon model (only visible from inside body)
 	view = &cl.viewent;
 
