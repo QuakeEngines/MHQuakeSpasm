@@ -614,13 +614,13 @@ void CL_RelinkEntities (void)
 						dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_RED);
 					else if (cl.items & RIT_PLASMA_AMMO)
 						dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_BLUE);
-					else dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_WHITE);
+					else dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_ORANGE);
 				}
 				else
 				{
 					if (cl.items & IT_CELLS)
 						dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_BLUE);
-					else dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_WHITE);
+					else dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_ORANGE);
 				}
 			}
 			else

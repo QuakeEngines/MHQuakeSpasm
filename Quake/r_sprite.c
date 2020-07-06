@@ -25,8 +25,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 GLuint r_sprite_vp = 0;
-GLuint r_sprite_fp = 0;
+GLuint r_sprite_fp[2] = { 0 };
 
+#define SPRITE_SOLID	0
+#define SPRITE_ALPHA	1
 
 typedef struct spritepolyvert_s {
 	float point[3];
@@ -88,7 +90,9 @@ void GLSprite_CreateShaders (void)
 		"\n";
 
 	r_sprite_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_source);
-	r_sprite_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_source);
+
+	r_sprite_fp[SPRITE_SOLID] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFragmentProgram (fp_source, SHADERFLAG_NONE));
+	r_sprite_fp[SPRITE_ALPHA] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFragmentProgram (fp_source, SHADERFLAG_FENCE));
 }
 
 
@@ -136,7 +140,7 @@ R_DrawSpriteModel -- johnfitz -- rewritten: now supports all orientations
 */
 void R_DrawSpriteModel (entity_t *e)
 {
-	vec3_t			v_forward, v_right, v_up;
+	vec3_t		v_forward, v_right, v_up;
 	msprite_t *psprite;
 	mspriteframe_t *frame;
 	float *s_up, *s_right;
@@ -144,7 +148,6 @@ void R_DrawSpriteModel (entity_t *e)
 	spritepolyvert_t verts[4];
 
 	// TODO: frustum cull it?
-
 	frame = R_GetSpriteFrame (e);
 	psprite = (msprite_t *) e->model->cache.data;
 
@@ -154,6 +157,7 @@ void R_DrawSpriteModel (entity_t *e)
 		v_up[0] = 0;
 		v_up[1] = 0;
 		v_up[2] = 1;
+
 		s_up = v_up;
 		s_right = vright;
 		break;
@@ -162,12 +166,15 @@ void R_DrawSpriteModel (entity_t *e)
 		VectorSubtract (e->origin, r_origin, v_forward);
 		v_forward[2] = 0;
 		VectorNormalize (v_forward);
+
 		v_right[0] = v_forward[1];
 		v_right[1] = -v_forward[0];
 		v_right[2] = 0;
+
 		v_up[0] = 0;
 		v_up[1] = 0;
 		v_up[2] = 1;
+
 		s_up = v_up;
 		s_right = v_right;
 		break;
@@ -185,14 +192,18 @@ void R_DrawSpriteModel (entity_t *e)
 
 	case SPR_VP_PARALLEL_ORIENTED: // faces view plane, but obeys roll value
 		angle = e->angles[ROLL] * M_PI_DIV_180;
+
 		sr = sin (angle);
 		cr = cos (angle);
+
 		v_right[0] = vright[0] * cr + vup[0] * sr;
 		v_right[1] = vright[1] * cr + vup[1] * sr;
 		v_right[2] = vright[2] * cr + vup[2] * sr;
+
 		v_up[0] = vright[0] * -sr + vup[0] * cr;
 		v_up[1] = vright[1] * -sr + vup[1] * cr;
 		v_up[2] = vright[2] * -sr + vup[2] * cr;
+
 		s_up = v_up;
 		s_right = v_right;
 		break;
@@ -206,8 +217,11 @@ void R_DrawSpriteModel (entity_t *e)
 		GL_PolygonOffset (OFFSET_DECAL);
 
 	GL_BindTexture (GL_TEXTURE0, frame->gltexture);
-	GL_BindPrograms (r_sprite_vp, r_sprite_fp);
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
+
+	if (frame->gltexture->flags & TEXPREF_ALPHA)
+		GL_BindPrograms (r_sprite_vp, r_sprite_fp[SPRITE_ALPHA]);
+	else GL_BindPrograms (r_sprite_vp, r_sprite_fp[SPRITE_SOLID]);
 
 	GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
 	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
