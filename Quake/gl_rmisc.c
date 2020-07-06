@@ -37,6 +37,79 @@ extern cvar_t r_noshadow_list;
 
 extern gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz
 
+// must init to non-zero so that a memset-0 doesn't incorrectly cause a match
+int r_registration_sequence = 1;
+
+
+// despite the name, these may be used for sprites and other model types too
+bufferset_t r_buffersets[MAX_MODELS];
+
+
+int R_GetBufferSetForName (char *name)
+{
+	// look for an exact match
+	for (int i = 0; i < MAX_MODELS; i++)
+	{
+		if (!strcmp (name, r_buffersets[i].name))
+		{
+			// mark as used in this registration sequence
+			Con_Printf ("Reusing bufferset for %s\n", name);
+			r_buffersets[i].registration_sequence = r_registration_sequence;
+			return i;
+		}
+	}
+
+	// didn't find a match
+	return -1;
+}
+
+
+int R_NewBufferSetForName (char *name)
+{
+	// look for a free buffer
+	for (int i = 0; i < MAX_MODELS; i++)
+	{
+		// don't use any buffers that have content
+		if (r_buffersets[i].vertexbuffer) continue;
+		if (r_buffersets[i].indexbuffer) continue;
+		if (r_buffersets[i].name[0]) continue;
+
+		// this is a free spot - set it up (the buffers will be glGen'ed by the caller)
+		Con_Printf ("Creating bufferset for %s\n", name);
+		strcpy (r_buffersets[i].name, name);
+		r_buffersets[i].registration_sequence = r_registration_sequence;
+
+		return i;
+	}
+
+	// didn't find a match (this will normally Sys_Error)
+	return -1;
+}
+
+
+void R_FreeUnusedBufferSets (void)
+{
+	for (int i = 0; i < MAX_MODELS; i++)
+	{
+		// buffer is used
+		if (r_buffersets[i].registration_sequence == r_registration_sequence) continue;
+
+		// unused, so free it
+		if (r_buffersets[i].name[0]) Con_Printf ("Releasing bufferset for %s\n", r_buffersets[i].name);
+		if (r_buffersets[i].vertexbuffer) glDeleteBuffers (1, &r_buffersets[i].vertexbuffer);
+		if (r_buffersets[i].indexbuffer) glDeleteBuffers (1, &r_buffersets[i].indexbuffer);
+		memset (&r_buffersets[i], 0, sizeof (r_buffersets[i]));
+	}
+}
+
+
+void R_FreeAllBufferSets (void)
+{
+	// advance the registration sequence to age-out all buffers so they will all be unused (this is cutesy but is it robust?)
+	r_registration_sequence++;
+	R_FreeUnusedBufferSets ();
+}
+
 
 /*
 ====================
@@ -359,6 +432,12 @@ void R_NewMap (void)
 	// MH - if running a timedemo, remove the console immediately rather than doing a slow scroll, which may corrupt timings
 	if (cls.timedemo)
 		SCR_RemoveConsole ();
+
+	// free any unused objects
+	R_FreeUnusedBufferSets ();
+
+	// go to the next registration sequence
+	r_registration_sequence++;
 }
 
 

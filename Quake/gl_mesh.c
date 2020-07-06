@@ -35,6 +35,7 @@ to do: cache a buffer set similar to textures so if a buffer set it cached it do
 =================================================================
 */
 
+
 typedef struct vertexnormals_s {
 	int numnormals;
 	float normal[3];
@@ -103,23 +104,24 @@ Original code by MH from RMQEngine
 */
 static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr, dtriangle_t *triangles, unsigned short *indexes, aliasmesh_t *desc, trivertx_t *poseverts[])
 {
+	bufferset_t *set = &r_buffersets[m->buffsetset];
+
 	// count the sizes we need
-	m->vboindexofs = 0;
-	m->vboxyzofs = 0;
+	set->vboindexofs = 0;
+	set->vboxyzofs = 0;
 
-	int totalvbosize = (hdr->numposes * hdr->numverts_vbo * sizeof (meshxyz_t)); // ericw -- what RMQEngine called nummeshframes is called numposes in QuakeSpasm
+	int totalvbosize = (hdr->numposes * set->numverts * sizeof (meshxyz_t)); // ericw -- what RMQEngine called nummeshframes is called numposes in QuakeSpasm
 
-	m->vbostofs = totalvbosize;
-	totalvbosize += (hdr->numverts_vbo * sizeof (meshst_t));
+	set->vbostofs = totalvbosize;
+	totalvbosize += (set->numverts * sizeof (meshst_t));
 
-	if (!hdr->numindexes) return;
+	if (!set->numindexes) return;
 	if (!totalvbosize) return;
 
 	// upload indices buffer
-	glDeleteBuffers (1, &m->meshindexesvbo);
-	glGenBuffers (1, &m->meshindexesvbo);
-	glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, m->meshindexesvbo);
-	glBufferData (GL_ELEMENT_ARRAY_BUFFER, hdr->numindexes * sizeof (unsigned short), indexes, GL_STATIC_DRAW);
+	glGenBuffers (1, &set->indexbuffer);
+	glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, set->indexbuffer);
+	glBufferData (GL_ELEMENT_ARRAY_BUFFER, set->numindexes * sizeof (unsigned short), indexes, GL_STATIC_DRAW);
 
 	// create the vertex buffer (empty)
 	byte *vbodata = (byte *) Hunk_Alloc (totalvbosize);
@@ -130,13 +132,13 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr, dtriang
 	// fill in the vertices at the start of the buffer
 	for (int f = 0; f < hdr->numposes; f++) // ericw -- what RMQEngine called nummeshframes is called numposes in QuakeSpasm
 	{
-		meshxyz_t *xyz = (meshxyz_t *) (vbodata + (f * hdr->numverts_vbo * sizeof (meshxyz_t)));
+		meshxyz_t *xyz = (meshxyz_t *) (vbodata + (f * set->numverts * sizeof (meshxyz_t)));
 		trivertx_t *tv = poseverts[f];
 
 		// rebuild the normals for this frame
 		R_BuildFrameNormals (hdr, tv, triangles, vnorms);
 
-		for (int v = 0; v < hdr->numverts_vbo; v++) {
+		for (int v = 0; v < set->numverts; v++) {
 			trivertx_t *trivert = &tv[desc[v].vertindex];
 
 			xyz[v].position[0] = (float) trivert->v[0];
@@ -156,17 +158,16 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr, dtriang
 	float vscale = (float) hdr->skinheight / (float) Image_PadConditional (hdr->skinheight);
 	// johnfitz
 
-	meshst_t *st = (meshst_t *) (vbodata + m->vbostofs);
+	meshst_t *st = (meshst_t *) (vbodata + set->vbostofs);
 
-	for (int f = 0; f < hdr->numverts_vbo; f++) {
+	for (int f = 0; f < set->numverts; f++) {
 		st[f].st[0] = hscale * ((float) desc[f].st[0] + 0.5f) / (float) hdr->skinwidth;
 		st[f].st[1] = vscale * ((float) desc[f].st[1] + 0.5f) / (float) hdr->skinheight;
 	}
 
 	// upload vertexes buffer
-	glDeleteBuffers (1, &m->meshvbo);
-	glGenBuffers (1, &m->meshvbo);
-	glBindBuffer (GL_ARRAY_BUFFER, m->meshvbo);
+	glGenBuffers (1, &set->vertexbuffer);
+	glBindBuffer (GL_ARRAY_BUFFER, set->vertexbuffer);
 	glBufferData (GL_ARRAY_BUFFER, totalvbosize, vbodata, GL_STATIC_DRAW);
 
 	// invalidate the cached bindings
@@ -181,6 +182,7 @@ GL_MakeAliasModelDisplayLists
 */
 void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr, trivertx_t *poseverts[], dtriangle_t *triangles, stvert_t *stverts)
 {
+	bufferset_t *set = &r_buffersets[m->buffsetset];
 	int mark = Hunk_LowMark ();
 
 	// there can never be more than this number of verts and we just put them all on the hunk
@@ -191,8 +193,8 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr, trivertx_t *po
 	unsigned short *indexes = (unsigned short *) Hunk_Alloc (sizeof (unsigned short) * maxverts_vbo);
 
 	// these are stored out in the alias hdr so that the buffer objects can be regenned following a video restart
-	hdr->numindexes = 0;
-	hdr->numverts_vbo = 0;
+	set->numindexes = 0;
+	set->numverts = 0;
 
 	for (int i = 0; i < hdr->numtris; i++)
 	{
@@ -211,23 +213,23 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr, trivertx_t *po
 			if (!triangles[i].facesfront && stverts[vertindex].onseam) s += hdr->skinwidth / 2;
 
 			// see does this vert already exist (it could use the same xyz but have different s and t)
-			for (v = 0; v < hdr->numverts_vbo; v++)
+			for (v = 0; v < set->numverts; v++)
 				if (desc[v].vertindex == vertindex && desc[v].st[0] == s && desc[v].st[1] == t)
 					break;
 
-			if (v == hdr->numverts_vbo)
+			if (v == set->numverts)
 			{
 				// doesn't exist; emit a new vert
-				desc[hdr->numverts_vbo].vertindex = vertindex;
-				desc[hdr->numverts_vbo].st[0] = s;
-				desc[hdr->numverts_vbo].st[1] = t;
+				desc[set->numverts].vertindex = vertindex;
+				desc[set->numverts].st[0] = s;
+				desc[set->numverts].st[1] = t;
 
 				// go to the next vert
-				hdr->numverts_vbo++;
+				set->numverts++;
 			}
 
 			// emit an index for it
-			indexes[hdr->numindexes++] = v;
+			indexes[set->numindexes++] = v;
 		}
 	}
 
@@ -239,6 +241,13 @@ void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr, trivertx_t *po
 
 void GLMesh_LoadAliasGeometry (qmodel_t *mod, aliashdr_t *hdr, byte *buf)
 {
+	// check if the model already has a buffer set
+	if ((mod->buffsetset = R_GetBufferSetForName (mod->name)) != -1) return;
+
+	// get a new one
+	if ((mod->buffsetset = R_NewBufferSetForName (mod->name)) == -1)
+		Sys_Error ("GLMesh_LoadAliasGeometry : unable to allocate a buffer set");
+
 	// common geometry load for both initial load and reload following vid_restart
 	stvert_t *pinstverts = (stvert_t *) &buf[hdr->ofs_stverts];
 	dtriangle_t *pintriangles = (dtriangle_t *) &buf[hdr->ofs_triangles];
@@ -296,6 +305,7 @@ void GLMesh_LoadAliasGeometry (qmodel_t *mod, aliashdr_t *hdr, byte *buf)
 		}
 	}
 
+	// and create them
 	GL_MakeAliasModelDisplayLists (mod, hdr, poseverts, pintriangles, pinstverts);
 }
 
@@ -346,34 +356,6 @@ void GLMesh_ReloadVertexBuffers (void)
 
 		GLMesh_ReloadAliasGeometry (m);
 	}
-}
-
-
-/*
-================
-GLMesh_DeleteVertexBuffers
-
-Delete VBOs for all loaded alias models
-================
-*/
-void GLMesh_DeleteVertexBuffers (void)
-{
-	int j;
-	qmodel_t *m;
-
-	for (j = 1; j < MAX_MODELS; j++)
-	{
-		if (!(m = cl.model_precache[j])) break;
-		if (m->type != mod_alias) continue;
-
-		glDeleteBuffers (1, &m->meshvbo);
-		m->meshvbo = 0;
-
-		glDeleteBuffers (1, &m->meshindexesvbo);
-		m->meshindexesvbo = 0;
-	}
-
-	GL_ClearBufferBindings ();
 }
 
 

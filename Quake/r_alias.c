@@ -56,10 +56,10 @@ Returns the offset of the first vertex's meshxyz_t.xyz in the vbo for the given
 model and pose.
 =============
 */
-static void *GLARB_GetXYZOffset (entity_t *e, aliashdr_t *hdr, int pose)
+static void *GLARB_GetXYZOffset (bufferset_t *set, aliashdr_t *hdr, int pose)
 {
 	const int xyzoffs = offsetof (meshxyz_t, position);
-	return (void *) (e->model->vboxyzofs + (hdr->numverts_vbo * pose * sizeof (meshxyz_t)) + xyzoffs);
+	return (void *) (set->vboxyzofs + (set->numverts * pose * sizeof (meshxyz_t)) + xyzoffs);
 }
 
 
@@ -71,10 +71,10 @@ Returns the offset of the first vertex's meshxyz_t.normal in the vbo for the
 given model and pose.
 =============
 */
-static void *GLARB_GetNormalOffset (entity_t *e, aliashdr_t *hdr, int pose)
+static void *GLARB_GetNormalOffset (bufferset_t *set, aliashdr_t *hdr, int pose)
 {
 	const int normaloffs = offsetof (meshxyz_t, normal);
-	return (void *) (e->model->vboxyzofs + (hdr->numverts_vbo * pose * sizeof (meshxyz_t)) + normaloffs);
+	return (void *) (set->vboxyzofs + (set->numverts * pose * sizeof (meshxyz_t)) + normaloffs);
 }
 
 
@@ -257,6 +257,7 @@ void GLAlias_CreateShaders (void)
 void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, lerpdata_t *lerpdata, gltexture_t *tx, gltexture_t *fb)
 {
 	float	blend;
+	bufferset_t *set = &r_buffersets[e->model->buffsetset];
 
 	if (lerpdata->pose1 != lerpdata->pose2)
 	{
@@ -267,16 +268,16 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 		blend = 0; // because of "1.0f -" above
 	}
 
-	GL_BindBuffer (GL_ARRAY_BUFFER, e->model->meshvbo);
-	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, e->model->meshindexesvbo);
+	GL_BindBuffer (GL_ARRAY_BUFFER, set->vertexbuffer);
+	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, set->indexbuffer);
 
 	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3 | VAA4);
 
-	glVertexAttribPointer (0, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (e, hdr, lerpdata->pose1));
-	glVertexAttribPointer (1, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (e, hdr, lerpdata->pose1));
-	glVertexAttribPointer (2, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (e, hdr, lerpdata->pose2));
-	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (e, hdr, lerpdata->pose2));
-	glVertexAttribPointer (4, 2, GL_FLOAT, GL_FALSE, 0, (void *) (intptr_t) e->model->vbostofs);
+	glVertexAttribPointer (0, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (set, hdr, lerpdata->pose1));
+	glVertexAttribPointer (1, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (set, hdr, lerpdata->pose1));
+	glVertexAttribPointer (2, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (set, hdr, lerpdata->pose2));
+	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (set, hdr, lerpdata->pose2));
+	glVertexAttribPointer (4, 2, GL_FLOAT, GL_FALSE, 0, (void *) (intptr_t) set->vbostofs);
 
 	// set textures
 	GL_BindTexture (GL_TEXTURE0, tx);
@@ -313,7 +314,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, shadevector);
 
 	// draw
-	glDrawElements (GL_TRIANGLES, hdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) e->model->vboindexofs);
+	glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) set->vboindexofs);
 	rs_aliaspasses += hdr->numtris;
 
 	// add dynamic lights
@@ -343,7 +344,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 			GL_SetupDynamicLight (dl);
 
 			// and draw it
-			glDrawElements (GL_TRIANGLES, hdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) e->model->vboindexofs);
+			glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) set->vboindexofs);
 			rs_aliaspasses += hdr->numtris;
 		}
 	}
@@ -415,7 +416,8 @@ P.d * L.x      P.d * L.y      P.d * L.z      P.d * L.w + d
 	glMultMatrixf (localMatrix.m16);
 
 	// draw it - the vertex array state is already set
-	glDrawElements (GL_TRIANGLES, hdr->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) e->model->vboindexofs);
+	bufferset_t *set = &r_buffersets[e->model->buffsetset];
+	glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) set->vboindexofs);
 	rs_aliaspasses += hdr->numtris;
 
 	// revert the transform

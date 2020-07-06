@@ -682,7 +682,7 @@ static void VID_Restart (void)
 	TexMgr_DeleteTextureObjects ();
 	R_DeleteShaders ();
 	GL_DeleteBModelVertexBuffer ();
-	GLMesh_DeleteVertexBuffers ();
+	R_FreeAllBufferSets ();
 
 	// set new mode
 	VID_SetMode (width, height, refreshrate, bpp, fullscreen);

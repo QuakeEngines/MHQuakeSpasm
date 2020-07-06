@@ -222,7 +222,6 @@ void GL_BuildLightmaps (void);
 void GL_DeleteBModelVertexBuffer (void);
 void GL_BuildBModelVertexBuffer (void);
 void GLMesh_ReloadVertexBuffers (void);
-void GLMesh_DeleteVertexBuffers (void);
 
 int R_LightPoint (vec3_t p);
 
@@ -321,6 +320,35 @@ void R_DrawSimpleTexturechain (msurface_t *s);
 
 void GLWarp_CreateTextures (void);
 void R_UnderwaterWarp (void);
+
+
+// registration
+// MH - Quake loads models based on name, so name is all we need to match on, so long as we free them all properly between game changes
+typedef struct bufferset_s {
+	GLuint vertexbuffer;
+	GLuint indexbuffer;
+
+	int			numverts;
+	int			numindexes;
+
+	int		vboindexofs;    // offset in vbo of the hdr->numindexes unsigned shorts
+	int		vboxyzofs;      // offset in vbo of hdr->numposes*hdr->numverts_vbo meshxyz_t
+	int		vbostofs;       // offset in vbo of hdr->numverts_vbo meshst_t
+
+	char name[MAX_OSPATH];
+	int registration_sequence;
+} bufferset_t;
+
+extern int r_registration_sequence;
+
+// despite the name, these may be used for sprites and other model types too
+extern bufferset_t r_buffersets[];
+
+int R_GetBufferSetForName (char *name);
+int R_NewBufferSetForName (char *name);
+void R_FreeUnusedBufferSets (void);
+void R_FreeAllBufferSets (void);
+
 
 #endif	/* __GLQUAKE_H */
 

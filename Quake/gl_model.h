@@ -355,9 +355,6 @@ typedef struct aliashdr_s {
 	int			flags;
 	float		size;
 
-	int			numverts_vbo;   // number of verts with unique x,y,z,s,t
-
-	int			numindexes;
 	int			numtris;
 	int			numverts;
 	int			numposes;
@@ -487,13 +484,8 @@ typedef struct qmodel_s {
 
 	int			bspversion;
 
-	// alias model
-
-	GLuint		meshvbo;
-	GLuint		meshindexesvbo;
-	int			vboindexofs;    // offset in vbo of the hdr->numindexes unsigned shorts
-	int			vboxyzofs;      // offset in vbo of hdr->numposes*hdr->numverts_vbo meshxyz_t
-	int			vbostofs;       // offset in vbo of hdr->numverts_vbo meshst_t
+	// vertex buffers
+	int			buffsetset;
 
 	// additional model data
 	cache_user_t	cache;		// only access through Mod_Extradata
