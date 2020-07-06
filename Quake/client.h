@@ -247,7 +247,6 @@ extern	cvar_t	m_side;
 
 
 #define	MAX_TEMP_ENTITIES	256		// johnfitz -- was 64
-#define	MAX_VISEDICTS		4096	// larger, now we support BSP2
 
 extern	client_state_t	cl;
 
@@ -256,7 +255,7 @@ extern	lightstyle_t	cl_lightstyle[MAX_LIGHTSTYLES];
 extern	dlight_t		cl_dlights[MAX_DLIGHTS];
 extern	entity_t		cl_temp_entities[MAX_TEMP_ENTITIES];
 extern	beam_t			cl_beams[MAX_BEAMS];
-extern	entity_t		*cl_visedicts[MAX_VISEDICTS];
+extern	entity_t		*cl_visedicts[MAX_EDICTS];
 extern	int				cl_numvisedicts;
 
 extern	entity_t		*cl_entities[]; // johnfitz -- was a static array, now on hunk

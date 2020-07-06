@@ -59,7 +59,7 @@ dlight_t		cl_dlights[MAX_DLIGHTS];
 entity_t		*cl_entities[MAX_EDICTS]; // mh - doing this right
 
 int				cl_numvisedicts;
-entity_t		*cl_visedicts[MAX_VISEDICTS];
+entity_t		*cl_visedicts[MAX_EDICTS];
 
 extern cvar_t	r_lerpmodels, r_lerpmove; // johnfitz
 
@@ -702,7 +702,7 @@ void CL_RelinkEntities (void)
 		if (i == cl.viewentity && !chase_active.value)
 			continue;
 
-		if (cl_numvisedicts < MAX_VISEDICTS)
+		if (cl_numvisedicts < MAX_EDICTS)
 		{
 			cl_visedicts[cl_numvisedicts] = ent;
 			cl_numvisedicts++;
@@ -754,9 +754,9 @@ int CL_ReadFromServer (double frametime)
 
 	// johnfitz -- devstats
 
-		// visedicts
+	// visedicts
 	if (cl_numvisedicts > 256 && dev_peakstats.visedicts <= 256)
-		Con_DWarning ("%i visedicts exceeds standard limit of 256 (max = %d).\n", cl_numvisedicts, MAX_VISEDICTS);
+		Con_DWarning ("%i visedicts exceeds standard limit of 256.\n", cl_numvisedicts);
 	dev_stats.visedicts = cl_numvisedicts;
 	dev_peakstats.visedicts = q_max (cl_numvisedicts, dev_peakstats.visedicts);
 
