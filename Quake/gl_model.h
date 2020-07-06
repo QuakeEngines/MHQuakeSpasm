@@ -235,12 +235,12 @@ SPRITE MODELS
 ==============================================================================
 */
 
-
 // FIXME: shorten these?
 typedef struct mspriteframe_s {
 	int					width, height;
 	float				up, down, left, right;
 	float				smax, tmax; // johnfitz -- image might be padded
+	int					firstvertex;
 	struct gltexture_s *gltexture;
 } mspriteframe_t;
 
@@ -255,15 +255,25 @@ typedef struct mspriteframedesc_s {
 	mspriteframe_t *frameptr;
 } mspriteframedesc_t;
 
+typedef struct spritepolyvert_s {
+	float framevec[2];
+	float texcoord[2];
+} spritepolyvert_t;
+
 typedef struct msprite_s {
 	int					type;
 	int					maxwidth;
 	int					maxheight;
 	int					numframes;
+	spritepolyvert_t *frameverts;
+	int				numframeverts;
 	float				beamlength;		// remove?
 	void *cachespot;		// remove?
 	mspriteframedesc_t	frames[1];
 } msprite_t;
+
+// creates frames for rendering
+void R_CreateSpriteFrames (msprite_t *psprite);
 
 
 /*

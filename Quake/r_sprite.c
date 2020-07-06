@@ -30,28 +30,33 @@ GLuint r_sprite_fp[2] = { 0 };
 #define SPRITE_SOLID	0
 #define SPRITE_ALPHA	1
 
-typedef struct spritepolyvert_s {
-	float point[3];
-	float st[2];
-} spritepolyvert_t;
-
 
 void GLSprite_CreateShaders (void)
 {
 	const GLchar *vp_source = \
 		"!!ARBvp1.0\n"
 		"\n"
+		"PARAM origin = program.local[0];\n"
+		"PARAM uvec = program.local[1];\n"
+		"PARAM rvec = program.local[2];\n"
+		"\n"
+		"# set up position\n"
+		"TEMP NewPosition;\n"
+		"MAD NewPosition, uvec, vertex.attrib[0].x, origin;\n"
+		"MAD NewPosition, rvec, vertex.attrib[0].y, NewPosition;\n"
+		"MOV NewPosition.w, 1.0;\n"
+		"\n"
 		"# transform position to output\n"
-		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.attrib[0];\n"
-		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.attrib[0];\n"
-		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.attrib[0];\n"
-		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.attrib[0];\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], NewPosition;\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], NewPosition;\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], NewPosition;\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], NewPosition;\n"
 		"\n"
 		"# copy over texcoord\n"
 		"MOV result.texcoord[0], vertex.attrib[1];\n"
 		"\n"
 		"# set up fog coordinate\n"
-		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
+		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], NewPosition;\n"
 		"\n"
 		"# done\n"
 		"END\n"
@@ -96,6 +101,48 @@ void GLSprite_CreateShaders (void)
 }
 
 
+void R_CreateSpriteVertex (spritepolyvert_t *vert, float a, float b, float s, float t)
+{
+	Vector2Set (vert->framevec, a, b);
+	Vector2Set (vert->texcoord, s, t);
+}
+
+
+void R_CreateSpriteFrame (spritepolyvert_t *verts, mspriteframe_t *frame)
+{
+	R_CreateSpriteVertex (&verts[0], frame->down, frame->left, 0, frame->tmax);
+	R_CreateSpriteVertex (&verts[1], frame->up, frame->left, 0, 0);
+	R_CreateSpriteVertex (&verts[2], frame->up, frame->right, frame->smax, 0);
+	R_CreateSpriteVertex (&verts[3], frame->down, frame->right, frame->smax, frame->tmax);
+}
+
+
+void R_CreateSpriteFrames (msprite_t *psprite)
+{
+	// these could probably go to static buffers
+	psprite->frameverts = (spritepolyvert_t *) Hunk_Alloc (sizeof (spritepolyvert_t) * psprite->numframeverts);
+
+	for (int i = 0; i < psprite->numframes; i++)
+	{
+		if (psprite->frames[i].type == SPR_SINGLE)
+		{
+			mspriteframe_t *frame = psprite->frames[i].frameptr;
+			R_CreateSpriteFrame (&psprite->frameverts[frame->firstvertex], frame);
+		}
+		else
+		{
+			mspritegroup_t *group = (mspritegroup_t *) psprite->frames[i].frameptr;
+
+			for (int j = 0; j < group->numframes; j++)
+			{
+				mspriteframe_t *frame = group->frames[j];
+				R_CreateSpriteFrame (&psprite->frameverts[frame->firstvertex], frame);
+			}
+		}
+	}
+}
+
+
 /*
 ================
 R_GetSpriteFrame
@@ -123,16 +170,6 @@ mspriteframe_t *R_GetSpriteFrame (entity_t *e)
 }
 
 
-void R_EmitSpriteVertex (spritepolyvert_t *vert, float *origin, float a, float b, float *up, float *right, float s, float t)
-{
-	VectorMA (origin, a, up, vert->point);
-	VectorMA (vert->point, b, right, vert->point);
-
-	vert->st[0] = s;
-	vert->st[1] = t;
-}
-
-
 /*
 =================
 R_DrawSpriteModel -- johnfitz -- rewritten: now supports all orientations
@@ -140,12 +177,11 @@ R_DrawSpriteModel -- johnfitz -- rewritten: now supports all orientations
 */
 void R_DrawSpriteModel (entity_t *e)
 {
-	vec3_t		v_forward, v_right, v_up;
+	float		v_forward[4], v_right[4], v_up[4];	// padded for use in shaders
 	msprite_t *psprite;
 	mspriteframe_t *frame;
 	float *s_up, *s_right;
 	float			angle, sr, cr;
-	spritepolyvert_t verts[4];
 
 	// TODO: frustum cull it?
 	frame = R_GetSpriteFrame (e);
@@ -223,20 +259,21 @@ void R_DrawSpriteModel (entity_t *e)
 		GL_BindPrograms (r_sprite_vp, r_sprite_fp[SPRITE_ALPHA]);
 	else GL_BindPrograms (r_sprite_vp, r_sprite_fp[SPRITE_SOLID]);
 
+	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 0, e->origin);	// note : this will overflow the read but that's OK because there are members after it in the struct
+	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 1, s_up);			// this one was padded to 4 floats
+	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 2, s_right);		// this one was padded to 4 floats
+
 	GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
 	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
 
 	GL_EnableVertexAttribArrays (VAA0 | VAA1);
 
-	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), verts->point);
-	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), verts->st);
+	// the data was already built at load time so it just needs to be set up for rendering here
+	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), psprite->frameverts->framevec);
+	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), psprite->frameverts->texcoord);
 
-	R_EmitSpriteVertex (&verts[0], e->origin, frame->down, frame->left, s_up, s_right, 0, frame->tmax);
-	R_EmitSpriteVertex (&verts[1], e->origin, frame->up, frame->left, s_up, s_right, 0, 0);
-	R_EmitSpriteVertex (&verts[2], e->origin, frame->up, frame->right, s_up, s_right, frame->smax, 0);
-	R_EmitSpriteVertex (&verts[3], e->origin, frame->down, frame->right, s_up, s_right, frame->smax, frame->tmax);
-
-	glDrawArrays (GL_QUADS, 0, 4);
+	// and draw it
+	glDrawArrays (GL_QUADS, frame->firstvertex, 4);
 
 	// johnfitz: offset decals
 	if (psprite->type == SPR_ORIENTED)

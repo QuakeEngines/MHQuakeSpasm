@@ -2419,7 +2419,7 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 Mod_LoadSpriteFrame
 =================
 */
-void *Mod_LoadSpriteFrame (void *pin, mspriteframe_t **ppframe, int framenum)
+void *Mod_LoadSpriteFrame (void *pin, msprite_t *psprite, mspriteframe_t **ppframe, int framenum)
 {
 	dspriteframe_t *pinframe;
 	mspriteframe_t *pspriteframe;
@@ -2451,6 +2451,10 @@ void *Mod_LoadSpriteFrame (void *pin, mspriteframe_t **ppframe, int framenum)
 	pspriteframe->tmax = (float) height / (float) Image_PadConditional (height);
 	// johnfitz
 
+	// count vertexes in this sprite
+	pspriteframe->firstvertex = psprite->numframeverts;
+	psprite->numframeverts += 4;
+
 	q_snprintf (name, sizeof (name), "%s:frame%i", loadmodel->name, framenum);
 	offset = (src_offset_t) (pinframe + 1) - (src_offset_t) mod_base; // johnfitz
 	pspriteframe->gltexture =
@@ -2467,7 +2471,7 @@ void *Mod_LoadSpriteFrame (void *pin, mspriteframe_t **ppframe, int framenum)
 Mod_LoadSpriteGroup
 =================
 */
-void *Mod_LoadSpriteGroup (void *pin, mspriteframe_t **ppframe, int framenum)
+void *Mod_LoadSpriteGroup (void *pin, msprite_t *psprite, mspriteframe_t **ppframe, int framenum)
 {
 	dspritegroup_t *pingroup;
 	mspritegroup_t *pspritegroup;
@@ -2507,7 +2511,7 @@ void *Mod_LoadSpriteGroup (void *pin, mspriteframe_t **ppframe, int framenum)
 
 	for (i = 0; i < numframes; i++)
 	{
-		ptemp = Mod_LoadSpriteFrame (ptemp, &pspritegroup->frames[i], framenum * 100 + i);
+		ptemp = Mod_LoadSpriteFrame (ptemp, psprite, &pspritegroup->frames[i], framenum * 100 + i);
 	}
 
 	return ptemp;
@@ -2532,15 +2536,12 @@ void Mod_LoadSpriteModel (qmodel_t *mod, void *buffer)
 	pin = (dsprite_t *) buffer;
 	mod_base = (byte *) buffer; // johnfitz
 
-	version = LittleLong (pin->version);
-	if (version != SPRITE_VERSION)
+	if ((version = LittleLong (pin->version)) != SPRITE_VERSION)
 		Sys_Error ("%s has wrong version number "
 			"(%i should be %i)", mod->name, version, SPRITE_VERSION);
 
 	numframes = LittleLong (pin->numframes);
-
 	size = sizeof (msprite_t) + (numframes - 1) * sizeof (psprite->frames);
-
 	psprite = (msprite_t *) Hunk_AllocName (size, loadname);
 
 	mod->cache.data = psprite;
@@ -2564,25 +2565,19 @@ void Mod_LoadSpriteModel (qmodel_t *mod, void *buffer)
 	mod->numframes = numframes;
 
 	pframetype = (dspriteframetype_t *) (pin + 1);
+	psprite->numframeverts = 0;
 
 	for (i = 0; i < numframes; i++)
 	{
-		spriteframetype_t	frametype;
-
-		frametype = (spriteframetype_t) LittleLong (pframetype->type);
+		spriteframetype_t	frametype = (spriteframetype_t) LittleLong (pframetype->type);
 		psprite->frames[i].type = frametype;
 
 		if (frametype == SPR_SINGLE)
-		{
-			pframetype = (dspriteframetype_t *)
-				Mod_LoadSpriteFrame (pframetype + 1, &psprite->frames[i].frameptr, i);
-		}
-		else
-		{
-			pframetype = (dspriteframetype_t *)
-				Mod_LoadSpriteGroup (pframetype + 1, &psprite->frames[i].frameptr, i);
-		}
+			pframetype = (dspriteframetype_t *) Mod_LoadSpriteFrame (pframetype + 1, psprite, &psprite->frames[i].frameptr, i);
+		else pframetype = (dspriteframetype_t *) Mod_LoadSpriteGroup (pframetype + 1, psprite, &psprite->frames[i].frameptr, i);
 	}
+
+	R_CreateSpriteFrames (psprite);
 
 	mod->type = mod_sprite;
 }
