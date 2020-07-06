@@ -192,11 +192,8 @@ typedef struct areanode_s {
 	link_t	solid_edicts;
 } areanode_t;
 
-#define	AREA_DEPTH	4
-#define	AREA_NODES	32
+static	areanode_t *sv_areanodes = NULL;
 
-static	areanode_t	sv_areanodes[AREA_NODES];
-static	int			sv_numareanodes;
 
 /*
 ===============
@@ -206,30 +203,29 @@ SV_CreateAreaNode
 */
 areanode_t *SV_CreateAreaNode (int depth, vec3_t mins, vec3_t maxs)
 {
-	areanode_t *anode;
+	areanode_t *anode = (areanode_t *) Hunk_Alloc (sizeof (areanode_t));
 	vec3_t		size;
 	vec3_t		mins1, maxs1, mins2, maxs2;
-
-	anode = &sv_areanodes[sv_numareanodes];
-	sv_numareanodes++;
 
 	ClearLink (&anode->trigger_edicts);
 	ClearLink (&anode->solid_edicts);
 
-	if (depth == AREA_DEPTH)
+	VectorSubtract (maxs, mins, size);
+
+	// most id1 maps stop creating area nodes at this size
+	if (size[0] < 1024 && size[1] < 1024)
 	{
 		anode->axis = -1;
 		anode->children[0] = anode->children[1] = NULL;
 		return anode;
 	}
 
-	VectorSubtract (maxs, mins, size);
 	if (size[0] > size[1])
 		anode->axis = 0;
-	else
-		anode->axis = 1;
+	else anode->axis = 1;
 
 	anode->dist = 0.5 * (maxs[anode->axis] + mins[anode->axis]);
+
 	VectorCopy (mins, mins1);
 	VectorCopy (mins, mins2);
 	VectorCopy (maxs, maxs1);
@@ -252,10 +248,7 @@ SV_ClearWorld
 void SV_ClearWorld (void)
 {
 	SV_InitBoxHull ();
-
-	memset (sv_areanodes, 0, sizeof (sv_areanodes));
-	sv_numareanodes = 0;
-	SV_CreateAreaNode (0, sv.worldmodel->mins, sv.worldmodel->maxs);
+	sv_areanodes = SV_CreateAreaNode (0, sv.worldmodel->mins, sv.worldmodel->maxs);
 }
 
 
