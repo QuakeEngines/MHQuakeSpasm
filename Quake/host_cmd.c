@@ -1236,7 +1236,9 @@ void Host_Loadgame_f (void)
 		else
 		{
 			// parse an edict
+			SV_AllocEdict (entnum);
 			ent = EDICT_NUM (entnum);
+
 			if (entnum < sv.num_edicts)
 			{
 				ent->free = false;
@@ -1246,6 +1248,7 @@ void Host_Loadgame_f (void)
 			{
 				memset (ent, 0, pr_edict_size);
 			}
+
 			data = ED_ParseEdict (data, ent);
 
 			// link it into the bsp tree

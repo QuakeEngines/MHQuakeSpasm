@@ -34,6 +34,79 @@ extern qboolean	pr_alpha_supported; // johnfitz
 
 // ============================================================================
 
+
+static byte *sv_edictbuf = NULL;
+static int sv_allocedictmax = 0;
+
+// alloc edicts in batches so that we don't constantly hit memory
+#define SV_EDICTBATCH	32
+
+void SV_ClearEdicts (void)
+{
+	if (sv_edictbuf)
+	{
+		// we can't allocate into sv.edicts directly because it's memset to 0 in multiple places which would lose the pointer
+		free (sv_edictbuf);
+		sv_edictbuf = NULL;
+	}
+
+	sv_allocedictmax = 0;
+}
+
+void SV_AllocEdict (int num)
+{
+#if 0
+	// dynamically allocating version - needs references to edicts in all structs/etc to be made movable
+	if (num < sv_allocedictmax)
+	{
+		if ((intptr_t) sv.edicts != (intptr_t) sv_edictbuf)
+		{
+			// this pointer can change
+			sv.edicts = (edict_t *) sv_edictbuf;
+		}
+
+		return;
+	}
+
+	// we can't allocate into sv.edicts directly because it's memset to 0 in multiple places which would lose the pointer
+	sv_edictbuf = (byte *) realloc (sv_edictbuf, ((sv_allocedictmax + SV_EDICTBATCH) * pr_edict_size));
+
+	// clear the new batch
+	memset (&sv_edictbuf[sv_allocedictmax * pr_edict_size], 0, pr_edict_size * SV_EDICTBATCH);
+
+	// accumulate the batch
+	sv_allocedictmax += SV_EDICTBATCH;
+
+	// now call recursively in case num is sufficiently high that it's > the new sv_allocedictmax
+	SV_AllocEdict (num);
+#else
+	// statically allocating version
+	if (!sv_edictbuf)
+	{
+		sv_edictbuf = (byte *) malloc (sv.max_edicts * pr_edict_size); // ericw -- sv.edicts switched to use malloc()
+		sv_allocedictmax = 0;
+	}
+
+	// we already have memory committed for this edict
+	if (num < sv_allocedictmax)
+	{
+		// this pointer can change (it actually can't in this version but we do this so that the first call doesn't need to be aware of which version it's using)
+		sv.edicts = (edict_t *) sv_edictbuf;
+		return;
+	}
+
+	// clear the new batch
+	memset (&sv_edictbuf[sv_allocedictmax * pr_edict_size], 0, pr_edict_size * SV_EDICTBATCH);
+
+	// accumulate the batch
+	sv_allocedictmax += SV_EDICTBATCH;
+
+	// now call recursively in case num is sufficiently high that it's > the new sv_allocedictmax
+	SV_AllocEdict (num);
+#endif
+}
+
+
 /*
 ===============
 SV_Protocol_f
@@ -87,7 +160,7 @@ void SV_Init (void)
 	extern	cvar_t	sv_aim;
 	extern	cvar_t	sv_altnoclip; // johnfitz
 
-	sv.edicts = NULL; // ericw -- sv.edicts switched to use Q_zmalloc()
+	sv.edicts = NULL; // ericw -- sv.edicts switched to use malloc()
 
 	Cvar_RegisterVariable (&sv_maxvelocity);
 	Cvar_RegisterVariable (&sv_gravity);
@@ -1358,9 +1431,11 @@ void SV_SpawnServer (const char *server)
 	PR_LoadProgs ();
 
 	// allocate server memory
-		/* Host_ClearMemory() called above already cleared the whole sv structure */
+	SV_ClearEdicts ();
+
+	// sv.max_edicts must be set before first call...
 	sv.max_edicts = CLAMP (MIN_EDICTS, (int) max_edicts.value, MAX_EDICTS); // johnfitz -- max_edicts cvar
-	sv.edicts = (edict_t *) Q_zmalloc (sv.max_edicts * pr_edict_size); // ericw -- sv.edicts switched to use Q_zmalloc()
+	SV_AllocEdict (0); // alloc the first edict which initializes the buffer and sets up the sv.edicts pointer
 
 	sv.datagram.maxsize = sizeof (sv.datagram_buf);
 	sv.datagram.cursize = 0;
@@ -1376,9 +1451,11 @@ void SV_SpawnServer (const char *server)
 
 	// leave slots at start for clients only
 	sv.num_edicts = svs.maxclients + 1;
-	memset (sv.edicts, 0, sv.num_edicts * pr_edict_size); // ericw -- sv.edicts switched to use Q_zmalloc()
+	memset (sv.edicts, 0, sv.num_edicts * pr_edict_size); // ericw -- sv.edicts switched to use malloc()
+
 	for (i = 0; i < svs.maxclients; i++)
 	{
+		SV_AllocEdict (i + 1);
 		ent = EDICT_NUM (i + 1);
 		svs.clients[i].edict = ent;
 	}
@@ -1391,12 +1468,14 @@ void SV_SpawnServer (const char *server)
 	q_strlcpy (sv.name, server, sizeof (sv.name));
 	q_snprintf (sv.modelname, sizeof (sv.modelname), "maps/%s.bsp", server);
 	sv.worldmodel = Mod_ForName (sv.modelname, false);
+
 	if (!sv.worldmodel)
 	{
 		Con_Printf ("Couldn't spawn server %s\n", sv.modelname);
 		sv.active = false;
 		return;
 	}
+
 	sv.models[1] = sv.worldmodel;
 
 	// clear world interaction links
@@ -1405,6 +1484,7 @@ void SV_SpawnServer (const char *server)
 	sv.sound_precache[0] = dummy;
 	sv.model_precache[0] = dummy;
 	sv.model_precache[1] = sv.modelname;
+
 	for (i = 1; i < sv.worldmodel->numsubmodels; i++)
 	{
 		sv.model_precache[1 + i] = localmodels[i];
@@ -1449,7 +1529,7 @@ void SV_SpawnServer (const char *server)
 		Con_DWarning ("%i byte signon buffer exceeds standard limit of 7998 (max = %d).\n", sv.signon.cursize, sv.signon.maxsize);
 	// johnfitz
 
-// send serverinfo to all connected clients
+	// send serverinfo to all connected clients
 	for (i = 0, host_client = svs.clients; i < svs.maxclients; i++, host_client++)
 		if (host_client->active)
 			SV_SendServerinfo (host_client);

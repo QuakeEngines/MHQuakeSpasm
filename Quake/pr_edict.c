@@ -109,12 +109,13 @@ angles and bad trails.
 */
 edict_t *ED_Alloc (void)
 {
-	int			i;
+	int		i;
 	edict_t *e;
 
 	for (i = svs.maxclients + 1; i < sv.num_edicts; i++)
 	{
 		e = EDICT_NUM (i);
+
 		// the first couple seconds of server time can involve a lot of
 		// freeing and allocating, so relax the replacement policy
 		if (e->free && (e->freetime < 2 || sv.time - e->freetime > 0.5))
@@ -128,8 +129,9 @@ edict_t *ED_Alloc (void)
 		Host_Error ("ED_Alloc: no free edicts (max_edicts is %i)", sv.max_edicts);
 
 	sv.num_edicts++;
+	SV_AllocEdict (i);
 	e = EDICT_NUM (i);
-	memset (e, 0, pr_edict_size); // ericw -- switched sv.edicts to Q_zmalloc(), so we are accessing uninitialized memory and must fully zero it, not just ED_ClearEdict
+	memset (e, 0, pr_edict_size); // ericw -- switched sv.edicts to malloc(), so we are accessing uninitialized memory and must fully zero it, not just ED_ClearEdict
 
 	return e;
 }

@@ -226,5 +226,9 @@ void SV_RunClients (double frametime);
 void SV_SaveSpawnparms ();
 void SV_SpawnServer (const char *server);
 
+// edict memory management
+void SV_AllocEdict (int num);
+void SV_ClearEdicts (void);
+
 #endif	/* _QUAKE_SERVER_H */
 

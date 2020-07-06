@@ -53,7 +53,7 @@ int R_GetBufferSetForName (char *name)
 		if (!strcmp (name, r_buffersets[i].name))
 		{
 			// mark as used in this registration sequence
-			Con_Printf ("Reusing bufferset for %s\n", name);
+			Con_DPrintf ("Reusing bufferset for %s\n", name);
 			r_buffersets[i].registration_sequence = r_registration_sequence;
 			return i;
 		}
@@ -75,7 +75,7 @@ int R_NewBufferSetForName (char *name)
 		if (r_buffersets[i].name[0]) continue;
 
 		// this is a free spot - set it up (the buffers will be glGen'ed by the caller)
-		Con_Printf ("Creating bufferset for %s\n", name);
+		Con_DPrintf ("Creating bufferset for %s\n", name);
 		strcpy (r_buffersets[i].name, name);
 		r_buffersets[i].registration_sequence = r_registration_sequence;
 
@@ -95,7 +95,7 @@ void R_FreeUnusedBufferSets (void)
 		if (r_buffersets[i].registration_sequence == r_registration_sequence) continue;
 
 		// unused, so free it
-		if (r_buffersets[i].name[0]) Con_Printf ("Releasing bufferset for %s\n", r_buffersets[i].name);
+		if (r_buffersets[i].name[0]) Con_DPrintf ("Releasing bufferset for %s\n", r_buffersets[i].name);
 		if (r_buffersets[i].vertexbuffer) glDeleteBuffers (1, &r_buffersets[i].vertexbuffer);
 		if (r_buffersets[i].indexbuffer) glDeleteBuffers (1, &r_buffersets[i].indexbuffer);
 
