@@ -372,48 +372,49 @@ void SV_TouchLinks (edict_t *ent)
 }
 
 
-/*
-===============
-SV_FindTouchedLeafs
-
-===============
-*/
-void SV_FindTouchedLeafs (edict_t *ent, mnode_t *node)
+void SV_HeadnodeForEdict (edict_t *ent, mnode_t *node)
 {
 	mplane_t *splitplane;
-	mleaf_t *leaf;
 	int			sides;
-	int			leafnum;
 
-	if (node->contents == CONTENTS_SOLID)
-		return;
+	// went into solid
+	if (node->contents == CONTENTS_SOLID) return;
 
 	// add an efrag if the node is a leaf
-
 	if (node->contents < 0)
 	{
-		if (ent->num_leafs == MAX_ENT_LEAFS)
-			return;
+		// track leafnums that the entity is in here too
+		if (ent->num_leafs < MAX_ENT_LEAFS)
+		{
+			mleaf_t *leaf = (mleaf_t *) node;
+			int leafnum = leaf - sv.worldmodel->leafs - 1;
 
-		leaf = (mleaf_t *) node;
-		leafnum = leaf - sv.worldmodel->leafs - 1;
+			ent->leafnums[ent->num_leafs] = leafnum;
+		}
 
-		ent->leafnums[ent->num_leafs] = leafnum;
+		// always incremented even if the leaf is not recorded so that we'll have a correct count
 		ent->num_leafs++;
+
+		// entity was not split on a node so this leaf is the headnode
+		if (!ent->headnode)
+			ent->headnode = node;
+
 		return;
 	}
 
 	// NODE_MIXED
-
 	splitplane = node->plane;
 	sides = BoxOnPlaneSide (ent->v.absmin, ent->v.absmax, splitplane);
 
-	// recurse down the contacted sides
-	if (sides & 1)
-		SV_FindTouchedLeafs (ent, node->children[0]);
+	// split on this plane
+	// if this is the first splitter of this edict, remember it
+	if (sides == 3)
+		if (!ent->headnode)
+			ent->headnode = node;
 
-	if (sides & 2)
-		SV_FindTouchedLeafs (ent, node->children[1]);
+	// recurse down the contacted sides
+	if (sides & 1) SV_HeadnodeForEdict (ent, node->children[0]);
+	if (sides & 2) SV_HeadnodeForEdict (ent, node->children[1]);
 }
 
 
@@ -481,9 +482,11 @@ void SV_LinkEdict (edict_t *ent, qboolean touch_triggers)
 	}
 
 	// link to PVS leafs
+	ent->headnode = NULL;
 	ent->num_leafs = 0;
+
 	if (ent->v.modelindex)
-		SV_FindTouchedLeafs (ent, sv.worldmodel->nodes);
+		SV_HeadnodeForEdict (ent, sv.worldmodel->nodes);
 
 	if (ent->v.solid == SOLID_NOT)
 		return;

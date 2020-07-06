@@ -593,28 +593,57 @@ byte *SV_FatPVS (vec3_t org, qmodel_t *worldmodel) // johnfitz -- added worldmod
 	return fatpvs;
 }
 
-/*
-=============
-SV_VisibleToClient -- johnfitz
 
-PVS test encapsulated in a nice function
-=============
-*/
-qboolean SV_VisibleToClient (edict_t *client, edict_t *test, qmodel_t *worldmodel)
+qboolean SV_EdictVisibleFromHeadnode (mnode_t *node, byte *visbits)
 {
-	byte *pvs;
-	vec3_t	org;
-	int		i;
+	// in solid is never visible
+	if (node->contents == CONTENTS_SOLID) return false;
 
-	VectorAdd (client->v.origin, client->v.view_ofs, org);
-	pvs = SV_FatPVS (org, worldmodel);
+	// add an efrag if the node is a leaf
+	if (node->contents < 0)
+	{
+		mleaf_t *leaf = (mleaf_t *) node;
+		int leafnum = leaf - sv.worldmodel->leafs - 1;
 
-	for (i = 0; i < test->num_leafs; i++)
-		if (pvs[test->leafnums[i] >> 3] & (1 << (test->leafnums[i] & 7)))
+		if (visbits[leafnum >> 3] & (1 << (leafnum & 7)))
+			return true;
+		else return false;
+	}
+
+	if (SV_EdictVisibleFromHeadnode (node->children[0], visbits))
+		return true;
+
+	return SV_EdictVisibleFromHeadnode (node->children[1], visbits);
+}
+
+
+qboolean SV_EdictVisibleToClient (edict_t *ent, byte *visbits)
+{
+	// skip visibility checks and always send (this may cause protocol packet overflows)
+	//if (sv_novis.value)
+	//	return true;
+
+	// this can happen if the ent is in solid
+	if (!ent->headnode)
+		return false;
+
+	// always do the fast check first because it might confirm that an ent is visible, even if it overflows the MAX_ENT_LEAFS count
+	for (int i = 0; i < ent->num_leafs && i < MAX_ENT_LEAFS; i++)
+		if (visbits[ent->leafnums[i] >> 3] & (1 << (ent->leafnums[i] & 7)))
 			return true;
 
+	// if the fast check touched everything then it's definitely not visible
+	if (ent->num_leafs <= MAX_ENT_LEAFS)
+		return false;
+
+	// otherwise it might still be visible so do a slow check, but only from the headnode to help it not be TOO slow
+	if (SV_EdictVisibleFromHeadnode (ent->headnode, visbits))
+		return true;
+
+	// it's definitely not visible now
 	return false;
 }
+
 
 // =============================================================================
 
@@ -639,9 +668,9 @@ void SV_WriteEntitiesToClient (edict_t *clent, sizebuf_t *msg)
 
 	// send over all entities (excpet the client) that touch the pvs
 	ent = NEXT_EDICT (sv.edicts);
+
 	for (e = 1; e < sv.num_edicts; e++, ent = NEXT_EDICT (ent))
 	{
-
 		if (ent != clent)	// clent is ALLWAYS sent
 		{
 			// ignore ents without visible models
@@ -649,21 +678,12 @@ void SV_WriteEntitiesToClient (edict_t *clent, sizebuf_t *msg)
 				continue;
 
 			// johnfitz -- don't send model>255 entities if protocol is 15
-			if (sv.protocol == PROTOCOL_NETQUAKE && (int) ent->v.modelindex & 0xFF00)
+			if (sv.protocol == PROTOCOL_NETQUAKE && ((int) ent->v.modelindex & 0xFF00))
 				continue;
 
-			// ignore if not touching a PV leaf
-			for (i = 0; i < ent->num_leafs; i++)
-				if (pvs[ent->leafnums[i] >> 3] & (1 << (ent->leafnums[i] & 7)))
-					break;
-
-			// ericw -- added ent->num_leafs < MAX_ENT_LEAFS condition.
-			// if ent->num_leafs == MAX_ENT_LEAFS, the ent is visible from too many leafs
-			// for us to say whether it's in the PVS, so don't try to vis cull it.
-			// this commonly happens with rotators, because they often have huge bboxes
-			// spanning the entire map, or really tall lifts, etc.
-			if (i == ent->num_leafs && ent->num_leafs < MAX_ENT_LEAFS)
-				continue;		// not visible
+			// and now check visibility
+			if (!SV_EdictVisibleToClient (ent, pvs))
+				continue;
 		}
 
 		// johnfitz -- max size for protocol 15 is 18 bytes, not 16 as originally

@@ -35,13 +35,18 @@ typedef union eval_s {
 	int		edict;
 } eval_t;
 
+
 #define	MAX_ENT_LEAFS	32
+
 typedef struct edict_s {
 	qboolean	free;
 	link_t		area;			/* linked to a division node or leaf */
 
-	int		num_leafs;
-	int		leafnums[MAX_ENT_LEAFS];
+	// leaf numbers containing this edict; if MAX_ENT_LEAFS overflows we trace from ed->headnode instead
+	int				num_leafs;
+	int				leafnums[MAX_ENT_LEAFS]; // needs to go to int for expanded leaf counts in BSP2 maps
+
+	struct mnode_s *headnode;			// first node that splits the edict, or the leaf containing the edict if not split, or NULL if the edict is fully outside the map
 
 	entity_state_t	baseline;
 	unsigned char	alpha;			/* johnfitz -- hack to support alpha since it's not part of entvars_t */
