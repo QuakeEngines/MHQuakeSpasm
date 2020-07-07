@@ -187,10 +187,6 @@ copy "$(SolutionDir)\..\SDL2\lib\*.dll" "$(TargetDir)"
     <ClCompile Include="..\..\Quake\wad.c" />
     <ClCompile Include="..\..\Quake\world.c" />
     <ClCompile Include="..\..\Quake\zone.c" />
-    <ClCompile Include="..\SDL\main\SDL_win32_main.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug-SDL2|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release-SDL2|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Quake\anorms.h" />

@@ -285,6 +285,8 @@ extern	double		realtime;		// not bounded in any way, changed at
 #define HOST_FRAMEDELTA		(1.0 / HOST_STANDARDFPS)
 #define HALF_FRAMEDELTA		(2.0 / HOST_STANDARDFPS)
 
+void Host_RearmTimers (void);
+
 
 typedef struct filelist_item_s {
 	char			name[32];

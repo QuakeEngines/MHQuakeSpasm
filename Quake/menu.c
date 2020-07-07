@@ -212,6 +212,9 @@ M_ToggleMenu_f
 */
 void M_ToggleMenu_f (void)
 {
+	// reset the timers so that we don't suddenly have huge frames
+	Host_RearmTimers ();
+
 	m_entersound = true;
 
 	if (key_dest == key_menu)

@@ -1114,6 +1114,9 @@ void Host_Savegame_f (void)
 	}
 	fclose (f);
 	Con_Printf ("done.\n");
+
+	// rearm the timers because the save may take some time
+	Host_RearmTimers ();
 }
 
 

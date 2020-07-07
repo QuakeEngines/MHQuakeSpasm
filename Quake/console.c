@@ -130,6 +130,9 @@ void Con_ToggleConsole_f (void)
 
 	SCR_EndLoadingPlaque ();
 	memset (con_times, 0, sizeof (con_times));
+
+	// reset the timers so that we don't suddenly have huge frames
+	Host_RearmTimers ();
 }
 
 /*

@@ -792,6 +792,8 @@ void SCR_ScreenShot_f (void)
 		Con_Printf ("SCR_ScreenShot_f: Couldn't create %s\n", imagename);
 
 	free (buffer);
+
+	Host_RearmTimers (); // this op writes to disk so it may take some time
 }
 
 
@@ -924,7 +926,9 @@ int SCR_ModalMessage (const char *text, float timeout) // johnfitz -- timeout
 		lastkey != K_ABUTTON &&
 		lastkey != K_BBUTTON &&
 		time2 <= time1);
+
 	Key_EndInputGrab ();
+	Host_RearmTimers ();
 
 	//	SCR_UpdateScreen (); // johnfitz -- commented out
 

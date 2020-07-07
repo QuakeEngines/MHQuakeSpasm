@@ -568,6 +568,88 @@ qboolean Host_FilterTime (void)
 	return true;
 }
 
+
+typedef struct hosttimer_s {
+	double		lastframe;
+	double		nextframe;
+} hosttimer_t;
+
+
+void HostTimer_Rearm (hosttimer_t *timer)
+{
+	timer->lastframe = realtime;
+	timer->nextframe = realtime + HOST_FRAMEDELTA;
+}
+
+
+qboolean HostTimer_RunFrame (hosttimer_t *timer)
+{
+	// always run a frame if in a timedemo, otherwise only run one if the time for the next frame has arrived
+	if (cls.timedemo)
+		return true;
+	else return (realtime >= timer->nextframe);
+}
+
+
+double HostTimer_Adjust (hosttimer_t *timer, double maxfps)
+{
+	double delta = 0.0;
+
+	// get current frametime
+	double frametime = realtime - timer->lastframe;
+
+	// evaluate delta - timedemos always run but must accumulate a delta otherwise the times will be off when they finish
+	if (cls.timedemo)
+		delta = HOST_FRAMEDELTA;
+	else if (key_dest != key_game || cls.signon != SIGNONS)
+		delta = HOST_FRAMEDELTA;
+	else
+	{
+		if (maxfps > 0.0)
+			delta = (1.0 / maxfps);
+		else delta = 0;
+
+		// adjust if desired
+		if (host_framerate.value > 0) frametime = host_framerate.value;
+		if (host_timescale.value > 0) frametime *= host_timescale.value;
+	}
+
+	// don't allow really long frames or really long deltas
+	if (frametime > 0.1) frametime = 0.1;
+	if (delta > 0.1) delta = 0.1;
+
+	// bring on the times for the next frame
+	timer->lastframe = realtime;
+	timer->nextframe += delta;
+
+	return frametime;
+}
+
+
+static hosttimer_t sv_timer = { 0, 0 };
+static hosttimer_t cl_timer = { 0, 0 };
+
+
+double Host_GetRealtime (void)
+{
+	// ensure we get a view of realtime that is always > the prior frame
+	double oldrealtime = realtime;
+	while ((realtime = Sys_DoubleTime ()) <= oldrealtime);
+	return realtime;
+}
+
+
+void Host_RearmTimers (void)
+{
+	// get a new realtime because the action which caused the rearm may have taken some time
+	realtime = Host_GetRealtime ();
+
+	// if host_maxfps changes then reset the timers and deltas so that we don't get bad accumulation
+	HostTimer_Rearm (&cl_timer);
+	HostTimer_Rearm (&sv_timer);
+}
+
+
 /*
 ===================
 Host_GetConsoleCommands
@@ -683,11 +765,20 @@ Runs all active servers
 */
 void _Host_Frame (void)
 {
+	static qboolean host_skipnextclientframe = false;
+
+	// something bad happened, or the server disconnected
 	if (setjmp (host_abortserver))
-		return;			// something bad happened, or the server disconnected
+	{
+		// also reset the timers and deltas here
+		Host_RearmTimers ();
+		return;
+	}
 
 	// keep the random time dependent
 	rand ();
+
+#if 0
 
 	// get new key events
 	Key_UpdateForDest ();
@@ -716,6 +807,42 @@ void _Host_Frame (void)
 
 
 	Host_ClientFrame (host_frametime);
+
+#else
+
+	// advance real time
+	realtime = Host_GetRealtime ();
+
+	// get new key events
+	Key_UpdateForDest ();
+	IN_UpdateInputMode ();
+	Sys_SendKeyEvents ();
+
+	// allow mice or other external controllers to add commands
+	IN_Commands ();
+
+	// check for commands typed to the host
+	Host_GetConsoleCommands ();
+
+	// if a server frame runs we must also run a client frame to get the results immediately; otherwise
+	// we only run a client frame if the accumulated time exceeds the delta and sleep if not
+	// if both a server frame and a client frame run we skip the next client frame so that we don't run an extra frame
+	if (HostTimer_RunFrame (&sv_timer))
+	{
+		Host_ServerFrame (HostTimer_Adjust (&sv_timer, HOST_STANDARDFPS));
+		Host_ClientFrame (HostTimer_Adjust (&cl_timer, host_maxfps.value));
+		host_skipnextclientframe = true;
+	}
+	else if (HostTimer_RunFrame (&cl_timer))
+	{
+		if (host_skipnextclientframe)
+			host_skipnextclientframe = false;
+		else Host_ClientFrame (HostTimer_Adjust (&cl_timer, host_maxfps.value));
+	}
+//	else if (!cls.timedemo && host_maxfps.value && host_maxfps.value < 500)
+//		Sys_Sleep ();
+
+#endif
 
 	// count frames for timedemos
 	host_framecount++;

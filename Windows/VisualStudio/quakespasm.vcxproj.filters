@@ -171,9 +171,6 @@
     <ClCompile Include="..\..\Quake\sbar.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\SDL\main\SDL_win32_main.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Quake\snd_codec.c">
       <Filter>Source Files</Filter>
     </ClCompile>

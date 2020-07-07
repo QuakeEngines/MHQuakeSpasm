@@ -439,6 +439,9 @@ void R_NewMap (void)
 
 	// go to the next registration sequence
 	r_registration_sequence++;
+
+	// because the full load may take some time, we rearm the timers here
+	Host_RearmTimers ();
 }
 
 
