@@ -265,15 +265,11 @@ typedef struct msprite_s {
 	int					maxwidth;
 	int					maxheight;
 	int					numframes;
-	spritepolyvert_t *frameverts;
 	int				numframeverts;
 	float				beamlength;		// remove?
 	void *cachespot;		// remove?
 	mspriteframedesc_t	frames[1];
 } msprite_t;
-
-// creates frames for rendering
-void R_CreateSpriteFrames (msprite_t *psprite);
 
 
 /*

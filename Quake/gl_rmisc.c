@@ -41,7 +41,7 @@ extern gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz
 int r_registration_sequence = 1;
 
 
-// despite the name, these may be used for sprites and other model types too
+// generic buffersets that may be used for any model type
 bufferset_t r_buffersets[MAX_MODELS];
 
 

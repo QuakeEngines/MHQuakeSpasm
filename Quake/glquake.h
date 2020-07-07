@@ -341,7 +341,7 @@ typedef struct bufferset_s {
 
 extern int r_registration_sequence;
 
-// despite the name, these may be used for sprites and other model types too
+// generic buffersets that may be used for any model type
 extern bufferset_t r_buffersets[];
 
 int R_GetBufferSetForName (char *name);

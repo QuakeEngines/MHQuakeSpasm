@@ -117,17 +117,27 @@ void R_CreateSpriteFrame (spritepolyvert_t *verts, mspriteframe_t *frame)
 }
 
 
-void R_CreateSpriteFrames (msprite_t *psprite)
+void R_CreateSpriteFrames (qmodel_t *mod, msprite_t *psprite)
 {
+	// check if the model already has a buffer set
+	if ((mod->buffsetset = R_GetBufferSetForName (mod->name)) != -1) return;
+
+	// get a new one
+	if ((mod->buffsetset = R_NewBufferSetForName (mod->name)) == -1)
+		Sys_Error ("GLMesh_LoadAliasGeometry : unable to allocate a buffer set");
+
+	bufferset_t *set = &r_buffersets[mod->buffsetset];
+	int mark = Hunk_LowMark ();
+
 	// these could probably go to static buffers
-	psprite->frameverts = (spritepolyvert_t *) Hunk_Alloc (sizeof (spritepolyvert_t) * psprite->numframeverts);
+	spritepolyvert_t *frameverts = (spritepolyvert_t *) Hunk_Alloc (sizeof (spritepolyvert_t) * psprite->numframeverts);
 
 	for (int i = 0; i < psprite->numframes; i++)
 	{
 		if (psprite->frames[i].type == SPR_SINGLE)
 		{
 			mspriteframe_t *frame = psprite->frames[i].frameptr;
-			R_CreateSpriteFrame (&psprite->frameverts[frame->firstvertex], frame);
+			R_CreateSpriteFrame (&frameverts[frame->firstvertex], frame);
 		}
 		else
 		{
@@ -136,10 +146,21 @@ void R_CreateSpriteFrames (msprite_t *psprite)
 			for (int j = 0; j < group->numframes; j++)
 			{
 				mspriteframe_t *frame = group->frames[j];
-				R_CreateSpriteFrame (&psprite->frameverts[frame->firstvertex], frame);
+				R_CreateSpriteFrame (&frameverts[frame->firstvertex], frame);
 			}
 		}
 	}
+
+	// upload vertexes buffer
+	glGenBuffers (1, &set->vertexbuffer);
+	glBindBuffer (GL_ARRAY_BUFFER, set->vertexbuffer);
+	glBufferData (GL_ARRAY_BUFFER, sizeof (spritepolyvert_t) * psprite->numframeverts, frameverts, GL_STATIC_DRAW);
+
+	// invalidate the cached bindings
+	GL_ClearBufferBindings ();
+
+	// free temp memory
+	Hunk_FreeToLowMark (mark);
 }
 
 
@@ -253,7 +274,6 @@ void R_DrawSpriteModel (entity_t *e)
 		GL_PolygonOffset (OFFSET_DECAL);
 
 	GL_BindTexture (GL_TEXTURE0, frame->gltexture);
-	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
 
 	if (frame->gltexture->flags & TEXPREF_ALPHA)
 		GL_BindPrograms (r_sprite_vp, r_sprite_fp[SPRITE_ALPHA]);
@@ -268,9 +288,12 @@ void R_DrawSpriteModel (entity_t *e)
 
 	GL_EnableVertexAttribArrays (VAA0 | VAA1);
 
+	bufferset_t *set = &r_buffersets[e->model->buffsetset];
+	GL_BindBuffer (GL_ARRAY_BUFFER, set->vertexbuffer);
+
 	// the data was already built at load time so it just needs to be set up for rendering here
-	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), psprite->frameverts->framevec);
-	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), psprite->frameverts->texcoord);
+	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), (void *) offsetof (spritepolyvert_t, framevec));
+	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), (void *) offsetof (spritepolyvert_t, texcoord));
 
 	// and draw it
 	glDrawArrays (GL_QUADS, frame->firstvertex, 4);

@@ -361,11 +361,11 @@ qmodel_t *Mod_ForName (const char *name, qboolean crash)
 
 
 /*
-===============================================================================
+============================================================================================================================================================
 
-					BRUSHMODEL LOADING
+BRUSH MODELS
 
-===============================================================================
+============================================================================================================================================================
 */
 
 byte *mod_base;
@@ -377,9 +377,8 @@ Mod_CheckFullbrights -- johnfitz
 */
 qboolean Mod_CheckFullbrights (byte *pixels, int count)
 {
-	int i;
-	for (i = 0; i < count; i++)
-		if (*pixels++ > 223)
+	for (int i = 0; i < count; i++)
+		if (pixels[i] > 223)
 			return true;
 	return false;
 }
@@ -408,7 +407,7 @@ void Mod_LoadTextures (lump_t *l)
 	extern byte *hunk_base;
 	// johnfitz
 
-		// johnfitz -- don't return early if no textures; still need to create dummy texture
+	// johnfitz -- don't return early if no textures; still need to create dummy texture
 	if (!l->filelen)
 	{
 		Con_Printf ("Mod_LoadTextures: no textures in bsp file\n");
@@ -651,6 +650,7 @@ void Mod_LoadTextures (lump_t *l)
 	}
 }
 
+
 /*
 =================
 Mod_LoadLighting -- johnfitz -- replaced with lit support code via lordhavoc
@@ -830,6 +830,7 @@ void Mod_LoadVertexes (lump_t *l)
 	}
 }
 
+
 /*
 =================
 Mod_LoadEdges
@@ -879,6 +880,7 @@ void Mod_LoadEdges (lump_t *l, int bsp2)
 		}
 	}
 }
+
 
 /*
 =================
@@ -952,6 +954,7 @@ void Mod_LoadTexinfo (lump_t *l)
 		Con_Printf ("Mod_LoadTexinfo: %d texture(s) missing from BSP file\n", missing);
 	// johnfitz
 }
+
 
 /*
 ================
@@ -1060,6 +1063,7 @@ void Mod_CalcSurfaceBounds (msurface_t *s)
 			s->maxs[2] = v->position[2];
 	}
 }
+
 
 /*
 =================
@@ -1198,6 +1202,7 @@ void Mod_SetParent (mnode_t *node, mnode_t *parent)
 	Mod_SetParent (node->children[1], node);
 }
 
+
 /*
 =================
 Mod_LoadNodes
@@ -1259,6 +1264,7 @@ void Mod_LoadNodes_S (lump_t *l)
 	}
 }
 
+
 void Mod_LoadNodes_L1 (lump_t *l)
 {
 	int			i, j, count, p;
@@ -1310,6 +1316,7 @@ void Mod_LoadNodes_L1 (lump_t *l)
 		}
 	}
 }
+
 
 void Mod_LoadNodes_L2 (lump_t *l)
 {
@@ -1363,6 +1370,7 @@ void Mod_LoadNodes_L2 (lump_t *l)
 	}
 }
 
+
 void Mod_LoadNodes (lump_t *l, int bsp2)
 {
 	if (bsp2 == 2)
@@ -1374,6 +1382,7 @@ void Mod_LoadNodes (lump_t *l, int bsp2)
 
 	Mod_SetParent (loadmodel->nodes, NULL);	// sets nodes and leafs
 }
+
 
 void Mod_ProcessLeafs_S (dsleaf_t *in, int filelen)
 {
@@ -1421,6 +1430,7 @@ void Mod_ProcessLeafs_S (dsleaf_t *in, int filelen)
 	}
 }
 
+
 void Mod_ProcessLeafs_L1 (dl1leaf_t *in, int filelen)
 {
 	mleaf_t *out;
@@ -1463,6 +1473,7 @@ void Mod_ProcessLeafs_L1 (dl1leaf_t *in, int filelen)
 		// johnfitz -- removed code to mark surfaces as SURF_UNDERWATER
 	}
 }
+
 
 void Mod_ProcessLeafs_L2 (dl2leaf_t *in, int filelen)
 {
@@ -1507,6 +1518,7 @@ void Mod_ProcessLeafs_L2 (dl2leaf_t *in, int filelen)
 	}
 }
 
+
 /*
 =================
 Mod_LoadLeafs
@@ -1523,6 +1535,7 @@ void Mod_LoadLeafs (lump_t *l, int bsp2)
 	else
 		Mod_ProcessLeafs_S ((dsleaf_t *) in, l->filelen);
 }
+
 
 /*
 =================
@@ -1630,6 +1643,7 @@ void Mod_LoadClipnodes (lump_t *l, qboolean bsp2)
 	}
 }
 
+
 /*
 =================
 Mod_MakeHull0
@@ -1668,6 +1682,7 @@ void Mod_MakeHull0 (void)
 		}
 	}
 }
+
 
 /*
 =================
@@ -1726,6 +1741,7 @@ void Mod_LoadMarksurfaces (lump_t *l, int bsp2)
 		}
 	}
 }
+
 
 /*
 =================
@@ -1789,6 +1805,7 @@ void Mod_LoadPlanes (lump_t *l)
 	}
 }
 
+
 /*
 =================
 RadiusFromBounds
@@ -1806,6 +1823,7 @@ float RadiusFromBounds (vec3_t mins, vec3_t maxs)
 
 	return VectorLength (corner);
 }
+
 
 /*
 =================
@@ -1850,6 +1868,7 @@ void Mod_LoadSubmodels (lump_t *l)
 		Con_DWarning ("%i visleafs exceeds standard limit of 8192.\n", out->visleafs);
 	// johnfitz
 }
+
 
 /*
 =================
@@ -1902,6 +1921,7 @@ void Mod_BoundsFromClipNode (qmodel_t *mod, int hull, int nodenum)
 	Mod_BoundsFromClipNode (mod, hull, node->children[0]);
 	Mod_BoundsFromClipNode (mod, hull, node->children[1]);
 }
+
 
 /*
 =================
@@ -2020,12 +2040,13 @@ void Mod_LoadBrushModel (qmodel_t *mod, void *buffer)
 	}
 }
 
+
 /*
-==============================================================================
+============================================================================================================================================================
 
 ALIAS MODELS
 
-==============================================================================
+============================================================================================================================================================
 */
 
 // a pose is a single set of vertexes.  a frame may be an animating sequence of poses
@@ -2296,6 +2317,7 @@ void Mod_SetExtraFlags (qmodel_t *mod)
 		mod->flags |= MOD_FBRIGHTHACK;
 }
 
+
 /*
 =================
 Mod_LoadAliasModel
@@ -2413,7 +2435,18 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	if (!strcmp (&mod->name[6], "laser.mdl")) mod->flags |= EF_REDFLASH;
 }
 
-// =============================================================================
+
+/*
+============================================================================================================================================================
+
+SPRITE MODELS
+
+============================================================================================================================================================
+*/
+
+// creates frames for rendering
+void R_CreateSpriteFrames (qmodel_t *mod, msprite_t *psprite);
+
 
 /*
 =================
@@ -2578,10 +2611,11 @@ void Mod_LoadSpriteModel (qmodel_t *mod, void *buffer)
 		else pframetype = (dspriteframetype_t *) Mod_LoadSpriteGroup (pframetype + 1, psprite, &psprite->frames[i].frameptr, i);
 	}
 
-	R_CreateSpriteFrames (psprite);
+	R_CreateSpriteFrames (mod, psprite);
 
 	mod->type = mod_sprite;
 }
+
 
 // =============================================================================
 
@@ -2695,5 +2729,6 @@ float Mod_PlaneDist (mplane_t *plane, float *org)
 		break;
 	}
 }
+
 
 
