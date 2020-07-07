@@ -23,6 +23,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
+#ifdef _WIN32
+// using Windows virtual memory for sv.edicts allocations
+#include <Windows.h>
+#endif
+
 server_t	sv;
 server_static_t	svs;
 
@@ -46,54 +51,45 @@ void SV_ClearEdicts (void)
 	if (sv_edictbuf)
 	{
 		// we can't allocate into sv.edicts directly because it's memset to 0 in multiple places which would lose the pointer
+#ifdef _WIN32
+		VirtualFree (sv_edictbuf, 0, MEM_RELEASE);
+#else
 		free (sv_edictbuf);
+#endif
 		sv_edictbuf = NULL;
+		sv.edicts = NULL; // any future attempts to access this should be errors
 	}
 
 	sv_allocedictmax = 0;
 }
 
+
 void SV_AllocEdict (int num)
 {
-#if 0
-	// dynamically allocating version - needs references to edicts in all structs/etc to be made movable
-	if (num < sv_allocedictmax)
-	{
-		if ((intptr_t) sv.edicts != (intptr_t) sv_edictbuf)
-		{
-			// this pointer can change
-			sv.edicts = (edict_t *) sv_edictbuf;
-		}
-
-		return;
-	}
-
-	// we can't allocate into sv.edicts directly because it's memset to 0 in multiple places which would lose the pointer
-	sv_edictbuf = (byte *) realloc (sv_edictbuf, ((sv_allocedictmax + SV_EDICTBATCH) * pr_edict_size));
-
-	// clear the new batch
-	memset (&sv_edictbuf[sv_allocedictmax * pr_edict_size], 0, pr_edict_size * SV_EDICTBATCH);
-
-	// accumulate the batch
-	sv_allocedictmax += SV_EDICTBATCH;
-
-	// now call recursively in case num is sufficiently high that it's > the new sv_allocedictmax
-	SV_AllocEdict (num);
-#else
-	// statically allocating version
 	if (!sv_edictbuf)
 	{
-		sv_edictbuf = (byte *) malloc (sv.max_edicts * pr_edict_size); // ericw -- sv.edicts switched to use malloc()
+		// on Windows we reserve a batch of memory large enough to hold the max number of edicts, but do not commit it yet
+		// on other platforms we just malloc the same block and hope that the OS memory manager is able to figure it out
+#ifdef _WIN32
+		sv_edictbuf = (byte *) VirtualAlloc (NULL, MAX_EDICTS * pr_edict_size, MEM_RESERVE, PAGE_NOACCESS);
+#else
+		sv_edictbuf = (byte *) malloc (MAX_EDICTS * pr_edict_size); // ericw -- sv.edicts switched to use malloc()
+#endif
 		sv_allocedictmax = 0;
 	}
 
 	// we already have memory committed for this edict
 	if (num < sv_allocedictmax)
 	{
-		// this pointer can change (it actually can't in this version but we do this so that the first call doesn't need to be aware of which version it's using)
+		// ensure
 		sv.edicts = (edict_t *) sv_edictbuf;
 		return;
 	}
+
+	// on Windows we now commit the new block which will cause it to become "real" allocated memory; other platforms have already allocated it
+#ifdef _WIN32
+	VirtualAlloc (&sv_edictbuf[sv_allocedictmax * pr_edict_size], pr_edict_size * SV_EDICTBATCH, MEM_COMMIT, PAGE_READWRITE);
+#endif
 
 	// clear the new batch
 	memset (&sv_edictbuf[sv_allocedictmax * pr_edict_size], 0, pr_edict_size * SV_EDICTBATCH);
@@ -103,7 +99,6 @@ void SV_AllocEdict (int num)
 
 	// now call recursively in case num is sufficiently high that it's > the new sv_allocedictmax
 	SV_AllocEdict (num);
-#endif
 }
 
 
@@ -1450,12 +1445,15 @@ void SV_SpawnServer (const char *server)
 	// load progs to get entity field count
 	PR_LoadProgs ();
 
+	// leave slots at start for clients only
+	sv.num_edicts = svs.maxclients + 1;
+
 	// allocate server memory
 	SV_ClearEdicts ();
+	SV_AllocEdict (0);
 
-	// sv.max_edicts must be set before first call...
-	sv.max_edicts = CLAMP (MIN_EDICTS, (int) max_edicts.value, MAX_EDICTS); // johnfitz -- max_edicts cvar
-	SV_AllocEdict (0); // alloc the first edict which initializes the buffer and sets up the sv.edicts pointer
+	// we can't allocate into sv.edicts directly because it's memset to 0 in multiple places which would lose the pointer
+	sv.edicts = (edict_t *) sv_edictbuf;
 
 	sv.datagram.maxsize = sizeof (sv.datagram_buf);
 	sv.datagram.cursize = 0;
@@ -1470,9 +1468,6 @@ void SV_SpawnServer (const char *server)
 	sv.signon.data = sv.signon_buf;
 
 	// leave slots at start for clients only
-	sv.num_edicts = svs.maxclients + 1;
-	memset (sv.edicts, 0, sv.num_edicts * pr_edict_size); // ericw -- sv.edicts switched to use malloc()
-
 	for (i = 0; i < svs.maxclients; i++)
 	{
 		SV_AllocEdict (i + 1);

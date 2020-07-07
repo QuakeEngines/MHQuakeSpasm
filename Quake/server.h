@@ -57,7 +57,6 @@ typedef struct server_s {
 	const char *sound_precache[MAX_SOUNDS];	// NULL terminated
 	const char *lightstyles[MAX_LIGHTSTYLES];
 	int			num_edicts;
-	int			max_edicts;
 	edict_t *edicts;			// can NOT be array indexed, because
 									// edict_t is variable sized, but can
 									// be used to reference the world ent

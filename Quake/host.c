@@ -60,7 +60,6 @@ byte *host_colormap;
 cvar_t	host_framerate = { "host_framerate", "0", CVAR_NONE };	// set for slow motion
 cvar_t	host_maxfps = { "host_maxfps", "72", CVAR_ARCHIVE }; // johnfitz
 cvar_t	host_timescale = { "host_timescale", "0", CVAR_NONE }; // johnfitz
-cvar_t	max_edicts = { "max_edicts", "8192", CVAR_NONE }; // johnfitz // ericw -- changed from 2048 to 8192, removed CVAR_ARCHIVE
 
 cvar_t	sys_ticrate = { "sys_ticrate", "0.05", CVAR_NONE }; // dedicated server
 cvar_t	serverprofile = { "serverprofile", "0", CVAR_NONE };
@@ -85,28 +84,6 @@ cvar_t devstats = { "devstats", "0", CVAR_NONE }; // johnfitz -- track developer
 devstats_t dev_stats, dev_peakstats;
 overflowtimes_t dev_overflows; // this stores the last time overflow messages were displayed, not the last time overflows occured
 
-/*
-================
-Max_Edicts_f -- johnfitz
-================
-*/
-static void Max_Edicts_f (cvar_t *var)
-{
-	// TODO: clamp it here?
-	if (cls.state == ca_connected || sv.active)
-		Con_Printf ("Changes to max_edicts will not take effect until the next time a map is loaded.\n");
-}
-
-/*
-================
-Max_Fps_f -- ericw
-================
-*/
-static void Max_Fps_f (cvar_t *var)
-{
-	if (var->value > 72)
-		Con_Warning ("host_maxfps above 72 breaks physics.\n");
-}
 
 /*
 ================
@@ -291,11 +268,8 @@ void Host_InitLocal (void)
 
 	Cvar_RegisterVariable (&host_framerate);
 	Cvar_RegisterVariable (&host_maxfps); // johnfitz
-	Cvar_SetCallback (&host_maxfps, Max_Fps_f);
 	Cvar_RegisterVariable (&host_timescale); // johnfitz
 
-	Cvar_RegisterVariable (&max_edicts); // johnfitz
-	Cvar_SetCallback (&max_edicts, Max_Edicts_f);
 	Cvar_RegisterVariable (&devstats); // johnfitz
 
 	Cvar_RegisterVariable (&sys_ticrate);
@@ -665,7 +639,7 @@ void Host_ServerFrame (double frametime)
 			}
 
 			if (active > 600 && dev_peakstats.edicts <= 600)
-				Con_DWarning ("%i edicts exceeds standard limit of 600 (max = %d).\n", active, sv.max_edicts);
+				Con_DWarning ("%i edicts exceeds standard limit of 600.\n", active);
 
 			dev_stats.edicts = active;
 			dev_peakstats.edicts = q_max (active, dev_peakstats.edicts);

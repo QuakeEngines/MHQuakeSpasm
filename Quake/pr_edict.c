@@ -125,8 +125,8 @@ edict_t *ED_Alloc (void)
 		}
 	}
 
-	if (i == sv.max_edicts) // johnfitz -- use sv.max_edicts instead of MAX_EDICTS
-		Host_Error ("ED_Alloc: no free edicts (max_edicts is %i)", sv.max_edicts);
+	if (i == MAX_EDICTS)
+		Host_Error ("ED_Alloc: no free edicts (max_edicts is %i)", MAX_EDICTS);
 
 	sv.num_edicts++;
 	SV_AllocEdict (i);
@@ -1176,10 +1176,11 @@ void PR_Init (void)
 
 edict_t *EDICT_NUM (int n)
 {
-	if (n < 0 || n >= sv.max_edicts)
+	if (n < 0 || n >= MAX_EDICTS)
 		Host_Error ("EDICT_NUM: bad number %i", n);
-	return (edict_t *) ((byte *) sv.edicts + (n) *pr_edict_size);
+	return (edict_t *) ((byte *) sv.edicts + (n) * pr_edict_size);
 }
+
 
 int NUM_FOR_EDICT (edict_t *e)
 {
