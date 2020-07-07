@@ -45,6 +45,9 @@ That's OK.
 
 More seriously, if you need functionality like r_drawflat, r_fullbright, r_showtris, etc, then I'd suggest that just using QuakeSpasm instead may be a more suitable option for you.  As part of a code simplification pass these features were removed, and while it wouldn't necessarily be a huge imposition to add them back, there's likewise no real requirement to do so either.
 
+### Will you support Nehahra? 
+Maybe. But a friendly word of advice: badgering me over and over again until I eventually do it just to shut you up won't endear you to me. 
+
 ### How do you compile this?
 On Windows, mhQuakeSpasm is a Visual Studio 2019 project.  It has been built and tested with a stock Visual Studio 2019 Community Edition installation, with no other tools or components being required.  So the build procedure is:
  - Download and install Visual Studio 2019 Community.
