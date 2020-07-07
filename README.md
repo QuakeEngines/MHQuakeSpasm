@@ -9,7 +9,9 @@ However, there are - in my opinion - certain serious issues with the QuakeSpasm 
 
 The primary purpose of this fork is to take this renderer and lift it up to a higher-quality and higher-performance implementation.  QuakeSpasm itself already takes steps in that direction with it's lightmapped surface and alias model paths, so this is just a logical evolution towards the rest of the way.  At the same time the various legacy codepaths will be removed to clean up and simplify the renderer.
 
-The intent is feature-parity with QuakeSpasm, but it is a work in progress.  At times some features may be removed to allow for simplification of critical codepaths, with removed features then being brought back in once key work is complete.  This temporary removal does not mean and should not be misinterpreted as meaning that any removed feature is permanently gone.  Likewise there is no implicit promise that a removed feature will definitely be restored.
+The intent is broad (but not necessarily exact) feature-parity with QuakeSpasm, and it is a work in progress.  At times some features may be removed to allow for simplification of critical codepaths, with removed features then being brought back in once key work is complete.  This temporary removal does not mean and should not be misinterpreted as meaning that any removed feature is permanently gone.  Likewise there is no implicit promise that a removed feature will definitely be restored.
+
+A secondary intent is to revert some (but not all) classic Quake behaviours which QuakeSpasm, and FitzQuake before it, changed. 
 
 ## FAQ
 
