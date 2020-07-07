@@ -198,15 +198,13 @@ R_DrawSpriteModel -- johnfitz -- rewritten: now supports all orientations
 */
 void R_DrawSpriteModel (entity_t *e)
 {
-	float		v_forward[4], v_right[4], v_up[4];	// padded for use in shaders
-	msprite_t *psprite;
-	mspriteframe_t *frame;
+	float v_forward[4], v_right[4], v_up[4];	// padded for use in shaders
 	float *s_up, *s_right;
-	float			angle, sr, cr;
+	float angle, sr, cr;
 
 	// TODO: frustum cull it?
-	frame = R_GetSpriteFrame (e);
-	psprite = (msprite_t *) e->model->cache.data;
+	mspriteframe_t *frame = R_GetSpriteFrame (e);
+	msprite_t *psprite = (msprite_t *) e->model->cache.data;
 
 	switch (psprite->type)
 	{
