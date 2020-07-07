@@ -41,9 +41,7 @@ quakeparms_t *host_parms;
 
 qboolean	host_initialized;		// true if into command execution
 
-double		host_frametime;
 double		realtime;				// without any filtering or bounding
-double		oldrealtime;			// last frame run
 
 int		host_framecount;
 
@@ -227,13 +225,12 @@ Writes key bindings and archived cvars to config.cfg
 */
 void Host_WriteConfiguration (void)
 {
-	FILE *f;
-
 	// dedicated servers initialize the host but don't parse and set the
 	// config.cfg cvars
 	if (host_initialized && !isDedicated && !host_parms->errstate)
 	{
-		f = fopen (va ("%s/config.cfg", com_gamedir), "w");
+		FILE *f = fopen (va ("%s/config.cfg", com_gamedir), "w");
+
 		if (!f)
 		{
 			Con_Printf ("Couldn't write config.cfg.\n");
@@ -254,6 +251,13 @@ void Host_WriteConfiguration (void)
 }
 
 
+void Host_TimerCvarCallback_f (cvar_t *var)
+{
+	// always rearm the timers if one of the speed-control cvars is changed
+	Host_RearmTimers ();
+}
+
+
 /*
 =======================
 Host_InitLocal
@@ -270,10 +274,13 @@ void Host_InitLocal (void)
 	Cvar_RegisterVariable (&host_maxfps); // johnfitz
 	Cvar_RegisterVariable (&host_timescale); // johnfitz
 
+	Cvar_SetCallback (&host_framerate, Host_TimerCvarCallback_f);
+	Cvar_SetCallback (&host_maxfps, Host_TimerCvarCallback_f);
+	Cvar_SetCallback (&host_timescale, Host_TimerCvarCallback_f);
+
 	Cvar_RegisterVariable (&devstats); // johnfitz
 
 	Cvar_RegisterVariable (&sys_ticrate);
-	Cvar_RegisterVariable (&sys_throttle);
 	Cvar_RegisterVariable (&serverprofile);
 
 	Cvar_RegisterVariable (&fraglimit);
@@ -524,51 +531,6 @@ void Host_ClearMemory (void)
 // Host Frame
 // ==============================================================================
 
-/*
-===================
-Host_FilterTime
-
-Returns false if the time is too short to run a frame
-===================
-*/
-qboolean Host_FilterTime (void)
-{
-	float maxfps; // johnfitz
-
-	realtime = Sys_DoubleTime ();
-
-	// johnfitz -- max fps cvar
-	maxfps = CLAMP (10.0, host_maxfps.value, 1000.0);
-	if (!cls.timedemo && realtime - oldrealtime < 1.0 / maxfps)
-		return false; // framerate is too high
-	// johnfitz
-
-	host_frametime = realtime - oldrealtime;
-
-	// MH - if in the game, try to keep it at 72fps by running a fast frame if the previous one was slow
-	if (cls.timedemo)
-		oldrealtime = realtime;
-	else if (key_dest != key_game)
-		oldrealtime = realtime;
-	else if (host_frametime < 0.5 / maxfps)
-		oldrealtime = realtime;
-	else if (host_frametime > 2.0 / maxfps)
-		oldrealtime = realtime;
-	else oldrealtime = realtime - (host_frametime - (1.0 / maxfps));
-
-	// johnfitz -- host_timescale is more intuitive than host_framerate
-	if (host_timescale.value > 0)
-		host_frametime *= host_timescale.value;
-	// johnfitz
-	else if (host_framerate.value > 0)
-		host_frametime = host_framerate.value;
-	else // don't allow really long or short frames
-		host_frametime = CLAMP (0.001, host_frametime, 0.1); // johnfitz -- use CLAMP
-
-	return true;
-}
-
-
 typedef struct hosttimer_s {
 	double		lastframe;
 	double		nextframe;
@@ -674,17 +636,42 @@ void Host_GetConsoleCommands (void)
 }
 
 
+double Host_ServerTime (void)
+{
+	// bring the server timer up to date (never exceed HOST_STANDARDFPS but we are allowed go below it)
+	// this is slightly complex because host_maxfps 0 signifies unbounded FPS but is yet less than HOST_STANDARDFPS,
+	// so we need a bunch of checks to test for all of that too
+	if (host_maxfps.value > 0)
+	{
+		if (host_maxfps.value < HOST_STANDARDFPS)
+			return HostTimer_Adjust (&sv_timer, host_maxfps.value);
+		else return HostTimer_Adjust (&sv_timer, HOST_STANDARDFPS);
+	}
+
+	return HostTimer_Adjust (&sv_timer, HOST_STANDARDFPS);
+}
+
+
+double Host_ClientTime (void)
+{
+	// to do - if vsync is on then we always run a client frame and let vsync control the timing
+	return HostTimer_Adjust (&cl_timer, host_maxfps.value);
+}
+
+
 /*
 ==================
 Host_ServerFrame
 ==================
 */
-void Host_ServerFrame (double frametime)
+void Host_ServerFrame (void)
 {
+	double frametime = Host_ServerTime ();
+
 	// these are really client operations but they must run synchronized with the server tick rate so run them here
 	Cbuf_Execute ();
 	NET_Poll ();
-	CL_SendCmd (host_frametime);
+	CL_SendCmd (frametime);
 
 	// only if a server is active
 	if (sv.active)
@@ -734,8 +721,10 @@ void Host_ServerFrame (double frametime)
 }
 
 
-void Host_ClientFrame (double frametime)
+void Host_ClientFrame (void)
 {
+	double frametime = Host_ClientTime ();
+
 	// fetch results from server
 	if (cls.state == ca_connected)
 		CL_ReadFromServer (frametime);
@@ -775,43 +764,12 @@ void _Host_Frame (void)
 		return;
 	}
 
-	// keep the random time dependent
-	rand ();
-
-#if 0
-
-	// get new key events
-	Key_UpdateForDest ();
-	IN_UpdateInputMode ();
-	Sys_SendKeyEvents ();
-
-	// allow mice or other external controllers to add commands
-	IN_Commands ();
-
-	// check for commands typed to the host
-	Host_GetConsoleCommands ();
-
-	// decide the simulation time
-	if (!Host_FilterTime ())
-		return;			// don't run too fast, or packets will flood out
-
-	// -------------------
-	// server operations
-	// -------------------
-
-	Host_ServerFrame (host_frametime);
-
-	// -------------------
-	// client operations
-	// -------------------
-
-
-	Host_ClientFrame (host_frametime);
-
-#else
-
 	// advance real time
 	realtime = Host_GetRealtime ();
+
+	// keep the random time-dependent (note: this is also done on the server and client with their view of time, so that randomized
+	// server or client effects are (1) consistent across different runs, and (2) correctly paused when the server or client is paused).
+	srand ((unsigned int) (realtime * HALF_STANDARDFPS));
 
 	// get new key events
 	Key_UpdateForDest ();
@@ -829,20 +787,18 @@ void _Host_Frame (void)
 	// if both a server frame and a client frame run we skip the next client frame so that we don't run an extra frame
 	if (HostTimer_RunFrame (&sv_timer))
 	{
-		Host_ServerFrame (HostTimer_Adjust (&sv_timer, HOST_STANDARDFPS));
-		Host_ClientFrame (HostTimer_Adjust (&cl_timer, host_maxfps.value));
+		Host_ServerFrame ();
+		Host_ClientFrame ();
 		host_skipnextclientframe = true;
 	}
 	else if (HostTimer_RunFrame (&cl_timer))
 	{
 		if (host_skipnextclientframe)
 			host_skipnextclientframe = false;
-		else Host_ClientFrame (HostTimer_Adjust (&cl_timer, host_maxfps.value));
+		else Host_ClientFrame ();
 	}
-//	else if (!cls.timedemo && host_maxfps.value && host_maxfps.value < 500)
-//		Sys_Sleep ();
-
-#endif
+	else if (!cls.timedemo && host_maxfps.value && host_maxfps.value < 500)
+		Sys_Sleep (1);
 
 	// count frames for timedemos
 	host_framecount++;

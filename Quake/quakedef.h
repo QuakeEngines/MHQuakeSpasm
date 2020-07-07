@@ -268,7 +268,6 @@ extern qboolean noclip_anglehack;
 extern	quakeparms_t *host_parms;
 
 extern	cvar_t		sys_ticrate;
-extern	cvar_t		sys_throttle;
 extern	cvar_t		sys_nostdout;
 extern	cvar_t		developer;
 
@@ -298,7 +297,6 @@ extern filelist_item_t *extralevels;
 extern filelist_item_t *demolist;
 
 void Host_ClearMemory (void);
-void Host_ServerFrame (double frametime);
 void Host_InitCommands (void);
 void Host_Init (void);
 void Host_Shutdown (void);

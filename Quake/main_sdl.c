@@ -100,7 +100,6 @@ static quakeparms_t	parms;
 int main (int argc, char *argv[])
 {
 	int		t;
-	double		time, oldtime, newtime;
 
 	host_parms = &parms;
 	parms.basedir = ".";
@@ -140,19 +139,19 @@ int main (int argc, char *argv[])
 	Sys_Printf ("Host_Init\n");
 	Host_Init ();
 
-	oldtime = Sys_DoubleTime ();
 	if (isDedicated)
 	{
+		double oldtime = Sys_DoubleTime ();
+
 		while (1)
 		{
-			newtime = Sys_DoubleTime ();
-			time = newtime - oldtime;
+			double newtime = Sys_DoubleTime ();
+			double time;
 
-			while (time < sys_ticrate.value)
+			while ((time = newtime - oldtime) < sys_ticrate.value)
 			{
 				SDL_Delay (1);
 				newtime = Sys_DoubleTime ();
-				time = newtime - oldtime;
 			}
 
 			Host_Frame ();
@@ -160,6 +159,7 @@ int main (int argc, char *argv[])
 		}
 	}
 	else
+	{
 		while (1)
 		{
 			/* If we have no input focus at all, sleep a bit */
@@ -167,26 +167,18 @@ int main (int argc, char *argv[])
 			{
 				SDL_Delay (16);
 			}
+
 			/* If we're minimised, sleep a bit more */
 			if (VID_IsMinimized ())
 			{
 				scr_skipupdate = 1;
 				SDL_Delay (32);
 			}
-			else
-			{
-				scr_skipupdate = 0;
-			}
-			newtime = Sys_DoubleTime ();
-			time = newtime - oldtime;
+			else scr_skipupdate = 0;
 
 			Host_Frame ();
-
-			if (time < sys_throttle.value && !cls.timedemo)
-				SDL_Delay (1);
-
-			oldtime = newtime;
 		}
+	}
 
 	return 0;
 }
