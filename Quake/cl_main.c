@@ -49,6 +49,9 @@ cvar_t	m_side = { "m_side", "0.8", CVAR_ARCHIVE };
 cvar_t	cl_maxpitch = { "cl_maxpitch", "90", CVAR_ARCHIVE }; // johnfitz -- variable pitch clamping
 cvar_t	cl_minpitch = { "cl_minpitch", "-90", CVAR_ARCHIVE }; // johnfitz -- variable pitch clamping
 
+cvar_t	cl_extradlights = { "cl_extradlights", "1", CVAR_ARCHIVE }; // mh - extra dlights on certain trails and temp ent effects
+
+
 client_static_t	cls;
 client_state_t	cl;
 
@@ -475,6 +478,25 @@ void CL_ClearRocketTrail (entity_t *ent)
 }
 
 
+qboolean CL_AllocExtraDlight (void)
+{
+	// arcane dimensions overloads/abuses certain trail types for different coloured blood
+	if (arcdim) return false;
+
+	// i just don't trust quoth to behave itself at all
+	if (quoth) return false;
+
+	// i just don't trust quoth to behave itself at all
+	if (nehahra) return false;
+
+	// if this var is set then spawn extra lights
+	if (cl_extradlights.value) return true;
+
+	// no extra light
+	return false;
+}
+
+
 /*
 ===============
 CL_RelinkEntities
@@ -569,7 +591,7 @@ void CL_RelinkEntities (void)
 				f = 1;
 			// johnfitz
 
-		// interpolate the origin and angles
+			// interpolate the origin and angles
 			for (j = 0; j < 3; j++)
 			{
 				ent->origin[j] = ent->msg_origins[1][j] + f * delta[j];
@@ -682,9 +704,27 @@ void CL_RelinkEntities (void)
 		else if (ent->model->flags & EF_ZOMGIB)
 			CL_RocketTrail (ent, RT_SLIGHTBLOOD);
 		else if (ent->model->flags & EF_TRACER)
+		{
+			if (CL_AllocExtraDlight ())
+			{
+				dl = CL_AllocDlight (i, 200, DL_COLOR_GREEN);
+				VectorCopy (ent->origin, dl->origin);
+				dl->die = cl.time + 0.01;
+			}
+
 			CL_RocketTrail (ent, RT_TRACER3);
+		}
 		else if (ent->model->flags & EF_TRACER2)
+		{
+			if (CL_AllocExtraDlight ())
+			{
+				dl = CL_AllocDlight (i, 200, DL_COLOR_ORANGE);
+				VectorCopy (ent->origin, dl->origin);
+				dl->die = cl.time + 0.01;
+			}
+
 			CL_RocketTrail (ent, RT_TRACER5);
+		}
 		else if (ent->model->flags & EF_ROCKET)
 		{
 			CL_RocketTrail (ent, RT_ROCKETTRAIL);
@@ -695,7 +735,16 @@ void CL_RelinkEntities (void)
 		else if (ent->model->flags & EF_GRENADE)
 			CL_RocketTrail (ent, RT_SMOKESMOKE);
 		else if (ent->model->flags & EF_TRACER3)
+		{
+			if (CL_AllocExtraDlight ())
+			{
+				dl = CL_AllocDlight (i, 200, DL_COLOR_PURPLE);
+				VectorCopy (ent->origin, dl->origin);
+				dl->die = cl.time + 0.01;
+			}
+
 			CL_RocketTrail (ent, RT_VOORTRAIL);
+		}
 
 		ent->forcelink = false;
 
@@ -933,6 +982,8 @@ void CL_Init (void)
 
 	Cvar_RegisterVariable (&cl_maxpitch); // johnfitz -- variable pitch clamping
 	Cvar_RegisterVariable (&cl_minpitch); // johnfitz -- variable pitch clamping
+
+	Cvar_RegisterVariable (&cl_extradlights);
 
 	Cmd_AddCommand ("entities", CL_PrintEntities_f);
 	Cmd_AddCommand ("disconnect", CL_Disconnect_f);

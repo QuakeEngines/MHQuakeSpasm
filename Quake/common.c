@@ -54,7 +54,7 @@ char **com_argv;
 #define CMDLINE_LENGTH	256		/* johnfitz -- mirrored in cmd.c */
 char	com_cmdline[CMDLINE_LENGTH];
 
-qboolean standard_quake = true, rogue, hipnotic;
+qboolean standard_quake = true, rogue, hipnotic, quoth, arcdim, nehahra;
 
 // this graphic needs to be in the pak file to use registered features
 static unsigned short pop[] =
@@ -1344,12 +1344,20 @@ void COM_InitArgv (int argc, char **argv)
 		standard_quake = false;
 	}
 
-	if (COM_CheckParm ("-hipnotic") || COM_CheckParm ("-quoth")) // johnfitz -- "-quoth" support
+	if (COM_CheckParm ("-hipnotic"))
 	{
 		hipnotic = true;
 		standard_quake = false;
 	}
+
+	if (COM_CheckParm ("-quoth"))
+	{
+		hipnotic = true;
+		quoth = true;
+		standard_quake = false;
+	}
 }
+
 
 /*
 ================
@@ -1486,17 +1494,13 @@ COM_Path_f
 */
 static void COM_Path_f (void)
 {
-	searchpath_t *s;
-
 	Con_Printf ("Current search path:\n");
-	for (s = com_searchpaths; s; s = s->next)
+
+	for (searchpath_t *s = com_searchpaths; s; s = s->next)
 	{
 		if (s->pack)
-		{
 			Con_Printf ("%s (%i files)\n", s->pack->filename, s->pack->numfiles);
-		}
-		else
-			Con_Printf ("%s\n", s->filename);
+		else Con_Printf ("%s\n", s->filename);
 	}
 }
 
@@ -2126,10 +2130,17 @@ _same:
 			{
 				COM_AddGameDirectory (com_basedir, &p2[1]);
 				standard_quake = false;
-				if (!strcmp (p2, "-hipnotic") || !strcmp (p2, "-quoth"))
+
+				if (!strcmp (p2, "-hipnotic"))
 					hipnotic = true;
+				else if (!strcmp (p2, "-quoth"))
+				{
+					hipnotic = true;
+					quoth = true;
+				}
 				else if (!strcmp (p2, "-rogue"))
 					rogue = true;
+
 				if (q_strcasecmp (p, &p2[1])) // don't load twice
 					COM_AddGameDirectory (com_basedir, p);
 			}
@@ -2137,9 +2148,16 @@ _same:
 			{
 				COM_AddGameDirectory (com_basedir, p);
 				// QuakeSpasm extension: treat '-game missionpack' as '-missionpack'
-				if (!q_strcasecmp (p, "hipnotic") || !q_strcasecmp (p, "quoth"))
+
+				if (!q_strcasecmp (p, "hipnotic"))
 				{
 					hipnotic = true;
+					standard_quake = false;
+				}
+				else if (!q_strcasecmp (p, "quoth"))
+				{
+					hipnotic = true;
+					quoth = true;
 					standard_quake = false;
 				}
 				else if (!q_strcasecmp (p, "rogue"))
@@ -2221,36 +2239,66 @@ void COM_InitFilesystem (void) // johnfitz -- modified based on topaz's tutorial
 	if (COM_CheckParm ("-quoth"))
 		COM_AddGameDirectory (com_basedir, "quoth");
 
-
 	i = COM_CheckParm ("-game");
+
 	if (i && i < com_argc - 1)
 	{
 		const char *p = com_argv[i + 1];
+
 		if (!*p || !strcmp (p, ".") || strstr (p, "..") || strstr (p, "/") || strstr (p, "\\") || strstr (p, ":"))
 			Sys_Error ("gamedir should be a single directory name, not a path\n");
+
 		com_modified = true;
+
 		// don't load mission packs twice
 		if (COM_CheckParm ("-rogue") && !q_strcasecmp (p, "rogue")) p = NULL;
 		if (COM_CheckParm ("-hipnotic") && !q_strcasecmp (p, "hipnotic")) p = NULL;
 		if (COM_CheckParm ("-quoth") && !q_strcasecmp (p, "quoth")) p = NULL;
+
 		if (p != NULL)
 		{
 			COM_AddGameDirectory (com_basedir, p);
+
 			// QuakeSpasm extension: treat '-game missionpack' as '-missionpack'
 			if (!q_strcasecmp (p, "rogue"))
 			{
 				rogue = true;
 				standard_quake = false;
 			}
-			if (!q_strcasecmp (p, "hipnotic") || !q_strcasecmp (p, "quoth"))
+
+			if (!q_strcasecmp (p, "hipnotic"))
 			{
 				hipnotic = true;
+				standard_quake = false;
+			}
+
+			if (!q_strcasecmp (p, "quoth"))
+			{
+				hipnotic = true;
+				quoth = true;
 				standard_quake = false;
 			}
 		}
 	}
 
 	COM_CheckRegistered ();
+}
+
+
+void COM_InitGameFlags (void)
+{
+	// called at the start of each map so we can fix up the game flags for mods
+	// this is a mite less messy than the previous check....
+
+	// begin with a standard setup
+	nehahra = false;
+	arcdim = false;
+	quoth = false;
+
+	for (searchpath_t *s = com_searchpaths; s; s = s->next)
+	{
+		if (s->pack) continue;
+	}
 }
 
 

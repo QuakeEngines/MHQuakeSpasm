@@ -3,13 +3,10 @@ Log of stuff to be done.
 Fix player textures. 
 Shadow plane orientation. 
 Drawflat/lightmap/fullbright/triangles/bboxes crap. 
-Host timers. 
 Remove non-SDL2 stuff.
 Move sounds to hunk & remove cache memory.
-Different move speed with vsync on or off. 
 .vis file support
 Extra dynamic lights (but needs a check for AD overloading/abusing trail types).
 Green dynamic light is too bright???
 Separate cshift for cshift command
-Get rid of max_edicts cvar (retain it for familiarity/assurance/comfort-blanket, but edicts to be unbounded).
 add sv_novis cvar

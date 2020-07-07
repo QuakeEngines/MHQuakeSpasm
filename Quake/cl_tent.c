@@ -132,6 +132,15 @@ void CL_ParseTEnt (void)
 		pos[2] = MSG_ReadCoord (cl.protocolflags);
 		R_RunParticleEffect (pos, vec3_origin, 20, 30);
 		S_StartSound (-1, 0, cl_sfx_wizhit, pos, 1, 1);
+
+		if (CL_AllocExtraDlight ())
+		{
+			dl = CL_AllocDlight (0, 300, DL_COLOR_GREEN);
+			VectorCopy (pos, dl->origin);
+			dl->die = cl.time + 0.5;
+			dl->decay = 300;
+		}
+
 		break;
 
 	case TE_KNIGHTSPIKE:			// spike hitting wall
@@ -140,6 +149,15 @@ void CL_ParseTEnt (void)
 		pos[2] = MSG_ReadCoord (cl.protocolflags);
 		R_RunParticleEffect (pos, vec3_origin, 226, 20);
 		S_StartSound (-1, 0, cl_sfx_knighthit, pos, 1, 1);
+
+		if (CL_AllocExtraDlight ())
+		{
+			dl = CL_AllocDlight (0, 300, DL_COLOR_ORANGE);
+			VectorCopy (pos, dl->origin);
+			dl->die = cl.time + 0.5;
+			dl->decay = 300;
+		}
+
 		break;
 
 	case TE_SPIKE:			// spike hitting wall
@@ -160,6 +178,7 @@ void CL_ParseTEnt (void)
 				S_StartSound (-1, 0, cl_sfx_ric3, pos, 1, 1);
 		}
 		break;
+
 	case TE_SUPERSPIKE:			// super spike hitting wall
 		pos[0] = MSG_ReadCoord (cl.protocolflags);
 		pos[1] = MSG_ReadCoord (cl.protocolflags);
@@ -204,8 +223,16 @@ void CL_ParseTEnt (void)
 		pos[1] = MSG_ReadCoord (cl.protocolflags);
 		pos[2] = MSG_ReadCoord (cl.protocolflags);
 		R_BlobExplosion (pos);
-
 		S_StartSound (-1, 0, cl_sfx_r_exp3, pos, 1, 1);
+
+		if (CL_AllocExtraDlight ())
+		{
+			dl = CL_AllocDlight (0, 350, DL_COLOR_PURPLE);
+			VectorCopy (pos, dl->origin);
+			dl->die = cl.time + 0.5;
+			dl->decay = 300;
+		}
+
 		break;
 
 	case TE_LIGHTNING1:				// lightning bolts

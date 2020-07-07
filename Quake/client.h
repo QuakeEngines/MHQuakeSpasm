@@ -273,6 +273,8 @@ extern	entity_t		*cl_entities[]; // johnfitz -- was a static array, now on hunk
 
 dlight_t *CL_AllocDlight (int key, float radius, int r, int g, int b);
 void	CL_DecayLights (void);
+qboolean CL_AllocExtraDlight (void);
+
 
 // trail types
 #define RT_ROCKETTRAIL		0
