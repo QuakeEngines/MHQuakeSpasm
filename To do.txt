@@ -7,6 +7,5 @@ Remove non-SDL2 stuff.
 Move sounds to hunk & remove cache memory.
 .vis file support
 Green dynamic light is too bright???
-Separate cshift for cshift command
 add sv_novis cvar
 r_speeds counters are no longer really relevant; dlights can go, draw calls needs to go in, etc.

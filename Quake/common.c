@@ -1463,6 +1463,7 @@ typedef struct dpackheader_s {
 #define MAX_FILES_IN_PACK	2048
 
 char	com_gamedir[MAX_OSPATH];
+char	com_gamename[MAX_OSPATH];
 char	com_basedir[MAX_OSPATH];
 int	file_from_pak;		// ZOID: global indicating that file came from a pak
 
@@ -2120,6 +2121,9 @@ static void COM_AddGameDirectoryBaseDirectory (const char *base, const char *dir
 		}
 		else break;
 	}
+
+	// save it off as the game name
+	q_strlcpy (com_gamename, dir, sizeof (com_gamename));
 }
 
 

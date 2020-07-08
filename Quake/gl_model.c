@@ -368,6 +368,108 @@ BRUSH MODELS
 
 byte *mod_base;
 
+
+// for vispatch loading
+#define VISPATCH_IDLEN		32
+
+typedef struct dvispatch_s {
+	char name[VISPATCH_IDLEN];
+	int len;
+} dvispatch_t;
+
+typedef struct dvispatchlump_s {
+	int len;
+	char data[1];
+} dvispatchlump_t;
+
+dvispatchlump_t *Mod_LoadVISPatchData (byte *mod_base, lump_t *l, dvispatch_t *thisvis)
+{
+	// this is the correct vispatch
+	Con_DPrintf ("loaded vispatch for %s\n", thisvis->name);
+
+	// vislen/visdata/leaflen/leafdata follow
+	dvispatchlump_t *vis = (dvispatchlump_t *) (thisvis + 1);
+	dvispatchlump_t *leafs = (dvispatchlump_t *) ((byte *) vis + LittleLong (vis->len) + sizeof (int));
+
+	// sanity check the leafs lump; this may be different if e.g start.bsp is coming from a mod but the vispatch is for id1
+	if (LittleLong (leafs->len) != l->filelen)
+	{
+		Con_DPrintf ("funny lump size in vispatch for %s\n", thisvis->name);
+		return NULL;
+	}
+
+	// copy over the leafs data in-place so that the standard leaf loader can use it
+	memcpy (&mod_base[l->fileofs], leafs->data, l->filelen);
+
+	// return the visibility lump for later loading
+	return vis;
+}
+
+
+byte *Mod_TryLoadVISPatch (char *path)
+{
+	unsigned int path_id;
+	int mark = Hunk_LowMark ();
+	byte *data = (byte *) COM_LoadHunkFile (path, &path_id);
+
+	if (data)
+	{
+		// use vispatch file only from the same gamedir as the map itself or from a searchpath with higher priority.
+		if (path_id < loadmodel->path_id)
+		{
+			Hunk_FreeToLowMark (mark);
+			Con_DPrintf ("ignored %s from a gamedir with lower priority\n", path);
+			return NULL;
+		}
+	}
+
+	return data;
+}
+
+
+dvispatchlump_t *Mod_LoadVISPatch (byte *mod_base, lump_t *l)
+{
+	byte *vispatch = NULL;
+	int mark = Hunk_LowMark ();
+
+	// vispatch is only supported for BSP 29
+	if (loadmodel->bspversion != BSPVERSION) return NULL;
+
+	// try for a standalone vispatch file
+	if ((vispatch = Mod_TryLoadVISPatch (va ("maps/%s.vis", loadname))) != NULL)
+		return Mod_LoadVISPatchData (mod_base, l, (dvispatch_t *) vispatch);
+
+	// try for a combined vispatch file
+	if ((vispatch = Mod_TryLoadVISPatch (va ("maps/%s.vis", com_gamename))) != NULL)
+	{
+		int start = 0;
+		dvispatch_t *thisvis;
+
+		for (;;)
+		{
+			// end of vispatch
+			if (start >= com_filesize) break;
+
+			// get this vispatch
+			thisvis = (dvispatch_t *) &vispatch[start];
+			start += sizeof (dvispatch_t) + LittleLong (thisvis->len);
+
+			// not for this map
+			if (q_strcasecmp (&loadmodel->name[5], thisvis->name)) continue;
+
+			// and load it
+			return Mod_LoadVISPatchData (mod_base, l, thisvis);
+		}
+	}
+
+	// in case we found a file but it was invalid
+	Hunk_FreeToLowMark (mark);
+
+	// not found or not loaded
+	return NULL;
+}
+
+
 /*
 =================
 Mod_CheckFullbrights -- johnfitz
@@ -658,7 +760,6 @@ void Mod_LoadLighting (lump_t *l)
 {
 	int i, mark;
 	byte *in, *out, *data;
-	byte d;
 	char litfilename[MAX_OSPATH];
 	unsigned int path_id;
 
@@ -666,9 +767,7 @@ void Mod_LoadLighting (lump_t *l)
 	loadmodel->colouredlight = false;
 
 	// LordHavoc: check for a .lit file
-	q_strlcpy (litfilename, loadmodel->name, sizeof (litfilename));
-	COM_StripExtension (litfilename, litfilename, sizeof (litfilename));
-	q_strlcat (litfilename, ".lit", sizeof (litfilename));
+	q_snprintf (litfilename, sizeof (litfilename), "maps/%s.lit", loadname);
 	mark = Hunk_LowMark ();
 	data = (byte *) COM_LoadHunkFile (litfilename, &path_id);
 
@@ -698,7 +797,7 @@ void Mod_LoadLighting (lump_t *l)
 					}
 
 					Hunk_FreeToLowMark (mark);
-					Con_Printf ("Outdated .lit file (%s should be %u bytes, not %u)\n", litfilename, 8 + l->filelen * 3, com_filesize);
+					Con_Printf ("Mismatched .lit file (%s should be %u bytes, not %u)\n", litfilename, 8 + l->filelen * 3, com_filesize);
 				}
 				else
 				{
@@ -719,16 +818,15 @@ void Mod_LoadLighting (lump_t *l)
 		return;
 
 	loadmodel->lightdata = (byte *) Hunk_AllocName (l->filelen * 3, litfilename);
-	in = loadmodel->lightdata + l->filelen * 2; // place the file at the end, so it will not be overwritten until the very last write
+	in = &mod_base[l->fileofs];
 	out = loadmodel->lightdata;
-	memcpy (in, mod_base + l->fileofs, l->filelen);
 
-	for (i = 0; i < l->filelen; i++)
+	for (i = 0; i < l->filelen; i++, out += 3)
 	{
-		d = *in++;
-		*out++ = d;
-		*out++ = d;
-		*out++ = d;
+		// the "unix way" (*out++) is cutesy and all, but if you actually run benchmarks and measurements, you'll find it's slower
+		out[0] = in[i];
+		out[1] = in[i];
+		out[2] = in[i];
 	}
 }
 
@@ -738,16 +836,26 @@ void Mod_LoadLighting (lump_t *l)
 Mod_LoadVisibility
 =================
 */
-void Mod_LoadVisibility (lump_t *l)
+void Mod_LoadVisibility (lump_t *l, dvispatchlump_t *vispatch)
 {
 	loadmodel->viswarn = false;
+
 	if (!l->filelen)
 	{
 		loadmodel->visdata = NULL;
 		return;
 	}
-	loadmodel->visdata = (byte *) Hunk_AllocName (l->filelen, loadname);
-	memcpy (loadmodel->visdata, mod_base + l->fileofs, l->filelen);
+
+	if (vispatch)
+	{
+		// the vispatch was loaded on the hunk so all we need to do is set the pointer
+		loadmodel->visdata = vispatch->data;
+	}
+	else
+	{
+		loadmodel->visdata = (byte *) Hunk_AllocName (l->filelen, loadname);
+		memcpy (loadmodel->visdata, mod_base + l->fileofs, l->filelen);
+	}
 }
 
 
@@ -766,12 +874,11 @@ void Mod_LoadEntities (lump_t *l)
 	if (!external_ents.value)
 		goto _load_embedded;
 
-	q_strlcpy (entfilename, loadmodel->name, sizeof (entfilename));
-	COM_StripExtension (entfilename, entfilename, sizeof (entfilename));
-	q_strlcat (entfilename, ".ent", sizeof (entfilename));
+	q_snprintf (entfilename, sizeof (entfilename), "maps/%s.ent", loadname);
 	Con_DPrintf2 ("trying to load %s\n", entfilename);
 	mark = Hunk_LowMark ();
 	ents = (char *) COM_LoadHunkFile (entfilename, &path_id);
+
 	if (ents)
 	{
 		// use ent file only from the same gamedir as the map
@@ -795,6 +902,7 @@ _load_embedded:
 		loadmodel->entities = NULL;
 		return;
 	}
+
 	loadmodel->entities = (char *) Hunk_AllocName (l->filelen, loadname);
 	memcpy (loadmodel->entities, mod_base + l->fileofs, l->filelen);
 }
@@ -1041,24 +1149,18 @@ void Mod_CalcSurfaceBounds (msurface_t *s)
 	for (i = 0; i < s->numedges; i++)
 	{
 		e = loadmodel->surfedges[s->firstedge + i];
+
 		if (e >= 0)
 			v = &loadmodel->vertexes[loadmodel->edges[e].v[0]];
-		else
-			v = &loadmodel->vertexes[loadmodel->edges[-e].v[1]];
+		else v = &loadmodel->vertexes[loadmodel->edges[-e].v[1]];
 
-		if (s->mins[0] > v->position[0])
-			s->mins[0] = v->position[0];
-		if (s->mins[1] > v->position[1])
-			s->mins[1] = v->position[1];
-		if (s->mins[2] > v->position[2])
-			s->mins[2] = v->position[2];
+		if (s->mins[0] > v->position[0]) s->mins[0] = v->position[0];
+		if (s->mins[1] > v->position[1]) s->mins[1] = v->position[1];
+		if (s->mins[2] > v->position[2]) s->mins[2] = v->position[2];
 
-		if (s->maxs[0] < v->position[0])
-			s->maxs[0] = v->position[0];
-		if (s->maxs[1] < v->position[1])
-			s->maxs[1] = v->position[1];
-		if (s->maxs[2] < v->position[2])
-			s->maxs[2] = v->position[2];
+		if (s->maxs[0] < v->position[0]) s->maxs[0] = v->position[0];
+		if (s->maxs[1] < v->position[1]) s->maxs[1] = v->position[1];
+		if (s->maxs[2] < v->position[2]) s->maxs[2] = v->position[2];
 	}
 }
 
@@ -1092,6 +1194,7 @@ void Mod_LoadFaces (lump_t *l, qboolean bsp2)
 			Sys_Error ("MOD_LoadBmodel: funny lump size in %s", loadmodel->name);
 		count = l->filelen / sizeof (*ins);
 	}
+
 	out = (msurface_t *) Hunk_AllocName (count * sizeof (*out), loadname);
 
 	// johnfitz -- warn mappers about exceeding old limits
@@ -1142,7 +1245,7 @@ void Mod_LoadFaces (lump_t *l, qboolean bsp2)
 
 		Mod_CalcSurfaceBounds (out); // johnfitz -- for per-surface frustum culling
 
-	// lighting info
+		// lighting info
 		if (lofs == -1)
 			out->samples = NULL;
 		else
@@ -1628,7 +1731,7 @@ void Mod_LoadClipnodes (lump_t *l, qboolean bsp2)
 				Host_Error ("Mod_LoadClipnodes: planenum out of bounds");
 			// johnfitz
 
-				// johnfitz -- support clipnodes > 32k
+			// johnfitz -- support clipnodes > 32k
 			out->children[0] = (unsigned short) LittleShort (ins->children[0]);
 			out->children[1] = (unsigned short) LittleShort (ins->children[1]);
 
@@ -1691,6 +1794,7 @@ void Mod_LoadMarksurfaces (lump_t *l, int bsp2)
 {
 	int		i, j, count;
 	msurface_t **out;
+
 	if (bsp2)
 	{
 		unsigned int *in = (unsigned int *) (mod_base + l->fileofs);
@@ -1852,8 +1956,10 @@ void Mod_LoadSubmodels (lump_t *l)
 			out->maxs[j] = LittleFloat (in->maxs[j]) + 1;
 			out->origin[j] = LittleFloat (in->origin[j]);
 		}
+
 		for (j = 0; j < MAX_MAP_HULLS; j++)
 			out->headnode[j] = LittleLong (in->headnode[j]);
+
 		out->visleafs = LittleLong (in->visleafs);
 		out->firstface = LittleLong (in->firstface);
 		out->numfaces = LittleLong (in->numfaces);
@@ -1890,27 +1996,30 @@ void Mod_BoundsFromClipNode (qmodel_t *mod, int hull, int nodenum)
 
 	node = &mod->clipnodes[nodenum];
 	plane = mod->hulls[hull].planes + node->planenum;
+
 	switch (plane->type)
 	{
-
 	case PLANE_X:
 		if (plane->signbits == 1)
 			mod->clipmins[0] = q_min (mod->clipmins[0], -plane->dist - mod->hulls[hull].clip_mins[0]);
 		else
 			mod->clipmaxs[0] = q_max (mod->clipmaxs[0], plane->dist - mod->hulls[hull].clip_maxs[0]);
 		break;
+
 	case PLANE_Y:
 		if (plane->signbits == 2)
 			mod->clipmins[1] = q_min (mod->clipmins[1], -plane->dist - mod->hulls[hull].clip_mins[1]);
 		else
 			mod->clipmaxs[1] = q_max (mod->clipmaxs[1], plane->dist - mod->hulls[hull].clip_maxs[1]);
 		break;
+
 	case PLANE_Z:
 		if (plane->signbits == 4)
 			mod->clipmins[2] = q_min (mod->clipmins[2], -plane->dist - mod->hulls[hull].clip_mins[2]);
 		else
 			mod->clipmaxs[2] = q_max (mod->clipmaxs[2], plane->dist - mod->hulls[hull].clip_maxs[2]);
 		break;
+
 	default:
 		// skip nonaxial planes; don't need them
 		break;
@@ -1928,17 +2037,11 @@ Mod_LoadBrushModel
 */
 void Mod_LoadBrushModel (qmodel_t *mod, void *buffer)
 {
-	int			i, j;
 	int			bsp2;
-	dheader_t *header;
-	dmodel_t *bm;
-	float		radius; // johnfitz
-
-	loadmodel->type = mod_brush;
-
-	header = (dheader_t *) buffer;
+	dheader_t *header = (dheader_t *) buffer;
 
 	mod->bspversion = LittleLong (header->version);
+	loadmodel->type = mod_brush;
 
 	switch (mod->bspversion)
 	{
@@ -1959,11 +2062,13 @@ void Mod_LoadBrushModel (qmodel_t *mod, void *buffer)
 	// swap all the lumps
 	mod_base = (byte *) header;
 
-	for (i = 0; i < (int) sizeof (dheader_t) / 4; i++)
+	for (int i = 0; i < (int) sizeof (dheader_t) / 4; i++)
 		((int *) header)[i] = LittleLong (((int *) header)[i]);
 
-	// load into heap
+	// attempt to load a vispatch if present
+	dvispatchlump_t *vispatch = Mod_LoadVISPatch (mod_base, &header->lumps[LUMP_LEAFS]);
 
+	// load into heap
 	Mod_LoadVertexes (&header->lumps[LUMP_VERTEXES]);
 	Mod_LoadEdges (&header->lumps[LUMP_EDGES], bsp2);
 	Mod_LoadSurfedges (&header->lumps[LUMP_SURFEDGES]);
@@ -1973,7 +2078,7 @@ void Mod_LoadBrushModel (qmodel_t *mod, void *buffer)
 	Mod_LoadTexinfo (&header->lumps[LUMP_TEXINFO]);
 	Mod_LoadFaces (&header->lumps[LUMP_FACES], bsp2);
 	Mod_LoadMarksurfaces (&header->lumps[LUMP_MARKSURFACES], bsp2);
-	Mod_LoadVisibility (&header->lumps[LUMP_VISIBILITY]);
+	Mod_LoadVisibility (&header->lumps[LUMP_VISIBILITY], vispatch);
 	Mod_LoadLeafs (&header->lumps[LUMP_LEAFS], bsp2);
 	Mod_LoadNodes (&header->lumps[LUMP_NODES], bsp2);
 	Mod_LoadClipnodes (&header->lumps[LUMP_CLIPNODES], bsp2);
@@ -1989,12 +2094,13 @@ void Mod_LoadBrushModel (qmodel_t *mod, void *buffer)
 	// we're looping through the submodels starting at 0.  Submodel 0 is the main model, so we don't have to
 	// worry about clobbering data the first time through, since it's the same data.  At the end of the loop,
 	// we create a new copy of the data to use the next time through.
-	for (i = 0; i < mod->numsubmodels; i++)
+	for (int i = 0; i < mod->numsubmodels; i++)
 	{
-		bm = &mod->submodels[i];
+		dmodel_t *bm = &mod->submodels[i];
 
 		mod->hulls[0].firstclipnode = bm->headnode[0];
-		for (j = 1; j < MAX_MAP_HULLS; j++)
+
+		for (int j = 1; j < MAX_MAP_HULLS; j++)
 		{
 			mod->hulls[j].firstclipnode = bm->headnode[j];
 			mod->hulls[j].lastclipnode = mod->numclipnodes - 1;
@@ -2007,7 +2113,7 @@ void Mod_LoadBrushModel (qmodel_t *mod, void *buffer)
 		VectorCopy (bm->mins, mod->mins);
 
 		// johnfitz -- calculate rotate bounds and yaw bounds
-		radius = RadiusFromBounds (mod->mins, mod->maxs);
+		float radius = RadiusFromBounds (mod->mins, mod->maxs);
 
 		// johnfitz -- correct physics cullboxes so that outlying clip brushes on doors and stuff are handled right
 		if (i > 0 || strcmp (mod->name, sv.modelname) != 0) // skip submodel 0 of sv.worldmodel, which is the actual world

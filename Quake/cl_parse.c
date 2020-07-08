@@ -323,7 +323,8 @@ void CL_ParseServerInfo (void)
 	Con_Printf ("%c%s\n", 2, str);
 
 	// johnfitz -- tell user which protocol this is
-	Con_Printf ("Using protocol %i\n", i);
+	// mh - most users won't even know what a protocol is
+	Con_DPrintf ("Using protocol %i\n", i);
 
 	// first we go through and touch all of the precache data that still
 	// happens to be in the cache, so precaching something else doesn't
