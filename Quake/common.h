@@ -294,7 +294,6 @@ long FS_filelength (fshandle_t *fh);
 extern struct cvar_s	registered;
 extern qboolean		standard_quake, rogue, hipnotic, quoth, arcdim, nehahra;
 
-void COM_InitGameFlags (void);
 
 #endif	/* _Q_COMMON_H */
 

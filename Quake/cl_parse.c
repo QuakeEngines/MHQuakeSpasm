@@ -789,12 +789,12 @@ void CL_ParseClientdata (void)
 
 	i = MSG_ReadByte ();
 
+	// protocol change for mission packs
 	if (standard_quake)
 	{
 		if (cl.stats[STAT_ACTIVEWEAPON] != i)
 		{
 			cl.stats[STAT_ACTIVEWEAPON] = i;
-			Sbar_Changed ();
 		}
 	}
 	else
@@ -802,7 +802,6 @@ void CL_ParseClientdata (void)
 		if (cl.stats[STAT_ACTIVEWEAPON] != (1 << i))
 		{
 			cl.stats[STAT_ACTIVEWEAPON] = (1 << i);
-			Sbar_Changed ();
 		}
 	}
 

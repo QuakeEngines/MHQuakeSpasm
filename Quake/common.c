@@ -54,7 +54,8 @@ char **com_argv;
 #define CMDLINE_LENGTH	256		/* johnfitz -- mirrored in cmd.c */
 char	com_cmdline[CMDLINE_LENGTH];
 
-qboolean standard_quake = true, rogue, hipnotic, quoth, arcdim, nehahra;
+qboolean standard_quake = true; // protocol change for mission packs
+qboolean rogue, hipnotic, quoth, arcdim, nehahra;
 
 // this graphic needs to be in the pak file to use registered features
 static unsigned short pop[] =
@@ -1337,25 +1338,6 @@ void COM_InitArgv (int argc, char **argv)
 
 	largv[com_argc] = argvdummy;
 	com_argv = largv;
-
-	if (COM_CheckParm ("-rogue"))
-	{
-		rogue = true;
-		standard_quake = false;
-	}
-
-	if (COM_CheckParm ("-hipnotic"))
-	{
-		hipnotic = true;
-		standard_quake = false;
-	}
-
-	if (COM_CheckParm ("-quoth"))
-	{
-		hipnotic = true;
-		quoth = true;
-		standard_quake = false;
-	}
 }
 
 
@@ -1982,28 +1964,83 @@ static pack_t *COM_LoadPackFile (const char *packfile)
 	return pack;
 }
 
+
+qboolean COM_DetectNehahra (void)
+{
+	return false;
+}
+
+
+qboolean COM_DetectArcaneDimensions (void)
+{
+	return false;
+}
+
+
+void COM_DetectMods (void)
+{
+	// this is deferred to after the game is fully loaded so that we can safely open handles on PAKs if required
+	// we just use these mod flags to disable some in-engine effects that are known to misbehave due to certain mods use/abuse/overloading of stock effects
+	// detecting rogue/hipnotic/quoth content has been moved to one place in COM_AddGameDirectory (as well as the -rogue/-hipnotic/-quoth options below)
+	nehahra = COM_DetectNehahra ();
+	arcdim = COM_DetectArcaneDimensions ();
+}
+
+
+void COM_InitMods (void)
+{
+	// init the mod flags
+	standard_quake = true; // protocol change for mission packs
+	hipnotic = false;
+	rogue = false;
+	quoth = false;
+	nehahra = false;
+	arcdim = false;
+
+	// override for mission packs
+	if (COM_CheckParm ("-rogue"))
+	{
+		rogue = true;
+		standard_quake = false;
+	}
+
+	if (COM_CheckParm ("-hipnotic"))
+	{
+		hipnotic = true;
+		standard_quake = false;
+	}
+
+	if (COM_CheckParm ("-quoth"))
+	{
+		hipnotic = true;
+		quoth = true;
+		standard_quake = false;
+	}
+}
+
+
 /*
 =================
 COM_AddGameDirectory -- johnfitz -- modified based on topaz's tutorial
+
+mh - split this off to make it a little more legible what's going on here
 =================
 */
-static void COM_AddGameDirectory (const char *base, const char *dir)
+static void COM_AddGameDirectoryBaseDirectory (const char *base, const char *dir)
 {
-	int i;
 	unsigned int path_id;
 	searchpath_t *search;
 	pack_t *pak;
 	char pakfile[MAX_OSPATH];
-	qboolean been_here = false;
 
 	q_strlcpy (com_gamedir, va ("%s/%s", base, dir), sizeof (com_gamedir));
+	Sys_mkdir (com_gamedir);
 
 	// assign a path_id to this game directory
 	if (com_searchpaths)
 		path_id = com_searchpaths->path_id << 1;
-	else	path_id = 1U;
+	else path_id = 1U;
 
-_add_path:
 	// add the directory to the search path
 	search = (searchpath_t *) Q_zmalloc (sizeof (searchpath_t));
 	search->path_id = path_id;
@@ -2012,7 +2049,7 @@ _add_path:
 	com_searchpaths = search;
 
 	// add any pak files in the format pak0.pak pak1.pak, ...
-	for (i = 0; ; i++)
+	for (int i = 0; ; i++)
 	{
 		q_snprintf (pakfile, sizeof (pakfile), "%s/pak%i.pak", com_gamedir, i);
 
@@ -2026,20 +2063,45 @@ _add_path:
 		}
 		else break;
 	}
+}
 
-	if (!been_here && host_parms->userdir != host_parms->basedir)
+
+static void COM_AddGameDirectory (const char *base, const char *dir)
+{
+	// add it from the base dir
+	COM_AddGameDirectoryBaseDirectory (base, dir);
+
+	// add it from the user dir, but only if the user dir exists and is not the base dir
+	if (host_parms->userdir != host_parms->basedir)
+		COM_AddGameDirectoryBaseDirectory (host_parms->userdir, dir);
+
+	// check for these here in one place rather than scattered in multiple parts of the code
+	if (!q_strcasecmp (dir, "rogue"))
 	{
-		been_here = true;
-		q_strlcpy (com_gamedir, va ("%s/%s", host_parms->userdir, dir), sizeof (com_gamedir));
-		Sys_mkdir (com_gamedir);
-		goto _add_path;
+		rogue = true;
+		standard_quake = false;
+	}
+
+	if (!q_strcasecmp (dir, "hipnotic"))
+	{
+		hipnotic = true;
+		standard_quake = false;
+	}
+
+	if (!q_strcasecmp (dir, "quoth"))
+	{
+		hipnotic = true;
+		quoth = true;
+		standard_quake = false;
 	}
 }
+
 
 // ==============================================================================
 // johnfitz -- dynamic gamedir stuff -- modified by QuakeSpasm team.
 // ==============================================================================
 void ExtraMaps_NewGame (void);
+
 static void COM_Game_f (void)
 {
 	if (Cmd_Argc () > 1)
@@ -2067,6 +2129,7 @@ static void COM_Game_f (void)
 				Con_Printf ("invalid mission pack argument to \"game\"\n");
 				return;
 			}
+
 			if (!q_strcasecmp (p, GAMENAME))
 			{
 				Con_Printf ("no mission pack arguments to %s game\n", GAMENAME);
@@ -2077,7 +2140,8 @@ static void COM_Game_f (void)
 		if (!q_strcasecmp (p, COM_SkipPath (com_gamedir))) // no change
 		{
 			if (com_searchpaths->path_id > 1)
-			{ // current game not id1
+			{
+				// current game not id1
 				if (*p2 && com_searchpaths->path_id == 2)
 				{
 					// rely on QuakeSpasm extension treating '-game missionpack'
@@ -2116,30 +2180,19 @@ _same:
 				free (com_searchpaths->pack->files);
 				free (com_searchpaths->pack);
 			}
+
 			search = com_searchpaths->next;
 			free (com_searchpaths);
 			com_searchpaths = search;
 		}
-		hipnotic = false;
-		rogue = false;
-		standard_quake = true;
+
+		COM_InitMods ();
 
 		if (q_strcasecmp (p, GAMENAME)) // game is not id1
 		{
 			if (*p2)
 			{
 				COM_AddGameDirectory (com_basedir, &p2[1]);
-				standard_quake = false;
-
-				if (!strcmp (p2, "-hipnotic"))
-					hipnotic = true;
-				else if (!strcmp (p2, "-quoth"))
-				{
-					hipnotic = true;
-					quoth = true;
-				}
-				else if (!strcmp (p2, "-rogue"))
-					rogue = true;
 
 				if (q_strcasecmp (p, &p2[1])) // don't load twice
 					COM_AddGameDirectory (com_basedir, p);
@@ -2148,23 +2201,6 @@ _same:
 			{
 				COM_AddGameDirectory (com_basedir, p);
 				// QuakeSpasm extension: treat '-game missionpack' as '-missionpack'
-
-				if (!q_strcasecmp (p, "hipnotic"))
-				{
-					hipnotic = true;
-					standard_quake = false;
-				}
-				else if (!q_strcasecmp (p, "quoth"))
-				{
-					hipnotic = true;
-					quoth = true;
-					standard_quake = false;
-				}
-				else if (!q_strcasecmp (p, "rogue"))
-				{
-					rogue = true;
-					standard_quake = false;
-				}
 			}
 		}
 		else // just update com_gamedir
@@ -2178,12 +2214,14 @@ _same:
 		// clear out and reload appropriate data
 		Cache_Flush ();
 		Mod_ResetAll ();
+
 		if (!isDedicated)
 		{
 			TexMgr_NewGame ();
 			Draw_NewGame ();
 			R_NewGame ();
 		}
+
 		ExtraMaps_NewGame ();
 		DemoList_Rebuild ();
 
@@ -2192,6 +2230,9 @@ _same:
 		VID_Lock ();
 		Cbuf_AddText ("exec quake.rc\n");
 		Cbuf_AddText ("vid_unlock\n");
+
+		// now we look for certain mods
+		COM_DetectMods ();
 	}
 	else // Diplay the current gamedir
 		Con_Printf ("\"game\" is \"%s\"\n", COM_SkipPath (com_gamedir));
@@ -2221,6 +2262,8 @@ void COM_InitFilesystem (void) // johnfitz -- modified based on topaz's tutorial
 	if (j < 1) Sys_Error ("Bad argument to -basedir");
 	if ((com_basedir[j - 1] == '\\') || (com_basedir[j - 1] == '/'))
 		com_basedir[j - 1] = 0;
+
+	COM_InitMods ();
 
 	// start up with GAMENAME by default (id1)
 	COM_AddGameDirectory (com_basedir, GAMENAME);
@@ -2256,49 +2299,13 @@ void COM_InitFilesystem (void) // johnfitz -- modified based on topaz's tutorial
 		if (COM_CheckParm ("-quoth") && !q_strcasecmp (p, "quoth")) p = NULL;
 
 		if (p != NULL)
-		{
 			COM_AddGameDirectory (com_basedir, p);
-
-			// QuakeSpasm extension: treat '-game missionpack' as '-missionpack'
-			if (!q_strcasecmp (p, "rogue"))
-			{
-				rogue = true;
-				standard_quake = false;
-			}
-
-			if (!q_strcasecmp (p, "hipnotic"))
-			{
-				hipnotic = true;
-				standard_quake = false;
-			}
-
-			if (!q_strcasecmp (p, "quoth"))
-			{
-				hipnotic = true;
-				quoth = true;
-				standard_quake = false;
-			}
-		}
 	}
 
 	COM_CheckRegistered ();
-}
 
-
-void COM_InitGameFlags (void)
-{
-	// called at the start of each map so we can fix up the game flags for mods
-	// this is a mite less messy than the previous check....
-
-	// begin with a standard setup
-	nehahra = false;
-	arcdim = false;
-	quoth = false;
-
-	for (searchpath_t *s = com_searchpaths; s; s = s->next)
-	{
-		if (s->pack) continue;
-	}
+	// now we look for certain mods
+	COM_DetectMods ();
 }
 
 
