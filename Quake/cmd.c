@@ -250,33 +250,45 @@ void Cmd_StuffCmds_f (void)
 }
 
 
+void Cmd_Exec_File (const char *filename)
+{
+	int mark = Hunk_LowMark ();
+	char *f = (char *) COM_LoadHunkFile (filename, NULL);
+
+	if (!f)
+	{
+		Con_Printf ("couldn't exec %s\n", filename);
+		return;
+	}
+
+	Con_Printf ("execing %s\n", filename);
+
+	Cbuf_InsertText (f);
+	Hunk_FreeToLowMark (mark);
+}
+
+
 /*
 ===============
 Cmd_Exec_f
+
+play nice with other engine's configs - we load and exec config.cfg but we only save to our own .cfg file
 ===============
 */
 void Cmd_Exec_f (void)
 {
-	char *f;
-	int		mark;
-
 	if (Cmd_Argc () != 2)
 	{
 		Con_Printf ("exec <filename> : execute a script file\n");
 		return;
 	}
 
-	mark = Hunk_LowMark ();
-	f = (char *) COM_LoadHunkFile (Cmd_Argv (1), NULL);
-	if (!f)
+	if (!q_strcasecmp (Cmd_Argv (1), "config.cfg"))
 	{
-		Con_Printf ("couldn't exec %s\n", Cmd_Argv (1));
-		return;
+		Cmd_Exec_File ("config.cfg");
+		Cmd_Exec_File ("mhquakespasm.cfg");
 	}
-	Con_Printf ("execing %s\n", Cmd_Argv (1));
-
-	Cbuf_InsertText (f);
-	Hunk_FreeToLowMark (mark);
+	else Cmd_Exec_File (Cmd_Argv (1));
 }
 
 

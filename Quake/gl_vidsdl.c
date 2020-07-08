@@ -1418,11 +1418,18 @@ void	VID_Init (void)
 
 	Cvar_SetValueQuick (&vid_bpp, (float) display_bpp);
 
-	if (CFG_OpenConfig ("config.cfg") == 0)
+	// play nice with other engine's configs - we load and exec config.cfg but we only save to our own .cfg file
+	if (CFG_OpenConfig ("mhquakespasm.cfg") == 0)
 	{
 		CFG_ReadCvars (read_vars, num_readvars);
 		CFG_CloseConfig ();
 	}
+	else if (CFG_OpenConfig ("config.cfg") == 0)
+	{
+		CFG_ReadCvars (read_vars, num_readvars);
+		CFG_CloseConfig ();
+	}
+
 	CFG_ReadCvarOverrides (read_vars, num_readvars);
 
 	VID_InitModelist ();

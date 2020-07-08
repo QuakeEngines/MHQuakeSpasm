@@ -1922,12 +1922,14 @@ static pack_t *COM_LoadPackFile (const char *packfile)
 		Sys_Error ("Invalid packfile %s (dirlen: %i, dirofs: %i)",
 			packfile, header.dirlen, header.dirofs);
 	}
+
 	if (!numpackfiles)
 	{
 		Sys_Printf ("WARNING: %s has no files, ignored\n", packfile);
 		Sys_FileClose (packhandle);
 		return NULL;
 	}
+
 	if (numpackfiles > MAX_FILES_IN_PACK)
 		Sys_Error ("%s has %i files", packfile, numpackfiles);
 
@@ -1949,7 +1951,19 @@ static pack_t *COM_LoadPackFile (const char *packfile)
 	// parse the directory
 	for (i = 0; i < numpackfiles; i++)
 	{
-		q_strlcpy (newfiles[i].name, info[i].name, sizeof (newfiles[i].name));
+		// some mods still do this - grrrrr
+		if (!q_strcasecmp (info[i].name, "config.cfg"))
+		{
+			q_strlcpy (newfiles[i].name, "bad mod no cookie for you", sizeof (newfiles[i].name));
+			Con_SafePrintf ("config.cfg in pack file %s will be ignored\n", packfile);
+		}
+		else if (!q_strcasecmp (info[i].name, "autoexec.cfg"))
+		{
+			q_strlcpy (newfiles[i].name, "bad mod no cookie for you", sizeof (newfiles[i].name));
+			Con_SafePrintf ("autoexec.cfg in pack file %s will be ignored\n", packfile);
+		}
+		else q_strlcpy (newfiles[i].name, info[i].name, sizeof (newfiles[i].name));
+
 		newfiles[i].filepos = LittleLong (info[i].filepos);
 		newfiles[i].filelen = LittleLong (info[i].filelen);
 	}
@@ -1967,13 +1981,50 @@ static pack_t *COM_LoadPackFile (const char *packfile)
 
 qboolean COM_DetectNehahra (void)
 {
-	return false;
+	// checks for the full set of nehahra maps
+	if (COM_FileExists ("maps/neh1m1.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh1m2.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh1m3.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh1m4.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh1m5.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh1m6.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh1m7.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh1m8.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh1m9.bsp", NULL)) return false;
+
+	if (COM_FileExists ("maps/neh2m1.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh2m2.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh2m3.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh2m4.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh2m5.bsp", NULL)) return false;
+	if (COM_FileExists ("maps/neh2m6.bsp", NULL)) return false;
+
+	Con_SafePrintf ("Nehahra detected\n");
+	return true;
 }
 
 
 qboolean COM_DetectArcaneDimensions (void)
 {
-	return false;
+	int numadmaps = 0;
+
+	// heuristically detect the arcane dimensions mod by attempting to open certain files
+	if (COM_FileExists ("maps/ad_chapters.bsp", NULL)) numadmaps++;
+	if (COM_FileExists ("maps/ad_lavatomb.bsp", NULL)) numadmaps++;
+	if (COM_FileExists ("maps/ad_mountain.bsp", NULL)) numadmaps++;
+	if (COM_FileExists ("maps/ad_necrokeep.bsp", NULL)) numadmaps++;
+	if (COM_FileExists ("maps/ad_sepulcher.bsp", NULL)) numadmaps++;
+	if (COM_FileExists ("maps/ad_swampy.bsp", NULL)) numadmaps++;
+	if (COM_FileExists ("maps/ad_tfuma.bsp", NULL)) numadmaps++;
+	if (COM_FileExists ("maps/ad_zendar.bsp", NULL)) numadmaps++;
+
+	// because difference versions of AD may be installed, or someone may have copy/pasted some AD maps to another gamedir, we test for the presence of 6 out of 8 named maps
+	if (numadmaps >= 6)
+	{
+		Con_SafePrintf ("Arcane Dimensions detected\n");
+		return true;
+	}
+	else return false;
 }
 
 
@@ -2081,12 +2132,14 @@ static void COM_AddGameDirectory (const char *base, const char *dir)
 		return;
 	}
 
+	// two schools of thought: (1) silently fix it, or (2) ignore and warn; QS does (2), I'd normally incline to (1) but I'm keeping (2) for now.
 	if (!strcmp (dir, "-hipnotic") || !strcmp (dir, "-rogue") || !strcmp (dir, "-quoth"))
 	{
 		Con_Printf ("invalid mission pack argument to \"game\"\n");
 		return;
 	}
 
+	// the intent here seems to have been to prevent double-loading of ID1 but the warning message seems confusing to me.  maybe better to just silently ignore?
 	if (com_searchpaths && !q_strcasecmp (dir, GAMENAME))
 	{
 		Con_Printf ("no mission pack arguments to %s game\n", GAMENAME);
