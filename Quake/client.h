@@ -43,13 +43,19 @@ typedef struct scoreboard_s {
 typedef struct cshift_s {
 	float	destcolor[3];
 	float	percent;		// 0-256
+	float initialpercent;
+	float initialtime;
 } cshift_t;
 
-#define	CSHIFT_CONTENTS	0
-#define	CSHIFT_DAMAGE	1
-#define	CSHIFT_BONUS	2
-#define	CSHIFT_POWERUP	3
-#define	NUM_CSHIFTS		4
+#define	CSHIFT_DAMAGE	0
+#define	CSHIFT_BONUS	1
+#define CSHIFT_QUAD		2
+#define CSHIFT_SUIT		3
+#define CSHIFT_RING		4
+#define CSHIFT_PENT		5
+#define CSHIFT_VCSHIFT	6
+#define CSHIFT_CONTENTS	7
+#define	NUM_CSHIFTS		8
 
 #define	NAME_LENGTH	64
 
@@ -145,8 +151,7 @@ typedef struct client_state_s {
 	float	item_gettime[32];	// cl.time of aquiring item, for blinking
 	float		faceanimtime;	// use anim frame if cl.time < this
 
-	cshift_t	cshifts[NUM_CSHIFTS];	// color shifts for damage, powerups
-	cshift_t	prev_cshifts[NUM_CSHIFTS];	// and content types
+	cshift_t	cshifts[NUM_CSHIFTS];	// color shifts for damage, powerups and content types
 
 	// the client maintains its own idea of view angles, which are
 	// sent to the server each frame.  The server sets punchangle when

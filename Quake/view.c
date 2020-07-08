@@ -176,6 +176,17 @@ cvar_t	v_centerspeed = { "v_centerspeed", "500", CVAR_NONE };
 ==============================================================================
 */
 
+void V_SetCshift (cshift_t *cs, int r, int g, int b, int pct)
+{
+	cs->destcolor[0] = r;
+	cs->destcolor[1] = g;
+	cs->destcolor[2] = b;
+	cs->percent = pct;
+	cs->initialpercent = pct;
+	cs->initialtime = cl.time;
+}
+
+
 cshift_t	cshift_empty = { { 130, 80, 50 }, 0 };
 cshift_t	cshift_water = { { 130, 80, 50 }, 128 };
 cshift_t	cshift_slime = { { 0, 25, 5 }, 150 };
@@ -211,30 +222,16 @@ void V_ParseDamage (void)
 
 	cl.faceanimtime = cl.time + 0.2;		// but sbar face into pain frame
 
-	cl.cshifts[CSHIFT_DAMAGE].percent += 3 * count;
-	if (cl.cshifts[CSHIFT_DAMAGE].percent < 0)
-		cl.cshifts[CSHIFT_DAMAGE].percent = 0;
-	if (cl.cshifts[CSHIFT_DAMAGE].percent > 150)
-		cl.cshifts[CSHIFT_DAMAGE].percent = 150;
+	float pct = cl.cshifts[CSHIFT_DAMAGE].percent + 3 * count;
 
-	if (armor > blood)
-	{
-		cl.cshifts[CSHIFT_DAMAGE].destcolor[0] = 200;
-		cl.cshifts[CSHIFT_DAMAGE].destcolor[1] = 100;
-		cl.cshifts[CSHIFT_DAMAGE].destcolor[2] = 100;
-	}
-	else if (armor)
-	{
-		cl.cshifts[CSHIFT_DAMAGE].destcolor[0] = 220;
-		cl.cshifts[CSHIFT_DAMAGE].destcolor[1] = 50;
-		cl.cshifts[CSHIFT_DAMAGE].destcolor[2] = 50;
-	}
-	else
-	{
-		cl.cshifts[CSHIFT_DAMAGE].destcolor[0] = 255;
-		cl.cshifts[CSHIFT_DAMAGE].destcolor[1] = 0;
-		cl.cshifts[CSHIFT_DAMAGE].destcolor[2] = 0;
-	}
+	if (pct < 0) pct = 0;
+	if (pct > 150) pct = 150;
+
+	float r = ((200 * armor) + (255 * blood)) / (armor + blood);
+	float g = (100 * armor) / (armor + blood);
+	float b = (100 * armor) / (armor + blood);
+
+	V_SetCshift (&cl.cshifts[CSHIFT_DAMAGE], r, g, b, pct);
 
 	// calculate view angle kicks
 	ent = cl_entities[cl.viewentity];
@@ -264,10 +261,7 @@ V_cshift_f
 */
 void V_cshift_f (void)
 {
-	cshift_empty.destcolor[0] = atoi (Cmd_Argv (1));
-	cshift_empty.destcolor[1] = atoi (Cmd_Argv (2));
-	cshift_empty.destcolor[2] = atoi (Cmd_Argv (3));
-	cshift_empty.percent = atoi (Cmd_Argv (4));
+	V_SetCshift (&cl.cshifts[CSHIFT_VCSHIFT], atoi (Cmd_Argv (1)), atoi (Cmd_Argv (2)), atoi (Cmd_Argv (3)), atoi (Cmd_Argv (4)));
 }
 
 
@@ -280,10 +274,7 @@ When you run over an item, the server sends this command
 */
 void V_BonusFlash_f (void)
 {
-	cl.cshifts[CSHIFT_BONUS].destcolor[0] = 215;
-	cl.cshifts[CSHIFT_BONUS].destcolor[1] = 186;
-	cl.cshifts[CSHIFT_BONUS].destcolor[2] = 69;
-	cl.cshifts[CSHIFT_BONUS].percent = 50;
+	V_SetCshift (&cl.cshifts[CSHIFT_BONUS], 215, 186, 69, 50);
 }
 
 /*
@@ -320,36 +311,6 @@ V_CalcPowerupCshift
 */
 void V_CalcPowerupCshift (void)
 {
-	if (cl.items & IT_QUAD)
-	{
-		cl.cshifts[CSHIFT_POWERUP].destcolor[0] = 0;
-		cl.cshifts[CSHIFT_POWERUP].destcolor[1] = 0;
-		cl.cshifts[CSHIFT_POWERUP].destcolor[2] = 255;
-		cl.cshifts[CSHIFT_POWERUP].percent = 30;
-	}
-	else if (cl.items & IT_SUIT)
-	{
-		cl.cshifts[CSHIFT_POWERUP].destcolor[0] = 0;
-		cl.cshifts[CSHIFT_POWERUP].destcolor[1] = 255;
-		cl.cshifts[CSHIFT_POWERUP].destcolor[2] = 0;
-		cl.cshifts[CSHIFT_POWERUP].percent = 20;
-	}
-	else if (cl.items & IT_INVISIBILITY)
-	{
-		cl.cshifts[CSHIFT_POWERUP].destcolor[0] = 100;
-		cl.cshifts[CSHIFT_POWERUP].destcolor[1] = 100;
-		cl.cshifts[CSHIFT_POWERUP].destcolor[2] = 100;
-		cl.cshifts[CSHIFT_POWERUP].percent = 100;
-	}
-	else if (cl.items & IT_INVULNERABILITY)
-	{
-		cl.cshifts[CSHIFT_POWERUP].destcolor[0] = 255;
-		cl.cshifts[CSHIFT_POWERUP].destcolor[1] = 255;
-		cl.cshifts[CSHIFT_POWERUP].destcolor[2] = 0;
-		cl.cshifts[CSHIFT_POWERUP].percent = 30;
-	}
-	else
-		cl.cshifts[CSHIFT_POWERUP].percent = 0;
 }
 
 /*
@@ -359,38 +320,45 @@ V_CalcBlend
 */
 void V_CalcBlend (void)
 {
-	float	r, g, b, a, a2;
-	int		j;
 	cvar_t *cshiftpercent_cvars[NUM_CSHIFTS] = {
-		&gl_cshiftpercent_contents,
 		&gl_cshiftpercent_damage,
 		&gl_cshiftpercent_bonus,
-		&gl_cshiftpercent_powerup
+		&gl_cshiftpercent_powerup,
+		&gl_cshiftpercent_powerup,
+		&gl_cshiftpercent_powerup,
+		&gl_cshiftpercent_powerup,
+		&gl_cshiftpercent_contents,
+		&gl_cshiftpercent_contents
 	};
 
-	r = 0;
-	g = 0;
-	b = 0;
-	a = 0;
+	float r = 0;
+	float g = 0;
+	float b = 0;
+	float a = 0;
 
-	for (j = 0; j < NUM_CSHIFTS; j++)
+	for (int j = 0; j < NUM_CSHIFTS; j++)
 	{
 		if (!gl_cshiftpercent.value)
 			continue;
 
-		// johnfitz -- only apply leaf contents color shifts during intermission
-		if (cl.intermission && j != CSHIFT_CONTENTS)
+		// johnfitz -- apply only leaf contents color shifts during intermission
+		if (cl.intermission && cshiftpercent_cvars[j] != &gl_cshiftpercent_contents)
 			continue;
 		// johnfitz
 
-		a2 = ((cl.cshifts[j].percent * gl_cshiftpercent.value) / 100.0) / 255.0;
+		float a2 = ((cl.cshifts[j].percent * gl_cshiftpercent.value) / 100.0) / 255.0;
+
 		// QuakeSpasm -- also scale by the specific gl_cshiftpercent_* cvar
-		a2 *= (cshiftpercent_cvars[j]->value / 100.0);
+		if (cshiftpercent_cvars[j])
+			a2 *= (cshiftpercent_cvars[j]->value / 100.0);
 		// QuakeSpasm
-		if (!a2)
+
+		if (!(a2 > 0))
 			continue;
+
 		a = a + a2 * (1 - a);
 		a2 = a2 / a;
+
 		r = r * (1 - a2) + cl.cshifts[j].destcolor[0] * a2;
 		g = g * (1 - a2) + cl.cshifts[j].destcolor[1] * a2;
 		b = b * (1 - a2) + cl.cshifts[j].destcolor[2] * a2;
@@ -400,11 +368,11 @@ void V_CalcBlend (void)
 	v_blend[1] = g / 255.0;
 	v_blend[2] = b / 255.0;
 	v_blend[3] = a;
-	if (v_blend[3] > 1)
-		v_blend[3] = 1;
-	if (v_blend[3] < 0)
-		v_blend[3] = 0;
+
+	if (v_blend[3] > 1) v_blend[3] = 1;
+	if (v_blend[3] < 0) v_blend[3] = 0;
 }
+
 
 /*
 =============
@@ -413,40 +381,26 @@ V_UpdateBlend -- johnfitz -- V_UpdatePalette cleaned up and renamed
 */
 void V_UpdateBlend (void)
 {
-	int		i, j;
-	qboolean	blend_changed;
+	// set the powerup cshifts - this is to allow multiple powerups to be simultaneously active and their colour shifts to blend with each other
+	V_SetCshift (&cl.cshifts[CSHIFT_QUAD], 0, 0, 255, (cl.items & IT_QUAD) ? 30 : 0);
+	V_SetCshift (&cl.cshifts[CSHIFT_SUIT], 0, 255, 0, (cl.items & IT_SUIT) ? 20 : 0);
+	V_SetCshift (&cl.cshifts[CSHIFT_RING], 100, 100, 100, (cl.items & IT_INVISIBILITY) ? 100 : 0);
+	V_SetCshift (&cl.cshifts[CSHIFT_PENT], 255, 255, 0, (cl.items & IT_INVULNERABILITY) ? 30 : 0);
 
-	V_CalcPowerupCshift ();
+	// this should never happen
+	if (cl.cshifts[CSHIFT_DAMAGE].initialtime > cl.time) cl.cshifts[CSHIFT_DAMAGE].initialtime = cl.time;
+	if (cl.cshifts[CSHIFT_BONUS].initialtime > cl.time) cl.cshifts[CSHIFT_BONUS].initialtime = cl.time;
 
-	blend_changed = false;
+	// cshift drops are based on absolute time since the shift was initiated; this is to allow SCR_UpdateScreen to potentially be called multiple times between cl.time changes
+	cl.cshifts[CSHIFT_DAMAGE].percent = cl.cshifts[CSHIFT_DAMAGE].initialpercent - (cl.time - cl.cshifts[CSHIFT_DAMAGE].initialtime) * 150;
+	cl.cshifts[CSHIFT_BONUS].percent = cl.cshifts[CSHIFT_BONUS].initialpercent - (cl.time - cl.cshifts[CSHIFT_BONUS].initialtime) * 100;
 
-	for (i = 0; i < NUM_CSHIFTS; i++)
-	{
-		if (cl.cshifts[i].percent != cl.prev_cshifts[i].percent)
-		{
-			blend_changed = true;
-			cl.prev_cshifts[i].percent = cl.cshifts[i].percent;
-		}
-		for (j = 0; j < 3; j++)
-			if (cl.cshifts[i].destcolor[j] != cl.prev_cshifts[i].destcolor[j])
-			{
-				blend_changed = true;
-				cl.prev_cshifts[i].destcolor[j] = cl.cshifts[i].destcolor[j];
-			}
-	}
+	// and lower-bound it so that the blend calc doesn't mess up
+	if (cl.cshifts[CSHIFT_DAMAGE].percent < 0) cl.cshifts[CSHIFT_DAMAGE].percent = 0;
+	if (cl.cshifts[CSHIFT_BONUS].percent < 0) cl.cshifts[CSHIFT_BONUS].percent = 0;
 
-	// drop the damage value
-	cl.cshifts[CSHIFT_DAMAGE].percent -= (cl.time - cl.oldtime) * 150;
-	if (cl.cshifts[CSHIFT_DAMAGE].percent <= 0)
-		cl.cshifts[CSHIFT_DAMAGE].percent = 0;
-
-	// drop the bonus value
-	cl.cshifts[CSHIFT_BONUS].percent -= (cl.time - cl.oldtime) * 100;
-	if (cl.cshifts[CSHIFT_BONUS].percent <= 0)
-		cl.cshifts[CSHIFT_BONUS].percent = 0;
-
-	if (blend_changed)
-		V_CalcBlend ();
+	// blend it all together
+	V_CalcBlend ();
 }
 
 
