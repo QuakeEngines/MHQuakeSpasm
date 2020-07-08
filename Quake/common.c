@@ -2032,9 +2032,15 @@ static void COM_AddGameDirectoryBaseDirectory (const char *base, const char *dir
 	searchpath_t *search;
 	pack_t *pak;
 	char pakfile[MAX_OSPATH];
+	char this_gamedir[MAX_OSPATH];
 
-	q_strlcpy (com_gamedir, va ("%s/%s", base, dir), sizeof (com_gamedir));
-	Sys_mkdir (com_gamedir);
+	q_strlcpy (this_gamedir, va ("%s/%s", base, dir), sizeof (this_gamedir));
+	Sys_mkdir (this_gamedir);
+
+	// detect & prevent double-loading; i think a legitimate case exists where you might wish to double-load with different games in-between so i allow that
+	if (!strcmp (com_gamedir, this_gamedir))
+		return;
+	else strcpy (com_gamedir, this_gamedir);
 
 	// assign a path_id to this game directory
 	if (com_searchpaths)
@@ -2068,6 +2074,25 @@ static void COM_AddGameDirectoryBaseDirectory (const char *base, const char *dir
 
 static void COM_AddGameDirectory (const char *base, const char *dir)
 {
+	// mh - generalize this check
+	if (!strcmp (dir, ".") || strstr (dir, "..") || strstr (dir, "/") || strstr (dir, "\\") || strstr (dir, ":"))
+	{
+		Con_Printf ("gamedir should be a single directory name, not a path\n");
+		return;
+	}
+
+	if (!strcmp (dir, "-hipnotic") || !strcmp (dir, "-rogue") || !strcmp (dir, "-quoth"))
+	{
+		Con_Printf ("invalid mission pack argument to \"game\"\n");
+		return;
+	}
+
+	if (com_searchpaths && !q_strcasecmp (dir, GAMENAME))
+	{
+		Con_Printf ("no mission pack arguments to %s game\n", GAMENAME);
+		return;
+	}
+
 	// add it from the base dir
 	COM_AddGameDirectoryBaseDirectory (base, dir);
 
@@ -2106,60 +2131,12 @@ static void COM_Game_f (void)
 {
 	if (Cmd_Argc () > 1)
 	{
-		const char *p = Cmd_Argv (1);
-		const char *p2 = Cmd_Argv (2);
 		searchpath_t *search;
 
 		if (!registered.value) // disable shareware quake
 		{
 			Con_Printf ("You must have the registered version to use modified games\n");
 			return;
-		}
-
-		if (!*p || !strcmp (p, ".") || strstr (p, "..") || strstr (p, "/") || strstr (p, "\\") || strstr (p, ":"))
-		{
-			Con_Printf ("gamedir should be a single directory name, not a path\n");
-			return;
-		}
-
-		if (*p2)
-		{
-			if (strcmp (p2, "-hipnotic") && strcmp (p2, "-rogue") && strcmp (p2, "-quoth"))
-			{
-				Con_Printf ("invalid mission pack argument to \"game\"\n");
-				return;
-			}
-
-			if (!q_strcasecmp (p, GAMENAME))
-			{
-				Con_Printf ("no mission pack arguments to %s game\n", GAMENAME);
-				return;
-			}
-		}
-
-		if (!q_strcasecmp (p, COM_SkipPath (com_gamedir))) // no change
-		{
-			if (com_searchpaths->path_id > 1)
-			{
-				// current game not id1
-				if (*p2 && com_searchpaths->path_id == 2)
-				{
-					// rely on QuakeSpasm extension treating '-game missionpack'
-					// as '-missionpack', otherwise would be a mess
-					if (!q_strcasecmp (p, &p2[1]))
-						goto _same;
-					Con_Printf ("reloading game \"%s\" with \"%s\" support\n", p, &p2[1]);
-				}
-				else if (!*p2 && com_searchpaths->path_id > 2)
-					Con_Printf ("reloading game \"%s\" without mission pack support\n", p);
-				else goto _same;
-			}
-			else
-			{
-_same:
-				Con_Printf ("\"game\" is already \"%s\"\n", COM_SkipPath (com_gamedir));
-				return;
-			}
 		}
 
 		com_modified = true;
@@ -2188,27 +2165,18 @@ _same:
 
 		COM_InitMods ();
 
-		if (q_strcasecmp (p, GAMENAME)) // game is not id1
+		// strictly speaking, this should just loop through Cmd_Args and add them all
+		if (q_strcasecmp (Cmd_Argv (1), GAMENAME)) // game is not id1
 		{
-			if (*p2)
-			{
-				COM_AddGameDirectory (com_basedir, &p2[1]);
-
-				if (q_strcasecmp (p, &p2[1])) // don't load twice
-					COM_AddGameDirectory (com_basedir, p);
-			}
-			else
-			{
-				COM_AddGameDirectory (com_basedir, p);
-				// QuakeSpasm extension: treat '-game missionpack' as '-missionpack'
+			for (int i = 1; i < Cmd_Argc (); i++) {
+				COM_AddGameDirectory (com_basedir, Cmd_Argv (i));
 			}
 		}
 		else // just update com_gamedir
 		{
-			q_snprintf (com_gamedir, sizeof (com_gamedir), "%s/%s",
-				(host_parms->userdir != host_parms->basedir) ?
-				host_parms->userdir : com_basedir,
-				GAMENAME);
+			if (host_parms->userdir != host_parms->basedir)
+				q_snprintf (com_gamedir, sizeof (com_gamedir), "%s/%s", host_parms->userdir, GAMENAME);
+			else q_snprintf (com_gamedir, sizeof (com_gamedir), "%s/%s", com_basedir, GAMENAME);
 		}
 
 		// clear out and reload appropriate data
@@ -2253,13 +2221,15 @@ void COM_InitFilesystem (void) // johnfitz -- modified based on topaz's tutorial
 	Cmd_AddCommand ("game", COM_Game_f); // johnfitz
 
 	i = COM_CheckParm ("-basedir");
+
 	if (i && i < com_argc - 1)
 		q_strlcpy (com_basedir, com_argv[i + 1], sizeof (com_basedir));
-	else
-		q_strlcpy (com_basedir, host_parms->basedir, sizeof (com_basedir));
+	else q_strlcpy (com_basedir, host_parms->basedir, sizeof (com_basedir));
 
 	j = strlen (com_basedir);
+
 	if (j < 1) Sys_Error ("Bad argument to -basedir");
+
 	if ((com_basedir[j - 1] == '\\') || (com_basedir[j - 1] == '/'))
 		com_basedir[j - 1] = 0;
 
@@ -2275,21 +2245,15 @@ void COM_InitFilesystem (void) // johnfitz -- modified based on topaz's tutorial
 	com_base_searchpaths = com_searchpaths;
 
 	// add mission pack requests (only one should be specified)
-	if (COM_CheckParm ("-rogue"))
-		COM_AddGameDirectory (com_basedir, "rogue");
-	if (COM_CheckParm ("-hipnotic"))
-		COM_AddGameDirectory (com_basedir, "hipnotic");
-	if (COM_CheckParm ("-quoth"))
-		COM_AddGameDirectory (com_basedir, "quoth");
+	if (COM_CheckParm ("-rogue")) COM_AddGameDirectory (com_basedir, "rogue");
+	if (COM_CheckParm ("-hipnotic")) COM_AddGameDirectory (com_basedir, "hipnotic");
+	if (COM_CheckParm ("-quoth")) COM_AddGameDirectory (com_basedir, "quoth");
 
 	i = COM_CheckParm ("-game");
 
 	if (i && i < com_argc - 1)
 	{
 		const char *p = com_argv[i + 1];
-
-		if (!*p || !strcmp (p, ".") || strstr (p, "..") || strstr (p, "/") || strstr (p, "\\") || strstr (p, ":"))
-			Sys_Error ("gamedir should be a single directory name, not a path\n");
 
 		com_modified = true;
 
