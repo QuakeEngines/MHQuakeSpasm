@@ -82,17 +82,15 @@ void SV_InitBoxHull (void)
 		box_clipnodes[i].planenum = i;
 
 		side = i & 1;
-
 		box_clipnodes[i].children[side] = CONTENTS_EMPTY;
+
 		if (i != 5)
 			box_clipnodes[i].children[side ^ 1] = i + 1;
-		else
-			box_clipnodes[i].children[side ^ 1] = CONTENTS_SOLID;
+		else box_clipnodes[i].children[side ^ 1] = CONTENTS_SOLID;
 
 		box_planes[i].type = i >> 1;
 		box_planes[i].normal[i >> 1] = 1;
 	}
-
 }
 
 
@@ -150,6 +148,7 @@ hull_t *SV_HullForEntity (edict_t *ent, vec3_t mins, vec3_t maxs, vec3_t offset)
 				PR_GetString (ent->v.classname), ent->v.origin[0], ent->v.origin[1], ent->v.origin[2]);
 
 		VectorSubtract (maxs, mins, size);
+
 		if (size[0] < 3)
 			hull = &model->hulls[0];
 		else if (size[0] <= 32)
@@ -164,14 +163,13 @@ hull_t *SV_HullForEntity (edict_t *ent, vec3_t mins, vec3_t maxs, vec3_t offset)
 	else
 	{
 		// create a temp hull from bounding box sizes
-
 		VectorSubtract (ent->v.mins, maxs, hullmins);
 		VectorSubtract (ent->v.maxs, mins, hullmaxs);
+
 		hull = SV_HullForBox (hullmins, hullmaxs);
 
 		VectorCopy (ent->v.origin, offset);
 	}
-
 
 	return hull;
 }
@@ -238,6 +236,7 @@ areanode_t *SV_CreateAreaNode (int depth, vec3_t mins, vec3_t maxs)
 
 	return anode;
 }
+
 
 /*
 ===============
@@ -308,10 +307,8 @@ static void SV_AreaTriggerEdicts (edict_t *ent, areanode_t *node, edict_t **list
 	if (node->axis == -1)
 		return;
 
-	if (ent->v.absmax[node->axis] > node->dist)
-		SV_AreaTriggerEdicts (ent, node->children[0], list, listcount, listspace);
-	if (ent->v.absmin[node->axis] < node->dist)
-		SV_AreaTriggerEdicts (ent, node->children[1], list, listcount, listspace);
+	if (ent->v.absmax[node->axis] > node->dist) SV_AreaTriggerEdicts (ent, node->children[0], list, listcount, listspace);
+	if (ent->v.absmin[node->axis] < node->dist) SV_AreaTriggerEdicts (ent, node->children[1], list, listcount, listspace);
 }
 
 
@@ -561,11 +558,11 @@ SV_PointContents
 */
 int SV_PointContents (vec3_t p)
 {
-	int		cont;
+	int	cont = SV_HullPointContents (&sv.worldmodel->hulls[0], 0, p);
 
-	cont = SV_HullPointContents (&sv.worldmodel->hulls[0], 0, p);
 	if (cont <= CONTENTS_CURRENT_0 && cont >= CONTENTS_CURRENT_DOWN)
 		cont = CONTENTS_WATER;
+
 	return cont;
 }
 
@@ -585,9 +582,7 @@ This could be a lot more efficient...
 */
 edict_t *SV_TestEntityPosition (edict_t *ent)
 {
-	trace_t	trace;
-
-	trace = SV_Move (ent->v.origin, ent->v.mins, ent->v.maxs, ent->v.origin, 0, ent);
+	trace_t	trace = SV_Move (ent->v.origin, ent->v.mins, ent->v.maxs, ent->v.origin, 0, ent);
 
 	if (trace.startsolid)
 		return sv.edicts;
@@ -855,8 +850,8 @@ void SV_ClipToLinks (areanode_t *node, moveclip_t *clip)
 			trace = SV_ClipMoveToEntity (touch, clip->start, clip->mins2, clip->maxs2, clip->end);
 		else
 			trace = SV_ClipMoveToEntity (touch, clip->start, clip->mins, clip->maxs, clip->end);
-		if (trace.allsolid || trace.startsolid ||
-			trace.fraction < clip->trace.fraction)
+
+		if (trace.allsolid || trace.startsolid || trace.fraction < clip->trace.fraction)
 		{
 			trace.ent = touch;
 			if (clip->trace.startsolid)
@@ -891,8 +886,8 @@ void SV_MoveBounds (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, vec3_t b
 {
 #if 0
 	// debug to test against everything
-	boxmins[0] = boxmins[1] = boxmins[2] = -9999;
-	boxmaxs[0] = boxmaxs[1] = boxmaxs[2] = 9999;
+	boxmins[0] = boxmins[1] = boxmins[2] = -999999;
+	boxmaxs[0] = boxmaxs[1] = boxmaxs[2] = 999999;
 #else
 	int		i;
 
