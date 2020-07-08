@@ -24,7 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 
 vec3_t		modelorg, r_entorigin;
-entity_t *currententity;
 
 int			r_visframecount;	// bumped when going to a new PVS
 int			r_framecount;		// used for dlight push checking
@@ -529,38 +528,36 @@ R_DrawEntitiesOnList
 */
 void R_DrawEntitiesOnList (qboolean alphapass) // johnfitz -- added parameter
 {
-	int		i;
-
 	if (!r_drawentities.value)
 		return;
 
 	// johnfitz -- sprites are not a special case
-	for (i = 0; i < cl_numvisedicts; i++)
+	for (int i = 0; i < cl_numvisedicts; i++)
 	{
-		currententity = cl_visedicts[i];
+		entity_t *e = cl_visedicts[i];
 
 		// johnfitz -- if alphapass is true, draw only alpha entites this time
 		// if alphapass is false, draw only nonalpha entities this time
-		if ((ENTALPHA_DECODE (currententity->alpha) < 1 && !alphapass) || (ENTALPHA_DECODE (currententity->alpha) == 1 && alphapass))
+		if ((ENTALPHA_DECODE (e->alpha) < 1 && !alphapass) || (ENTALPHA_DECODE (e->alpha) == 1 && alphapass))
 			continue;
 
 		// johnfitz -- chasecam
-		if (currententity == cl_entities[cl.viewentity])
-			currententity->angles[0] *= 0.3;
+		if (e == cl_entities[cl.viewentity])
+			e->angles[0] *= 0.3;
 		// johnfitz
 
-		switch (currententity->model->type)
+		switch (e->model->type)
 		{
 		case mod_alias:
-			R_DrawAliasModel (currententity);
+			R_DrawAliasModel (e);
 			break;
 
 		case mod_brush:
-			R_DrawBrushModel (currententity);
+			R_DrawBrushModel (e);
 			break;
 
 		case mod_sprite:
-			R_DrawSpriteModel (currententity);
+			R_DrawSpriteModel (e);
 			break;
 		}
 	}
@@ -576,6 +573,7 @@ void R_DrawViewModel (void)
 {
 	void SCR_SetFOV (refdef_t *rd, int fovvar, int width, int height);
 	extern cvar_t scr_fov;
+	entity_t *e = &cl.viewent;
 
 	if (!r_drawviewmodel.value || !r_drawentities.value || chase_active.value)
 		return;
@@ -586,21 +584,20 @@ void R_DrawViewModel (void)
 	if (scr_timerefresh)
 		return;
 
-	currententity = &cl.viewent;
-	if (!currententity->model)
+	if (!e->model)
 		return;
 
 	// johnfitz -- this fixes a crash
-	if (currententity->model->type != mod_alias)
+	if (e->model->type != mod_alias)
 		return;
 	// johnfitz
 
 	// interacts with SU_WEAPONALPHA bit in CL_ParseClientdata; this is overwritten/reset each frame so we don't need to cache & restore it
-	if (currententity->alpha != ENTALPHA_DEFAULT)
+	if (e->alpha != ENTALPHA_DEFAULT)
 		; // server has sent alpha for the viewmodel so never override it
 	else if (cl.items & IT_INVISIBILITY)
-		currententity->alpha = ENTALPHA_ENCODE (0.25);
-	else currententity->alpha = ENTALPHA_DEFAULT;
+		e->alpha = ENTALPHA_ENCODE (0.25);
+	else e->alpha = ENTALPHA_DEFAULT;
 
 	// hack the depth range to prevent view model from poking into walls
 	glDepthRange (0, 0.3);
@@ -611,10 +608,10 @@ void R_DrawViewModel (void)
 		QMATRIX gunProjection;
 		refdef_t r_gunrefdef;
 
-		// create a new refdef for the gun based on the main refdef with and height but with FOV 90
+		// create a new refdef for the gun based on the main refdef width and height but with FOV 90
 		SCR_SetFOV (&r_gunrefdef, 90, r_refdef.vrect.width, r_refdef.vrect.height);
 
-		// and it's projection matrix
+		// and it's projection matrix - standard Quake farclip is OK for this
 		R_IdentityMatrix (&gunProjection);
 		R_FrustumMatrix (&gunProjection, r_gunrefdef.fov_x, r_gunrefdef.fov_y, 4.0f, 4096.0f);
 
@@ -626,14 +623,14 @@ void R_DrawViewModel (void)
 		glMatrixMode (GL_MODELVIEW);
 
 		// now draw it; we don't need to re-eval the frustum because we don't cull the gun model anyway
-		R_DrawAliasModel (currententity);
+		R_DrawAliasModel (e);
 
 		// restore the projection matrix
 		glMatrixMode (GL_PROJECTION);
 		glPopMatrix ();
 		glMatrixMode (GL_MODELVIEW);
 	}
-	else R_DrawAliasModel (currententity);
+	else R_DrawAliasModel (e);
 
 	glDepthRange (0, 1);
 }

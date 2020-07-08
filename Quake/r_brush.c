@@ -26,16 +26,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 /*
 ===============
-R_TextureAnimation -- johnfitz -- added "frame" param to eliminate use of "currententity" global
+R_TextureAnimation
 
 Returns the proper texture for a given time and base texture
 ===============
 */
 texture_t *R_TextureAnimation (texture_t *base, int frame)
 {
-	int		relative;
-	int		count;
-
 	if (frame)
 		if (base->alternate_anims)
 			base = base->alternate_anims;
@@ -43,8 +40,8 @@ texture_t *R_TextureAnimation (texture_t *base, int frame)
 	if (!base->anim_total)
 		return base;
 
-	relative = (int) (cl.time * 10) % base->anim_total;
-	count = 0;
+	int relative = (int) (cl.time * 10) % base->anim_total;
+	int count = 0;
 
 	while (base->anim_min > relative || base->anim_max <= relative)
 	{
@@ -73,11 +70,6 @@ R_DrawBrushModel
 */
 void R_DrawBrushModel (entity_t *e)
 {
-	int			i;
-	msurface_t *psurf;
-	float		dot;
-	mplane_t *pplane;
-	qmodel_t *clmodel;
 	QMATRIX		localMatrix;
 
 	// this needs to be calced early so we can cull it properly
@@ -88,19 +80,17 @@ void R_DrawBrushModel (entity_t *e)
 	if (R_CullModelForEntity (e, &localMatrix))
 		return;
 
-	currententity = e;
-	clmodel = e->model;
-
 	R_InverseTransform (&localMatrix, modelorg, r_refdef.vieworg);
 
-	psurf = &clmodel->surfaces[clmodel->firstmodelsurface];
+	qmodel_t *clmodel = e->model;
+	msurface_t *psurf = &clmodel->surfaces[clmodel->firstmodelsurface];
 
 	R_ClearTextureChains (clmodel, chain_model);
 
-	for (i = 0; i < clmodel->nummodelsurfaces; i++, psurf++)
+	for (int i = 0; i < clmodel->nummodelsurfaces; i++, psurf++)
 	{
-		pplane = psurf->plane;
-		dot = Vector3Dot (modelorg, pplane->normal) - pplane->dist;
+		mplane_t *pplane = psurf->plane;
+		float dot = Mod_PlaneDist (pplane, modelorg);
 
 		if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) || (!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
 		{
