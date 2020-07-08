@@ -530,11 +530,6 @@ static int	fatpvs_capacity;
 
 void SV_AddToFatPVS (vec3_t org, mnode_t *node, qmodel_t *worldmodel) // johnfitz -- added worldmodel as a parameter
 {
-	int		i;
-	byte *pvs;
-	mplane_t *plane;
-	float	d;
-
 	while (1)
 	{
 		// if this is a leaf, accumulate the pvs bits
@@ -542,15 +537,16 @@ void SV_AddToFatPVS (vec3_t org, mnode_t *node, qmodel_t *worldmodel) // johnfit
 		{
 			if (node->contents != CONTENTS_SOLID)
 			{
-				pvs = Mod_LeafPVS ((mleaf_t *) node, worldmodel); // johnfitz -- worldmodel as a parameter
-				for (i = 0; i < fatbytes; i++)
+				byte *pvs = Mod_LeafPVS ((mleaf_t *) node, worldmodel); // johnfitz -- worldmodel as a parameter
+				for (int i = 0; i < fatbytes; i++)
 					fatpvs[i] |= pvs[i];
 			}
 			return;
 		}
 
-		plane = node->plane;
-		d = DotProduct (org, plane->normal) - plane->dist;
+		mplane_t *plane = node->plane;
+		float d = Mod_PlaneDist (plane, org);
+
 		if (d > 8)
 			node = node->children[0];
 		else if (d < -8)

@@ -95,24 +95,22 @@ Mod_PointInLeaf
 */
 mleaf_t *Mod_PointInLeaf (vec3_t p, qmodel_t *model)
 {
-	mnode_t *node;
-	float		d;
-	mplane_t *plane;
-
 	if (!model || !model->nodes)
 		Sys_Error ("Mod_PointInLeaf: bad model");
 
-	node = model->nodes;
+	mnode_t *node = model->nodes;
+
 	while (1)
 	{
 		if (node->contents < 0)
 			return (mleaf_t *) node;
-		plane = node->plane;
-		d = DotProduct (p, plane->normal) - plane->dist;
+
+		mplane_t *plane = node->plane;
+		float d = Mod_PlaneDist (plane, p);
+
 		if (d > 0)
 			node = node->children[0];
-		else
-			node = node->children[1];
+		else node = node->children[1];
 	}
 
 	return NULL;	// never reached
@@ -2713,19 +2711,19 @@ float Mod_PlaneDist (mplane_t *plane, float *org)
 	switch (plane->type)
 	{
 	case PLANE_X:
-		return org[0] - plane->dist;
+		return (double) org[0] - (double) plane->dist;
 		break;
 
 	case PLANE_Y:
-		return org[1] - plane->dist;
+		return (double) org[1] - (double) plane->dist;
 		break;
 
 	case PLANE_Z:
-		return org[2] - plane->dist;
+		return (double) org[2] - (double) plane->dist;
 		break;
 
 	default:
-		return DotProduct (org, plane->normal) - plane->dist;
+		return Vector3Dot (org, plane->normal) - plane->dist;
 		break;
 	}
 }

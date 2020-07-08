@@ -350,16 +350,8 @@ loc0:
 		return false;		// didn't hit anything
 
 	// calculate mid point
-	if (node->plane->type < 3)
-	{
-		front = start[node->plane->type] - node->plane->dist;
-		back = end[node->plane->type] - node->plane->dist;
-	}
-	else
-	{
-		front = DotProduct (start, node->plane->normal) - node->plane->dist;
-		back = DotProduct (end, node->plane->normal) - node->plane->dist;
-	}
+	front = Mod_PlaneDist (node->plane, start);
+	back = Mod_PlaneDist (node->plane, end);
 
 	// LordHavoc: optimized recursion
 	if ((back < 0) == (front < 0))
