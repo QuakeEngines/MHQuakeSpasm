@@ -98,7 +98,6 @@ cvar_t		scr_clock = { "scr_clock", "0", CVAR_NONE };
 
 cvar_t		scr_viewsize = { "viewsize", "100", CVAR_ARCHIVE };
 cvar_t		scr_fov = { "fov", "90", CVAR_NONE };	// 10 - 170
-cvar_t		scr_fov_adapt = { "fov_adapt", "1", CVAR_ARCHIVE };
 cvar_t		scr_conspeed = { "scr_conspeed", "500", CVAR_ARCHIVE };
 cvar_t		scr_centertime = { "scr_centertime", "2", CVAR_NONE };
 cvar_t		scr_showram = { "showram", "1", CVAR_NONE };
@@ -277,7 +276,7 @@ float SCR_CalcFovY (float fov_x, float width, float height)
 }
 
 
-void SCR_SetFOV (int width, int height)
+void SCR_SetFOV (refdef_t *rd, int fovvar, int width, int height)
 {
 	float aspect = (float) height / (float) width;
 
@@ -291,15 +290,15 @@ void SCR_SetFOV (int width, int height)
 	if (aspect > (BASELINE_H / BASELINE_W))
 	{
 		// use the same calculation as GLQuake did (horizontal is constant, vertical varies)
-		r_refdef.fov_x = scr_fov.value;
-		r_refdef.fov_y = SCR_CalcFovY (r_refdef.fov_x, width, height);
+		rd->fov_x = fovvar;
+		rd->fov_y = SCR_CalcFovY (rd->fov_x, width, height);
 	}
 	else
 	{
 		// alternate calculation (vertical is constant, horizontal varies)
 		// consistent with http://www.emsai.net/projects/widescreen/fovcalc/
-		r_refdef.fov_y = SCR_CalcFovY (scr_fov.value, BASELINE_W, BASELINE_H);
-		r_refdef.fov_x = SCR_CalcFovX (r_refdef.fov_y, width, height);
+		rd->fov_y = SCR_CalcFovY (fovvar, BASELINE_W, BASELINE_H);
+		rd->fov_x = SCR_CalcFovX (rd->fov_y, width, height);
 	}
 }
 
@@ -343,7 +342,7 @@ void SCR_CalcRefdef (void)
 	// johnfitz
 
 	// MH - alternate FOV calculation
-	SCR_SetFOV (r_refdef.vrect.width, r_refdef.vrect.height);
+	SCR_SetFOV (&r_refdef, scr_fov.value, r_refdef.vrect.width, r_refdef.vrect.height);
 }
 
 
@@ -425,10 +424,8 @@ void SCR_Init (void)
 	// johnfitz
 
 	Cvar_SetCallback (&scr_fov, SCR_Callback_refdef);
-	Cvar_SetCallback (&scr_fov_adapt, SCR_Callback_refdef);
 	Cvar_SetCallback (&scr_viewsize, SCR_Callback_refdef);
 	Cvar_RegisterVariable (&scr_fov);
-	Cvar_RegisterVariable (&scr_fov_adapt);
 	Cvar_RegisterVariable (&scr_viewsize);
 	Cvar_RegisterVariable (&scr_conspeed);
 	Cvar_RegisterVariable (&scr_showram);

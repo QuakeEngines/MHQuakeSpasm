@@ -477,6 +477,7 @@ void R_Clear (void)
 	// from mh -- if we get a stencil buffer, we should clear it, even though we don't use it
 	if (gl_stencilbits) clearbits |= GL_STENCIL_BUFFER_BIT;
 	if (gl_clear.value) clearbits |= GL_COLOR_BUFFER_BIT;
+	if (r_viewleaf->contents == CONTENTS_SOLID) clearbits |= GL_COLOR_BUFFER_BIT; // clear if in solid so we don't HOM when noclipping
 
 	// in GL clears are affected by the current depth write mask, so set up a default depth state including write-enable so that the clear will work
 	// the next depth state set will most likely be for world poly drawing, which is the same as this state, so we won't have redundant sets here
@@ -573,6 +574,9 @@ R_DrawViewModel -- johnfitz -- gutted
 */
 void R_DrawViewModel (void)
 {
+	void SCR_SetFOV (refdef_t *rd, int fovvar, int width, int height);
+	extern cvar_t scr_fov;
+
 	if (!r_drawviewmodel.value || !r_drawentities.value || chase_active.value)
 		return;
 
@@ -600,7 +604,37 @@ void R_DrawViewModel (void)
 
 	// hack the depth range to prevent view model from poking into walls
 	glDepthRange (0, 0.3);
-	R_DrawAliasModel (currententity);
+
+	if (scr_fov.value > 90)
+	{
+		// the gun model with fov > 90 looks like we're playing wipeout, so draw it at fov 90 if it goes above
+		QMATRIX gunProjection;
+		refdef_t r_gunrefdef;
+
+		// create a new refdef for the gun based on the main refdef with and height but with FOV 90
+		SCR_SetFOV (&r_gunrefdef, 90, r_refdef.vrect.width, r_refdef.vrect.height);
+
+		// and it's projection matrix
+		R_IdentityMatrix (&gunProjection);
+		R_FrustumMatrix (&gunProjection, r_gunrefdef.fov_x, r_gunrefdef.fov_y, 4.0f, 4096.0f);
+
+		// load it on - we could probably go without the push/pop if the gun was rendered absolutely last in the 3D view
+		// the projection matrix stack is guaranteed by the GL spec to be at least 2 deep so this is OK
+		glMatrixMode (GL_PROJECTION);
+		glPushMatrix ();
+		glLoadMatrixf (gunProjection.m16);
+		glMatrixMode (GL_MODELVIEW);
+
+		// now draw it; we don't need to re-eval the frustum because we don't cull the gun model anyway
+		R_DrawAliasModel (currententity);
+
+		// restore the projection matrix
+		glMatrixMode (GL_PROJECTION);
+		glPopMatrix ();
+		glMatrixMode (GL_MODELVIEW);
+	}
+	else R_DrawAliasModel (currententity);
+
 	glDepthRange (0, 1);
 }
 
@@ -716,8 +750,7 @@ void R_RenderView (void)
 		time1 = Sys_DoubleTime ();
 
 		// johnfitz -- rendering statistics
-		rs_brushpolys = rs_aliaspolys = rs_skypolys = rs_particles = rs_fogpolys = rs_megatexels =
-			rs_dynamiclightmaps = rs_aliaspasses = rs_skypasses = rs_brushpasses = 0;
+		rs_brushpolys = rs_aliaspolys = rs_skypolys = rs_particles = rs_fogpolys = rs_megatexels = rs_dynamiclightmaps = rs_aliaspasses = rs_skypasses = rs_brushpasses = 0;
 	}
 	else if (gl_finish.value)
 		glFinish ();
@@ -769,7 +802,8 @@ void R_RenderView (void)
 			(int) cl_entities[cl.viewentity]->origin[2],
 			(int) cl.viewangles[PITCH],
 			(int) cl.viewangles[YAW],
-			(int) cl.viewangles[ROLL]);
+			(int) cl.viewangles[ROLL]
+		);
 	}
 	else if (r_speeds.value == 2)
 	{
@@ -782,7 +816,8 @@ void R_RenderView (void)
 			rs_dynamiclightmaps,
 			rs_skypolys,
 			rs_skypasses,
-			TexMgr_FrameUsage ());
+			TexMgr_FrameUsage ()
+		);
 	}
 	else if (r_speeds.value)
 	{
@@ -790,7 +825,8 @@ void R_RenderView (void)
 			(int) ((time2 - time1) * 1000),
 			rs_brushpolys,
 			rs_aliaspolys,
-			rs_dynamiclightmaps);
+			rs_dynamiclightmaps
+		);
 	}
 	// johnfitz
 }
