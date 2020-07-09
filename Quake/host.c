@@ -798,7 +798,7 @@ void _Host_Frame (void)
 			host_skipnextclientframe = false;
 		else Host_ClientFrame ();
 	}
-	else if (!cls.timedemo && host_maxfps.value && host_maxfps.value < 500)
+	else if (!cls.timedemo && !scr_timerefresh && host_maxfps.value > 0 && host_maxfps.value < 500)
 		Sys_Sleep (1);
 
 	// count frames for timedemos
