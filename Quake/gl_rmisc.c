@@ -42,7 +42,7 @@ int r_registration_sequence = 1;
 
 
 // generic buffersets that may be used for any model type
-bufferset_t r_buffersets[MAX_MODELS];
+static bufferset_t r_buffersets[MAX_MODELS];
 
 
 int R_GetBufferSetForName (char *name)
@@ -101,6 +101,12 @@ void R_FreeUnusedBufferSets (void)
 
 		memset (&r_buffersets[i], 0, sizeof (r_buffersets[i]));
 	}
+}
+
+
+bufferset_t *R_GetBufferSetForModel (qmodel_t *m)
+{
+	return &r_buffersets[m->buffsetset];
 }
 
 
@@ -740,22 +746,22 @@ void GL_DepthState (GLenum enable, GLenum testmode, GLenum writemode)
 }
 
 
-void R_UpdateFragmentProgramAlpha (float entalpha)
+void R_UpdateFragmentProgramAlpha (float alpha)
 {
-	static float oldentalpha = -1;
+	static float oldalpha = -1;
 
 	// this case just forces it to be reset next time it's seen, even if it otherwise would not be, but does not actually set it, and should be called at the start of each frame
-	if (entalpha < 0)
+	if (alpha < 0)
 	{
-		oldentalpha = -1;
+		oldalpha = -1;
 		return;
 	}
 
 	// this case only sets if if it had changed
-	if (entalpha != oldentalpha)
+	if (alpha != oldalpha)
 	{
-		glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 1, 1, 1, entalpha);
-		oldentalpha = entalpha;
+		glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 1, 1, 1, alpha);
+		oldalpha = alpha;
 	}
 }
 
@@ -765,9 +771,9 @@ void R_UpdateFragmentProgramAlpha (float entalpha)
 R_BeginTransparentDrawing -- ericw
 =============
 */
-void R_BeginTransparentDrawing (float entalpha)
+void R_BeginTransparentDrawing (float alpha)
 {
-	if (entalpha < 1.0f)
+	if (alpha < 1.0f)
 	{
 		GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);
@@ -778,7 +784,7 @@ void R_BeginTransparentDrawing (float entalpha)
 		GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
 	}
 
-	R_UpdateFragmentProgramAlpha (entalpha);
+	R_UpdateFragmentProgramAlpha (alpha);
 }
 
 

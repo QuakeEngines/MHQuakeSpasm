@@ -29,13 +29,11 @@ extern cvar_t gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
 // up to 16 color translated skins
 gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz -- changed to an array of pointers
 
-extern float	shadelight[4];
+extern float	shadelight[4]; // padded for shader uniforms
 
 extern	vec3_t			lightspot;
 
 float	shadevector[4]; // padded for shader uniforms
-
-float	entalpha; // johnfitz
 
 // johnfitz -- struct for passing lerp information to drawing functions
 typedef struct lerpdata_s {
@@ -139,11 +137,6 @@ void GLAlias_CreateShaders (void)
 		"TEMP diff, fence, luma;\n"
 		"TEMP normal, shadedot, dothi, dotlo;\n"
 		"\n"
-		"# normalize incoming normal\n"
-		"DP3 normal.w, fragment.texcoord[1], fragment.texcoord[1];\n"
-		"RSQ normal.w, normal.w;\n"
-		"MUL normal.xyz, normal.w, fragment.texcoord[1];\n"
-		"\n"
 		"# perform the texturing\n"
 		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
 		"TEX luma, fragment.texcoord[0], texture[1], 2D;\n"
@@ -151,6 +144,11 @@ void GLAlias_CreateShaders (void)
 		"# fence texture test\n"
 		"SUB fence, diff, 0.666;\n"
 		"KIL fence.a;\n"
+		"\n"
+		"# normalize incoming normal\n"
+		"DP3 normal.w, fragment.texcoord[1], fragment.texcoord[1];\n"
+		"RSQ normal.w, normal.w;\n"
+		"MUL normal.xyz, normal.w, fragment.texcoord[1];\n"
 		"\n"
 		"# perform the lighting\n"
 		"DP3 shadedot, normal, shadevector;\n"
@@ -257,7 +255,7 @@ void GLAlias_CreateShaders (void)
 void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, lerpdata_t *lerpdata, gltexture_t *tx, gltexture_t *fb)
 {
 	float	blend;
-	bufferset_t *set = &r_buffersets[e->model->buffsetset];
+	bufferset_t *set = R_GetBufferSetForModel (e->model);
 
 	if (lerpdata->pose1 != lerpdata->pose2)
 	{
@@ -325,7 +323,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	{
 		dlight_t *dl = &cl_dlights[i];
 
-		if (dl->die < cl.time || !(dl->radius > dl->minlight))
+		if (cl.time > dl->die || !(dl->radius > dl->minlight))
 			continue;
 
 		if (((dl->radius + hdr->boundingradius) - VectorDist (lerpdata->origin, dl->origin)) > 0)
@@ -377,16 +375,14 @@ P.b * L.x      P.b * L.y + d  P.b * L.z      P.b * L.w
 P.c * L.x      P.c * L.y      P.c * L.z + d  P.c * L.w
 P.d * L.x      P.d * L.y      P.d * L.z      P.d * L.w + d
 	*/
-	float	lheight;
+	float	lheight = lerpdata->origin[2] - lightspot[2];
 	QMATRIX	localMatrix;
 
 	if (e == &cl.viewent || e->model->flags & MOD_NOSHADOW)
 		return;
 
-	entalpha = ENTALPHA_DECODE (e->alpha);
-	if (entalpha == 0) return;
-
-	lheight = lerpdata->origin[2] - lightspot[2];
+	float alpha = ENTALPHA_DECODE (e->alpha);
+	if (!(alpha > 0)) return;
 
 	// position the shadow
 	R_IdentityMatrix (&localMatrix);
@@ -409,14 +405,14 @@ P.d * L.x      P.d * L.y      P.d * L.z      P.d * L.w + d
 	GL_BindPrograms (r_alias_lightmapped_vp, r_alias_shadow_fp);
 
 	// shadow colour - allow different values of r_shadows to change the colour
-	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 0, 0, 0, entalpha * 0.5f * r_shadows.value);
+	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 0, 0, 0, alpha * 0.5f * r_shadows.value);
 
 	// move it
 	glPushMatrix ();
 	glMultMatrixf (localMatrix.m16);
 
 	// draw it - the vertex array state is already set
-	bufferset_t *set = &r_buffersets[e->model->buffsetset];
+	bufferset_t *set = R_GetBufferSetForModel (e->model);
 	glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) set->vboindexofs);
 	rs_aliaspasses += hdr->numtris;
 
@@ -502,6 +498,7 @@ void R_SetupAliasFrame (entity_t *e, aliashdr_t *hdr, int frame, lerpdata_t *ler
 	}
 }
 
+
 /*
 =================
 R_SetupEntityTransform -- johnfitz -- set up transform part of lerpdata
@@ -564,6 +561,7 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 		VectorCopy (e->angles, lerpdata->angles);
 	}
 }
+
 
 /*
 =================
@@ -638,20 +636,20 @@ void R_DrawAliasModel (entity_t *e)
 
 	// this needs to be calced early so we can cull it properly
 	R_IdentityMatrix (&localMatrix);
-	R_TranslateMatrix (&localMatrix, lerpdata.origin[0], lerpdata.origin[1], lerpdata.origin[2]);
-	R_RotateMatrix (&localMatrix, -lerpdata.angles[0], lerpdata.angles[1], lerpdata.angles[2]);
+	if (lerpdata.origin[0] || lerpdata.origin[1] || lerpdata.origin[2]) R_TranslateMatrix (&localMatrix, lerpdata.origin[0], lerpdata.origin[1], lerpdata.origin[2]);
+	if (lerpdata.angles[0] || lerpdata.angles[1] || lerpdata.angles[2]) R_RotateMatrix (&localMatrix, -lerpdata.angles[0], lerpdata.angles[1], lerpdata.angles[2]);
 
 	// cull it
-	if (R_CullModelForEntity (e, &localMatrix))
+	if (R_CullModelForEntity (e, &localMatrix, (lerpdata.angles[0] || lerpdata.angles[1] || lerpdata.angles[2])))
 		return;
 
 	// set up for alpha blending
-	entalpha = ENTALPHA_DECODE (e->alpha);
+	float alpha = ENTALPHA_DECODE (e->alpha);
 
-	if (entalpha == 0)
+	if (!(alpha > 0))
 		return;
 
-	R_BeginTransparentDrawing (entalpha);
+	R_BeginTransparentDrawing (alpha);
 
 	// set up lighting
 	rs_aliaspolys += hdr->numtris;

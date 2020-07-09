@@ -316,7 +316,7 @@ dlight_t *CL_GetDlight (int key)
 		if (dl->die < oldest->die) oldest = dl;
 
 		// take the first dead light
-		if (dl->die < cl.time || !(dl->radius > dl->minlight))
+		if (cl.time > dl->die || !(dl->radius > dl->minlight))
 		{
 			return dl;
 		}
@@ -393,7 +393,7 @@ void CL_DecayLights (void)
 	{
 		dlight_t *dl = &cl_dlights[i];
 
-		if (dl->die < cl.time || !(dl->radius > dl->minlight))
+		if (cl.time > dl->die || !(dl->radius > dl->minlight))
 		{
 			dl->radius = 0;
 			dl->die = -1;

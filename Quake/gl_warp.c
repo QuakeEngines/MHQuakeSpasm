@@ -170,14 +170,14 @@ Returns the water alpha to use for the entity and surface combination.
 */
 float GL_WaterAlphaForEntitySurface (entity_t *ent, msurface_t *s)
 {
-	float entalpha;
+	float alpha;
 
 	if (ent == NULL || ent->alpha == ENTALPHA_DEFAULT)
-		entalpha = GL_WaterAlphaForSurface (s);
+		alpha = GL_WaterAlphaForSurface (s);
 	else
-		entalpha = ENTALPHA_DECODE (ent->alpha);
+		alpha = ENTALPHA_DECODE (ent->alpha);
 
-	return entalpha;
+	return alpha;
 }
 
 
@@ -212,9 +212,9 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 		if (!t || !t->texturechains[chain] || !(t->texturechains[chain]->flags & SURF_DRAWTURB))
 			continue;
 
-		float entalpha = GL_WaterAlphaForEntitySurface (ent, t->texturechains[chain]);
+		float alpha = GL_WaterAlphaForEntitySurface (ent, t->texturechains[chain]);
 
-		R_BeginTransparentDrawing (entalpha);
+		R_BeginTransparentDrawing (alpha);
 
 		GL_BindTexture (GL_TEXTURE0, t->gltexture);
 

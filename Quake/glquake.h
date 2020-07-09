@@ -202,7 +202,7 @@ void R_DrawWorld_Old (void);
 
 qboolean R_CullBox (vec3_t emins, vec3_t emaxs);
 void R_StoreEfrags (efrag_t **ppefrag);
-qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix);
+qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix, qboolean rotated);
 
 void R_InitParticles (void);
 void R_DrawParticlesARB (void);
@@ -303,8 +303,8 @@ void Warp_SetShaderConstants (void);
 void GL_BlendState (GLenum enable, GLenum sfactor, GLenum dfactor);
 void GL_DepthState (GLenum enable, GLenum testmode, GLenum writemode);
 
-void R_UpdateFragmentProgramAlpha (float entalpha);
-void R_BeginTransparentDrawing (float entalpha);
+void R_UpdateFragmentProgramAlpha (float alpha);
+void R_BeginTransparentDrawing (float alpha);
 
 
 // new dynamic lights
@@ -341,12 +341,11 @@ typedef struct bufferset_s {
 extern int r_registration_sequence;
 
 // generic buffersets that may be used for any model type
-extern bufferset_t r_buffersets[];
-
 int R_GetBufferSetForName (char *name);
 int R_NewBufferSetForName (char *name);
 void R_FreeUnusedBufferSets (void);
 void R_FreeAllBufferSets (void);
+bufferset_t *R_GetBufferSetForModel (qmodel_t *m);
 
 
 #endif	/* __GLQUAKE_H */

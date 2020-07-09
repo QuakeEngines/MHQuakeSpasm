@@ -737,6 +737,25 @@ static void TexMgr_LoadLightmap (gltexture_t *glt, byte *data)
 }
 
 
+void TexMgr_LoadImageBySourceFormat (gltexture_t *glt, byte *data)
+{
+	switch (glt->source_format)
+	{
+	case SRC_INDEXED:
+		TexMgr_LoadImage8 (glt, data);
+		break;
+
+	case SRC_LIGHTMAP:
+		TexMgr_LoadLightmap (glt, data);
+		break;
+
+	case SRC_RGBA:
+		TexMgr_LoadImage32 (glt, (unsigned *) data);
+		break;
+	}
+}
+
+
 /*
 ================
 TexMgr_LoadImage -- the one entry point for loading all textures
@@ -794,22 +813,7 @@ gltexture_t *TexMgr_LoadImage (qmodel_t *owner, const char *name, int width, int
 
 	// upload it
 	mark = Hunk_LowMark ();
-
-	switch (glt->source_format)
-	{
-	case SRC_INDEXED:
-		TexMgr_LoadImage8 (glt, data);
-		break;
-
-	case SRC_LIGHTMAP:
-		TexMgr_LoadLightmap (glt, data);
-		break;
-
-	case SRC_RGBA:
-		TexMgr_LoadImage32 (glt, (unsigned *) data);
-		break;
-	}
-
+	TexMgr_LoadImageBySourceFormat (glt, data);
 	Hunk_FreeToLowMark (mark);
 
 	return glt;
@@ -910,20 +914,7 @@ invalid:;
 	}
 
 	// upload it
-	switch (glt->source_format)
-	{
-	case SRC_INDEXED:
-		TexMgr_LoadImage8 (glt, data);
-		break;
-
-	case SRC_LIGHTMAP:
-		TexMgr_LoadLightmap (glt, data);
-		break;
-
-	case SRC_RGBA:
-		TexMgr_LoadImage32 (glt, (unsigned *) data);
-		break;
-	}
+	TexMgr_LoadImageBySourceFormat (glt, data);
 
 done:;
 	Hunk_FreeToLowMark (mark);
@@ -1066,6 +1057,7 @@ void TexMgr_SetCubemapFilterModes (void)
 */
 
 // MH - made these GL_INVALID_VALUE
+// we use a 6th TMU for cubemaps and rectangle textures but access to it doesn't go through this abstraction
 static GLuint	currenttexture[5] = { GL_INVALID_VALUE, GL_INVALID_VALUE, GL_INVALID_VALUE, GL_INVALID_VALUE, GL_INVALID_VALUE }; // to avoid unnecessary texture sets
 static GLenum	currenttarget = GL_INVALID_VALUE;
 

@@ -512,7 +512,7 @@ void R_DrawSkychain_ARB (msurface_t *s)
 		GL_BindPrograms (r_skyfast_vp, r_skyfast_fp);
 	else if (skybox_name[0])
 	{
-		// explicitly bind to TMU 3 to bypass the texture manager
+		// explicitly bind to TMU 5 to bypass the texture manager
 		glActiveTexture (GL_TEXTURE5);
 		glBindTexture (GL_TEXTURE_CUBE_MAP, r_skybox_cubemap);
 

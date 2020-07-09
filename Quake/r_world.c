@@ -449,10 +449,10 @@ R_DrawWorld -- johnfitz -- rewritten
 void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, texchain_t chain)
 {
 	// entity alpha
-	float		entalpha = (ent != NULL) ? ENTALPHA_DECODE (ent->alpha) : 1.0f;
+	float		alpha = (ent != NULL) ? ENTALPHA_DECODE (ent->alpha) : 1.0f;
 
 	// enable blending / disable depth writes
-	R_BeginTransparentDrawing (entalpha);
+	R_BeginTransparentDrawing (alpha);
 
 	R_SetupWorldVBOState ();
 

@@ -126,7 +126,7 @@ void R_CreateSpriteFrames (qmodel_t *mod, msprite_t *psprite)
 	if ((mod->buffsetset = R_NewBufferSetForName (mod->name)) == -1)
 		Sys_Error ("GLMesh_LoadAliasGeometry : unable to allocate a buffer set");
 
-	bufferset_t *set = &r_buffersets[mod->buffsetset];
+	bufferset_t *set = R_GetBufferSetForModel (mod);
 	int mark = Hunk_LowMark ();
 
 	// these could probably go to static buffers
@@ -286,7 +286,7 @@ void R_DrawSpriteModel (entity_t *e)
 
 	GL_EnableVertexAttribArrays (VAA0 | VAA1);
 
-	bufferset_t *set = &r_buffersets[e->model->buffsetset];
+	bufferset_t *set = R_GetBufferSetForModel (e->model);
 	GL_BindBuffer (GL_ARRAY_BUFFER, set->vertexbuffer);
 
 	// the data was already built at load time so it just needs to be set up for rendering here

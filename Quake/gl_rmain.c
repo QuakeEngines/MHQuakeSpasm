@@ -78,8 +78,6 @@ cvar_t	r_lerpmodels = { "r_lerpmodels", "1", CVAR_NONE };
 cvar_t	r_lerpmove = { "r_lerpmove", "1", CVAR_NONE };
 cvar_t	r_nolerp_list = { "r_nolerp_list", "progs/flame.mdl,progs/flame2.mdl,progs/braztall.mdl,progs/brazshrt.mdl,progs/longtrch.mdl,progs/flame_pyre.mdl,progs/v_saw.mdl,progs/v_xfist.mdl,progs/h2stuff/newfire.mdl", CVAR_NONE };
 cvar_t	r_noshadow_list = { "r_noshadow_list", "progs/flame2.mdl,progs/flame.mdl,progs/bolt1.mdl,progs/bolt2.mdl,progs/bolt3.mdl,progs/laser.mdl", CVAR_NONE };
-
-extern cvar_t	r_vfog;
 // johnfitz
 
 cvar_t	r_lavaalpha = { "r_lavaalpha", "0", CVAR_NONE };
@@ -176,19 +174,16 @@ Returns true if the box is completely outside the frustum
 qboolean R_CullBox (vec3_t emins, vec3_t emaxs)
 {
 	// https://github.com/Novum/vkQuake/blob/master/Quake/gl_rmain.c#L120
-	int i;
-	mplane_t *p;
-	byte signbits;
-	float vec[3];
-
-	for (i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
 	{
-		p = frustum + i;
-		signbits = p->signbits;
+		mplane_t *p = frustum + i;
+		byte signbits = p->signbits;
 
-		vec[0] = ((signbits % 2) < 1) ? emaxs[0] : emins[0];
-		vec[1] = ((signbits % 4) < 2) ? emaxs[1] : emins[1];
-		vec[2] = ((signbits % 8) < 4) ? emaxs[2] : emins[2];
+		float vec[3] = {
+			((signbits % 2) < 1) ? emaxs[0] : emins[0],
+			((signbits % 4) < 2) ? emaxs[1] : emins[1],
+			((signbits % 8) < 4) ? emaxs[2] : emins[2]
+		};
 
 		if (p->normal[0] * vec[0] + p->normal[1] * vec[1] + p->normal[2] * vec[2] < p->dist)
 			return true;
@@ -238,7 +233,7 @@ void R_RotateBBox (QMATRIX *matrix, const float *inmins, const float *inmaxs, fl
 R_CullModelForEntity -- johnfitz -- uses correct bounds based on rotation
 ===============
 */
-qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix)
+qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix, qboolean rotated)
 {
 	vec3_t mins, maxs;
 
@@ -260,13 +255,31 @@ qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix)
 			amaxs[i] = amins[i] + hdr->scale[i] * 255;
 		}
 
-		// and rotate it
-		R_RotateBBox (localMatrix, amins, amaxs, mins, maxs);
+		if (rotated)
+		{
+			// and rotate it
+			R_RotateBBox (localMatrix, amins, amaxs, mins, maxs);
+		}
+		else
+		{
+			// fast case - we can't use e->origin because it might be lerped, so the actual origin used for the transform is in m4x4[3]
+			Vector3Add (mins, localMatrix->m4x4[3], amins);
+			Vector3Add (maxs, localMatrix->m4x4[3], amaxs);
+		}
 	}
 	else if (e->model->type == mod_brush)
 	{
-		// straightforward bbox rotation
-		R_RotateBBox (localMatrix, e->model->mins, e->model->maxs, mins, maxs);
+		if (rotated)
+		{
+			// straightforward bbox rotation
+			R_RotateBBox (localMatrix, e->model->mins, e->model->maxs, mins, maxs);
+		}
+		else
+		{
+			// fast case
+			Vector3Add (mins, e->origin, e->model->mins);
+			Vector3Add (maxs, e->origin, e->model->maxs);
+		}
 	}
 	else
 	{
@@ -307,6 +320,7 @@ void GL_PolygonOffset (int offset)
 	}
 }
 
+
 // ==============================================================================
 // SETUP FRAME
 // ==============================================================================
@@ -329,55 +343,56 @@ int SignbitsForPlane (mplane_t *out)
 GL_SetFrustum -- johnfitz -- written to replace MYgluPerspective
 =============
 */
-void R_ExtractFrustum (mplane_t *f, QMATRIX *m)
+void R_ExtractFrustum (QMATRIX *mvp)
 {
 	// extract the frustum from the MVP matrix
-	f[0].normal[0] = m->m4x4[0][3] - m->m4x4[0][0];
-	f[0].normal[1] = m->m4x4[1][3] - m->m4x4[1][0];
-	f[0].normal[2] = m->m4x4[2][3] - m->m4x4[2][0];
+	frustum[0].normal[0] = mvp->m4x4[0][3] - mvp->m4x4[0][0];
+	frustum[0].normal[1] = mvp->m4x4[1][3] - mvp->m4x4[1][0];
+	frustum[0].normal[2] = mvp->m4x4[2][3] - mvp->m4x4[2][0];
 
-	f[1].normal[0] = m->m4x4[0][3] + m->m4x4[0][0];
-	f[1].normal[1] = m->m4x4[1][3] + m->m4x4[1][0];
-	f[1].normal[2] = m->m4x4[2][3] + m->m4x4[2][0];
+	frustum[1].normal[0] = mvp->m4x4[0][3] + mvp->m4x4[0][0];
+	frustum[1].normal[1] = mvp->m4x4[1][3] + mvp->m4x4[1][0];
+	frustum[1].normal[2] = mvp->m4x4[2][3] + mvp->m4x4[2][0];
 
-	f[2].normal[0] = m->m4x4[0][3] + m->m4x4[0][1];
-	f[2].normal[1] = m->m4x4[1][3] + m->m4x4[1][1];
-	f[2].normal[2] = m->m4x4[2][3] + m->m4x4[2][1];
+	frustum[2].normal[0] = mvp->m4x4[0][3] + mvp->m4x4[0][1];
+	frustum[2].normal[1] = mvp->m4x4[1][3] + mvp->m4x4[1][1];
+	frustum[2].normal[2] = mvp->m4x4[2][3] + mvp->m4x4[2][1];
 
-	f[3].normal[0] = m->m4x4[0][3] - m->m4x4[0][1];
-	f[3].normal[1] = m->m4x4[1][3] - m->m4x4[1][1];
-	f[3].normal[2] = m->m4x4[2][3] - m->m4x4[2][1];
+	frustum[3].normal[0] = mvp->m4x4[0][3] - mvp->m4x4[0][1];
+	frustum[3].normal[1] = mvp->m4x4[1][3] - mvp->m4x4[1][1];
+	frustum[3].normal[2] = mvp->m4x4[2][3] - mvp->m4x4[2][1];
 
 	for (int i = 0; i < 4; i++)
 	{
-		VectorNormalize (f[i].normal);
-		f[i].dist = DotProduct (r_refdef.vieworg, f[i].normal);
-		f[i].type = PLANE_ANYZ;
-		f[i].signbits = SignbitsForPlane (&f[i]);
+		VectorNormalize (frustum[i].normal);
+		frustum[i].dist = Vector3Dot (r_refdef.vieworg, frustum[i].normal);
+		frustum[i].type = PLANE_ANYZ;
+		frustum[i].signbits = SignbitsForPlane (&frustum[i]);
 	}
 }
 
 
 float R_GetFarClip (void)
 {
-	float farclip = 0;
+	// don't go below the standard Quake farclip
+	float farclip = 4096.0f;
 
-	if (!cl.worldmodel)
-		return 4096.0f;
-
-	// this provides the maximum far clip per view position and worldmodel bounds
-	for (int i = 0; i < 8; i++)
+	if (cl.worldmodel)
 	{
-		float dist;
-		vec3_t corner;
+		// this provides the maximum far clip per view position and worldmodel bounds
+		for (int i = 0; i < 8; i++)
+		{
+			float dist;
+			vec3_t corner;
 
-		// get this corner point
-		if (i & 1) corner[0] = cl.worldmodel->mins[0]; else corner[0] = cl.worldmodel->maxs[0];
-		if (i & 2) corner[1] = cl.worldmodel->mins[1]; else corner[1] = cl.worldmodel->maxs[1];
-		if (i & 4) corner[2] = cl.worldmodel->mins[2]; else corner[2] = cl.worldmodel->maxs[2];
+			// get this corner point
+			if (i & 1) corner[0] = cl.worldmodel->mins[0]; else corner[0] = cl.worldmodel->maxs[0];
+			if (i & 2) corner[1] = cl.worldmodel->mins[1]; else corner[1] = cl.worldmodel->maxs[1];
+			if (i & 4) corner[2] = cl.worldmodel->mins[2]; else corner[2] = cl.worldmodel->maxs[2];
 
-		if ((dist = Vector3Dist (r_refdef.vieworg, corner)) > farclip)
-			farclip = dist;
+			if ((dist = Vector3Dist (r_refdef.vieworg, corner)) > farclip)
+				farclip = dist;
+		}
 	}
 
 	return farclip;
@@ -396,7 +411,8 @@ void R_SetupGL (void)
 	QMATRIX mvp;
 
 	// johnfitz -- rewrote this section
-	int scale = CLAMP (1, (int) r_scale.value, 4); // ericw -- see R_ScaleView
+	// mh - allow fractional scales
+	float scale = CLAMP (1, r_scale.value, 4); // ericw -- see R_ScaleView
 
 	glViewport (
 		glx + r_refdef.vrect.x,
@@ -427,7 +443,7 @@ void R_SetupGL (void)
 	R_MultMatrix (&mvp, &view, &proj);
 
 	// and extract the frustum from it
-	R_ExtractFrustum (frustum, &mvp);
+	R_ExtractFrustum (&mvp);
 
 	// set drawing parms
 	if (gl_cull.value)
@@ -654,7 +670,8 @@ or possibly as a perforance boost on slow graphics cards.
 void R_ScaleView (void)
 {
 	// copied from R_SetupGL()
-	int scale = CLAMP (1, (int) r_scale.value, 4);
+	// mh - allow fractional scales
+	float scale = CLAMP (1, r_scale.value, 4);
 	int srcx = glx + r_refdef.vrect.x;
 	int srcy = gly + glheight - r_refdef.vrect.y - r_refdef.vrect.height;
 	int srcw = r_refdef.vrect.width / scale;

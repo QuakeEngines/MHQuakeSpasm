@@ -471,6 +471,7 @@ static qboolean VID_SetMode (int width, int height, int refreshrate, int bpp, qb
 		depthbits = 24;
 		stencilbits = 8;
 	}
+
 	SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE, depthbits);
 	SDL_GL_SetAttribute (SDL_GL_STENCIL_SIZE, stencilbits);
 
@@ -478,9 +479,8 @@ static qboolean VID_SetMode (int width, int height, int refreshrate, int bpp, qb
 	SDL_GL_SetAttribute (SDL_GL_MULTISAMPLEBUFFERS, fsaa > 0 ? 1 : 0);
 	SDL_GL_SetAttribute (SDL_GL_MULTISAMPLESAMPLES, fsaa);
 
-	q_snprintf (caption, sizeof (caption), "QuakeSpasm " QUAKESPASM_VER_STRING);
+	q_snprintf (caption, sizeof (caption), "mhQuakeSpasm; based on QuakeSpasm " QUAKESPASM_VER_STRING);
 
-#if defined(USE_SDL2)
 	/* Create the window if needed, hidden */
 	if (!draw_context)
 	{
@@ -490,22 +490,29 @@ static qboolean VID_SetMode (int width, int height, int refreshrate, int bpp, qb
 			flags |= SDL_WINDOW_BORDERLESS;
 
 		draw_context = SDL_CreateWindow (caption, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
+
 		if (!draw_context)
-		{ // scale back fsaa
+		{
+			// scale back fsaa
 			SDL_GL_SetAttribute (SDL_GL_MULTISAMPLEBUFFERS, 0);
 			SDL_GL_SetAttribute (SDL_GL_MULTISAMPLESAMPLES, 0);
 			draw_context = SDL_CreateWindow (caption, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
 		}
+
 		if (!draw_context)
-		{ // scale back SDL_GL_DEPTH_SIZE
+		{
+			// scale back SDL_GL_DEPTH_SIZE
 			SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE, 16);
 			draw_context = SDL_CreateWindow (caption, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
 		}
+
 		if (!draw_context)
-		{ // scale back SDL_GL_STENCIL_SIZE
+		{
+			// scale back SDL_GL_STENCIL_SIZE
 			SDL_GL_SetAttribute (SDL_GL_STENCIL_SIZE, 0);
 			draw_context = SDL_CreateWindow (caption, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
 		}
+
 		if (!draw_context)
 			Sys_Error ("Couldn't create window");
 
@@ -555,45 +562,9 @@ static qboolean VID_SetMode (int width, int height, int refreshrate, int bpp, qb
 
 	vid_currentvsync = 666; // trigger a vsync change in GL_BeginRendering first time it's seen
 	gl_swap_control = true;
+
 	if (SDL_GL_SetSwapInterval ((vid_vsync.value) ? 1 : 0) == -1)
 		gl_swap_control = false;
-
-#else /* !defined(USE_SDL2) */
-
-	flags = DEFAULT_SDL_FLAGS;
-	if (fullscreen)
-		flags |= SDL_FULLSCREEN;
-	if (vid_borderless.value)
-		flags |= SDL_NOFRAME;
-
-	gl_swap_control = true;
-	if (SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, (vid_vsync.value) ? 1 : 0) == -1)
-		gl_swap_control = false;
-
-	bpp = SDL_VideoModeOK (width, height, bpp, flags);
-
-	draw_context = SDL_SetVideoMode (width, height, bpp, flags);
-	if (!draw_context)
-	{ // scale back fsaa
-		SDL_GL_SetAttribute (SDL_GL_MULTISAMPLEBUFFERS, 0);
-		SDL_GL_SetAttribute (SDL_GL_MULTISAMPLESAMPLES, 0);
-		draw_context = SDL_SetVideoMode (width, height, bpp, flags);
-	}
-	if (!draw_context)
-	{ // scale back SDL_GL_DEPTH_SIZE
-		SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE, 16);
-		draw_context = SDL_SetVideoMode (width, height, bpp, flags);
-	}
-	if (!draw_context)
-	{ // scale back SDL_GL_STENCIL_SIZE
-		SDL_GL_SetAttribute (SDL_GL_STENCIL_SIZE, 0);
-		draw_context = SDL_SetVideoMode (width, height, bpp, flags);
-		if (!draw_context)
-			Sys_Error ("Couldn't set video mode");
-	}
-
-	SDL_WM_SetCaption (caption, caption);
-#endif /* !defined(USE_SDL2) */
 
 	vid.width = VID_GetCurrentWidth ();
 	vid.height = VID_GetCurrentHeight ();
@@ -627,7 +598,8 @@ static qboolean VID_SetMode (int width, int height, int refreshrate, int bpp, qb
 		VID_GetCurrentBPP (),
 		VID_GetCurrentRefreshRate (),
 		depthbits,
-		fsaa_obtained);
+		fsaa_obtained
+	);
 
 	// no pending changes
 	vid_changed = false;
@@ -818,32 +790,6 @@ static void GL_Info_f (void)
 GL_CheckExtensions
 ===============
 */
-static qboolean GL_ParseExtensionList (const char *list, const char *name)
-{
-	const char *start;
-	const char *where, *terminator;
-
-	if (!list || !name || !*name)
-		return false;
-	if (strchr (name, ' ') != NULL)
-		return false;	// extension names must not have spaces
-
-	start = list;
-	while (1)
-	{
-		where = strstr (start, name);
-		if (!where)
-			break;
-		terminator = where + strlen (name);
-		if (where == start || where[-1] == ' ')
-			if (*terminator == ' ' || *terminator == '\0')
-				return true;
-		start = terminator;
-	}
-	return false;
-}
-
-
 static void GL_CheckExtensions (void)
 {
 	int swap_control;
@@ -876,6 +822,7 @@ static void GL_CheckExtensions (void)
 			if (!GLEW_EXT_texture_cube_map)
 				Sys_Error ("GL texture_cube_map extension : not found");
 
+	// we want one of the clamp-to-edge extensions but we don't care which - the token define is the same for all, so for our use cases we treat them as equivalent.
 	if (!GLEW_VERSION_1_2)
 		if (!GLEW_EXT_texture_edge_clamp)
 			if (!GLEW_SGIS_texture_edge_clamp)
@@ -893,39 +840,18 @@ static void GL_CheckExtensions (void)
 
 	// swap control
 	if (!gl_swap_control)
-	{
-#if defined(USE_SDL2)
 		Con_Warning ("vertical sync not supported (SDL_GL_SetSwapInterval failed)\n");
-#else
-		Con_Warning ("vertical sync not supported (SDL_GL_SetAttribute failed)\n");
-#endif
-	}
-#if defined(USE_SDL2)
 	else if ((swap_control = SDL_GL_GetSwapInterval ()) == -1)
-#else
-	else if (SDL_GL_GetAttribute (SDL_GL_SWAP_CONTROL, &swap_control) == -1)
-#endif
 	{
 		gl_swap_control = false;
-#if defined(USE_SDL2)
 		Con_Warning ("vertical sync not supported (SDL_GL_GetSwapInterval failed)\n");
-#else
-		Con_Warning ("vertical sync not supported (SDL_GL_GetAttribute failed)\n");
-#endif
 	}
 	else if ((vid_vsync.value && swap_control != 1) || (!vid_vsync.value && swap_control != 0))
 	{
 		gl_swap_control = false;
 		Con_Warning ("vertical sync not supported (swap_control doesn't match vid_vsync)\n");
 	}
-	else
-	{
-#if defined(USE_SDL2)
-		Con_Printf ("FOUND: SDL_GL_SetSwapInterval\n");
-#else
-		Con_Printf ("FOUND: SDL_GL_SWAP_CONTROL\n");
-#endif
-	}
+	else Con_Printf ("FOUND: SDL_GL_SetSwapInterval\n");
 
 	// anisotropic filtering
 	if (GLEW_EXT_texture_filter_anisotropic)
@@ -993,8 +919,8 @@ static void GL_SetupState (void)
 	// note: here, these only apply to texture object 0
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glDepthRange (0, 1); // johnfitz -- moved here becuase gl_ztrick is gone.
 

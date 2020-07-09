@@ -275,7 +275,7 @@ void R_PushDlights_New (entity_t *e, QMATRIX *localMatrix, qmodel_t *mod, mnode_
 	{
 		dlight_t *dl = &cl_dlights[i];
 
-		if (dl->die < cl.time || !(dl->radius > dl->minlight))
+		if (cl.time > dl->die || !(dl->radius > dl->minlight))
 			continue;
 
 		if (localMatrix)

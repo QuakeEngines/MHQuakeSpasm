@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ALIAS MODEL DISPLAY LIST GENERATION
 
 
-to do: cache a buffer set similar to textures so if a buffer set it cached it doesn't need to be rebuilt and can be reused across multiple maps
+cache a buffer set similar to textures so if a buffer set is cached it doesn't need to be rebuilt and can be reused across multiple maps
 
 =================================================================
 */
@@ -104,7 +104,7 @@ Original code by MH from RMQEngine
 */
 static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr, dtriangle_t *triangles, unsigned short *indexes, aliasmesh_t *desc, trivertx_t *poseverts[])
 {
-	bufferset_t *set = &r_buffersets[m->buffsetset];
+	bufferset_t *set = R_GetBufferSetForModel (m);
 
 	// count the sizes we need
 	set->vboindexofs = 0;
@@ -141,9 +141,9 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr, dtriang
 		for (int v = 0; v < set->numverts; v++) {
 			trivertx_t *trivert = &tv[desc[v].vertindex];
 
-			xyz[v].position[0] = (float) trivert->v[0];
-			xyz[v].position[1] = (float) trivert->v[1];
-			xyz[v].position[2] = (float) trivert->v[2];
+			xyz[v].position[0] = trivert->v[0];
+			xyz[v].position[1] = trivert->v[1];
+			xyz[v].position[2] = trivert->v[2];
 			xyz[v].position[3] = 1;
 
 			xyz[v].normal[0] = 127 * vnorms[desc[v].vertindex].normal[0];
@@ -182,7 +182,7 @@ GL_MakeAliasModelDisplayLists
 */
 void GL_MakeAliasModelDisplayLists (qmodel_t *m, aliashdr_t *hdr, trivertx_t *poseverts[], dtriangle_t *triangles, stvert_t *stverts)
 {
-	bufferset_t *set = &r_buffersets[m->buffsetset];
+	bufferset_t *set = R_GetBufferSetForModel (m);
 	int mark = Hunk_LowMark ();
 
 	// there can never be more than this number of verts and we just put them all on the hunk
