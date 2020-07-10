@@ -29,7 +29,7 @@ extern cvar_t gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
 // up to 16 color translated skins
 gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz -- changed to an array of pointers
 
-extern float	shadelight[4]; // padded for shader uniforms
+static float	shadelight[4]; // johnfitz -- lit support via lordhavoc / MH - padded for shader params
 
 extern	vec3_t			lightspot;
 
@@ -303,7 +303,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_lightmapped_fp[shaderflag]);
 	}
 
-	// set uniforms - these need to be env params so that the dynamic program can also access them
+	// set uniforms - these need to be env params so that the dynamic and shadow programs can also access them
 	glProgramEnvParameter4fARB (GL_VERTEX_PROGRAM_ARB, 10, blend, blend, blend, 0);
 	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 11, hdr->scale);
 	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 12, hdr->scale_origin);
@@ -314,11 +314,15 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	// draw
 	glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) set->vboindexofs);
 	rs_aliaspasses += hdr->numtris;
+}
+
+
+void GL_DrawAliasDynamicLights (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, lerpdata_t *lerpdata)
+{
+	// this depends on state from GL_DrawAliasFrame_ARB so don't call it from anywhere else!
+	bufferset_t *set = R_GetBufferSetForModel (e->model);
 
 	// add dynamic lights
-	if (!r_dynamic.value) return;
-	if (!cl.worldmodel->lightdata) return;
-
 	for (int i = 0; i < MAX_DLIGHTS; i++)
 	{
 		dlight_t *dl = &cl_dlights[i];
@@ -326,31 +330,32 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 		if (cl.time > dl->die || !(dl->radius > dl->minlight))
 			continue;
 
-		if (((dl->radius + hdr->boundingradius) - VectorDist (lerpdata->origin, dl->origin)) > 0)
-		{
-			// move the light into the same space as the entity
-			R_InverseTransform (localMatrix, dl->transformed, dl->origin);
+		if (Vector3Dist (lerpdata->origin, dl->origin) > (dl->radius + hdr->boundingradius))
+			continue;
 
-			// switch to additive blending
-			GL_DepthState (GL_TRUE, GL_EQUAL, GL_FALSE);
-			GL_BlendState (GL_TRUE, GL_ONE, GL_ONE);
+		// move the light into the same space as the entity
+		R_InverseTransform (localMatrix, dl->transformed, dl->origin);
 
-			// dynamic light programs
-			GL_BindPrograms (r_alias_dynamic_vp, r_alias_dynamic_fp);
+		// switch to additive blending
+		GL_DepthState (GL_TRUE, GL_EQUAL, GL_FALSE);
+		GL_BlendState (GL_TRUE, GL_ONE, GL_ONE);
 
-			// light properties
-			GL_SetupDynamicLight (dl);
+		// dynamic light programs
+		GL_BindPrograms (r_alias_dynamic_vp, r_alias_dynamic_fp);
 
-			// and draw it
-			glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) set->vboindexofs);
-			rs_aliaspasses += hdr->numtris;
-		}
+		// light properties
+		GL_SetupDynamicLight (dl);
+
+		// and draw it
+		glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) set->vboindexofs);
+		rs_aliaspasses += hdr->numtris;
 	}
 }
 
 
 void GL_DrawAliasShadow (entity_t *e, aliashdr_t *hdr, lerpdata_t *lerpdata)
 {
+	// this depends on state from GL_DrawAliasFrame_ARB so don't call it from anywhere else!
 	//johnfitz -- values for shadow matrix
 #define SHADOW_SKEW_X -0.7 //skew along x axis. -0.7 to mimic glquake shadows
 #define SHADOW_SKEW_Y 0 //skew along y axis. 0 to mimic glquake shadows
@@ -378,12 +383,6 @@ P.d * L.x      P.d * L.y      P.d * L.z      P.d * L.w + d
 	float	lheight = lerpdata->origin[2] - lightspot[2];
 	QMATRIX	localMatrix;
 
-	if (e == &cl.viewent || e->model->flags & MOD_NOSHADOW)
-		return;
-
-	float alpha = ENTALPHA_DECODE (e->alpha);
-	if (!(alpha > 0)) return;
-
 	// position the shadow
 	R_IdentityMatrix (&localMatrix);
 	R_TranslateMatrix (&localMatrix, lerpdata->origin[0], lerpdata->origin[1], lerpdata->origin[2]);
@@ -405,7 +404,7 @@ P.d * L.x      P.d * L.y      P.d * L.z      P.d * L.w + d
 	GL_BindPrograms (r_alias_lightmapped_vp, r_alias_shadow_fp);
 
 	// shadow colour - allow different values of r_shadows to change the colour
-	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 0, 0, 0, alpha * 0.5f * r_shadows.value);
+	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 0, 0, 0, 0.5f * r_shadows.value);
 
 	// move it
 	glPushMatrix ();
@@ -568,32 +567,50 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 R_SetupAliasLighting -- johnfitz -- broken out from R_DrawAliasModel and rewritten
 =================
 */
-void R_MinimumLight (float *light, float minlight)
+void R_MinimumLight (int *light, int minlight)
 {
-	light[0] = 255.0f * ((light[0] + minlight) / (255.0f + minlight));
-	light[1] = 255.0f * ((light[1] + minlight) / (255.0f + minlight));
-	light[2] = 255.0f * ((light[2] + minlight) / (255.0f + minlight));
+	light[0] = ((light[0] + minlight) * 255) / (255 + minlight);
+	light[1] = ((light[1] + minlight) * 255) / (255 + minlight);
+	light[2] = ((light[2] + minlight) * 255) / (255 + minlight);
 }
 
 
 void R_SetupAliasLighting (entity_t *e)
 {
-	R_LightPoint (e->origin);
+	int lightcolour[3];
+
+	// get base lighting
+	R_LightPoint (e->origin, lightcolour);
 
 	// minimum light value on gun (24)
 	if (e == &cl.viewent)
-		R_MinimumLight (shadelight, 24 >> (int) gl_overbright.value);
+	{
+		if (r_viewleaf->contents == CONTENTS_SOLID)
+		{
+			// if we're in solid our trace down will just hit solid so we set to a constant lighting factor
+			lightcolour[0] = 192 >> (int) gl_overbright.value;
+			lightcolour[1] = 192 >> (int) gl_overbright.value;
+			lightcolour[2] = 192 >> (int) gl_overbright.value;
+		}
+		else R_MinimumLight (lightcolour, 24 >> (int) gl_overbright.value);
+	}
 
 	// minimum light value on players (8)
 	if (e->entitynum >= 1 && e->entitynum <= cl.maxclients)
-		R_MinimumLight (shadelight, 8 >> (int) gl_overbright.value);
+		R_MinimumLight (lightcolour, 8 >> (int) gl_overbright.value);
 
 	// minimum light value on pickups (128)
 	if (e->model->flags & EF_ROTATE)
-		R_MinimumLight (shadelight, 128 >> (int) gl_overbright.value);
+		R_MinimumLight (lightcolour, 128 >> (int) gl_overbright.value);
 
 	// hack up the brightness when fullbrights but no overbrights (256)
 	// MH - the new "max-blending" removes the need for this
+
+	// take the final colour down to 0..1 range
+	// note: our DotProducts will potentially scale this up to 2*, so reduce the range a little further to compensate
+	shadelight[0] = (float) lightcolour[0] / 320.0f;
+	shadelight[1] = (float) lightcolour[1] / 320.0f;
+	shadelight[2] = (float) lightcolour[2] / 320.0f;
 
 	// ericw -- shadevector is passed to the shader to compute shadedots inside the
 	// shader, see GLAlias_CreateShaders()
@@ -605,10 +622,6 @@ void R_SetupAliasLighting (entity_t *e)
 
 	VectorNormalize (shadevector);
 	// ericw --
-
-	// take the final colour down to 0..1 range
-	// note: our DotProducts will potentially scale this up to 2*, so reduce the range a little further to compensate
-	VectorScale (shadelight, 1.0f / 320.0f, shadelight);
 }
 
 
@@ -674,12 +687,26 @@ void R_DrawAliasModel (entity_t *e)
 	// draw it
 	GL_DrawAliasFrame_ARB (e, &localMatrix, hdr, &lerpdata, tx, fb);
 
+	// set up dynamic lighting (this depends on state from GL_DrawAliasFrame_ARB so don't call it from anywhere else!)
+	if (alpha < 1)
+		;		// translucents don't have dlights (light goes through them!)
+	else if (!r_dynamic.value)
+		;		// dlights switched off
+	else if (!cl.worldmodel->lightdata)
+		;		// no light data
+	else GL_DrawAliasDynamicLights (e, &localMatrix, hdr, &lerpdata);
+
 	// revert the transform
 	glPopMatrix ();
 
-	// add shadow
-	if (r_shadows.value)
-		GL_DrawAliasShadow (e, hdr, &lerpdata);
+	// add shadow (this depends on state from GL_DrawAliasFrame_ARB so don't call it from anywhere else!)
+	if (alpha < 1)
+		;		// translucents don't have shadows (light goes through them!)
+	else if (!r_shadows.value)
+		;		// shadows switched off
+	else if (e == &cl.viewent || e->model->flags & MOD_NOSHADOW)
+		;		// no shadows on these model types
+	else GL_DrawAliasShadow (e, hdr, &lerpdata);
 }
 
 

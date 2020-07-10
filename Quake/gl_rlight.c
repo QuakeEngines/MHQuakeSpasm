@@ -333,100 +333,86 @@ LIGHT SAMPLING
 
 mplane_t *lightplane;
 vec3_t	lightspot;
-float	shadelight[4]; // johnfitz -- lit support via lordhavoc / MH - padded for shader params
 
 /*
 =============
-RecursiveLightPoint -- johnfitz -- replaced entire function for lit support via lordhavoc
+R_RecursiveLightPoint -- johnfitz -- replaced entire function for lit support via lordhavoc
 =============
 */
-int RecursiveLightPoint (vec3_t color, mnode_t *node, vec3_t start, vec3_t end)
+int R_RecursiveLightPoint (int *color, mnode_t *node, vec3_t start, vec3_t end)
 {
-	float		front, back, frac;
-	vec3_t		mid;
-
-loc0:
 	if (node->contents < 0)
 		return false;		// didn't hit anything
 
 	// calculate mid point
-	front = Mod_PlaneDist (node->plane, start);
-	back = Mod_PlaneDist (node->plane, end);
+	float front = Mod_PlaneDist (node->plane, start);
+	float back = Mod_PlaneDist (node->plane, end);
 
-	// LordHavoc: optimized recursion
+	// mh - the compiler will optimize this better than we can
 	if ((back < 0) == (front < 0))
-	{
-		node = node->children[front < 0];
-		goto loc0;
-	}
+		return R_RecursiveLightPoint (color, node->children[front < 0], start, end);
 
-	frac = front / (front - back);
-	mid[0] = start[0] + (end[0] - start[0]) * frac;
-	mid[1] = start[1] + (end[1] - start[1]) * frac;
-	mid[2] = start[2] + (end[2] - start[2]) * frac;
+	float frac = front / (front - back);
+
+	vec3_t mid = {
+		start[0] + (end[0] - start[0]) * frac,
+		start[1] + (end[1] - start[1]) * frac,
+		start[2] + (end[2] - start[2]) * frac
+	};
 
 	// go down front side
-	if (RecursiveLightPoint (color, node->children[front < 0], start, mid))
+	if (R_RecursiveLightPoint (color, node->children[front < 0], start, mid))
 		return true;	// hit something
-	else
+
+	// check for impact on this node
+	msurface_t *surf = node->surfaces;
+
+	for (int i = 0; i < node->numsurfaces; i++, surf++)
 	{
-		int i, ds, dt;
-		msurface_t *surf;
+		if (surf->flags & SURF_DRAWTILED)
+			continue;	// no lightmaps
 
-		// check for impact on this node
-		VectorCopy (mid, lightspot);
-		lightplane = node->plane;
+		// ericw -- added double casts to force 64-bit precision.
+		// Without them the zombie at the start of jam3_ericw.bsp was
+		// incorrectly being lit up in SSE builds.
+		int ds = (int) ((double) DoublePrecisionDotProduct (mid, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3]);
+		int dt = (int) ((double) DoublePrecisionDotProduct (mid, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3]);
 
-		surf = node->surfaces;
+		if (ds < surf->texturemins[0] || dt < surf->texturemins[1])
+			continue;
 
-		for (i = 0; i < node->numsurfaces; i++, surf++)
+		ds -= surf->texturemins[0];
+		dt -= surf->texturemins[1];
+
+		if (ds > surf->extents[0] || dt > surf->extents[1])
+			continue;
+
+		if (surf->samples)
 		{
-			if (surf->flags & SURF_DRAWTILED)
-				continue;	// no lightmaps
+			// MH - changed this over to use the same lighting calc as R_BuildLightmap for consistency
+			byte *lightmap = surf->samples + ((dt >> 4) * ((surf->extents[0] >> 4) + 1) + (ds >> 4)) * 3; // LordHavoc: *3 for color
 
-			// ericw -- added double casts to force 64-bit precision.
-			// Without them the zombie at the start of jam3_ericw.bsp was
-			// incorrectly being lit up in SSE builds.
-			ds = (int) ((double) DoublePrecisionDotProduct (mid, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3]);
-			dt = (int) ((double) DoublePrecisionDotProduct (mid, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3]);
-
-			if (ds < surf->texturemins[0] || dt < surf->texturemins[1])
-				continue;
-
-			ds -= surf->texturemins[0];
-			dt -= surf->texturemins[1];
-
-			if (ds > surf->extents[0] || dt > surf->extents[1])
-				continue;
-
-			// clear to no light
-			color[0] = 0;
-			color[1] = 0;
-			color[2] = 0;
-
-			if (surf->samples)
+			for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
 			{
-				// MH - changed this over to use the same lighting calc as R_BuildLightmap for consistency
-				byte *lightmap = surf->samples + ((dt >> 4) * ((surf->extents[0] >> 4) + 1) + (ds >> 4)) * 3; // LordHavoc: *3 for color
+				unsigned scale = d_lightstylevalue[surf->styles[maps]];
 
-				for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
-				{
-					unsigned scale = d_lightstylevalue[surf->styles[maps]];
+				color[0] += lightmap[0] * scale;
+				color[1] += lightmap[1] * scale;
+				color[2] += lightmap[2] * scale;
 
-					color[0] += lightmap[0] * scale;
-					color[1] += lightmap[1] * scale;
-					color[2] += lightmap[2] * scale;
-
-					lightmap += ((surf->extents[0] >> 4) + 1) * ((surf->extents[1] >> 4) + 1) * 3; // LordHavoc: *3 for colored lighting
-				}
+				lightmap += ((surf->extents[0] >> 4) + 1) * ((surf->extents[1] >> 4) + 1) * 3; // LordHavoc: *3 for colored lighting
 			}
-
-			return true; // success
 		}
 
-		// go down back side
-		return RecursiveLightPoint (color, node->children[front >= 0], mid, end);
+		// mh - these should only be saved off if we definitely establish that we have a hit
+		VectorCopy (mid, lightspot);
+		lightplane = surf->plane;
+
+		return true; // success
 	}
+
+	// go down back side
+	return R_RecursiveLightPoint (color, node->children[front >= 0], mid, end);
 }
 
 
@@ -435,32 +421,32 @@ loc0:
 R_LightPoint -- johnfitz -- replaced entire function for lit support via lordhavoc
 =============
 */
-int R_LightPoint (vec3_t p)
+int R_LightPoint (vec3_t p, int *color)
 {
 	if (!cl.worldmodel->lightdata)
 	{
-		shadelight[0] = 255 * 128;
-		shadelight[1] = 255 * 128;
-		shadelight[2] = 255 * 128;
+		color[0] = 255 * 128;
+		color[1] = 255 * 128;
+		color[2] = 255 * 128;
 	}
 	else
 	{
-		vec3_t	end;
+		vec3_t	end = {
+			p[0],
+			p[1],
+			cl.worldmodel->mins[2] - 10.0f	// MH - trace the full worldmodel
+		};
 
-		end[0] = p[0];
-		end[1] = p[1];
-		end[2] = cl.worldmodel->mins[2] - 10.0f;	// MH - trace the full worldmodel
-
-		shadelight[0] = shadelight[1] = shadelight[2] = 0;
-		RecursiveLightPoint (shadelight, cl.worldmodel->nodes, p, end);
+		color[0] = color[1] = color[2] = 0;
+		R_RecursiveLightPoint (color, cl.worldmodel->nodes, p, end);
 	}
 
 	// shift down for overbrighting range
-	if ((shadelight[0] = (int) shadelight[0] >> (7 + (int) gl_overbright.value)) > 255) shadelight[0] = 255;
-	if ((shadelight[1] = (int) shadelight[1] >> (7 + (int) gl_overbright.value)) > 255) shadelight[1] = 255;
-	if ((shadelight[2] = (int) shadelight[2] >> (7 + (int) gl_overbright.value)) > 255) shadelight[2] = 255;
+	if ((color[0] = color[0] >> (7 + (int) gl_overbright.value)) > 255) color[0] = 255;
+	if ((color[1] = color[1] >> (7 + (int) gl_overbright.value)) > 255) color[1] = 255;
+	if ((color[2] = color[2] >> (7 + (int) gl_overbright.value)) > 255) color[2] = 255;
 
-	return ((shadelight[0] + shadelight[1] + shadelight[2]) * (1.0f / 3.0f));
+	return ((color[0] + color[1] + color[2]) * (1.0f / 3.0f));
 }
 
 

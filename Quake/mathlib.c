@@ -219,14 +219,6 @@ vec_t VectorLength (vec3_t v)
 }
 
 
-float VectorDist (vec3_t v1, vec3_t v2)
-{
-	vec3_t dist;
-	VectorSubtract (v1, v2, dist);
-	return VectorLength (dist);
-}
-
-
 float VectorNormalize (vec3_t v)
 {
 	float	length, ilength;
@@ -519,5 +511,11 @@ void R_Transform (QMATRIX *m, float *out, const float *in)
 }
 
 
+void R_Rotate (QMATRIX *m, float *out, const float *in)
+{
+	out[0] = in[0] * m->m4x4[0][0] + in[1] * m->m4x4[1][0] + in[2] * m->m4x4[2][0];
+	out[1] = in[0] * m->m4x4[0][1] + in[1] * m->m4x4[1][1] + in[2] * m->m4x4[2][1];
+	out[2] = in[0] * m->m4x4[0][2] + in[1] * m->m4x4[1][2] + in[2] * m->m4x4[2][2];
+}
 
 

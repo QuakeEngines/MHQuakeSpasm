@@ -70,7 +70,6 @@ void _VectorCopy (vec3_t in, vec3_t out);
 
 int VectorCompare (vec3_t v1, vec3_t v2);
 vec_t VectorLength (vec3_t v);
-float VectorDist (vec3_t v1, vec3_t v2); // mh - use this in a few places
 void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross);
 float VectorNormalize (vec3_t v);		// returns vector length
 void VectorInverse (vec3_t v);
@@ -101,6 +100,7 @@ QMATRIX *R_RotateMatrixAxis (QMATRIX *m, float angle, float x, float y, float z)
 QMATRIX *R_CameraMatrix (QMATRIX *m, const float *origin, const float *angles);
 void R_InverseTransform (QMATRIX *m, float *out, const float *in);
 void R_Transform (QMATRIX *m, float *out, const float *in);
+void R_Rotate (QMATRIX *m, float *out, const float *in);
 
 
 #define DEG2RAD(a) (((a) * M_PI) / 180.0)
@@ -718,6 +718,30 @@ __inline float Q_fmin (const float _1, const float _2)
 __inline float Q_fmax (const float _1, const float _2)
 {
 	return ((_1 > _2) ? _1 : _2);
+}
+
+
+__inline void Vector2Inverse (float *v)
+{
+	v[0] = -v[0];
+	v[1] = -v[1];
+}
+
+
+__inline void Vector3Inverse (float *v)
+{
+	v[0] = -v[0];
+	v[1] = -v[1];
+	v[2] = -v[2];
+}
+
+
+__inline void Vector4Inverse (float *v)
+{
+	v[0] = -v[0];
+	v[1] = -v[1];
+	v[2] = -v[2];
+	v[3] = -v[3];
 }
 
 
