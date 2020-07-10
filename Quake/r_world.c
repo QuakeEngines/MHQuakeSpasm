@@ -29,122 +29,6 @@ extern cvar_t gl_fullbrights; // johnfitz
 int vis_changed;
 
 
-// ==============================================================================
-// SETUP CHAINS
-// ==============================================================================
-
-/*
-================
-R_ClearTextureChains -- ericw
-
-clears texture chains for all textures used by the given model, and also
-clears the lightmap chains
-================
-*/
-void R_ClearTextureChains (qmodel_t *mod, texchain_t chain)
-{
-	// set all chains to null
-	for (int i = 0; i < mod->numtextures; i++)
-	{
-		if (!mod->textures[i]) continue;
-		mod->textures[i]->texturechains[chain] = NULL;
-	}
-}
-
-
-/*
-================
-R_ChainSurface -- ericw -- adds the given surface to its texture chain
-================
-*/
-void R_ChainSurface (msurface_t *surf, texchain_t chain)
-{
-	// marks this surf as having been seen in this dlight frame
-	surf->dlightframe = r_dlightframecount;
-
-	// and chain it normally
-	surf->texturechain = surf->texinfo->texture->texturechains[chain];
-	surf->texinfo->texture->texturechains[chain] = surf;
-}
-
-
-// ==============================================================================
-// DRAW CHAINS
-// ==============================================================================
-
-
-// ==============================================================================
-// VBO SUPPORT
-// ==============================================================================
-
-
-/*
-================
-R_TriangleIndicesForSurf
-
-Writes out the triangle indices needed to draw s as a triangle list.
-================
-*/
-static void R_TriangleIndicesForSurf (msurface_t *s, unsigned int *dest)
-{
-	for (int i = 2; i < s->numedges; i++, dest += 3)
-	{
-		dest[0] = s->firstvertex;
-		dest[1] = s->firstvertex + i - 1;
-		dest[2] = s->firstvertex + i;
-	}
-}
-
-
-#define MAX_BATCH_SIZE 32768
-
-static unsigned int vbo_indices[MAX_BATCH_SIZE];
-static unsigned int num_vbo_indices;
-
-/*
-================
-R_ClearBatch
-================
-*/
-void R_ClearBatch ()
-{
-	num_vbo_indices = 0;
-}
-
-/*
-================
-R_FlushBatch
-
-Draw the current batch if non-empty and clears it, ready for more R_BatchSurface calls.
-================
-*/
-void R_FlushBatch ()
-{
-	if (num_vbo_indices > 0)
-	{
-		glDrawElements (GL_TRIANGLES, num_vbo_indices, GL_UNSIGNED_INT, vbo_indices);
-		num_vbo_indices = 0;
-	}
-}
-
-/*
-================
-R_BatchSurface
-
-Add the surface to the current batch, or just draw it immediately if we're not
-using VBOs.
-================
-*/
-void R_BatchSurface (msurface_t *s)
-{
-	if (num_vbo_indices + s->numindexes >= MAX_BATCH_SIZE)
-		R_FlushBatch ();
-
-	R_TriangleIndicesForSurf (s, &vbo_indices[num_vbo_indices]);
-	num_vbo_indices += s->numindexes;
-}
-
-
 static GLuint r_brush_lightmapped_vp = 0;
 static GLuint r_brush_lightmapped_fp[8] = { 0 };
 
@@ -292,8 +176,47 @@ void GLWorld_CreateShaders (void)
 }
 
 
-extern GLuint r_surfaces_vbo;
+// ==============================================================================
+// SETUP CHAINS
+// ==============================================================================
 
+/*
+================
+R_ClearTextureChains -- ericw
+
+clears texture chains for all textures used by the given model
+================
+*/
+void R_ClearTextureChains (qmodel_t *mod, texchain_t chain)
+{
+	// set all chains to null
+	for (int i = 0; i < mod->numtextures; i++)
+	{
+		if (!mod->textures[i]) continue;
+		mod->textures[i]->texturechains[chain] = NULL;
+	}
+}
+
+
+/*
+================
+R_ChainSurface -- ericw -- adds the given surface to its texture chain
+================
+*/
+void R_ChainSurface (msurface_t *surf, texchain_t chain)
+{
+	// marks this surf as having been seen in this dlight frame
+	surf->dlightframe = r_dlightframecount;
+
+	// and chain it normally
+	surf->texturechain = surf->texinfo->texture->texturechains[chain];
+	surf->texinfo->texture->texturechains[chain] = surf;
+}
+
+
+// ==============================================================================
+// DRAW CHAINS
+// ==============================================================================
 
 void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 {
@@ -391,21 +314,6 @@ void R_DrawNoTextureChain (msurface_t *s, texture_t *t)
 	GL_BindPrograms (r_brush_notexture_vp, r_brush_notexture_fp);
 
 	R_DrawSimpleTexturechain (s);
-}
-
-
-void R_SetupWorldVBOState (void)
-{
-	// Bind the buffers
-	GL_BindBuffer (GL_ARRAY_BUFFER, r_surfaces_vbo);
-	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, 0); // indices come from client memory!
-
-	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3);
-
-	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, xyz));
-	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, st));
-	glVertexAttribPointer (2, 2, GL_UNSIGNED_SHORT, GL_TRUE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, lm));
-	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, norm));
 }
 
 

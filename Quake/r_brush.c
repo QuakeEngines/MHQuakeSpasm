@@ -118,7 +118,7 @@ void R_DrawBrushModel (entity_t *e)
 */
 
 
-GLuint r_surfaces_vbo = 0;
+static GLuint r_surfaces_vbo = 0;
 
 
 /*
@@ -214,6 +214,8 @@ void GL_BuildBModelVertexBuffer (void)
 			r_numsurfaceverts += surf->numedges;
 
 			// expand the hunk to ensure there is space for this surface
+			// polygon building will clobber hunk tags here, but that's OK because we're not allocating any other memory here,
+			// and we're going to free this immediately after using it
 			Hunk_Alloc (surf->numedges * sizeof (brushpolyvert_t));
 
 			// and create it
@@ -243,6 +245,88 @@ void GL_DeleteBModelVertexBuffer (void)
 	r_surfaces_vbo = 0;
 
 	GL_ClearBufferBindings ();
+}
+
+
+void R_SetupWorldVBOState (void)
+{
+	// Bind the buffers
+	GL_BindBuffer (GL_ARRAY_BUFFER, r_surfaces_vbo);
+	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, 0); // indices come from client memory!
+
+	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3);
+
+	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, xyz));
+	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, st));
+	glVertexAttribPointer (2, 2, GL_UNSIGNED_SHORT, GL_TRUE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, lm));
+	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, norm));
+}
+
+
+/*
+================
+R_TriangleIndicesForSurf
+
+Writes out the triangle indices needed to draw s as a triangle list.
+================
+*/
+static void R_TriangleIndicesForSurf (msurface_t *s, unsigned int *dest)
+{
+	for (int i = 2; i < s->numedges; i++, dest += 3)
+	{
+		dest[0] = s->firstvertex;
+		dest[1] = s->firstvertex + i - 1;
+		dest[2] = s->firstvertex + i;
+	}
+}
+
+
+#define MAX_BATCH_SIZE 32768
+
+static unsigned int vbo_indices[MAX_BATCH_SIZE];
+static unsigned int num_vbo_indices;
+
+/*
+================
+R_ClearBatch
+================
+*/
+void R_ClearBatch ()
+{
+	num_vbo_indices = 0;
+}
+
+/*
+================
+R_FlushBatch
+
+Draw the current batch if non-empty and clears it, ready for more R_BatchSurface calls.
+================
+*/
+void R_FlushBatch ()
+{
+	if (num_vbo_indices > 0)
+	{
+		glDrawElements (GL_TRIANGLES, num_vbo_indices, GL_UNSIGNED_INT, vbo_indices);
+		num_vbo_indices = 0;
+	}
+}
+
+/*
+================
+R_BatchSurface
+
+Add the surface to the current batch, or just draw it immediately if we're not
+using VBOs.
+================
+*/
+void R_BatchSurface (msurface_t *s)
+{
+	if (num_vbo_indices + s->numindexes >= MAX_BATCH_SIZE)
+		R_FlushBatch ();
+
+	R_TriangleIndicesForSurf (s, &vbo_indices[num_vbo_indices]);
+	num_vbo_indices += s->numindexes;
 }
 
 
