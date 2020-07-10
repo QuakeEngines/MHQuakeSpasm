@@ -248,6 +248,15 @@ void GL_DeleteBModelVertexBuffer (void)
 }
 
 
+/*
+=============================================================
+
+	SURFACES VBO DRAWING
+
+=============================================================
+*/
+
+
 void R_SetupWorldVBOState (void)
 {
 	// Bind the buffers
