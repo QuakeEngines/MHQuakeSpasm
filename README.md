@@ -45,6 +45,8 @@ A variety of reasons.
 
 Personal preference. For example, the crosshair image I use is something I've used for years, I like it, it's clean, it's simple, it fits the Quake aesthetic well enough. 
 
+Reverting the original engine behaviours. Not everything the original did was perfect, and some of it was flat-out wrong. Some of what Fitz/QS changed, should - however and in my opinion - not have been changed. 
+
 In some cases I've gone back to Quake utility source code. So, for example, I reconstructed alias model bounding boxes and normals from modelgen.c, and my dynamic light formula is straight out of the light.exe source. 
 
 In one case I used an old .plan file entry from 1996 to determine the intent behind a strange-looking piece of code in the original sources. 
