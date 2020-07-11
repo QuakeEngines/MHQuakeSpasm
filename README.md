@@ -40,6 +40,15 @@ The GLSL C interface at this API level sucks.  The main problems with it are:
  
 True, most of these problems are solved in newer GL versions, but that would entail reaching beyond the API level I'm targetting.  ARB assembly programs, on the other hand, don't have these problems at all (which does make the claimed advantages of GLSL seem more like an attempt to retroactively justify a bad initial design).  While they do have other shortcomings (the ones most relevant to me being lack of the texGrad instruction and no array texture support) on balance they are just a more productive tool.
 
+### Why did you change some FitzQuake/QuakeSpasm behaviours? 
+A variety of reasons. 
+
+Personal preference. For example, the crosshair image I use is something I've used for years, I like it, it's clean, it's simple, it fits the Quake aesthetic well enough. 
+
+In some cases I've gone back to Quake utility source code. So, for example, I reconstructed alias model bounding boxes and normals from modelgen.c, and my dynamic light formula is straight out of the light.exe source. 
+
+In one case I used an old .plan file entry from 1996 to determine the intent behind a strange-looking piece of code in the original sources. 
+
 ### Where's r_drawflat? Your engine sucks! I hate you forever!
 That's OK.
 
