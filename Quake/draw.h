@@ -45,9 +45,6 @@ qpic_t *Draw_CachePic (const char *path);
 void Draw_NewGame (void);
 void Draw_Crosshair (void);
 
-void Draw_BeginString (void);
-void Draw_StringCharacter (int x, int y, int num);
-void Draw_EndString (void);
 void Draw_ScrollString (int x, int y, int width, char *str);
 
 void GL_SetCanvas (canvastype newcanvas); // johnfitz

@@ -122,6 +122,9 @@ qboolean	scr_remove_console = false;
 float		scr_disabled_time;
 
 void SCR_ScreenShot_f (void);
+void Con_DrawCharacter (char c);
+void Con_EndString (int x, int y);
+
 
 /*
 ===============================================================================
@@ -163,6 +166,7 @@ void SCR_CenterPrint (const char *str) // update centerprint data
 	}
 }
 
+
 void SCR_DrawCenterString (void) // actually do the drawing
 {
 	char *start;
@@ -173,7 +177,7 @@ void SCR_DrawCenterString (void) // actually do the drawing
 
 	GL_SetCanvas (CANVAS_MENU); // johnfitz
 
-// the finale prints the characters one at a time
+	// the finale prints the characters one at a time
 	if (cl.intermission)
 		remaining = scr_printspeed.value * (cl.time - scr_centertime_start);
 	else
@@ -203,27 +207,27 @@ void SCR_DrawCenterString (void) // actually do the drawing
 	else y = 100 - scr_center_lines * 4;
 #endif
 
-	Draw_BeginString ();
-
 	do
 	{
 		// scan the width of the line
 		for (l = 0; l < 40; l++)
 			if (start[l] == '\n' || !start[l])
 				break;
+
 		x = (320 - l * 8) / 2;	// johnfitz -- 320x200 coordinate system
 
-		for (j = 0; j < l; j++, x += 8)
+		for (j = 0; j < l; j++)
 		{
-			Draw_StringCharacter (x, y, start[j]);	// johnfitz -- stretch overlays
+			Con_DrawCharacter (start[j]);	// johnfitz -- stretch overlays
 
 			if (!remaining--)
 			{
-				Draw_EndString ();
+				Con_EndString (x, y);
 				return;
 			}
 		}
 
+		Con_EndString (x, y);
 		y += 8;
 
 		while (*start && *start != '\n')
@@ -233,8 +237,6 @@ void SCR_DrawCenterString (void) // actually do the drawing
 			break;
 		start++;		// skip the \n
 	} while (1);
-
-	Draw_EndString ();
 }
 
 
@@ -855,19 +857,19 @@ void SCR_DrawNotifyString (void)
 
 	y = 200 * 0.35; // johnfitz -- stretched overlays
 
-	Draw_BeginString ();
-
 	do
 	{
 		// scan the width of the line
 		for (l = 0; l < 40; l++)
 			if (start[l] == '\n' || !start[l])
 				break;
+
 		x = (320 - l * 8) / 2; // johnfitz -- stretched overlays
 
-		for (j = 0; j < l; j++, x += 8)
-			Draw_StringCharacter (x, y, start[j]);
+		for (j = 0; j < l; j++)
+			Con_DrawCharacter (start[j]);
 
+		Con_EndString (x, y);
 		y += 8;
 
 		while (*start && *start != '\n')
@@ -877,8 +879,6 @@ void SCR_DrawNotifyString (void)
 			break;
 		start++;		// skip the \n
 	} while (1);
-
-	Draw_EndString ();
 }
 
 

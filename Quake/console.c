@@ -1073,6 +1073,25 @@ DRAWING
 ==============================================================================
 */
 
+char con_string[1024];
+int con_strlen = 0;
+
+
+void Con_DrawCharacter (char c)
+{
+	con_string[con_strlen] = c;
+	con_strlen++;
+}
+
+
+void Con_EndString (int x, int y)
+{
+	con_string[con_strlen] = 0;
+	Draw_String (x, y, con_string);
+	con_strlen = 0;
+}
+
+
 /*
 ================
 Con_DrawNotify
@@ -1103,13 +1122,10 @@ void Con_DrawNotify (void)
 
 		clearnotify = 0;
 
-		Draw_BeginString ();
-
 		for (x = 0; x < con_linewidth; x++)
-			Draw_StringCharacter ((x + 1) << 3, v, text[x]);
+			Con_DrawCharacter (text[x]);
 
-		Draw_EndString ();
-
+		Con_EndString (8, v);
 		v += 8;
 	}
 
@@ -1133,18 +1149,14 @@ void Con_DrawNotify (void)
 		if (i > con_linewidth - x - 1)
 			text += i - con_linewidth + x + 1;
 
-		Draw_BeginString ();
-
 		while (*text)
 		{
-			Draw_StringCharacter (x << 3, v, *text);
-			x++;
+			Con_DrawCharacter (*text);
 			text++;
 		}
 
-		Draw_StringCharacter (x << 3, v, 10 + ((int) (realtime * con_cursorspeed) & 1));
-		Draw_EndString ();
-
+		Con_DrawCharacter (10 + ((int) (realtime * con_cursorspeed) & 1));
+		Con_EndString (x << 3, v);
 		v += 8;
 	}
 }
@@ -1172,12 +1184,10 @@ void Con_DrawInput (void)
 		ofs = 0;
 
 	// draw input string
-	Draw_BeginString ();
-
 	for (i = 0; key_lines[edit_line][i + ofs] && i < con_linewidth; i++)
-		Draw_StringCharacter ((i + 1) << 3, vid.conheight - 16, key_lines[edit_line][i + ofs]);
+		Con_DrawCharacter (key_lines[edit_line][i + ofs]);
 
-	Draw_EndString ();
+	Con_EndString (8, vid.conheight - 16);
 
 	// johnfitz -- new cursor handling
 	if (!((int) ((realtime - key_blinktime) * con_cursorspeed) & 1))
@@ -1223,20 +1233,18 @@ void Con_DrawConsole (int lines, qboolean drawinput)
 			j = 0;
 		text = con_text + (j % con_totallines) * con_linewidth;
 
-		Draw_BeginString ();
 		for (x = 0; x < con_linewidth; x++)
-			Draw_StringCharacter ((x + 1) << 3, y, text[x]);
-		Draw_EndString ();
+			Con_DrawCharacter (text[x]);
+
+		Con_EndString (8, y);
 	}
 
 	// draw scrollback arrows
 	if (con_backscroll)
 	{
 		y += 8; // blank line
-		Draw_BeginString ();
 		for (x = 0; x < con_linewidth; x += 4)
-			Draw_StringCharacter ((x + 1) << 3, y, '^');
-		Draw_EndString ();
+			Draw_Character ((x + 1) << 3, y, '^');
 		y += 8;
 	}
 
@@ -1248,11 +1256,10 @@ void Con_DrawConsole (int lines, qboolean drawinput)
 	y += 8;
 	q_snprintf (ver, sizeof (ver), "QuakeSpasm " QUAKESPASM_VER_STRING);
 
-	Draw_BeginString ();
 	for (x = 0; x < (int) strlen (ver); x++)
-		Draw_StringCharacter ((con_linewidth - strlen (ver) + x + 2) << 3, y, ver[x] /*+ 128*/);
+		Con_DrawCharacter (ver[x] /*+ 128*/);
 
-	Draw_EndString ();
+	Con_EndString ((con_linewidth - strlen (ver) + 2) << 3, y);
 }
 
 
