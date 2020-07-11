@@ -27,8 +27,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // extern unsigned char d_15to8table[65536]; // johnfitz -- never used
 
-cvar_t		scr_conalpha = { "scr_conalpha", "0.5", CVAR_ARCHIVE }; // johnfitz
-
 qpic_t *draw_disc;
 qpic_t *draw_backtile;
 
@@ -382,8 +380,6 @@ void Draw_Init (void)
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	};
-
-	Cvar_RegisterVariable (&scr_conalpha);
 
 	// clear scrap and allocate gltextures
 	memset (scrap_allocated, 0, sizeof (scrap_allocated));
@@ -748,14 +744,11 @@ Draw_ConsoleBackground -- johnfitz -- rewritten
 */
 void Draw_ConsoleBackground (void)
 {
-	qpic_t *pic;
-	float alpha;
+	qpic_t *pic = Draw_CachePic ("gfx/conback.lmp");
+	float alpha = (con_forcedup) ? 1.0 : ((float) scr_con_current / vid.conheight) * 1.2f; // original engine conalpha
 
-	pic = Draw_CachePic ("gfx/conback.lmp");
 	pic->width = vid.conwidth;
 	pic->height = vid.conheight;
-
-	alpha = (con_forcedup) ? 1.0 : scr_conalpha.value;
 
 	GL_SetCanvas (CANVAS_CONSOLE); // in case this is called from weird places
 	Draw_AlphaPic (0, 0, pic, alpha);
