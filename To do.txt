@@ -9,3 +9,4 @@ Green dynamic light is too bright???
 add sv_novis cvar
 r_speeds counters are no longer really relevant; dlights can go, draw calls needs to go in, etc.
 Optional primitive restart
+Detect dx10 gpu for npot robustness
