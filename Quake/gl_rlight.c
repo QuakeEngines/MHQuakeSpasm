@@ -603,11 +603,6 @@ with all the surfaces from all brush models
 */
 void GL_BuildLightmaps (void)
 {
-	// run a light animation at time 0 to setup the default lightstyles
-	// this must be done before lightmap building so that lightstyle caching for change tracking will work correctly
-	// (and the styles won't rebuild first time they're seen)
-	R_AnimateLight (0);
-
 	r_framecount = 1; // no dlightcache
 
 	// reset the lightmaps
