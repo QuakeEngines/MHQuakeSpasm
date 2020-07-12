@@ -93,7 +93,7 @@ GLAlias_CreateShaders
 */
 void GLAlias_CreateShaders (void)
 {
-	const GLchar *vp_lightmapped_source = \
+	const GLchar *vp_aliascommon_source = \
 		"!!ARBvp1.0\n"
 		"\n"
 		"TEMP position, normal;\n"
@@ -121,6 +121,9 @@ void GLAlias_CreateShaders (void)
 		"# interpolate the normal and store in texcoord[1] so that we can do per-fragment lighting for better quality\n"
 		"SUB normal, vertex.attrib[1], vertex.attrib[3];\n"
 		"MAD result.texcoord[1], lerpfactor, normal, vertex.attrib[3];\n"
+		"\n"
+		"# result.texcoord[2] is light vector\n"
+		"SUB result.texcoord[2], program.local[1], position;\n"
 		"\n"
 		"# set up fog coordinate\n"
 		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], position;\n"
@@ -186,45 +189,6 @@ void GLAlias_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	const GLchar *vp_dynamic_source = \
-		"!!ARBvp1.0\n"
-		"\n"
-		"TEMP position, normal;\n"
-		"PARAM lerpfactor = program.env[10];\n"
-		"PARAM scale = program.env[11];\n"
-		"PARAM scale_origin = program.env[12];\n"
-		"\n"
-		"# interpolate the position\n"
-		"SUB position, vertex.attrib[0], vertex.attrib[2];\n"
-		"MAD position, lerpfactor, position, vertex.attrib[2];\n"
-		"\n"
-		"# scale and offset\n"
-		"MAD position, position, scale, scale_origin;\n"
-		"MOV position.w, 1.0; # ensure\n"
-		"\n"
-		"# transform interpolated position to output position\n"
-		"DP4 result.position.x, state.matrix.mvp.row[0], position;\n"
-		"DP4 result.position.y, state.matrix.mvp.row[1], position;\n"
-		"DP4 result.position.z, state.matrix.mvp.row[2], position;\n"
-		"DP4 result.position.w, state.matrix.mvp.row[3], position;\n"
-		"\n"
-		"# copy over texcoord\n"
-		"MOV result.texcoord[0], vertex.attrib[4];\n"
-		"\n"
-		"# interpolate the normal and store in texcoord[1] so that we can do per-fragment lighting for better quality\n"
-		"SUB normal, vertex.attrib[1], vertex.attrib[3];\n"
-		"MAD result.texcoord[1], lerpfactor, normal, vertex.attrib[3];\n"
-		"\n"
-		"# result.texcoord[2] is light vector\n"
-		"SUB result.texcoord[2], program.local[1], position;\n"
-		"\n"
-		"# set up fog coordinate\n"
-		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], position;\n"
-		"\n"
-		"# done\n"
-		"END\n"
-		"\n";
-
 	// fogged shadows don't look great, but the shadows aren't particularly robust anyway, so what the hey
 	const GLchar *fp_shadow_source = \
 		"!!ARBfp1.0\n"
@@ -241,12 +205,12 @@ void GLAlias_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	r_alias_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_lightmapped_source);
+	r_alias_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, GL_GetVertexProgram (vp_aliascommon_source, SHADERFLAG_NONE));
 
 	for (int shaderflag = 0; shaderflag < 8; shaderflag++)
 		r_alias_lightmapped_fp[shaderflag] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFragmentProgram (fp_lightmapped_source, shaderflag));
 
-	r_alias_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_dynamic_source);
+	r_alias_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, GL_GetVertexProgram (vp_aliascommon_source, SHADERFLAG_DYNAMIC));
 	r_alias_dynamic_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDynamicLightFragmentProgramSource ());
 
 	r_alias_fullbright_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFullbrightFragmentProgramSource ());

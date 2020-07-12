@@ -38,7 +38,7 @@ extern cvar_t r_noshadow_list;
 extern gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz
 
 // must init to non-zero so that a memset-0 doesn't incorrectly cause a match
-int r_registration_sequence = 1;
+static int r_registration_sequence = 1;
 
 
 // generic buffersets that may be used for any model type
@@ -87,6 +87,12 @@ int R_NewBufferSetForName (char *name)
 }
 
 
+bufferset_t *R_GetBufferSetForModel (qmodel_t *m)
+{
+	return &r_buffersets[m->buffsetset];
+}
+
+
 void R_FreeUnusedBufferSets (void)
 {
 	for (int i = 0; i < MAX_MODELS; i++)
@@ -101,12 +107,6 @@ void R_FreeUnusedBufferSets (void)
 
 		memset (&r_buffersets[i], 0, sizeof (r_buffersets[i]));
 	}
-}
-
-
-bufferset_t *R_GetBufferSetForModel (qmodel_t *m)
-{
-	return &r_buffersets[m->buffsetset];
 }
 
 
@@ -142,6 +142,7 @@ static void R_Model_ExtraFlags_List_f (cvar_t *var)
 		Mod_SetExtraFlags (cl.model_precache[i]);
 }
 
+
 /*
 ====================
 R_SetWateralpha_f -- ericw
@@ -151,6 +152,7 @@ static void R_SetWateralpha_f (cvar_t *var)
 {
 	map_wateralpha = var->value;
 }
+
 
 /*
 ====================
@@ -162,6 +164,7 @@ static void R_SetLavaalpha_f (cvar_t *var)
 	map_lavaalpha = var->value;
 }
 
+
 /*
 ====================
 R_SetTelealpha_f -- ericw
@@ -172,6 +175,7 @@ static void R_SetTelealpha_f (cvar_t *var)
 	map_telealpha = var->value;
 }
 
+
 /*
 ====================
 R_SetSlimealpha_f -- ericw
@@ -181,6 +185,7 @@ static void R_SetSlimealpha_f (cvar_t *var)
 {
 	map_slimealpha = var->value;
 }
+
 
 /*
 ====================
@@ -274,6 +279,7 @@ void R_Init (void)
 	Fog_Init (); // johnfitz
 }
 
+
 /*
 ===============
 R_TranslatePlayerSkin -- johnfitz -- rewritten.  also, only handles new colors, not new skins
@@ -289,6 +295,7 @@ void R_TranslatePlayerSkin (int playernum)
 		if (playertextures[playernum])
 			TexMgr_ReloadImage (playertextures[playernum], top, bottom);
 }
+
 
 /*
 ===============
@@ -353,6 +360,7 @@ void R_NewGame (void)
 	for (int i = 0; i < MAX_SCOREBOARD; i++)
 		playertextures[i] = NULL;
 }
+
 
 /*
 =============
@@ -514,6 +522,29 @@ void R_DeleteShaders (void)
 {
 	glDeleteProgramsARB (gl_num_arb_programs, gl_arb_programs);
 	gl_num_arb_programs = 0;
+}
+
+
+const GLchar *GL_GetVertexProgram (const GLchar *base, int shaderflag)
+{
+	// shader combinations are dealt with by keeping a single copy of the shader source and selectively commenting out parts of it
+	char *test = NULL;
+
+	// putting the temporary copy in hunk memory; this is handed back in GL_Init after all shaders are created
+	char *modified = (char *) Hunk_Alloc (strlen (base) + 1);
+
+	// copy off the shader because we're going to modify it
+	strcpy (modified, base);
+
+	if (!(shaderflag & SHADERFLAG_DYNAMIC))
+	{
+		// remove lightvector computations
+		if ((test = strstr (modified, "SUB result.texcoord[2], program.local[1], position;")) != NULL) test[0] = '#'; // alias
+		if ((test = strstr (modified, "SUB result.texcoord[2], program.local[1], vertex.attrib[0];")) != NULL) test[0] = '#'; // brush
+	}
+
+	// hand back the modified shader source
+	return modified;
 }
 
 
