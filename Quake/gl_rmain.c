@@ -46,7 +46,7 @@ refdef_t	r_refdef;
 
 mleaf_t *r_viewleaf, *r_oldviewleaf;
 
-int		d_lightstylevalue[256];	// 8.8 fraction of base light value
+float	d_lightstylevalue[256];	// 8.8 fraction of base light value
 
 
 // MH - reverted a lot of these to Quake defaults

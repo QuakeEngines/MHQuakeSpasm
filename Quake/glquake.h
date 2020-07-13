@@ -94,7 +94,7 @@ extern	float	r_origin[4];
 // screen size info
 extern	refdef_t	r_refdef;
 extern	mleaf_t *r_viewleaf, *r_oldviewleaf;
-extern	int		d_lightstylevalue[256];	// 8.8 fraction of base light value
+extern	float		d_lightstylevalue[256];	// 8.8 fraction of base light value
 
 extern	cvar_t	r_norefresh;
 extern	cvar_t	r_drawentities;
@@ -222,7 +222,7 @@ void GL_DeleteBModelVertexBuffer (void);
 void GL_BuildBModelVertexBuffer (void);
 void GLMesh_ReloadVertexBuffers (void);
 
-int R_LightPoint (vec3_t p, int *color);
+int R_LightPoint (vec3_t p, float *color);
 
 qboolean R_AllocBlock (int w, int h, int *x, int *y, int *allocated, int block_width, int block_height);
 

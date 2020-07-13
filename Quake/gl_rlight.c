@@ -181,7 +181,7 @@ void R_AnimateLight (double time)
 		else if (length)
 			light = map[0];
 
-		d_lightstylevalue[i] = (int) (((256.0f * (light - 'a')) / ('m' - 'a')) + 0.5f);
+		d_lightstylevalue[i] = (float) (((256.0f * (light - 'a')) / ('m' - 'a')) + 0.5f) * 0.0078125f;
 	}
 }
 
@@ -339,7 +339,7 @@ vec3_t	lightspot;
 R_RecursiveLightPoint -- johnfitz -- replaced entire function for lit support via lordhavoc
 =============
 */
-int R_RecursiveLightPoint (int *color, mnode_t *node, vec3_t start, vec3_t end)
+int R_RecursiveLightPoint (float *lightcolor, mnode_t *node, vec3_t start, vec3_t end)
 {
 	if (node->contents < 0)
 		return false;		// didn't hit anything
@@ -350,7 +350,7 @@ int R_RecursiveLightPoint (int *color, mnode_t *node, vec3_t start, vec3_t end)
 
 	// mh - the compiler will optimize this better than we can
 	if ((back < 0) == (front < 0))
-		return R_RecursiveLightPoint (color, node->children[front < 0], start, end);
+		return R_RecursiveLightPoint (lightcolor, node->children[front < 0], start, end);
 
 	float frac = front / (front - back);
 
@@ -361,7 +361,7 @@ int R_RecursiveLightPoint (int *color, mnode_t *node, vec3_t start, vec3_t end)
 	};
 
 	// go down front side
-	if (R_RecursiveLightPoint (color, node->children[front < 0], start, mid))
+	if (R_RecursiveLightPoint (lightcolor, node->children[front < 0], start, mid))
 		return true;	// hit something
 
 	// check for impact on this node
@@ -394,11 +394,11 @@ int R_RecursiveLightPoint (int *color, mnode_t *node, vec3_t start, vec3_t end)
 
 			for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
 			{
-				unsigned scale = d_lightstylevalue[surf->styles[maps]];
+				float scale = d_lightstylevalue[surf->styles[maps]];
 
-				color[0] += lightmap[0] * scale;
-				color[1] += lightmap[1] * scale;
-				color[2] += lightmap[2] * scale;
+				lightcolor[0] += (float) lightmap[0] * scale;
+				lightcolor[1] += (float) lightmap[1] * scale;
+				lightcolor[2] += (float) lightmap[2] * scale;
 
 				lightmap += ((surf->extents[0] >> 4) + 1) * ((surf->extents[1] >> 4) + 1) * 3; // LordHavoc: *3 for colored lighting
 			}
@@ -412,7 +412,7 @@ int R_RecursiveLightPoint (int *color, mnode_t *node, vec3_t start, vec3_t end)
 	}
 
 	// go down back side
-	return R_RecursiveLightPoint (color, node->children[front >= 0], mid, end);
+	return R_RecursiveLightPoint (lightcolor, node->children[front >= 0], mid, end);
 }
 
 
@@ -421,13 +421,13 @@ int R_RecursiveLightPoint (int *color, mnode_t *node, vec3_t start, vec3_t end)
 R_LightPoint -- johnfitz -- replaced entire function for lit support via lordhavoc
 =============
 */
-int R_LightPoint (vec3_t p, int *color)
+int R_LightPoint (vec3_t p, float *lightcolor)
 {
 	if (!cl.worldmodel->lightdata)
 	{
-		color[0] = 255 * 128;
-		color[1] = 255 * 128;
-		color[2] = 255 * 128;
+		lightcolor[0] = 255;
+		lightcolor[1] = 255;
+		lightcolor[2] = 255;
 	}
 	else
 	{
@@ -437,16 +437,11 @@ int R_LightPoint (vec3_t p, int *color)
 			cl.worldmodel->mins[2] - 10.0f	// MH - trace the full worldmodel
 		};
 
-		color[0] = color[1] = color[2] = 0;
-		R_RecursiveLightPoint (color, cl.worldmodel->nodes, p, end);
+		lightcolor[0] = lightcolor[1] = lightcolor[2] = 0;
+		R_RecursiveLightPoint (lightcolor, cl.worldmodel->nodes, p, end);
 	}
 
-	// shift down for overbrighting range
-	if ((color[0] = color[0] >> (7 + (int) gl_overbright.value)) > 255) color[0] = 255;
-	if ((color[1] = color[1] >> (7 + (int) gl_overbright.value)) > 255) color[1] = 255;
-	if ((color[2] = color[2] >> (7 + (int) gl_overbright.value)) > 255) color[2] = 255;
-
-	return ((color[0] + color[1] + color[2]) * (1.0f / 3.0f));
+	return ((lightcolor[0] + lightcolor[1] + lightcolor[2]) * (1.0f / 3.0f));
 }
 
 

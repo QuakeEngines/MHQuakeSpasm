@@ -30,7 +30,6 @@ extern cvar_t gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
 gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz -- changed to an array of pointers
 
 static float	shadelight[4]; // johnfitz -- lit support via lordhavoc / MH - padded for shader params
-static float	ambientlight[4]; // padded for shader params
 
 extern	vec3_t			lightspot;
 
@@ -132,17 +131,14 @@ void GLAlias_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	// https://github.com/id-Software/Quake/blob/master/WinQuake/r_alias.c#L434
-	// software Quake MDL lighting
 	const GLchar *fp_lightmapped_source = \
 		"!!ARBfp1.0\n"
 		"\n"
-		"PARAM ambientlight = program.local[0];\n"
-		"PARAM shadelight = program.local[1];\n"
-		"PARAM shadevector = program.local[2];\n"
+		"PARAM shadelight = program.local[0];\n"
+		"PARAM shadevector = program.local[1];\n"
 		"\n"
-		"TEMP diff, fence, luma;\n"
-		"TEMP normal, lightcos, lmap;\n"
+		"TEMP diff, lmap, luma, fence;\n"
+		"TEMP normal, shadedot, dothi, dotlo;\n"
 		"\n"
 		"# perform the texturing\n"
 		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
@@ -158,13 +154,18 @@ void GLAlias_CreateShaders (void)
 		"MUL normal.xyz, normal.w, fragment.texcoord[1];\n"
 		"\n"
 		"# perform the lighting\n"
-		"DP3 lightcos, normal, shadevector;\n"
-		"MAX lightcos, lightcos, 0.0;\n"
-		"MAD lmap, shadelight, lightcos, ambientlight;\n"
+		"DP3 shadedot, normal, shadevector;\n"
+		"ADD dothi, shadedot, 1.0;\n"
+		"MAD dotlo, shadedot, 0.2954545, 1.0;\n"
+		"MAX shadedot, dothi, dotlo;\n"
+		"MUL lmap, shadedot, shadelight;\n"
 		"\n"
-		"# perform the lightmapping to output\n"
+		"# perform the overbrighting\n"
+		"MUL_SAT lmap.rgb, lmap, program.env[10].w; # inverse overbright factor\n"
+		"MUL lmap.rgb, lmap, program.env[10].z; # overbright factor\n"
+		"\n"
+		"# perform the lightmapping\n"
 		"MUL diff.rgb, diff, lmap;\n"
-		"MUL diff.rgb, diff, program.env[10].z; # overbright factor\n"
 		"\n"
 		"# perform the luma masking\n"
 		"MAX diff, diff, luma;\n"
@@ -274,9 +275,8 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 11, hdr->scale);
 	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 12, hdr->scale_origin);
 
-	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, ambientlight);
-	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, shadelight);
-	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 2, shadevector);
+	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, shadelight);
+	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, shadevector);
 
 	// draw
 	glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) set->vboindexofs);
@@ -534,25 +534,18 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 R_SetupAliasLighting -- johnfitz -- broken out from R_DrawAliasModel and rewritten
 =================
 */
-void R_MinimumLight (int *light, int minlight)
+void R_MinimumLight (float *light, float minlight)
 {
-	light[0] = ((light[0] + minlight) * 255) / (255 + minlight);
-	light[1] = ((light[1] + minlight) * 255) / (255 + minlight);
-	light[2] = ((light[2] + minlight) * 255) / (255 + minlight);
+	light[0] = ((light[0] + minlight) * 255.0f) / (255.0f + minlight);
+	light[1] = ((light[1] + minlight) * 255.0f) / (255.0f + minlight);
+	light[2] = ((light[2] + minlight) * 255.0f) / (255.0f + minlight);
 }
 
 
-#define LIGHT_MIN 5
-
-void R_SetupAliasLighting (entity_t *e, lerpdata_t *lerpdata, float *lightvec, QMATRIX *localMatrix)
+void R_SetupAliasLighting (entity_t *e, lerpdata_t *lerpdata)
 {
-	// https://github.com/id-Software/Quake/blob/master/WinQuake/r_main.c#L563
-	// https://github.com/id-Software/Quake/blob/master/WinQuake/r_alias.c#L620
-	// software Quake MDL lighting
-	int lightcolour[3];
-
 	// get base lighting - this should use the lerped origin
-	R_LightPoint (lerpdata->origin, lightcolour);
+	R_LightPoint (lerpdata->origin, shadelight);
 
 	// minimum light value on gun (24)
 	if (e == &cl.viewent)
@@ -560,44 +553,38 @@ void R_SetupAliasLighting (entity_t *e, lerpdata_t *lerpdata, float *lightvec, Q
 		if (r_viewleaf->contents == CONTENTS_SOLID)
 		{
 			// if we're in solid our trace down will just hit solid so we set to a constant lighting factor
-			lightcolour[0] = 192 >> (int) gl_overbright.value;
-			lightcolour[1] = 192 >> (int) gl_overbright.value;
-			lightcolour[2] = 192 >> (int) gl_overbright.value;
+			shadelight[0] = 192;
+			shadelight[1] = 192;
+			shadelight[2] = 192;
 		}
-		else R_MinimumLight (lightcolour, 24 >> (int) gl_overbright.value);
+		else R_MinimumLight (shadelight, 24);
 	}
 
 	// minimum light value on players (8)
 	if (e->entitynum >= 1 && e->entitynum <= cl.maxclients)
-		R_MinimumLight (lightcolour, 8 >> (int) gl_overbright.value);
+		R_MinimumLight (shadelight, 8);
 
 	// minimum light value on pickups (64)
 	if (e->model->flags & EF_ROTATE)
-		R_MinimumLight (lightcolour, 64 >> (int) gl_overbright.value);
+		R_MinimumLight (shadelight, 64);
 
-	// should this be run on an overall single-channel "intensity" which then gets modulated by a normalized colour?
-	for (int i = 0; i < 3; i++)
-	{
-		ambientlight[i] = lightcolour[i];
-		shadelight[i] = lightcolour[i];
+	// hack up the brightness when fullbrights but no overbrights (256)
+	// MH - the new "max-blending" removes the need for this
 
-		// clamp lighting so it doesn't overbright as much
-		if (ambientlight[i] > 128) ambientlight[i] = 128;
-		if (ambientlight[i] + shadelight[i] > 192) shadelight[i] = 192 - ambientlight[i];
+	// ericw -- shadevector is passed to the shader to compute shadedots inside the
+	// shader, see GLAlias_CreateShaders()
+	float an = e->angles[1] / 180 * M_PI;
 
-		// software Quake inverted the sense of lighting here so that 0 was brightest, so we would have to invert it again in our shader.
-		// instead we'll just cancel the 2 inversions out
-		if (ambientlight[i] < LIGHT_MIN) ambientlight[i] = LIGHT_MIN;
-		if (shadelight[i] < LIGHT_MIN) shadelight[i] = LIGHT_MIN;
+	shadevector[0] = cos (-an);
+	shadevector[1] = sin (-an);
+	shadevector[2] = 1;
 
-		// take the final colour down to 0..1 range
-		ambientlight[i] *= (1.0f / 255.0f);
-		shadelight[i] *= (1.0f / 255.0f);
-	}
+	VectorNormalize (shadevector);
+	// ericw --
 
-	R_Rotate (localMatrix, shadevector, lightvec);
-	shadevector[1] *= -1; // le-sigh, le-quake...
-	Vector3Normalize (shadevector); // is this already unit-length???
+	// take the final colour down to 0..1 range
+	// note: our DotProducts will potentially scale this up to 2*, so reduce the range a little further to compensate
+	VectorScale (shadelight, 1.0f / 320.0f, shadelight);
 }
 
 
@@ -641,20 +628,7 @@ void R_DrawAliasModel (entity_t *e)
 	R_BeginTransparentDrawing (alpha);
 
 	// set up lighting
-	if (e == &cl.viewent)
-	{
-		float viewlightvec[3];
-
-		Vector3Copy (viewlightvec, vup);
-		Vector3Inverse (viewlightvec);
-
-		R_SetupAliasLighting (e, &lerpdata, viewlightvec, &localMatrix);
-	}
-	else
-	{
-		float lightvec[3] = { -1, 0, 0 };
-		R_SetupAliasLighting (e, &lerpdata, lightvec, &localMatrix);
-	}
+	R_SetupAliasLighting (e, &lerpdata);
 
 	// set up textures
 	aliasskin_t *skin = R_GetAliasSkin (e, hdr);

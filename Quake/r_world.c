@@ -90,11 +90,13 @@ void GLWorld_CreateShaders (void)
 		"DP4 lmap.r, lmr, program.local[0];\n"
 		"DP4 lmap.g, lmg, program.local[0];\n"
 		"DP4 lmap.b, lmb, program.local[0];\n"
-		"MIN lmap, lmap, 1.0; # allow them to switch off overbrights here too\n"
+		"\n"
+		"# perform the overbrighting\n"
+		"MUL_SAT lmap.rgb, lmap, program.env[10].w; # inverse overbright factor\n"
+		"MUL lmap.rgb, lmap, program.env[10].z; # overbright factor\n"
 		"\n"
 		"# perform the lightmapping\n"
 		"MUL diff.rgb, diff, lmap;\n"
-		"MUL diff.rgb, diff, program.env[10].z; # overbright factor\n"
 		"\n"
 		"# perform the luma masking\n"
 		"MAX diff, diff, luma;\n"
@@ -270,11 +272,7 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 			float fstyles[4] = { 0, 0, 0, 0 };
 
 			for (int maps = 0; maps < MAXLIGHTMAPS && s->styles[maps] != 255; maps++)
-			{
-				// scale and overbright range
-				unsigned scale = d_lightstylevalue[s->styles[maps]];
-				fstyles[maps] = (scale >> (int) gl_overbright.value) * 0.0078125f;
-			}
+				fstyles[maps] = d_lightstylevalue[s->styles[maps]];
 
 			// write them out
 			// (to do - benchmark this vs sending them as a glVertexAttrib call - right now it's plenty fast enough)

@@ -1047,10 +1047,11 @@ qboolean GL_BeginRendering (int *x, int *y, int *width, int *height)
 	float gammaval = q_min (1.0, q_max (0.25, vid_gamma.value));
 
 	// MH - variable overbright
-	float	overbright = (float) (1 << (int) gl_overbright.value);
+	// overbright clamping is now done entirely in shader code which simplifies the C-side and makes the effect totally consistent everywhere it's used
+	float	overbright = (float) (1 << (int) Q_fclamp (gl_overbright.value, 0, 8));
 
 	// and set them all
-	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 10, contrastval, gammaval, overbright, 0);
+	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 10, contrastval, gammaval, overbright, 1.0f / overbright);
 
 	// force entity alpha to set next time it's seen
 	R_UpdateFragmentProgramAlpha (-1);
