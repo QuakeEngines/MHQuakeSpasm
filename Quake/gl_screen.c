@@ -325,7 +325,7 @@ void SCR_CalcRefdef (void)
 
 	// johnfitz -- rewrote this section
 	float size = scr_viewsize.value;
-	float scale = CLAMP (1.0, scr_sbarscale.value, (float) glwidth / 320.0);
+	float scale = Q_fclamp (scr_sbarscale.value, 1.0, (float) glwidth / 320.0);
 
 	if (size >= 120 || cl.intermission || scr_sbaralpha.value < 1) // johnfitz -- scr_sbaralpha.value
 		sb_lines = 0;
@@ -385,7 +385,7 @@ SCR_Conwidth_f -- johnfitz -- called when scr_conwidth or scr_conscale changes
 void SCR_Conwidth_f (cvar_t *var)
 {
 	vid.conwidth = (scr_conwidth.value > 0) ? (int) scr_conwidth.value : (scr_conscale.value > 0) ? (int) (vid.width / scr_conscale.value) : vid.width;
-	vid.conwidth = CLAMP (320, vid.conwidth, vid.width);
+	vid.conwidth = Q_fclamp (vid.conwidth, 320, vid.width);
 	vid.conwidth &= 0xFFFFFFF8;
 	vid.conheight = vid.conwidth * vid.height / vid.width;
 }

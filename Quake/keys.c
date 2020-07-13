@@ -317,7 +317,7 @@ void Key_Console (int key)
 				if (x != con_linewidth)
 					break;
 			}
-			con_backscroll = CLAMP (0, con_current - i % con_totallines - 2, con_totallines - (glheight >> 3) - 1);
+			con_backscroll = Q_fclamp (con_current - i % con_totallines - 2, 0, con_totallines - (glheight >> 3) - 1);
 		}
 		else	key_linepos = 1;
 		return;

@@ -709,6 +709,16 @@ __inline float Q_fclamp (const float val, const float mins, const float maxs)
 }
 
 
+__inline float Q_iclamp (const int val, const int mins, const int maxs)
+{
+	if (val < mins)
+		return mins;
+	else if (val > maxs)
+		return maxs;
+	else return val;
+}
+
+
 __inline float Q_fmin (const float _1, const float _2)
 {
 	return ((_1 < _2) ? _1 : _2);

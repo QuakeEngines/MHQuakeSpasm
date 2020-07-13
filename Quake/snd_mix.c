@@ -286,6 +286,7 @@ static void S_ApplyFilter (filter_t *filter, int *data, int stride, int count)
 	free (input);
 }
 
+
 /*
 ==============
 S_LowpassFilter
@@ -295,8 +296,7 @@ assumes 44100Hz sample rate, and lowpasses at around 5kHz
 memory should be a zero-filled filter_t struct
 ==============
 */
-static void S_LowpassFilter (int *data, int stride, int count,
-	filter_t *memory)
+static void S_LowpassFilter (int *data, int stride, int count, filter_t *memory)
 {
 	int M;
 	float bw, f_c;
@@ -409,8 +409,8 @@ void S_PaintChannels (int endtime)
 		// clipping
 		for (i = 0; i < end - paintedtime; i++)
 		{
-			paintbuffer[i].left = CLAMP (-32768 * 256, paintbuffer[i].left, 32767 * 256) / 2;
-			paintbuffer[i].right = CLAMP (-32768 * 256, paintbuffer[i].right, 32767 * 256) / 2;
+			paintbuffer[i].left = Q_iclamp (paintbuffer[i].left, -32768 * 256, 32767 * 256) / 2;
+			paintbuffer[i].right = Q_iclamp (paintbuffer[i].right, -32768 * 256, 32767 * 256) / 2;
 		}
 
 		// apply a lowpass filter

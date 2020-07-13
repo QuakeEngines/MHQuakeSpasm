@@ -822,14 +822,14 @@ void GL_SetCanvas (canvastype newcanvas)
 
 	case CANVAS_MENU:
 		s = q_min ((float) glwidth / 320.0, (float) glheight / 200.0);
-		s = CLAMP (1.0, scr_menuscale.value, s);
+		s = Q_fclamp (scr_menuscale.value, 1.0f, s);
 		// ericw -- doubled width to 640 to accommodate long keybindings
 		glOrtho (0, 640, 200, 0, -99999, 99999);
 		glViewport (glx + (glwidth - 320 * s) / 2, gly + ((glheight - 200 * s) / 3) * 2, 640 * s, 200 * s); // MH - adjust upwards
 		break;
 
 	case CANVAS_SBAR:
-		s = CLAMP (1.0, scr_sbarscale.value, (float) glwidth / 320.0);
+		s = Q_fclamp (scr_sbarscale.value, 1.0f, (float) glwidth / 320.0);
 
 		if (cl.gametype == GAME_DEATHMATCH)
 		{
@@ -845,7 +845,7 @@ void GL_SetCanvas (canvastype newcanvas)
 		break;
 
 	case CANVAS_CROSSHAIR: // 0,0 is center of viewport
-		s = CLAMP (1.0, scr_crosshairscale.value, 10.0);
+		s = Q_fclamp (scr_crosshairscale.value, 1.0, 10.0);
 		glOrtho (r_refdef.vrect.width / -2 / s, r_refdef.vrect.width / 2 / s, r_refdef.vrect.height / 2 / s, r_refdef.vrect.height / -2 / s, -99999, 99999);
 		glViewport (r_refdef.vrect.x, glheight - r_refdef.vrect.y - r_refdef.vrect.height, r_refdef.vrect.width & ~1, r_refdef.vrect.height & ~1);
 		break;

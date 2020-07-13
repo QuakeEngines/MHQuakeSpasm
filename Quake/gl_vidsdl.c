@@ -666,9 +666,9 @@ static void VID_Restart (void)
 	GL_SetupState ();
 	Fog_SetupState ();
 
-	// conwidth and conheight need to be recalculated
+	// conwidth and conheight need to be recalculated (is this not the same as the other one?  can we not just do this consistently in one 
 	vid.conwidth = (scr_conwidth.value > 0) ? (int) scr_conwidth.value : (scr_conscale.value > 0) ? (int) (vid.width / scr_conscale.value) : vid.width;
-	vid.conwidth = CLAMP (320, vid.conwidth, vid.width);
+	vid.conwidth = Q_fclamp (vid.conwidth, 320, vid.width);
 	vid.conwidth &= 0xFFFFFFF8;
 	vid.conheight = vid.conwidth * vid.height / vid.width;
 
@@ -684,6 +684,7 @@ static void VID_Restart (void)
 			IN_Activate ();
 	}
 }
+
 
 /*
 ================

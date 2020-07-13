@@ -149,25 +149,25 @@ void Fog_FogCommand_f (void)
 
 	case 4:
 		Fog_Update (fog_density,
-			CLAMP (0.0, atof (Cmd_Argv (1)), 1.0),
-			CLAMP (0.0, atof (Cmd_Argv (2)), 1.0),
-			CLAMP (0.0, atof (Cmd_Argv (3)), 1.0),
+			Q_fclamp (atof (Cmd_Argv (1)), 0.0, 1.0),
+			Q_fclamp (atof (Cmd_Argv (2)), 0.0, 1.0),
+			Q_fclamp (atof (Cmd_Argv (3)), 0.0, 1.0),
 			0.0);
 		break;
 
 	case 5:
 		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
-			CLAMP (0.0, atof (Cmd_Argv (2)), 1.0),
-			CLAMP (0.0, atof (Cmd_Argv (3)), 1.0),
-			CLAMP (0.0, atof (Cmd_Argv (4)), 1.0),
+			Q_fclamp (atof (Cmd_Argv (2)), 0.0, 1.0),
+			Q_fclamp (atof (Cmd_Argv (3)), 0.0, 1.0),
+			Q_fclamp (atof (Cmd_Argv (4)), 0.0, 1.0),
 			0.0);
 		break;
 
 	case 6: // TEST
 		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
-			CLAMP (0.0, atof (Cmd_Argv (2)), 1.0),
-			CLAMP (0.0, atof (Cmd_Argv (3)), 1.0),
-			CLAMP (0.0, atof (Cmd_Argv (4)), 1.0),
+			Q_fclamp (atof (Cmd_Argv (2)), 0.0, 1.0),
+			Q_fclamp (atof (Cmd_Argv (3)), 0.0, 1.0),
+			Q_fclamp (atof (Cmd_Argv (4)), 0.0, 1.0),
 			atof (Cmd_Argv (5)));
 		break;
 	}

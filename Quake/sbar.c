@@ -903,7 +903,8 @@ void Sbar_Draw (void)
 	GL_SetCanvas (CANVAS_DEFAULT); // johnfitz
 
 	// johnfitz -- don't waste fillrate by clearing the area behind the sbar
-	w = CLAMP (320.0f, scr_sbarscale.value * 320.0f, (float) glwidth);
+	w = Q_fclamp (scr_sbarscale.value * 320.0f, 320.0f, (float) glwidth);
+
 	if (sb_lines && glwidth > w)
 	{
 		if (scr_sbaralpha.value < 1)
@@ -1123,7 +1124,7 @@ void Sbar_MiniDeathmatchOverlay (void)
 	float	scale; // johnfitz
 	scoreboard_t *s;
 
-	scale = CLAMP (1.0, scr_sbarscale.value, (float) glwidth / 320.0); // johnfitz
+	scale = Q_fclamp (scr_sbarscale.value, 1.0f, (float) glwidth / 320.0); // johnfitz
 
 	// MAX_SCOREBOARDNAME = 32, so total width for this overlay plus sbar is 632, but we can cut off some i guess
 	if (glwidth / scale < 512 || scr_viewsize.value >= 120) // johnfitz -- test should consider scr_sbarscale

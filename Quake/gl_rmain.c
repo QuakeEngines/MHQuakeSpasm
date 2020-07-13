@@ -412,7 +412,7 @@ void R_SetupGL (void)
 
 	// johnfitz -- rewrote this section
 	// mh - allow fractional scales
-	float scale = CLAMP (1, r_scale.value, 4); // ericw -- see R_ScaleView
+	float scale = Q_fclamp (r_scale.value, 1, 4); // ericw -- see R_ScaleView
 
 	glViewport (
 		glx + r_refdef.vrect.x,
@@ -671,7 +671,7 @@ void R_ScaleView (void)
 {
 	// copied from R_SetupGL()
 	// mh - allow fractional scales
-	float scale = CLAMP (1, r_scale.value, 4);
+	float scale = Q_fclamp (r_scale.value, 1, 4);
 	int srcx = glx + r_refdef.vrect.x;
 	int srcy = gly + glheight - r_refdef.vrect.y - r_refdef.vrect.height;
 	int srcw = r_refdef.vrect.width / scale;
