@@ -80,6 +80,14 @@ cvar_t	r_nolerp_list = { "r_nolerp_list", "progs/flame.mdl,progs/flame2.mdl,prog
 cvar_t	r_noshadow_list = { "r_noshadow_list", "progs/flame2.mdl,progs/flame.mdl,progs/bolt1.mdl,progs/bolt2.mdl,progs/bolt3.mdl,progs/laser.mdl", CVAR_NONE };
 // johnfitz
 
+// mapper crap
+cvar_t	r_fullbright = { "r_fullbright", "0", CVAR_NONE };
+cvar_t	r_lightmap = { "r_lightmap", "0", CVAR_NONE };
+cvar_t	r_drawflat = { "r_drawflat", "0", CVAR_NONE };
+cvar_t	r_showtris = { "r_showtris", "0", CVAR_NONE };
+cvar_t	r_showbboxes = { "r_showbboxes", "0", CVAR_NONE };
+qboolean r_drawflat_cheatsafe, r_fullbright_cheatsafe, r_lightmap_cheatsafe; //johnfitz
+
 cvar_t	r_lavaalpha = { "r_lavaalpha", "0", CVAR_NONE };
 cvar_t	r_telealpha = { "r_telealpha", "0", CVAR_NONE };
 cvar_t	r_slimealpha = { "r_slimealpha", "0", CVAR_NONE };
@@ -507,6 +515,18 @@ void R_SetupView (void)
 
 	// same test as software Quake
 	r_dowarp = r_waterwarp.value && (r_viewleaf->contents <= CONTENTS_WATER);
+
+	// johnfitz -- cheat-protect some draw modes
+	// mh - this seems a bit bogus as it's client-side so a determined cheater could just remove them and recompile the source code
+	r_drawflat_cheatsafe = r_fullbright_cheatsafe = r_lightmap_cheatsafe = false;
+
+	if (cl.maxclients == 1)
+	{
+		if (r_drawflat.value) r_drawflat_cheatsafe = true;
+		else if (r_fullbright.value) r_fullbright_cheatsafe = true;
+		else if (r_lightmap.value) r_lightmap_cheatsafe = true;
+	}
+	// johnfitz
 }
 
 
@@ -564,7 +584,7 @@ R_DrawViewModel -- johnfitz -- gutted
 */
 void R_DrawViewModel (void)
 {
-	void SCR_SetFOV (refdef_t *rd, int fovvar, int width, int height);
+	void SCR_SetFOV (refdef_t * rd, int fovvar, int width, int height);
 	extern cvar_t scr_fov;
 	entity_t *e = &cl.viewent;
 

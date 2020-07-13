@@ -272,6 +272,13 @@ void R_Init (void)
 	Cvar_SetCallback (&r_telealpha, R_SetTelealpha_f);
 	Cvar_SetCallback (&r_slimealpha, R_SetSlimealpha_f);
 
+	// mapper crap
+	Cvar_RegisterVariable (&r_lightmap);
+	Cvar_RegisterVariable (&r_fullbright);
+	Cvar_RegisterVariable (&r_drawflat);
+	Cvar_RegisterVariable (&r_showtris);
+	Cvar_RegisterVariable (&r_showbboxes);
+
 	R_InitParticles ();
 	R_SetClearColor_f (&r_clearcolor); // johnfitz
 

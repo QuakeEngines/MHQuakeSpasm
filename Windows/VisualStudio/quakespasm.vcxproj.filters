@@ -16,6 +16,9 @@
     <Filter Include="GLEW">
       <UniqueIdentifier>{289c9af3-86fd-4695-b7e2-dc76445bc5ee}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Codecs">
+      <UniqueIdentifier>{523194de-3b47-40fd-91a1-c01f4a2bd293}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Quake\bgmusic.c">
@@ -457,5 +460,43 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\README.md" />
+    <None Include="..\codecs\x86\libmad-0.dll">
+      <Filter>Codecs</Filter>
+    </None>
+    <None Include="..\codecs\x86\libmikmod-3.dll">
+      <Filter>Codecs</Filter>
+    </None>
+    <None Include="..\codecs\x86\libmpg123-0.dll">
+      <Filter>Codecs</Filter>
+    </None>
+    <None Include="..\codecs\x86\libogg-0.dll">
+      <Filter>Codecs</Filter>
+    </None>
+    <None Include="..\codecs\x86\libopus-0.dll">
+      <Filter>Codecs</Filter>
+    </None>
+    <None Include="..\codecs\x86\libopusfile-0.dll">
+      <Filter>Codecs</Filter>
+    </None>
+    <None Include="..\codecs\x86\libvorbis-0.dll">
+      <Filter>Codecs</Filter>
+    </None>
+    <None Include="..\codecs\x86\libvorbisfile-3.dll">
+      <Filter>Codecs</Filter>
+    </None>
+    <None Include="..\codecs\x86\libvorbisidec-1.dll">
+      <Filter>Codecs</Filter>
+    </None>
+    <None Include="..\codecs\x86\libxmp.dll">
+      <Filter>Codecs</Filter>
+    </None>
+    <None Include="..\SDL2\lib\SDL2.dll">
+      <Filter>Codecs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="..\codecs\x86\libFLAC-8.dll">
+      <Filter>Codecs</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

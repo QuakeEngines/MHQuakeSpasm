@@ -118,6 +118,14 @@ extern	cvar_t	gl_nocolors;
 
 extern	cvar_t	r_shadows;
 
+// mapper crap
+extern	cvar_t	r_lightmap;
+extern	cvar_t	r_fullbright;
+extern cvar_t r_drawflat;
+extern cvar_t r_showtris;
+extern cvar_t r_showbboxes;
+extern qboolean r_drawflat_cheatsafe, r_fullbright_cheatsafe, r_lightmap_cheatsafe; //johnfitz
+
 extern int		gl_stencilbits;
 
 extern cvar_t gl_overbright;
