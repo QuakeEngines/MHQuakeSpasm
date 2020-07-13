@@ -104,6 +104,9 @@ GLuint r_polyblend_fp = 0;
 GLuint r_scaleview_vp = 0;
 GLuint r_scaleview_fp = 0;
 
+GLuint r_bbox_vp = 0;
+GLuint r_bbox_fp = 0;
+
 
 /*
 =============
@@ -164,11 +167,37 @@ void GLMain_CreateShaders (void)
 		"END\n"
 		"\n";
 
+	const GLchar *vp_bbox_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"# transform position to output\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.position;\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.position;\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.position;\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.position;\n"
+		"\n"
+		"# move colour to output\n"
+		"MOV result.color, vertex.color;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	// this is just white so no point in applying gamma or contrast
+	const GLchar *fp_bbox_source = \
+		"!!ARBfp1.0\n"
+		"MOV result.color, fragment.color;\n"
+		"END\n"
+		"\n";
+
 	r_polyblend_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_polyblend_source);
 	r_polyblend_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_polyblend_source);
 
 	r_scaleview_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_scaleview_source);
 	r_scaleview_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_scaleview_source);
+
+	r_bbox_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_bbox_source);
+	r_bbox_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_bbox_source);
 }
 
 
@@ -243,7 +272,7 @@ R_CullModelForEntity -- johnfitz -- uses correct bounds based on rotation
 */
 qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix, qboolean rotated)
 {
-	vec3_t mins, maxs;
+	vec3_t bbmins, bbmaxs;
 
 	if (e == &cl.viewent)
 	{
@@ -266,13 +295,13 @@ qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix, qboolean rotat
 		if (rotated)
 		{
 			// and rotate it
-			R_RotateBBox (localMatrix, amins, amaxs, mins, maxs);
+			R_RotateBBox (localMatrix, amins, amaxs, bbmins, bbmaxs);
 		}
 		else
 		{
 			// fast case - we can't use e->origin because it might be lerped, so the actual origin used for the transform is in m4x4[3]
-			Vector3Add (mins, localMatrix->m4x4[3], amins);
-			Vector3Add (maxs, localMatrix->m4x4[3], amaxs);
+			Vector3Add (bbmins, localMatrix->m4x4[3], amins);
+			Vector3Add (bbmaxs, localMatrix->m4x4[3], amaxs);
 		}
 	}
 	else if (e->model->type == mod_brush)
@@ -280,13 +309,13 @@ qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix, qboolean rotat
 		if (rotated)
 		{
 			// straightforward bbox rotation
-			R_RotateBBox (localMatrix, e->model->mins, e->model->maxs, mins, maxs);
+			R_RotateBBox (localMatrix, e->model->mins, e->model->maxs, bbmins, bbmaxs);
 		}
 		else
 		{
 			// fast case
-			Vector3Add (mins, e->origin, e->model->mins);
-			Vector3Add (maxs, e->origin, e->model->maxs);
+			Vector3Add (bbmins, e->origin, e->model->mins);
+			Vector3Add (bbmaxs, e->origin, e->model->maxs);
 		}
 	}
 	else
@@ -296,7 +325,7 @@ qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix, qboolean rotat
 	}
 
 	// now do the cull test correctly on the rotated bbox
-	return R_CullBox (mins, maxs);
+	return R_CullBox (bbmins, bbmaxs);
 }
 
 
@@ -650,6 +679,103 @@ void R_DrawViewModel (void)
 
 
 /*
+================
+R_EmitWirePoint -- johnfitz -- draws a wireframe cross shape for point entities
+================
+*/
+void R_EmitWirePoint (vec3_t origin)
+{
+	int size = 8;
+
+	glColor3ub (255, 255, 0);
+	glBegin (GL_LINES);
+	glVertex3f (origin[0] - size, origin[1], origin[2]);
+	glVertex3f (origin[0] + size, origin[1], origin[2]);
+	glVertex3f (origin[0], origin[1] - size, origin[2]);
+	glVertex3f (origin[0], origin[1] + size, origin[2]);
+	glVertex3f (origin[0], origin[1], origin[2] - size);
+	glVertex3f (origin[0], origin[1], origin[2] + size);
+	glEnd ();
+}
+
+/*
+================
+R_EmitWireBox -- johnfitz -- draws one axis aligned bounding box
+================
+*/
+void R_EmitWireBox (vec3_t mins, vec3_t maxs)
+{
+	glColor3ub (255, 0, 255);
+	glBegin (GL_QUAD_STRIP);
+	glVertex3f (mins[0], mins[1], mins[2]);
+	glVertex3f (mins[0], mins[1], maxs[2]);
+	glVertex3f (maxs[0], mins[1], mins[2]);
+	glVertex3f (maxs[0], mins[1], maxs[2]);
+	glVertex3f (maxs[0], maxs[1], mins[2]);
+	glVertex3f (maxs[0], maxs[1], maxs[2]);
+	glVertex3f (mins[0], maxs[1], mins[2]);
+	glVertex3f (mins[0], maxs[1], maxs[2]);
+	glVertex3f (mins[0], mins[1], mins[2]);
+	glVertex3f (mins[0], mins[1], maxs[2]);
+	glEnd ();
+}
+
+/*
+================
+R_ShowBoundingBoxes -- johnfitz
+
+draw bounding boxes -- the server-side boxes, not the renderer cullboxes
+================
+*/
+void R_ShowBoundingBoxes (void)
+{
+	if (!r_showbboxes.value || cl.maxclients > 1 || !r_drawentities.value || !sv.active)
+		return;
+
+	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
+	GL_EnableVertexAttribArrays (0);
+	GL_BindPrograms (r_bbox_vp, r_bbox_fp);
+
+	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
+	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
+
+	// this is only used here so no point in doing a state change filter for it
+	glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
+	GL_PolygonOffset (OFFSET_SHOWTRIS);
+	glDisable (GL_CULL_FACE);
+
+	// start on the edict after the world
+	for (int i = 1; i < sv.num_edicts; i++)
+	{
+		edict_t *ed = EDICT_NUM (i);
+		extern edict_t *sv_player;
+		vec3_t mins, maxs;
+
+		if (ed == sv_player)
+			continue; // don't draw player's own bbox
+
+		if (ed->v.mins[0] == ed->v.maxs[0] && ed->v.mins[1] == ed->v.maxs[1] && ed->v.mins[2] == ed->v.maxs[2])
+		{
+			// point entity
+			R_EmitWirePoint (ed->v.origin);
+		}
+		else
+		{
+			// box entity
+			VectorAdd (ed->v.mins, ed->v.origin, mins);
+			VectorAdd (ed->v.maxs, ed->v.origin, maxs);
+			R_EmitWireBox (mins, maxs);
+		}
+	}
+
+	// this is only used here so no point in doing a state change filter for it
+	glEnable (GL_CULL_FACE);
+	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
+	GL_PolygonOffset (OFFSET_NONE);
+}
+
+
+/*
 ============
 R_DrawPolyBlend -- johnfitz -- moved here from gl_rmain.c, and rewritten to use glOrtho
 
@@ -789,6 +915,8 @@ void R_RenderView (void)
 	R_DrawParticlesARB ();
 
 	R_DrawViewModel (); // johnfitz -- moved here from R_RenderView
+
+	R_ShowBoundingBoxes ();
 
 	R_ScaleView ();
 

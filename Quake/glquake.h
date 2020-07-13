@@ -145,6 +145,7 @@ extern	qboolean	gl_anisotropy_able;
 #define OFFSET_NONE 0
 #define OFFSET_DECAL -1
 #define OFFSET_FOG -2
+#define OFFSET_SHOWTRIS -3
 
 void GL_PolygonOffset (int);
 

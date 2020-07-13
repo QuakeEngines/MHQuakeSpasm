@@ -425,9 +425,8 @@ int R_LightPoint (vec3_t p, float *lightcolor)
 {
 	if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
 	{
-		lightcolor[0] = 255;
-		lightcolor[1] = 255;
-		lightcolor[2] = 255;
+		// in practice this will go through an alternative shader path that just doesn't have lighting, so these values actually have no effect
+		lightcolor[0] = lightcolor[1] = lightcolor[2] = 255;
 	}
 	else
 	{
