@@ -104,7 +104,8 @@ GLuint r_polyblend_fp = 0;
 GLuint r_scaleview_vp = 0;
 GLuint r_scaleview_fp = 0;
 
-GLuint r_bbox_vp = 0;
+GLuint r_wirepoint_vp = 0;
+GLuint r_wirebox_vp = 0;
 GLuint r_bbox_fp = 0;
 
 
@@ -167,23 +168,50 @@ void GLMain_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	const GLchar *vp_bbox_source = \
+	const GLchar *vp_wirepoint_source = \
 		"!!ARBvp1.0\n"
 		"\n"
+		"TEMP position;\n"
+		"ADD position, vertex.attrib[0], program.local[0];\n"
+		"\n"
 		"# transform position to output\n"
-		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.position;\n"
-		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.position;\n"
-		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.position;\n"
-		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.position;\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], position;\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], position;\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], position;\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], position;\n"
 		"\n"
 		"# move colour to output\n"
-		"MOV result.color, vertex.color;\n"
+		"MOV result.color, {1.0, 1.0, 0.0, 1.0};\n"
 		"\n"
 		"# done\n"
 		"END\n"
 		"\n";
 
-	// this is just white so no point in applying gamma or contrast
+	const GLchar *vp_wirebox_source = \
+		"!!ARBvp1.0\n"
+		"\n"
+		"TEMP position;\n"
+		"\n"
+		"# interpolate the position\n"
+		"SUB position, program.local[2], program.local[1];\n"
+		"MAD position, vertex.attrib[0], position, program.local[1];\n"
+		"ADD position, position, program.local[0];\n"
+		"MOV position.w, 1.0; # ensure\n"
+		"\n"
+		"# transform position to output\n"
+		"DP4 result.position.x, state.matrix.mvp.row[0], position;\n"
+		"DP4 result.position.y, state.matrix.mvp.row[1], position;\n"
+		"DP4 result.position.z, state.matrix.mvp.row[2], position;\n"
+		"DP4 result.position.w, state.matrix.mvp.row[3], position;\n"
+		"\n"
+		"# move colour to output\n"
+		"MOV result.color, {1.0, 0.0, 1.0, 1.0};\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	// each channel is full-intensity or zero, so no point in applying gamma or contrast
 	const GLchar *fp_bbox_source = \
 		"!!ARBfp1.0\n"
 		"MOV result.color, fragment.color;\n"
@@ -196,7 +224,8 @@ void GLMain_CreateShaders (void)
 	r_scaleview_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_scaleview_source);
 	r_scaleview_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_scaleview_source);
 
-	r_bbox_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_bbox_source);
+	r_wirepoint_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_wirepoint_source);
+	r_wirebox_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_wirebox_source);
 	r_bbox_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_bbox_source);
 }
 
@@ -685,40 +714,26 @@ R_EmitWirePoint -- johnfitz -- draws a wireframe cross shape for point entities
 */
 void R_EmitWirePoint (vec3_t origin)
 {
-	int size = 8;
-
-	glColor3ub (255, 255, 0);
-	glBegin (GL_LINES);
-	glVertex3f (origin[0] - size, origin[1], origin[2]);
-	glVertex3f (origin[0] + size, origin[1], origin[2]);
-	glVertex3f (origin[0], origin[1] - size, origin[2]);
-	glVertex3f (origin[0], origin[1] + size, origin[2]);
-	glVertex3f (origin[0], origin[1], origin[2] - size);
-	glVertex3f (origin[0], origin[1], origin[2] + size);
-	glEnd ();
+	GL_BindPrograms (r_wirepoint_vp, r_bbox_fp);
+	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, origin[0], origin[1], origin[2], 0);
+	glDrawArrays (GL_LINES, 0, 6);
 }
+
 
 /*
 ================
 R_EmitWireBox -- johnfitz -- draws one axis aligned bounding box
 ================
 */
-void R_EmitWireBox (vec3_t mins, vec3_t maxs)
+void R_EmitWireBox (vec3_t origin, vec3_t mins, vec3_t maxs)
 {
-	glColor3ub (255, 0, 255);
-	glBegin (GL_QUAD_STRIP);
-	glVertex3f (mins[0], mins[1], mins[2]);
-	glVertex3f (mins[0], mins[1], maxs[2]);
-	glVertex3f (maxs[0], mins[1], mins[2]);
-	glVertex3f (maxs[0], mins[1], maxs[2]);
-	glVertex3f (maxs[0], maxs[1], mins[2]);
-	glVertex3f (maxs[0], maxs[1], maxs[2]);
-	glVertex3f (mins[0], maxs[1], mins[2]);
-	glVertex3f (mins[0], maxs[1], maxs[2]);
-	glVertex3f (mins[0], mins[1], mins[2]);
-	glVertex3f (mins[0], mins[1], maxs[2]);
-	glEnd ();
+	GL_BindPrograms (r_wirebox_vp, r_bbox_fp);
+	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, origin[0], origin[1], origin[2], 0);
+	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 1, mins[0], mins[1], mins[2], 0);
+	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 2, maxs[0], maxs[1], maxs[2], 0);
+	glDrawArrays (GL_QUAD_STRIP, 6, 10);
 }
+
 
 /*
 ================
@@ -732,14 +747,21 @@ void R_ShowBoundingBoxes (void)
 	if (!r_showbboxes.value || cl.maxclients > 1 || !r_drawentities.value || !sv.active)
 		return;
 
+	float bbverts[16][3] = {
+		{-8, 0, 0}, {8, 0, 0}, {0, -8, 0}, {0, 8, 0}, {0, 0, -8}, {0, 0, 8}, // wire-point verts at origin
+		{0, 0, 0}, {0, 0, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}, {0, 1, 0}, {0, 1, 1}, {0, 0, 0}, {0, 0, 1} // wire-box, 0 = mins, 1 = maxs
+	};
+
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
-	GL_EnableVertexAttribArrays (0);
-	GL_BindPrograms (r_bbox_vp, r_bbox_fp);
+	GL_EnableVertexAttribArrays (VAA0);
+
+	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 0, bbverts);
 
 	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
 	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
 
 	// this is only used here so no point in doing a state change filter for it
+	// if we're drawing with depth test disabled, what's the point of using polygon offset????
 	glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
 	GL_PolygonOffset (OFFSET_SHOWTRIS);
 	glDisable (GL_CULL_FACE);
@@ -749,7 +771,6 @@ void R_ShowBoundingBoxes (void)
 	{
 		edict_t *ed = EDICT_NUM (i);
 		extern edict_t *sv_player;
-		vec3_t mins, maxs;
 
 		if (ed == sv_player)
 			continue; // don't draw player's own bbox
@@ -762,9 +783,7 @@ void R_ShowBoundingBoxes (void)
 		else
 		{
 			// box entity
-			VectorAdd (ed->v.mins, ed->v.origin, mins);
-			VectorAdd (ed->v.maxs, ed->v.origin, maxs);
-			R_EmitWireBox (mins, maxs);
+			R_EmitWireBox (ed->v.origin, ed->v.mins, ed->v.maxs);
 		}
 	}
 
