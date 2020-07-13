@@ -240,6 +240,7 @@ qboolean R_AllocBlock (int w, int h, int *x, int *y, int *allocated, int block_w
 
 // vertex program flags
 #define SHADERFLAG_DYNAMIC	(1 << 0)
+#define SHADERFLAG_DRAWFLAT	(1 << 1)
 
 // fragment program flags
 #define SHADERFLAG_FENCE	(1 << 0)
@@ -327,6 +328,7 @@ void R_PushDlights_New (entity_t *e, QMATRIX *localMatrix, qmodel_t *mod, mnode_
 extern int r_dlightframecount;
 const GLchar *GL_GetDynamicLightFragmentProgramSource (void);
 const GLchar *GL_GetFullbrightFragmentProgramSource (void);
+const GLchar *GL_GetDrawflatFragmentProgramSource (void);
 void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl);
 void GL_SetupDynamicLight (dlight_t *dl);
 

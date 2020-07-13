@@ -132,6 +132,7 @@ typedef struct brushpolyvert_s {
 	float st[2];
 	unsigned short lm[2];
 	signed char norm[4];
+	byte flatcolor[4];
 } brushpolyvert_t;
 
 
@@ -295,6 +296,7 @@ typedef struct meshxyz_s {
 
 typedef struct meshst_s {
 	float st[2];
+	byte flatcolor[4];
 } meshst_t;
 // --
 

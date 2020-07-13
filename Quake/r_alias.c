@@ -82,6 +82,9 @@ GLuint r_alias_lightmapped_fp[8] = { 0 };
 GLuint r_alias_dynamic_vp = 0;
 GLuint r_alias_dynamic_fp = 0;
 
+GLuint r_alias_drawflat_vp = 0;
+GLuint r_alias_drawflat_fp = 0;
+
 GLuint r_alias_fullbright_fp = 0;
 GLuint r_alias_shadow_fp = 0;
 
@@ -123,6 +126,9 @@ void GLAlias_CreateShaders (void)
 		"\n"
 		"# result.texcoord[2] is light vector\n"
 		"SUB result.texcoord[2], program.local[1], position;\n"
+		"\n"
+		"# copy over drawflat colour\n"
+		"MOV result.color, vertex.attrib[5];\n"
 		"\n"
 		"# set up fog coordinate\n"
 		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], position;\n"
@@ -214,6 +220,9 @@ void GLAlias_CreateShaders (void)
 	r_alias_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, GL_GetVertexProgram (vp_aliascommon_source, SHADERFLAG_DYNAMIC));
 	r_alias_dynamic_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDynamicLightFragmentProgramSource ());
 
+	r_alias_drawflat_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, GL_GetVertexProgram (vp_aliascommon_source, SHADERFLAG_DRAWFLAT));
+	r_alias_drawflat_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDrawflatFragmentProgramSource ());
+
 	r_alias_fullbright_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFullbrightFragmentProgramSource ());
 	r_alias_shadow_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, fp_shadow_source);
 }
@@ -236,19 +245,26 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	GL_BindBuffer (GL_ARRAY_BUFFER, set->vertexbuffer);
 	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, set->indexbuffer);
 
-	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3 | VAA4);
+	if (r_drawflat_cheatsafe)
+	{
+		GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3 | VAA4 | VAA5);
+		glVertexAttribPointer (5, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof (meshst_t), (void *) (intptr_t) (set->vbostofs + offsetof (meshst_t, flatcolor)));
+	}
+	else GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3 | VAA4);
 
 	glVertexAttribPointer (0, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (set, hdr, lerpdata->pose1));
 	glVertexAttribPointer (1, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (set, hdr, lerpdata->pose1));
 	glVertexAttribPointer (2, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (set, hdr, lerpdata->pose2));
 	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (set, hdr, lerpdata->pose2));
-	glVertexAttribPointer (4, 2, GL_FLOAT, GL_FALSE, 0, (void *) (intptr_t) set->vbostofs);
+	glVertexAttribPointer (4, 2, GL_FLOAT, GL_FALSE, sizeof (meshst_t), (void *) (intptr_t) set->vbostofs);
 
 	// set textures
 	GL_BindTexture (GL_TEXTURE0, tx);
 
 	// select shaders
-	if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
+	if (r_drawflat_cheatsafe)
+		GL_BindPrograms (r_alias_drawflat_vp, r_alias_drawflat_fp);
+	else if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
 		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_fullbright_fp);
 	else
 	{
@@ -657,7 +673,7 @@ void R_DrawAliasModel (entity_t *e)
 		;		// translucents don't have dlights (light goes through them!)
 	else if (!r_dynamic.value)
 		;		// dlights switched off
-	else if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
+	else if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe || r_drawflat_cheatsafe)
 		;		// no light data
 	else GL_DrawAliasDynamicLights (e, &localMatrix, hdr, &lerpdata);
 

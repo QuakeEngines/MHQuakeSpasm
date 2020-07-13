@@ -62,6 +62,37 @@ const GLchar *GL_GetFullbrightFragmentProgramSource (void)
 }
 
 
+const GLchar *GL_GetDrawflatFragmentProgramSource (void)
+{
+	static const GLchar *src = \
+		"!!ARBfp1.0\n"
+		"\n"
+		"TEMP diff;\n"
+		"\n"
+		"# perform the fogging\n"
+		"TEMP fogFactor;\n"
+		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
+		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
+		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
+		"LRP diff.rgb, fogFactor.x, fragment.color, state.fog.color;\n"
+		"\n"
+		"# apply the contrast\n"
+		"MUL diff.rgb, diff, program.env[10].x;\n"
+		"\n"
+		"# apply the gamma (POW only operates on scalars)\n"
+		"POW result.color.r, diff.r, program.env[10].y;\n"
+		"POW result.color.g, diff.g, program.env[10].y;\n"
+		"POW result.color.b, diff.b, program.env[10].y;\n"
+		"MOV result.color.a, program.env[0].a;\n"
+		"\n"
+		"# done\n"
+		"END\n"
+		"\n";
+
+	return src;
+}
+
+
 const GLchar *GL_GetDynamicLightFragmentProgramSource (void)
 {
 	// this program is common to BSP and MDL so let's only define it once
@@ -423,7 +454,7 @@ R_LightPoint -- johnfitz -- replaced entire function for lit support via lordhav
 */
 int R_LightPoint (vec3_t p, float *lightcolor)
 {
-	if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
+	if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe || r_drawflat_cheatsafe)
 	{
 		// in practice this will go through an alternative shader path that just doesn't have lighting, so these values actually have no effect
 		lightcolor[0] = lightcolor[1] = lightcolor[2] = 255;

@@ -550,6 +550,13 @@ const GLchar *GL_GetVertexProgram (const GLchar *base, int shaderflag)
 		if ((test = strstr (modified, "SUB result.texcoord[2], program.local[1], vertex.attrib[0];")) != NULL) test[0] = '#'; // brush
 	}
 
+	if (!(shaderflag & SHADERFLAG_DRAWFLAT))
+	{
+		// remove drawflat computations
+		if ((test = strstr (modified, "MOV result.color, vertex.attrib[5];")) != NULL) test[0] = '#'; // alias
+		if ((test = strstr (modified, "MOV result.color, vertex.attrib[4];")) != NULL) test[0] = '#'; // brush
+	}
+
 	// hand back the modified shader source
 	return modified;
 }

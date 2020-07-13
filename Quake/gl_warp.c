@@ -201,6 +201,10 @@ R_DrawTextureChains_Water -- johnfitz
 */
 void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain)
 {
+	// drawflat case is handled as part of the main chains
+	if (r_drawflat_cheatsafe)
+		return;
+
 	R_SetupWorldVBOState ();
 
 	GL_BindPrograms (r_waterwarp_vp, r_waterwarp_fp);

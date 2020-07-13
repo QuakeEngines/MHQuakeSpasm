@@ -38,6 +38,9 @@ static GLuint r_brush_dynamic_fp = 0;
 static GLuint r_brush_notexture_vp = 0;
 static GLuint r_brush_notexture_fp = 0;
 
+static GLuint r_brush_drawflat_vp = 0;
+static GLuint r_brush_drawflat_fp = 0;
+
 /*
 =============
 GLWorld_CreateShaders
@@ -59,6 +62,9 @@ void GLWorld_CreateShaders (void)
 		"\n"
 		"# copy over lightmap texcoord\n"
 		"MOV result.texcoord[1], vertex.attrib[2];\n"
+		"\n"
+		"# copy over drawflat colour\n"
+		"MOV result.color, vertex.attrib[4];\n"
 		"\n"
 		"# set up fog coordinate\n"
 		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
@@ -165,7 +171,7 @@ void GLWorld_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	r_brush_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_lightmapped_source);
+	r_brush_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, GL_GetVertexProgram (vp_lightmapped_source, SHADERFLAG_NONE));
 
 	for (int shaderflag = 0; shaderflag < 8; shaderflag++)
 		r_brush_lightmapped_fp[shaderflag] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFragmentProgram (fp_lightmapped_source, shaderflag));
@@ -175,6 +181,9 @@ void GLWorld_CreateShaders (void)
 
 	r_brush_notexture_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_notexture_source);
 	r_brush_notexture_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFullbrightFragmentProgramSource ());
+
+	r_brush_drawflat_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, GL_GetVertexProgram (vp_lightmapped_source, SHADERFLAG_DRAWFLAT));
+	r_brush_drawflat_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDrawflatFragmentProgramSource ());
 }
 
 
@@ -387,6 +396,11 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 			// nothing was chained
 			continue;
 		}
+		else if (r_drawflat_cheatsafe)
+		{
+			GL_BindPrograms (r_brush_drawflat_vp, r_brush_drawflat_fp);
+			R_DrawSimpleTexturechain (s);
+		}
 		else if (s->flags & SURF_NOTEXTURE)
 		{
 			// special handling for missing textures
@@ -423,7 +437,7 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 		;		// translucents don't have dlights (light goes through them!)
 	else if (!r_dynamic.value)
 		;		// dlights switched off
-	else if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
+	else if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe || r_drawflat_cheatsafe)
 		;		// no light data
 	else if (!ent)
 		R_PushDlights_New (NULL, NULL, model, cl.worldmodel->nodes);
