@@ -248,7 +248,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	GL_BindTexture (GL_TEXTURE0, tx);
 
 	// select shaders
-	if (!cl.worldmodel->lightdata)
+	if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
 		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_fullbright_fp);
 	else
 	{
@@ -648,14 +648,16 @@ void R_DrawAliasModel (entity_t *e)
 	glMultMatrixf (localMatrix.m16);
 
 	// draw it
-	GL_DrawAliasFrame_ARB (e, &localMatrix, hdr, &lerpdata, tx, fb);
+	if (r_lightmap_cheatsafe)
+		GL_DrawAliasFrame_ARB (e, &localMatrix, hdr, &lerpdata, greytexture, NULL);
+	else GL_DrawAliasFrame_ARB (e, &localMatrix, hdr, &lerpdata, tx, fb);
 
 	// set up dynamic lighting (this depends on state from GL_DrawAliasFrame_ARB so don't call it from anywhere else!)
 	if (alpha < 1)
 		;		// translucents don't have dlights (light goes through them!)
 	else if (!r_dynamic.value)
 		;		// dlights switched off
-	else if (!cl.worldmodel->lightdata)
+	else if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
 		;		// no light data
 	else GL_DrawAliasDynamicLights (e, &localMatrix, hdr, &lerpdata);
 

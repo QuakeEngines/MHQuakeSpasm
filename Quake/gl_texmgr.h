@@ -67,6 +67,7 @@ typedef struct gltexture_s {
 
 extern gltexture_t *notexture;
 extern gltexture_t *nulltexture;
+extern gltexture_t *whitetexture, *greytexture, *blacktexture;
 
 extern unsigned int d_8to24table[256];
 extern unsigned int d_8to24table_fbright[256];

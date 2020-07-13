@@ -225,17 +225,22 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 	int shaderflag = SHADERFLAG_NONE;
 
 	// and now we can draw it
-	GL_BindTexture (GL_TEXTURE0, t->gltexture);
-
-	// Enable/disable TMU 2 (fullbrights)
-	if (gl_fullbrights.value && t->fullbright)
+	if (r_lightmap_cheatsafe)
+		GL_BindTexture (GL_TEXTURE0, greytexture);
+	else
 	{
-		GL_BindTexture (GL_TEXTURE4, t->fullbright);
-		shaderflag |= SHADERFLAG_LUMA;
-	}
+		GL_BindTexture (GL_TEXTURE0, t->gltexture);
 
-	// fence texture test
-	if (s->flags & SURF_DRAWFENCE) shaderflag |= SHADERFLAG_FENCE;
+		// Enable/disable TMU 2 (fullbrights)
+		if (gl_fullbrights.value && t->fullbright)
+		{
+			GL_BindTexture (GL_TEXTURE4, t->fullbright);
+			shaderflag |= SHADERFLAG_LUMA;
+		}
+
+		// fence texture test
+		if (s->flags & SURF_DRAWFENCE) shaderflag |= SHADERFLAG_FENCE;
+	}
 
 	// fog on/off
 	if (Fog_GetDensity () > 0) shaderflag |= SHADERFLAG_FOG;
@@ -307,7 +312,9 @@ void R_DrawSimpleTexturechain (msurface_t *s)
 
 void R_DrawNoTextureChain (msurface_t *s, texture_t *t)
 {
-	GL_BindTexture (GL_TEXTURE0, t->gltexture);
+	if (r_lightmap_cheatsafe)
+		GL_BindTexture (GL_TEXTURE0, whitetexture);
+	else GL_BindTexture (GL_TEXTURE0, t->gltexture);
 
 	GL_BindPrograms (r_brush_notexture_vp, r_brush_notexture_fp);
 
@@ -338,9 +345,13 @@ void R_DrawDlightChains (qmodel_t *model, entity_t *ent, dlight_t *dl)
 
 		if (!s) continue;
 
-		texture_t *anim = R_TextureAnimation (t, ent != NULL ? ent->frame : 0);
-
-		GL_BindTexture (GL_TEXTURE0, anim->gltexture);
+		if (r_lightmap_cheatsafe)
+			GL_BindTexture (GL_TEXTURE0, greytexture);
+		else
+		{
+			texture_t *anim = R_TextureAnimation (t, ent != NULL ? ent->frame : 0);
+			GL_BindTexture (GL_TEXTURE0, anim->gltexture);
+		}
 
 		R_DrawSimpleTexturechain (s);
 	}
@@ -383,10 +394,19 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 		}
 		else if (s->flags & SURF_DRAWSKY)
 		{
-			// sky; either layers or cubemap
-			R_DrawSkychain_ARB (s);
+			if (r_lightmap_cheatsafe)
+			{
+				GL_BindTexture (GL_TEXTURE0, whitetexture);
+				GL_BindPrograms (r_brush_notexture_vp, r_brush_notexture_fp);
+				R_DrawSimpleTexturechain (s);
+			}
+			else
+			{
+				// sky; either layers or cubemap
+				R_DrawSkychain_ARB (s);
+			}
 		}
-		else if (!cl.worldmodel->lightdata)
+		else if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
 		{
 			// the no lightdata case just draws the same as the notexture case, but should animate the texture
 			R_DrawNoTextureChain (s, R_TextureAnimation (t, ent != NULL ? ent->frame : 0));
@@ -403,7 +423,7 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 		;		// translucents don't have dlights (light goes through them!)
 	else if (!r_dynamic.value)
 		;		// dlights switched off
-	else if (!cl.worldmodel->lightdata)
+	else if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
 		;		// no light data
 	else if (!ent)
 		R_PushDlights_New (NULL, NULL, model, cl.worldmodel->nodes);

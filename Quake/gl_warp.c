@@ -216,7 +216,9 @@ void R_DrawTextureChains_Water (qmodel_t *model, entity_t *ent, texchain_t chain
 
 		R_BeginTransparentDrawing (alpha);
 
-		GL_BindTexture (GL_TEXTURE0, t->gltexture);
+		if (r_lightmap_cheatsafe)
+			GL_BindTexture (GL_TEXTURE0, whitetexture);
+		else GL_BindTexture (GL_TEXTURE0, t->gltexture);
 
 		R_DrawSimpleTexturechain (t->texturechains[chain]);
 	}

@@ -35,6 +35,7 @@ GLint	gl_hardware_maxsize;
 static int numgltextures;
 static gltexture_t *active_gltextures = NULL, *free_gltextures = NULL;
 gltexture_t *notexture, *nulltexture;
+gltexture_t *whitetexture, *greytexture, *blacktexture;
 
 unsigned int d_8to24table[256];
 unsigned int d_8to24table_fbright[256];
@@ -485,6 +486,9 @@ void TexMgr_Init (void)
 {
 	static byte notexture_data[16] = { 159, 91, 83, 255, 0, 0, 0, 255, 0, 0, 0, 255, 159, 91, 83, 255 }; // black and pink checker
 	static byte nulltexture_data[16] = { 127, 191, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 127, 191, 255, 255 }; // black and blue checker
+	static byte whitetexture_data[16] = { 255, 255, 255, 255 }; // 1x1 white
+	static byte greytexture_data[16] = { 127, 127, 127, 255 }; // 1x1 grey
+	static byte blacktexture_data[16] = { 0, 0, 0, 255 }; // 1x1 black
 	extern texture_t *r_notexture_mip, *r_notexture_mip2;
 
 	// init texture list
@@ -509,6 +513,9 @@ void TexMgr_Init (void)
 	// load notexture images
 	notexture = TexMgr_LoadImage (NULL, "notexture", 2, 2, SRC_RGBA, notexture_data, "", (src_offset_t) notexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST);
 	nulltexture = TexMgr_LoadImage (NULL, "nulltexture", 2, 2, SRC_RGBA, nulltexture_data, "", (src_offset_t) nulltexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST);
+	whitetexture = TexMgr_LoadImage (NULL, "whitetexture", 1, 1, SRC_RGBA, whitetexture_data, "", (src_offset_t) whitetexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST);
+	greytexture = TexMgr_LoadImage (NULL, "greytexture", 1, 1, SRC_RGBA, greytexture_data, "", (src_offset_t) greytexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST);
+	blacktexture = TexMgr_LoadImage (NULL, "blacktexture", 1, 1, SRC_RGBA, blacktexture_data, "", (src_offset_t) blacktexture_data, TEXPREF_NEAREST | TEXPREF_PERSIST);
 
 	// create other textures we need
 	GLWarp_CreateTextures ();

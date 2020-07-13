@@ -423,7 +423,7 @@ R_LightPoint -- johnfitz -- replaced entire function for lit support via lordhav
 */
 int R_LightPoint (vec3_t p, float *lightcolor)
 {
-	if (!cl.worldmodel->lightdata)
+	if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
 	{
 		lightcolor[0] = 255;
 		lightcolor[1] = 255;
