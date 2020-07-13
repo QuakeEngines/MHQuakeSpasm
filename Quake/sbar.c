@@ -832,12 +832,9 @@ void Sbar_DrawFace (void)
 
 		if (top == 8)
 		{
-			if (num[0] != ' ')
-				Sbar_DrawCharacter (113, 3, 18 + num[0] - '0');
-			if (num[1] != ' ')
-				Sbar_DrawCharacter (120, 3, 18 + num[1] - '0');
-			if (num[2] != ' ')
-				Sbar_DrawCharacter (127, 3, 18 + num[2] - '0');
+			if (num[0] != ' ') Sbar_DrawCharacter (113, 3, 18 + num[0] - '0');
+			if (num[1] != ' ') Sbar_DrawCharacter (120, 3, 18 + num[1] - '0');
+			if (num[2] != ' ') Sbar_DrawCharacter (127, 3, 18 + num[2] - '0');
 		}
 		else
 		{
@@ -1068,7 +1065,6 @@ void Sbar_DeathmatchOverlay (void)
 	int	i, k, l;
 	int	top, bottom;
 	int	x, y, f;
-	char	num[12];
 	scoreboard_t *s;
 
 	GL_SetCanvas (CANVAS_MENU); // johnfitz
@@ -1100,36 +1096,12 @@ void Sbar_DeathmatchOverlay (void)
 		Draw_Fill (x, y, 40, 4, top, 1); // johnfitz -- stretched overlays
 		Draw_Fill (x, y + 4, 40, 4, bottom, 1); // johnfitz -- stretched overlays
 
-	// draw number
+		// draw number
 		f = s->frags;
-		sprintf (num, "%3i", f);
-
-		Draw_BeginString ();
-		Draw_StringCharacter (x + 8, y, num[0]); // johnfitz -- stretched overlays
-		Draw_StringCharacter (x + 16, y, num[1]); // johnfitz -- stretched overlays
-		Draw_StringCharacter (x + 24, y, num[2]); // johnfitz -- stretched overlays
 
 		if (k == cl.viewentity - 1)
-			Draw_StringCharacter (x - 8, y, 12); // johnfitz -- stretched overlays
-
-		Draw_EndString ();
-#if 0
-		{
-			int				total;
-			int				n, minutes, tens, units;
-
-			// draw time
-			total = cl.completed_time - s->entertime;
-			minutes = (int) total / 60;
-			n = total - minutes * 60;
-			tens = n / 10;
-			units = n % 10;
-
-			sprintf (num, "%3i:%i%i", minutes, tens, units);
-
-			M_Print (x + 48, y, num); // johnfitz -- was Draw_String, changed for stretched overlays
-		}
-#endif
+			Draw_String (x - 8, y, va ("%c %3i", 12, f));
+		else Draw_String (x + 8, y, va ("%3i", f));
 
 		// draw name
 		M_Print (x + 64, y, s->name); // johnfitz -- was Draw_String, changed for stretched overlays
@@ -1148,7 +1120,6 @@ Sbar_MiniDeathmatchOverlay
 void Sbar_MiniDeathmatchOverlay (void)
 {
 	int	i, k, top, bottom, x, y, f, numlines;
-	char	num[12];
 	float	scale; // johnfitz
 	scoreboard_t *s;
 
@@ -1197,22 +1168,10 @@ void Sbar_MiniDeathmatchOverlay (void)
 
 		// number
 		f = s->frags;
-		sprintf (num, "%3i", f);
 
-		Draw_BeginString ();
-
-		Draw_StringCharacter (x + 8, y, num[0]);
-		Draw_StringCharacter (x + 16, y, num[1]);
-		Draw_StringCharacter (x + 24, y, num[2]);
-
-		// brackets
 		if (k == cl.viewentity - 1)
-		{
-			Draw_StringCharacter (x, y, 16);
-			Draw_StringCharacter (x + 32, y, 17);
-		}
-
-		Draw_EndString ();
+			Draw_String (x, y, va ("%c%3i%c", 16, f, 17));
+		else Draw_String (x + 8, y, va ("%3i", f));
 
 		// name
 		Draw_String (x + 48, y, s->name);

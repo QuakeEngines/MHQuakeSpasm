@@ -40,6 +40,22 @@ The GLSL C interface at this API level sucks.  The main problems with it are:
  
 True, most of these problems are solved in newer GL versions, but that would entail reaching beyond the API level I'm targetting.  ARB assembly programs, on the other hand, don't have these problems at all (which does make the claimed advantages of GLSL seem more like an attempt to retroactively justify a bad initial design).  While they do have other shortcomings (the ones most relevant to me being lack of the texGrad instruction and no array texture support) on balance they are just a more productive tool.
 
+### Why fork QuakeSpasm instead of doing your own engine, like you did in the past?
+At this stage in my life I've been round the block enough to know what I'm good at and what I'm not good at. There is a certain enjoyment to be had from working on some of the latter, but it's just not for something I'm going to put out publicly.  By taking an existing codebase and playing to my strengths with it, much of the heavy lifting with the boring parts has already been done for me, and I get to have more fun and be more productive with the rest of it.
+
+I also get the ability to (hopefully) more easily integrate future changes made to QuakeSpasm, and - who knows?  Work I had done elsewhere in the past eventually ended up in QuakeSpasm, and gave back to the community.  Maybe some of this might too.
+
+### Why did you change some FitzQuake/QuakeSpasm behaviours? 
+A variety of reasons. 
+
+Personal preference. For example, the crosshair image I use is something I've used for years, I like it, it's clean, it's simple, it fits the Quake aesthetic well enough. 
+
+Reverting original engine behaviours. Not everything the original did was perfect, and some of it was flat-out wrong. Some of what Fitz/QS changed, should - however and in my opinion - not have been changed. 
+
+In some cases I've gone back to Quake utility source code. So, for example, I reconstructed alias model bounding boxes and normals from modelgen.c, and my dynamic light formula is straight out of the light.exe source. The software Quake source code has also been used as an occasional authoritative source. 
+
+In one case I used an old .plan file entry from 1996 to determine the intent behind a strange-looking piece of code in the original sources. 
+
 ### Where's r_drawflat? Your engine sucks! I hate you forever!
 That's OK.
 

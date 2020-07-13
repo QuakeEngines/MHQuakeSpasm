@@ -222,17 +222,23 @@ void GL_DeleteBModelVertexBuffer (void);
 void GL_BuildBModelVertexBuffer (void);
 void GLMesh_ReloadVertexBuffers (void);
 
-int R_LightPoint (vec3_t p);
+int R_LightPoint (vec3_t p, int *color);
 
 qboolean R_AllocBlock (int w, int h, int *x, int *y, int *allocated, int block_width, int block_height);
 
 // MH - ARB programs
 #define SHADERFLAG_NONE		0
+
+// vertex program flags
+#define SHADERFLAG_DYNAMIC	(1 << 0)
+
+// fragment program flags
 #define SHADERFLAG_FENCE	(1 << 0)
 #define SHADERFLAG_LUMA		(1 << 1)
 #define SHADERFLAG_FOG		(1 << 2)
 
 GLuint GL_CreateARBProgram (GLenum mode, const GLchar *progstr);
+const GLchar *GL_GetVertexProgram (const GLchar *base, int shaderflag);
 const GLchar *GL_GetFragmentProgram (const GLchar *base, int shaderflag);
 void R_DeleteShaders (void);
 
@@ -338,7 +344,6 @@ typedef struct bufferset_s {
 	int registration_sequence;
 } bufferset_t;
 
-extern int r_registration_sequence;
 
 // generic buffersets that may be used for any model type
 int R_GetBufferSetForName (char *name);

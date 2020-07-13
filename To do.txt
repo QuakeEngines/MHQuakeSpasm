@@ -5,8 +5,8 @@ Shadow plane orientation.
 Drawflat/lightmap/fullbright/triangles/bboxes crap. 
 Remove non-SDL2 stuff.
 Move sounds to hunk & remove cache memory.
-.vis file support
 Green dynamic light is too bright???
 add sv_novis cvar
 r_speeds counters are no longer really relevant; dlights can go, draw calls needs to go in, etc.
-Software Quake MDL lighting
+Optional primitive restart
+Detect dx10 gpu for npot robustness

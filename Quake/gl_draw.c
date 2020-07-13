@@ -27,8 +27,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // extern unsigned char d_15to8table[65536]; // johnfitz -- never used
 
-cvar_t		scr_conalpha = { "scr_conalpha", "0.5", CVAR_ARCHIVE }; // johnfitz
-
 qpic_t *draw_disc;
 qpic_t *draw_backtile;
 
@@ -383,8 +381,6 @@ void Draw_Init (void)
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	};
 
-	Cvar_RegisterVariable (&scr_conalpha);
-
 	// clear scrap and allocate gltextures
 	memset (scrap_allocated, 0, sizeof (scrap_allocated));
 	memset (scrap_texels, 255, sizeof (scrap_texels));
@@ -497,45 +493,13 @@ void GLDraw_CreateShaders (void)
 }
 
 
-// ==============================================================================
-//  2D DRAWING
-// ==============================================================================
+/*
+==============================================================================
 
+2D DRAWING
 
-typedef struct drawpolyvert_s {
-	float xy[2];
-
-	union {
-		unsigned colour;
-		byte rgba[4];
-	};
-
-	float st[2];
-} drawpolyvert_t;
-
-
-// sufficient for a 1024 string
-drawpolyvert_t r_drawverts[4096];
-int r_numdrawverts;
-
-
-void Draw_TexturedVertex (drawpolyvert_t *vert, float x, float y, unsigned colour, float s, float t)
-{
-	vert->xy[0] = x;
-	vert->xy[1] = y;
-	vert->colour = colour;
-	vert->st[0] = s;
-	vert->st[1] = t;
-}
-
-
-void Draw_ColouredVertex (drawpolyvert_t *vert, float x, float y, unsigned colour)
-{
-	vert->xy[0] = x;
-	vert->xy[1] = y;
-	vert->colour = colour;
-}
-
+==============================================================================
+*/
 
 void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h, unsigned colour, float sl, float sh, float tl, float th)
 {
@@ -547,12 +511,25 @@ void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h
 	GL_BindPrograms (draw_textured_vp, draw_textured_fp);
 	GL_BindTexture (GL_TEXTURE0, texture);
 
-	Draw_TexturedVertex (&r_drawverts[0], x, y, colour, sl, tl);
-	Draw_TexturedVertex (&r_drawverts[1], x + w, y, colour, sh, tl);
-	Draw_TexturedVertex (&r_drawverts[2], x + w, y + h, colour, sh, th);
-	Draw_TexturedVertex (&r_drawverts[3], x, y + h, colour, sl, th);
+	glBegin (GL_QUADS);
 
-	glDrawArrays (GL_QUADS, 0, 4);
+	glVertexAttrib2f (2, sl, tl);
+	glVertexAttrib4Nubv (1, (byte *) &colour);
+	glVertexAttrib2f (0, x, y);
+
+	glVertexAttrib2f (2, sh, tl);
+	glVertexAttrib4Nubv (1, (byte *) &colour);
+	glVertexAttrib2f (0, x + w, y);
+
+	glVertexAttrib2f (2, sh, th);
+	glVertexAttrib4Nubv (1, (byte *) &colour);
+	glVertexAttrib2f (0, x + w, y + h);
+
+	glVertexAttrib2f (2, sl, th);
+	glVertexAttrib4Nubv (1, (byte *) &colour);
+	glVertexAttrib2f (0, x, y + h);
+
+	glEnd ();
 }
 
 
@@ -565,80 +542,21 @@ void Draw_ColouredQuad (float x, float y, float w, float h, unsigned colour)
 	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
 	GL_BindPrograms (draw_coloured_vp, draw_coloured_fp);
 
-	Draw_ColouredVertex (&r_drawverts[0], x, y, colour);
-	Draw_ColouredVertex (&r_drawverts[1], x + w, y, colour);
-	Draw_ColouredVertex (&r_drawverts[2], x + w, y + h, colour);
-	Draw_ColouredVertex (&r_drawverts[3], x, y + h, colour);
+	glBegin (GL_QUADS);
 
-	glDrawArrays (GL_QUADS, 0, 4);
-}
+	glVertexAttrib4Nubv (1, (byte *) &colour);
+	glVertexAttrib2f (0, x, y);
 
+	glVertexAttrib4Nubv (1, (byte *) &colour);
+	glVertexAttrib2f (0, x + w, y);
 
-void Draw_BeginString (void)
-{
-	r_numdrawverts = 0;
-}
+	glVertexAttrib4Nubv (1, (byte *) &colour);
+	glVertexAttrib2f (0, x + w, y + h);
 
+	glVertexAttrib4Nubv (1, (byte *) &colour);
+	glVertexAttrib2f (0, x, y + h);
 
-void Draw_StringCharacter (int x, int y, int num)
-{
-	if (y <= -8)
-		return;			// totally off screen
-
-	num &= 255;
-
-	if (num == 32)
-		return; // don't waste verts on spaces
-
-	if (r_numdrawverts + 4 >= 4096)
-		Draw_EndString ();
-
-	float frow = (num >> 4) * 0.0625;
-	float fcol = (num & 15) * 0.0625;
-	float size = 0.0625;
-
-	Draw_TexturedVertex (&r_drawverts[r_numdrawverts++], x, y, 0xffffffff, fcol, frow);
-	Draw_TexturedVertex (&r_drawverts[r_numdrawverts++], x + 8, y, 0xffffffff, fcol + size, frow);
-	Draw_TexturedVertex (&r_drawverts[r_numdrawverts++], x + 8, y + 8, 0xffffffff, fcol + size, frow + size);
-	Draw_TexturedVertex (&r_drawverts[r_numdrawverts++], x, y + 8, 0xffffffff, fcol, frow + size);
-}
-
-
-void Draw_EndString (void)
-{
-	if (r_numdrawverts)
-	{
-		GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
-		GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
-		GL_BindPrograms (draw_textured_vp, draw_textured_fp);
-		GL_BindTexture (GL_TEXTURE0, char_texture);
-
-		glDrawArrays (GL_QUADS, 0, r_numdrawverts);
-		r_numdrawverts = 0;
-	}
-}
-
-
-/*
-================
-Draw_Character
-================
-*/
-void Draw_Character (int x, int y, int num)
-{
-	if (y <= -8)
-		return;			// totally off screen
-
-	num &= 255;
-
-	if (num == 32)
-		return; // don't waste verts on spaces
-
-	float frow = (num >> 4) * 0.0625;
-	float fcol = (num & 15) * 0.0625;
-	float size = 0.0625;
-
-	Draw_TexturedQuad (char_texture, x, y, 8, 8, 0xffffffff, fcol, fcol + size, frow, frow + size);
+	glEnd ();
 }
 
 
@@ -649,17 +567,48 @@ Draw_String
 */
 void Draw_String (int x, int y, const char *str)
 {
-	Draw_BeginString ();
+	// totally off screen
+	if (y <= -8) return;
 
-	while (*str)
+	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
+	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
+
+	GL_BindPrograms (draw_textured_vp, draw_textured_fp);
+	GL_BindTexture (GL_TEXTURE0, char_texture);
+
+	glBegin (GL_QUADS);
+
+	for (int i = 0; str[i]; i++, x += 8)
 	{
-		if (*str != 32) // don't waste verts on spaces
-			Draw_StringCharacter (x, y, *str);
-		str++;
-		x += 8;
+		int num = str[i] & 255;
+
+		// space
+		if (num == 32) continue;
+
+		// to do - precalc these
+		float frow = (num >> 4) * 0.0625;
+		float fcol = (num & 15) * 0.0625;
+		float size = 0.0625;
+		unsigned colour = 0xffffffff;
+
+		glVertexAttrib2f (2, fcol, frow);
+		glVertexAttrib4Nubv (1, (byte *) &colour);
+		glVertexAttrib2f (0, x, y);
+
+		glVertexAttrib2f (2, fcol + size, frow);
+		glVertexAttrib4Nubv (1, (byte *) &colour);
+		glVertexAttrib2f (0, x + 8, y);
+
+		glVertexAttrib2f (2, fcol + size, frow + size);
+		glVertexAttrib4Nubv (1, (byte *) &colour);
+		glVertexAttrib2f (0, x + 8, y + 8);
+
+		glVertexAttrib2f (2, fcol, frow + size);
+		glVertexAttrib4Nubv (1, (byte *) &colour);
+		glVertexAttrib2f (0, x, y + 8);
 	}
 
-	Draw_EndString ();
+	glEnd ();
 }
 
 
@@ -678,6 +627,18 @@ void Draw_ScrollString (int x, int y, int width, char *str)
 	buf[39] = 0;
 
 	Draw_String (x, y, buf);
+}
+
+
+/*
+================
+Draw_Character
+================
+*/
+void Draw_Character (int x, int y, int num)
+{
+	char str[2] = { num, 0 };
+	Draw_String (x, y, str);
 }
 
 
@@ -748,14 +709,11 @@ Draw_ConsoleBackground -- johnfitz -- rewritten
 */
 void Draw_ConsoleBackground (void)
 {
-	qpic_t *pic;
-	float alpha;
+	qpic_t *pic = Draw_CachePic ("gfx/conback.lmp");
+	float alpha = (con_forcedup) ? 1.0 : ((float) scr_con_current / vid.conheight) * 1.2f; // original engine conalpha
 
-	pic = Draw_CachePic ("gfx/conback.lmp");
 	pic->width = vid.conwidth;
 	pic->height = vid.conheight;
-
-	alpha = (con_forcedup) ? 1.0 : scr_conalpha.value;
 
 	GL_SetCanvas (CANVAS_CONSOLE); // in case this is called from weird places
 	Draw_AlphaPic (0, 0, pic, alpha);
@@ -934,12 +892,8 @@ void GL_Set2D (void)
 	// ensure that no buffer is bound when drawing 2D quads
 	GL_BindBuffer (GL_ARRAY_BUFFER, 0);
 
-	// and now set up the vertex arrays
-	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2);
-
-	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, sizeof (drawpolyvert_t), r_drawverts->xy);
-	glVertexAttribPointer (1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof (drawpolyvert_t), r_drawverts->rgba);
-	glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, sizeof (drawpolyvert_t), r_drawverts->st);
+	// and no vertex arrays used
+	GL_EnableVertexAttribArrays (0);
 }
 
 

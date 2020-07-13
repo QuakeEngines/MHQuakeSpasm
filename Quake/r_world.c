@@ -401,10 +401,12 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 	}
 
 	// set up dynamic lighting correctly for the entity type
-	if (!r_dynamic.value)
-		return;
+	if (alpha < 1)
+		;		// translucents don't have dlights (light goes through them!)
+	else if (!r_dynamic.value)
+		;		// dlights switched off
 	else if (!cl.worldmodel->lightdata)
-		return;
+		;		// no light data
 	else if (!ent)
 		R_PushDlights_New (NULL, NULL, model, cl.worldmodel->nodes);
 	else if (model->firstmodelsurface != 0)

@@ -68,5 +68,7 @@ void M_DrawPic (int x, int y, qpic_t *pic);
 void M_DrawTransPic (int x, int y, qpic_t *pic);
 void M_DrawCheckbox (int x, int y, int on);
 
+void M_DrawSmallCursor (int x, int y);
+
 #endif	/* _QUAKE_MENU_H */
 

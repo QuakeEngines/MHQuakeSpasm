@@ -98,36 +98,36 @@ void M_ConfigureNetSubsystem (void);
 
 void M_Print (int cx, int cy, const char *str)
 {
-	Draw_BeginString ();
+	char tempstr[1024];
 
-	while (*str)
+	for (int i = 0; ; i++)
 	{
-		Draw_StringCharacter (cx, cy, (*str) + 128);
-		str++;
-		cx += 8;
+		if (!str[i])
+		{
+			tempstr[i] = 0;
+			break;
+		}
+		else tempstr[i] = str[i] + 128;
 	}
 
-	Draw_EndString ();
+	Draw_String (cx, cy, tempstr);
 }
 
 void M_PrintWhite (int cx, int cy, const char *str)
 {
-	Draw_BeginString ();
-
-	while (*str)
-	{
-		Draw_StringCharacter (cx, cy, *str);
-		str++;
-		cx += 8;
-	}
-
-	Draw_EndString ();
+	Draw_String (cx, cy, str);
 }
 
 
-void M_DrawSmallCursor (int cursor)
+void M_DrawSmallCursor (int x, int y)
 {
-	Draw_Character (8, 32 + cursor * 8, 12 + ((int) (realtime * 4) & 1));
+	Draw_Character (x, y, 12 + ((int) (realtime * 4) & 1));
+}
+
+
+void M_DrawInputCursor (int x, int y)
+{
+	Draw_Character (x, y, 10 + ((int) (realtime * 4) & 1));
 }
 
 
@@ -498,7 +498,7 @@ void M_Load_Draw (void)
 		M_Print (16, 32 + 8 * i, m_filenames[i]);
 
 	// line cursor
-	M_DrawSmallCursor (load_cursor);
+	M_DrawSmallCursor (8, 32 + load_cursor * 8);
 }
 
 
@@ -514,7 +514,7 @@ void M_Save_Draw (void)
 		M_Print (16, 32 + 8 * i, m_filenames[i]);
 
 	// line cursor
-	M_DrawSmallCursor (load_cursor);
+	M_DrawSmallCursor (8, 32 + load_cursor * 8);
 }
 
 
@@ -735,13 +735,10 @@ void M_Setup_Draw (void)
 	p = Draw_CachePic ("gfx/menuplyr.lmp");
 	M_DrawTransPicTranslate (172, 72, p, setup_top, setup_bottom);
 
-	Draw_Character (56, setup_cursor_table[setup_cursor], 12 + ((int) (realtime * 4) & 1));
+	M_DrawSmallCursor (56, setup_cursor_table[setup_cursor]);
 
-	if (setup_cursor == 0)
-		Draw_Character (168 + 8 * strlen (setup_hostname), setup_cursor_table[setup_cursor], 10 + ((int) (realtime * 4) & 1));
-
-	if (setup_cursor == 1)
-		Draw_Character (168 + 8 * strlen (setup_myname), setup_cursor_table[setup_cursor], 10 + ((int) (realtime * 4) & 1));
+	if (setup_cursor == 0) M_DrawInputCursor (168 + 8 * strlen (setup_hostname), setup_cursor_table[setup_cursor]);
+	if (setup_cursor == 1) M_DrawInputCursor (168 + 8 * strlen (setup_myname), setup_cursor_table[setup_cursor]);
 }
 
 
@@ -1145,20 +1142,20 @@ void M_AdjustSliders (int dir)
 }
 
 
-void M_DrawSlider (int x, int y, float range)
+void M_DrawNewSlider (int x, int y, float range)
 {
-	int	i;
+	char slider[SLIDER_RANGE + 3];
+
+	slider[0] = 128;
+	for (int i = 0; i < SLIDER_RANGE; i++) slider[i + 1] = 129;
+	slider[SLIDER_RANGE + 1] = 130;
+	slider[SLIDER_RANGE + 2] = 0;
 
 	if (range < 0) range = 0;
 	if (range > 1) range = 1;
 
-	Draw_BeginString ();
-	Draw_StringCharacter (x - 8, y, 128);
-	for (i = 0; i < SLIDER_RANGE; i++)
-		Draw_StringCharacter (x + i * 8, y, 129);
-	Draw_StringCharacter (x + i * 8, y, 130);
-	Draw_StringCharacter (x + (SLIDER_RANGE - 1) * 8 * range, y, 131);
-	Draw_EndString ();
+	Draw_String (x - 8, y, slider);
+	Draw_Character (x + (SLIDER_RANGE - 1) * 8 * range, y, 131);
 }
 
 
@@ -1191,42 +1188,42 @@ void M_Options_Draw (void)
 	M_Print (16, 32 + 8 * OPT_SCALE, "                 Scale");
 	l = (vid.width / 320.0) - 1;
 	r = l > 0 ? (scr_conscale.value - 1) / l : 0;
-	M_DrawSlider (220, 32 + 8 * OPT_SCALE, r);
+	M_DrawNewSlider (220, 32 + 8 * OPT_SCALE, r);
 
 	// OPT_SCRSIZE:
 	M_Print (16, 32 + 8 * OPT_SCRSIZE, "           Screen size");
 	r = (scr_viewsize.value - 30) / (120 - 30);
-	M_DrawSlider (220, 32 + 8 * OPT_SCRSIZE, r);
+	M_DrawNewSlider (220, 32 + 8 * OPT_SCRSIZE, r);
 
 	// OPT_GAMMA:
 	M_Print (16, 32 + 8 * OPT_GAMMA, "            Brightness");
 	r = (1.0 - vid_gamma.value) / 0.5;
-	M_DrawSlider (220, 32 + 8 * OPT_GAMMA, r);
+	M_DrawNewSlider (220, 32 + 8 * OPT_GAMMA, r);
 
 	// OPT_CONTRAST:
 	M_Print (16, 32 + 8 * OPT_CONTRAST, "              Contrast");
 	r = vid_contrast.value - 1.0;
-	M_DrawSlider (220, 32 + 8 * OPT_CONTRAST, r);
+	M_DrawNewSlider (220, 32 + 8 * OPT_CONTRAST, r);
 
 	// OPT_MOUSESPEED:
 	M_Print (16, 32 + 8 * OPT_MOUSESPEED, "           Mouse Speed");
 	r = (sensitivity.value - 1) / 10;
-	M_DrawSlider (220, 32 + 8 * OPT_MOUSESPEED, r);
+	M_DrawNewSlider (220, 32 + 8 * OPT_MOUSESPEED, r);
 
 	// OPT_SBALPHA:
 	M_Print (16, 32 + 8 * OPT_SBALPHA, "       Statusbar alpha");
 	r = (1.0 - scr_sbaralpha.value); // scr_sbaralpha range is 1.0 to 0.0
-	M_DrawSlider (220, 32 + 8 * OPT_SBALPHA, r);
+	M_DrawNewSlider (220, 32 + 8 * OPT_SBALPHA, r);
 
 	// OPT_SNDVOL:
 	M_Print (16, 32 + 8 * OPT_SNDVOL, "          Sound Volume");
 	r = sfxvolume.value;
-	M_DrawSlider (220, 32 + 8 * OPT_SNDVOL, r);
+	M_DrawNewSlider (220, 32 + 8 * OPT_SNDVOL, r);
 
 	// OPT_MUSICVOL:
 	M_Print (16, 32 + 8 * OPT_MUSICVOL, "          Music Volume");
 	r = bgmvolume.value;
-	M_DrawSlider (220, 32 + 8 * OPT_MUSICVOL, r);
+	M_DrawNewSlider (220, 32 + 8 * OPT_MUSICVOL, r);
 
 	// OPT_MUSICEXT:
 	M_Print (16, 32 + 8 * OPT_MUSICEXT, "        External Music");
@@ -1262,7 +1259,7 @@ void M_Options_Draw (void)
 		M_Print (16, 32 + 8 * OPT_VIDEO, "         Video Options");
 
 	// cursor
-	Draw_Character (200, 32 + options_cursor * 8, 12 + ((int) (realtime * 4) & 1));
+	M_DrawSmallCursor (200, 32 + options_cursor * 8);
 }
 
 
@@ -1443,7 +1440,7 @@ void M_Keys_Draw (void)
 	{
 		y = 48 + 8 * i;
 
-		M_Print (16, y, bindnames[i][1]);
+		M_Print (124 - strlen (bindnames[i][1]) * 8, y, bindnames[i][1]);
 
 		M_FindKeysForCommand (bindnames[i][0], keys);
 
@@ -1454,18 +1451,18 @@ void M_Keys_Draw (void)
 		else
 		{
 			name = Key_KeynumToString (keys[0]);
-			M_Print (140, y, name);
+			M_PrintWhite (140, y, name);
 			x = strlen (name) * 8;
 			if (keys[1] != -1)
 			{
 				name = Key_KeynumToString (keys[1]);
 				M_Print (140 + x + 8, y, "or");
-				M_Print (140 + x + 32, y, name);
+				M_PrintWhite (140 + x + 32, y, name);
 				x = x + 32 + strlen (name) * 8;
 				if (keys[2] != -1)
 				{
 					M_Print (140 + x + 8, y, "or");
-					M_Print (140 + x + 32, y, Key_KeynumToString (keys[2]));
+					M_PrintWhite (140 + x + 32, y, Key_KeynumToString (keys[2]));
 				}
 			}
 		}
@@ -1474,7 +1471,7 @@ void M_Keys_Draw (void)
 	if (bind_grab)
 		Draw_Character (130, 48 + keys_cursor * 8, '=');
 	else
-		Draw_Character (130, 48 + keys_cursor * 8, 12 + ((int) (realtime * 4) & 1));
+		M_DrawSmallCursor (130, 48 + keys_cursor * 8);
 }
 
 
@@ -1803,13 +1800,10 @@ void M_LanConfig_Draw (void)
 		M_Print (basex + 8, lanConfig_cursor_table[1], "OK");
 	}
 
-	Draw_Character (basex - 8, lanConfig_cursor_table[lanConfig_cursor], 12 + ((int) (realtime * 4) & 1));
+	M_DrawSmallCursor (basex - 8, lanConfig_cursor_table[lanConfig_cursor]);
 
-	if (lanConfig_cursor == 0)
-		Draw_Character (basex + 9 * 8 + 8 * strlen (lanConfig_portname), lanConfig_cursor_table[0], 10 + ((int) (realtime * 4) & 1));
-
-	if (lanConfig_cursor == 2)
-		Draw_Character (basex + 16 + 8 * strlen (lanConfig_joinname), lanConfig_cursor_table[2], 10 + ((int) (realtime * 4) & 1));
+	if (lanConfig_cursor == 0) M_DrawInputCursor (basex + 9 * 8 + 8 * strlen (lanConfig_portname), lanConfig_cursor_table[0]);
+	if (lanConfig_cursor == 2) M_DrawInputCursor (basex + 16 + 8 * strlen (lanConfig_joinname), lanConfig_cursor_table[2]);
 
 	if (*m_return_reason)
 		M_PrintWhite (basex, 148, m_return_reason);
@@ -2211,7 +2205,7 @@ void M_GameOptions_Draw (void)
 	}
 
 	// line cursor
-	Draw_Character (144, gameoptions_cursor_table[gameoptions_cursor], 12 + ((int) (realtime * 4) & 1));
+	M_DrawSmallCursor (144, gameoptions_cursor_table[gameoptions_cursor]);
 
 	if (m_serverInfoMessage)
 	{
@@ -2487,7 +2481,7 @@ void M_ServerList_Draw (void)
 	M_DrawPic ((320 - p->width) / 2, 4, p);
 	for (n = 0; n < hostCacheCount; n++)
 		M_Print (16, 32 + 8 * n, NET_SlistPrintServer (n));
-	Draw_Character (0, 32 + slist_cursor * 8, 12 + ((int) (realtime * 4) & 1));
+	M_DrawSmallCursor (0, 32 + slist_cursor * 8);
 
 	if (*m_return_reason)
 		M_PrintWhite (16, 148, m_return_reason);
