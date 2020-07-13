@@ -172,7 +172,8 @@ void GLMain_CreateShaders (void)
 		"!!ARBvp1.0\n"
 		"\n"
 		"TEMP position;\n"
-		"ADD position, vertex.attrib[0], program.local[0];\n"
+		"ADD position, vertex.attrib[0], vertex.attrib[1];\n"
+		"MOV position.w, 1.0; # ensure\n"
 		"\n"
 		"# transform position to output\n"
 		"DP4 result.position.x, state.matrix.mvp.row[0], position;\n"
@@ -193,9 +194,9 @@ void GLMain_CreateShaders (void)
 		"TEMP position;\n"
 		"\n"
 		"# interpolate the position\n"
-		"SUB position, program.local[2], program.local[1];\n"
-		"MAD position, vertex.attrib[0], position, program.local[1];\n"
-		"ADD position, position, program.local[0];\n"
+		"SUB position, vertex.attrib[3], vertex.attrib[2];\n"
+		"MAD position, vertex.attrib[0], position, vertex.attrib[2];\n"
+		"ADD position, position, vertex.attrib[1];\n"
 		"MOV position.w, 1.0; # ensure\n"
 		"\n"
 		"# transform position to output\n"
@@ -709,34 +710,6 @@ void R_DrawViewModel (void)
 
 /*
 ================
-R_EmitWirePoint -- johnfitz -- draws a wireframe cross shape for point entities
-================
-*/
-void R_EmitWirePoint (vec3_t origin)
-{
-	GL_BindPrograms (r_wirepoint_vp, r_bbox_fp);
-	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, origin[0], origin[1], origin[2], 0);
-	glDrawArrays (GL_LINES, 0, 6);
-}
-
-
-/*
-================
-R_EmitWireBox -- johnfitz -- draws one axis aligned bounding box
-================
-*/
-void R_EmitWireBox (vec3_t origin, vec3_t mins, vec3_t maxs)
-{
-	GL_BindPrograms (r_wirebox_vp, r_bbox_fp);
-	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, origin[0], origin[1], origin[2], 0);
-	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 1, mins[0], mins[1], mins[2], 0);
-	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 2, maxs[0], maxs[1], maxs[2], 0);
-	glDrawArrays (GL_QUAD_STRIP, 6, 10);
-}
-
-
-/*
-================
 R_ShowBoundingBoxes -- johnfitz
 
 draw bounding boxes -- the server-side boxes, not the renderer cullboxes
@@ -778,12 +751,18 @@ void R_ShowBoundingBoxes (void)
 		if (ed->v.mins[0] == ed->v.maxs[0] && ed->v.mins[1] == ed->v.maxs[1] && ed->v.mins[2] == ed->v.maxs[2])
 		{
 			// point entity
-			R_EmitWirePoint (ed->v.origin);
+			GL_BindPrograms (r_wirepoint_vp, r_bbox_fp);
+			glVertexAttrib3fv (1, ed->v.origin);
+			glDrawArrays (GL_LINES, 0, 6);
 		}
 		else
 		{
 			// box entity
-			R_EmitWireBox (ed->v.origin, ed->v.mins, ed->v.maxs);
+			GL_BindPrograms (r_wirebox_vp, r_bbox_fp);
+			glVertexAttrib3fv (1, ed->v.origin);
+			glVertexAttrib3fv (2, ed->v.mins);
+			glVertexAttrib3fv (3, ed->v.maxs);
+			glDrawArrays (GL_QUAD_STRIP, 6, 10);
 		}
 	}
 

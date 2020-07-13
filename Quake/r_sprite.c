@@ -36,15 +36,15 @@ void GLSprite_CreateShaders (void)
 	const GLchar *vp_source = \
 		"!!ARBvp1.0\n"
 		"\n"
-		"PARAM origin = program.local[0];\n"
-		"PARAM uvec = program.local[1];\n"
-		"PARAM rvec = program.local[2];\n"
+		"ATTRIB origin = vertex.attrib[2];\n"
+		"ATTRIB uvec = vertex.attrib[3];\n"
+		"ATTRIB rvec = vertex.attrib[4];\n"
 		"\n"
 		"# set up position\n"
 		"TEMP NewPosition;\n"
 		"MAD NewPosition, uvec, vertex.attrib[0].x, origin;\n"
 		"MAD NewPosition, rvec, vertex.attrib[0].y, NewPosition;\n"
-		"MOV NewPosition.w, 1.0;\n"
+		"MOV NewPosition.w, 1.0; # ensure\n"
 		"\n"
 		"# transform position to output\n"
 		"DP4 result.position.x, state.matrix.mvp.row[0], NewPosition;\n"
@@ -277,10 +277,6 @@ void R_DrawSpriteModel (entity_t *e)
 		GL_BindPrograms (r_sprite_vp, r_sprite_fp[SPRITE_ALPHA]);
 	else GL_BindPrograms (r_sprite_vp, r_sprite_fp[SPRITE_SOLID]);
 
-	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 0, e->origin);	// note : this will overflow the read but that's OK because there are members after it in the struct
-	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 1, s_up);			// this one was padded to 4 floats
-	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 2, s_right);		// this one was padded to 4 floats
-
 	GL_DepthState (GL_TRUE, GL_LEQUAL, GL_TRUE);
 	GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
 
@@ -292,6 +288,12 @@ void R_DrawSpriteModel (entity_t *e)
 	// the data was already built at load time so it just needs to be set up for rendering here
 	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), (void *) offsetof (spritepolyvert_t, framevec));
 	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (spritepolyvert_t), (void *) offsetof (spritepolyvert_t, texcoord));
+
+	// sending these as attribs rather than params to keep the amount of state down
+	// this is the "direct 3d may have need of instancing but we don't, we have plenty of glVertexAttrib calls" variant
+	glVertexAttrib3fv (2, e->origin);
+	glVertexAttrib3fv (3, s_up);
+	glVertexAttrib3fv (4, s_right);
 
 	// and draw it
 	glDrawArrays (GL_QUADS, frame->firstvertex, 4);

@@ -245,12 +245,7 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	GL_BindBuffer (GL_ARRAY_BUFFER, set->vertexbuffer);
 	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, set->indexbuffer);
 
-	if (r_drawflat_cheatsafe)
-	{
-		GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3 | VAA4 | VAA5);
-		glVertexAttribPointer (5, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof (meshst_t), (void *) (intptr_t) (set->vbostofs + offsetof (meshst_t, flatcolor)));
-	}
-	else GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3 | VAA4);
+	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3 | VAA4);
 
 	glVertexAttribPointer (0, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof (meshxyz_t), GLARB_GetXYZOffset (set, hdr, lerpdata->pose1));
 	glVertexAttribPointer (1, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (set, hdr, lerpdata->pose1));
@@ -296,7 +291,17 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, shadevector);
 
 	// draw
-	glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) set->vboindexofs);
+	if (r_drawflat_cheatsafe)
+	{
+		// r_drawflat isn't meant to be a robust performant mode anyway....
+		for (int i = 0; i < set->numindexes; i += 3)
+		{
+			glVertexAttrib4Nubv (5, (byte *) &d_8to24table[i & 255]);
+			glDrawElements (GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, (void *) (intptr_t) (i * sizeof (unsigned short)));
+		}
+	}
+	else glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) 0);
+
 	rs_aliaspasses += hdr->numtris;
 }
 
@@ -331,7 +336,7 @@ void GL_DrawAliasDynamicLights (entity_t *e, QMATRIX *localMatrix, aliashdr_t *h
 		GL_SetupDynamicLight (dl);
 
 		// and draw it
-		glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) set->vboindexofs);
+		glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) 0);
 		rs_aliaspasses += hdr->numtris;
 	}
 }
@@ -396,7 +401,7 @@ P.d * L.x      P.d * L.y      P.d * L.z      P.d * L.w + d
 
 	// draw it - the vertex array state is already set
 	bufferset_t *set = R_GetBufferSetForModel (e->model);
-	glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) set->vboindexofs);
+	glDrawElements (GL_TRIANGLES, set->numindexes, GL_UNSIGNED_SHORT, (void *) (intptr_t) 0);
 	rs_aliaspasses += hdr->numtris;
 
 	// revert the transform

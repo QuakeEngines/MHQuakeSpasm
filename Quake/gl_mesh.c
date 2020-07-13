@@ -107,7 +107,6 @@ static void GLMesh_LoadVertexBuffer (qmodel_t *m, const aliashdr_t *hdr, dtriang
 	bufferset_t *set = R_GetBufferSetForModel (m);
 
 	// count the sizes we need
-	set->vboindexofs = 0;
 	set->vboxyzofs = 0;
 
 	int totalvbosize = (hdr->numposes * set->numverts * sizeof (meshxyz_t)); // ericw -- what RMQEngine called nummeshframes is called numposes in QuakeSpasm

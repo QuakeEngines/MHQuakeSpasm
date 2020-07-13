@@ -185,13 +185,6 @@ void GL_BuildPolygonForSurface (qmodel_t *mod, msurface_t *surf, brushpolyvert_t
 			verts->norm[1] = 127 * surf->plane->normal[1];
 			verts->norm[2] = 127 * surf->plane->normal[2];
 		}
-
-		// setup flat colour
-		byte *rgba = (byte *) &d_8to24table[(int) surf & 255];
-		verts->flatcolor[0] = rgba[0];
-		verts->flatcolor[1] = rgba[1];
-		verts->flatcolor[2] = rgba[2];
-		verts->flatcolor[3] = 255;
 	}
 }
 
@@ -269,13 +262,7 @@ void R_SetupWorldVBOState (void)
 	// Bind the buffers
 	GL_BindBuffer (GL_ARRAY_BUFFER, r_surfaces_vbo);
 	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, 0); // indices come from client memory!
-
-	if (r_drawflat_cheatsafe)
-	{
-		GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3 | VAA4);
-		glVertexAttribPointer (4, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, flatcolor));
-	}
-	else GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3);
+	GL_EnableVertexAttribArrays (VAA0 | VAA1 | VAA2 | VAA3);
 
 	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, xyz));
 	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, st));
@@ -343,11 +330,20 @@ using VBOs.
 */
 void R_BatchSurface (msurface_t *s)
 {
-	if (num_vbo_indices + s->numindexes >= MAX_BATCH_SIZE)
-		R_FlushBatch ();
+	if (r_drawflat_cheatsafe)
+	{
+		// r_drawflat isn't meant to be a robust performant mode anyway....
+		glVertexAttrib4Nubv (4, (byte *) &d_8to24table[(int) s & 255]);
+		glDrawArrays (GL_TRIANGLE_FAN, s->firstvertex, s->numedges);
+	}
+	else
+	{
+		if (num_vbo_indices + s->numindexes >= MAX_BATCH_SIZE)
+			R_FlushBatch ();
 
-	R_TriangleIndicesForSurf (s, &vbo_indices[num_vbo_indices]);
-	num_vbo_indices += s->numindexes;
+		R_TriangleIndicesForSurf (s, &vbo_indices[num_vbo_indices]);
+		num_vbo_indices += s->numindexes;
+	}
 }
 
 
