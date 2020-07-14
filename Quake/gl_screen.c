@@ -399,9 +399,9 @@ SCR_LoadPics -- johnfitz
 */
 void SCR_LoadPics (void)
 {
-	scr_ram = Draw_PicFromWad ("ram");
-	scr_net = Draw_PicFromWad ("net");
-	scr_turtle = Draw_PicFromWad ("turtle");
+	scr_ram = Draw_PicFromWad ("ram", true);
+	scr_net = Draw_PicFromWad ("net", true);
+	scr_turtle = Draw_PicFromWad ("turtle", true);
 }
 
 /*

@@ -230,7 +230,6 @@ void GLMesh_ReloadVertexBuffers (void);
 
 int R_LightPoint (vec3_t p, float *color);
 
-qboolean R_AllocBlock (int w, int h, int *x, int *y, int *allocated, int block_width, int block_height);
 
 // MH - ARB programs
 #define SHADERFLAG_NONE		0

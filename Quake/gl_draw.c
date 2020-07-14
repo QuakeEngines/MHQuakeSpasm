@@ -125,61 +125,67 @@ byte		menuplyr_pixels[4096];
 //  Allocate all the little status bar obejcts into a single texture
 //  to crutch up stupid hardware / drivers
 
-#define	MAX_SCRAPS		2
-#define	BLOCK_WIDTH		256
-#define	BLOCK_HEIGHT	256
+// GLQuake had 2 scrap textures at 256x256 each; this lets us create a single texture with ample extra space, as well as pack more sbar widgets into it
+#define	SCRAP_SIZE		512
 
-int			scrap_allocated[MAX_SCRAPS][BLOCK_WIDTH];
-byte		scrap_texels[MAX_SCRAPS][BLOCK_WIDTH * BLOCK_HEIGHT]; // johnfitz -- removed *4 after BLOCK_HEIGHT
-qboolean	scrap_dirty;
-gltexture_t *scrap_textures[MAX_SCRAPS]; // johnfitz
+int			scrap_allocated[SCRAP_SIZE];
+unsigned	scrap_block[SCRAP_SIZE * SCRAP_SIZE];
+gltexture_t *scrap_texture; // johnfitz
 
 
-/*
-================
-Scrap_AllocBlock
-
-returns an index into scrap_texnums[] and the position inside it
-================
-*/
-int Scrap_AllocBlock (int w, int h, int *x, int *y)
+static qboolean Scrap_AllocBlock (int w, int h, int *x, int *y)
 {
-	for (int texnum = 0; texnum < MAX_SCRAPS; texnum++)
-		if (R_AllocBlock (w, h, x, y, scrap_allocated[texnum], BLOCK_WIDTH, BLOCK_HEIGHT))
-			return texnum;
+	int best = SCRAP_SIZE;
 
-	Sys_Error ("Scrap_AllocBlock: full"); // johnfitz -- correct function name
-	return 0; // johnfitz -- shut up compiler
-}
-
-
-/*
-================
-Scrap_Upload -- johnfitz -- now uses TexMgr
-
-to do - pre-create the scrap texture so that we can just texsubimage new allocations and not have to worry about checking for scrap-dirty at runtime
-================
-*/
-void Scrap_Upload (void)
-{
-	char name[8];
-	int	i;
-
-	for (i = 0; i < MAX_SCRAPS; i++)
+	for (int i = 0; i < SCRAP_SIZE - w; i++)
 	{
-		sprintf (name, "scrap%i", i);
-		scrap_textures[i] = TexMgr_LoadImage (NULL, name, BLOCK_WIDTH, BLOCK_HEIGHT, SRC_INDEXED, scrap_texels[i], "", (src_offset_t) scrap_texels[i], TEXPREF_ALPHA | TEXPREF_OVERWRITE);
+		int j;
+		int best2 = 0;
+
+		for (j = 0; j < w; j++)
+		{
+			if (scrap_allocated[i + j] >= best)
+				break;
+
+			if (scrap_allocated[i + j] > best2)
+				best2 = scrap_allocated[i + j];
+		}
+
+		if (j == w)
+		{
+			// this is a valid spot
+			*x = i;
+			*y = best = best2;
+		}
 	}
 
-	scrap_dirty = false;
+	if (best + h > SCRAP_SIZE)
+		return false;
+
+	for (int i = 0; i < w; i++)
+		scrap_allocated[*x + i] = best + h;
+
+	return true;
 }
+
+
+void Scrap_Init (void)
+{
+	// empty scrap and reallocate gltextures
+	memset (scrap_allocated, 0, sizeof (scrap_allocated));
+	memset (scrap_block, 0, sizeof (scrap_block));
+
+	// init the scrap texture - we'll texsubimage load new stuff onto it
+	scrap_texture = TexMgr_LoadImage (NULL, "scrap_texture", SCRAP_SIZE, SCRAP_SIZE, SRC_RGBA, (byte *) scrap_block, "", (src_offset_t) scrap_block, TEXPREF_ALPHA | TEXPREF_OVERWRITE);
+}
+
 
 /*
 ================
 Draw_PicFromWad
 ================
 */
-qpic_t *Draw_PicFromWad (const char *name)
+qpic_t *Draw_PicFromWad (const char *name, qboolean scrappable)
 {
 	qpic_t *p;
 	glpic_t	gl;
@@ -189,27 +195,32 @@ qpic_t *Draw_PicFromWad (const char *name)
 	if (!p) return pic_nul; // johnfitz
 
 	// load little ones into the scrap
-	if (p->width < 64 && p->height < 64)
+	if (scrappable)
 	{
 		int		x, y;
-		int		i, j, k;
-		int		texnum;
 
-		texnum = Scrap_AllocBlock (p->width, p->height, &x, &y);
-		scrap_dirty = true;
-		k = 0;
-		for (i = 0; i < p->height; i++)
-		{
-			for (j = 0; j < p->width; j++, k++)
-				scrap_texels[texnum][(y + i) * BLOCK_WIDTH + x + j] = p->data[k];
-		}
-		gl.gltexture = scrap_textures[texnum]; // johnfitz -- changed to an array
+		// if it won't go in the scrap just load it as a regular texture
+		if (!Scrap_AllocBlock (p->width, p->height, &x, &y))
+			return Draw_PicFromWad (name, false);
+
+		for (int i = 0, k = 0; i < p->height; i++)
+			for (int j = 0; j < p->width; j++, k++)
+				scrap_block[(y + i) * SCRAP_SIZE + x + j] = d_8to24table[p->data[k]];
+
+		// texsubimage it immediately so that we don't need to track dirty scrap state
+		GL_BindTexture (GL_TEXTURE0, scrap_texture);
+		glPixelStorei (GL_UNPACK_ROW_LENGTH, SCRAP_SIZE);
+		glTexSubImage2D (GL_TEXTURE_2D, 0, x, y, p->width, p->height, GL_RGBA, GL_UNSIGNED_BYTE, &scrap_block[y * SCRAP_SIZE + x]);
+		glPixelStorei (GL_UNPACK_ROW_LENGTH, 0);
+
+		// and store it out
+		gl.gltexture = scrap_texture;
 
 		// johnfitz -- no longer go from 0.01 to 0.99
-		gl.sl = x / (float) BLOCK_WIDTH;
-		gl.sh = (x + p->width) / (float) BLOCK_WIDTH;
-		gl.tl = y / (float) BLOCK_WIDTH;
-		gl.th = (y + p->height) / (float) BLOCK_WIDTH;
+		gl.sl = x / (float) SCRAP_SIZE;
+		gl.sh = (x + p->width) / (float) SCRAP_SIZE;
+		gl.tl = y / (float) SCRAP_SIZE;
+		gl.th = (y + p->height) / (float) SCRAP_SIZE;
 	}
 	else
 	{
@@ -313,17 +324,16 @@ Draw_LoadPics -- johnfitz
 */
 void Draw_LoadPics (void)
 {
-	byte *data;
-	src_offset_t	offset;
+	byte *data = (byte *) W_GetLumpName ("conchars");
 
-	data = (byte *) W_GetLumpName ("conchars");
 	if (!data) Sys_Error ("Draw_LoadPics: couldn't load conchars");
-	offset = (src_offset_t) data - (src_offset_t) wad_base;
-	char_texture = TexMgr_LoadImage (NULL, WADFILENAME":conchars", 128, 128, SRC_INDEXED, data,
-		WADFILENAME, offset, TEXPREF_ALPHA | TEXPREF_NEAREST | TEXPREF_CONCHARS);
 
-	draw_disc = Draw_PicFromWad ("disc");
-	draw_backtile = Draw_PicFromWad ("backtile");
+	src_offset_t offset = (src_offset_t) data - (src_offset_t) wad_base;
+
+	char_texture = TexMgr_LoadImage (NULL, WADFILENAME":conchars", 128, 128, SRC_INDEXED, data, WADFILENAME, offset, TEXPREF_ALPHA | TEXPREF_NEAREST | TEXPREF_CONCHARS);
+
+	draw_disc = Draw_PicFromWad ("disc", true);
+	draw_backtile = Draw_PicFromWad ("backtile", false); // this can't go in the scrap because it needs to repeat
 }
 
 /*
@@ -336,11 +346,7 @@ void Draw_NewGame (void)
 	cachepic_t *pic;
 	int			i;
 
-	// empty scrap and reallocate gltextures
-	memset (scrap_allocated, 0, sizeof (scrap_allocated));
-	memset (scrap_texels, 255, sizeof (scrap_texels));
-
-	Scrap_Upload (); // creates 2 empty gltextures
+	Scrap_Init ();
 
 	// reload wad pics
 	W_LoadWadFile (); // johnfitz -- filename is now hard-coded for honesty
@@ -381,11 +387,7 @@ void Draw_Init (void)
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	};
 
-	// clear scrap and allocate gltextures
-	memset (scrap_allocated, 0, sizeof (scrap_allocated));
-	memset (scrap_texels, 255, sizeof (scrap_texels));
-
-	Scrap_Upload (); // creates 2 empty textures
+	Scrap_Init ();
 
 	// create internal pics
 	pic_ins = Draw_MakePic ("ins", 8, 9, &pic_ins_data[0][0]);
@@ -651,12 +653,7 @@ void Draw_Character (int x, int y, int num)
 
 void Draw_ColouredPic (int x, int y, qpic_t *pic, unsigned color)
 {
-	glpic_t *gl;
-
-	if (scrap_dirty)
-		Scrap_Upload ();
-	gl = (glpic_t *) pic->data;
-
+	glpic_t *gl = (glpic_t *) pic->data;
 	Draw_TexturedQuad (gl->gltexture, x, y, pic->width, pic->height, color, gl->sl, gl->sh, gl->tl, gl->th);
 }
 

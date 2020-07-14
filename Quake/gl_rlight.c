@@ -519,7 +519,7 @@ void GL_CreateSurfaceLightmap (msurface_t *surf)
 		LM_InitBlock ();
 
 		if (!LM_AllocBlock (smax, tmax, &surf->light_s, &surf->light_t))
-			Sys_Error ("GL_CreateSurfaceLightmap : Consecutive calls to R_AllocBlock (%d, %d) failed", smax, tmax);
+			Sys_Error ("GL_CreateSurfaceLightmap : Consecutive calls to LM_AllocBlock (%d, %d) failed", smax, tmax);
 	}
 
 	surf->lightmaptexturenum = lm_currenttexture;

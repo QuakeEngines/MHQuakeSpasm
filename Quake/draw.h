@@ -41,7 +41,7 @@ void Draw_Fill (int x, int y, int w, int h, int c, float alpha); // johnfitz -- 
 void Draw_FadeScreen (void);
 void Draw_String (int x, int y, const char *str);
 void Draw_StringWithSpacing (int x, int y, const char *str, int spacing);
-qpic_t *Draw_PicFromWad (const char *name);
+qpic_t *Draw_PicFromWad (const char *name, qboolean scrappable);
 qpic_t *Draw_CachePic (const char *path);
 void Draw_NewGame (void);
 void Draw_Crosshair (void);
