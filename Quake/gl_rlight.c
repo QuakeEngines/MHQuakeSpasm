@@ -181,7 +181,6 @@ const GLchar *GL_GetDynamicLightFragmentProgramSource (void)
 int	r_dlightframecount = 1;
 
 extern cvar_t r_flatlightstyles; // johnfitz
-extern cvar_t gl_fullbrights; // johnfitz
 
 float	d_lightstylevalue[256];	// 8.8 fraction of base light value
 
@@ -420,6 +419,10 @@ int R_RecursiveLightPoint (float *lightcolor, mnode_t *node, vec3_t start, vec3_
 		if (ds > surf->extents[0] || dt > surf->extents[1])
 			continue;
 
+		// clear to no light
+		lightcolor[0] = lightcolor[1] = lightcolor[2] = 0;
+
+		// accumulate light
 		if (surf->samples)
 		{
 			// MH - changed this over to use the same lighting calc as R_BuildLightmap for consistency
@@ -460,18 +463,72 @@ int R_LightPoint (vec3_t p, float *lightcolor)
 	{
 		// in practice this will go through an alternative shader path that just doesn't have lighting, so these values actually have no effect
 		lightcolor[0] = lightcolor[1] = lightcolor[2] = 255;
+		return 255;
+	}
+
+	vec3_t	end = {
+		p[0],
+		p[1],
+		cl.worldmodel->mins[2] - 10.0f	// MH - trace the full worldmodel
+	};
+
+	lightcolor[0] = lightcolor[1] = lightcolor[2] = 0;
+
+	vec3_t hit, lightspot2, pointcolor;
+
+	// run an initial lightpoint against the world
+	if (R_RecursiveLightPoint (pointcolor, cl.worldmodel->nodes, p, end))
+	{
+		Vector3Copy (lightcolor, pointcolor);
+		Vector3Copy (hit, lightspot);
 	}
 	else
 	{
-		vec3_t	end = {
-			p[0],
-			p[1],
-			cl.worldmodel->mins[2] - 10.0f	// MH - trace the full worldmodel
-		};
-
-		lightcolor[0] = lightcolor[1] = lightcolor[2] = 0;
-		R_RecursiveLightPoint (lightcolor, cl.worldmodel->nodes, p, end);
+		// objects outside the world (such as Strogg Viper flybys on base1) should be lit if they hit nothing
+		// the new end point (based on mins of r_worldmodel) ensures that we'll always hit if inside the world so this is OK
+		// don't make them too bright or they'll look like shit/
+		Vector3Set (pointcolor, 192, 192, 192);
+		Vector3Copy (hit, end);
 	}
+
+	// find bmodels under the lightpoint - move the point to bmodel space, trace down, then check; if r < 0
+	// it didn't find a bmodel, otherwise it did (a bmodel under a valid world hit will hit here too)
+	// fixme: is it possible for a bmodel to not be in the PVS but yet be a valid candidate for this???
+	for (int i = 0; i < cl_numvisedicts; i++)
+	{
+		entity_t *e = cl_visedicts[i];
+		float estart[3], eend[3];
+
+		// NULL models don't light
+		if (!e->model) continue;
+
+		// only bmodel entities give light
+		if (e->model->type != mod_brush) continue;
+
+		if (e->model->firstmodelsurface == 0) continue;
+
+		// move start and end points into the entity's frame of reference (we don't store the local matrix in the entity struct so we do it cheap and nasty here)
+		Vector3Subtract (estart, p, e->origin);
+		Vector3Subtract (eend, end, e->origin);
+
+		// and run the recursive light point on it too
+		if (R_RecursiveLightPoint (pointcolor, e->model->nodes + e->model->hulls[0].firstclipnode, estart, eend))
+		{
+			// a bmodel under a valid world hit will hit here too so take the highest lightspot on all hits
+			// move lightspot back to world space
+			Vector3Add (lightspot2, lightspot, e->origin);
+
+			if (lightspot2[2] > hit[2])
+			{
+				// found a bmodel so copy it over
+				Vector3Copy (lightcolor, pointcolor);
+				Vector3Copy (hit, lightspot2);
+			}
+		}
+	}
+
+	// the final hit point is the valid lightspot
+	Vector3Copy (lightspot, hit);
 
 	return ((lightcolor[0] + lightcolor[1] + lightcolor[2]) * (1.0f / 3.0f));
 }
@@ -492,9 +549,6 @@ LIGHTMAP ALLOCATION
 // this is sufficient to hold ~6x the size of ad_sepulcher, which seems a reasonable upper-bound that we'll never hit.
 #define MAX_LIGHTMAPS	64
 
-// to do - move all of the lighting stuff to gl_rlight.c
-extern cvar_t gl_fullbrights; // johnfitz
-
 gltexture_t *gl_lightmaps[3][MAX_LIGHTMAPS];
 
 typedef struct lighttexel_s {
@@ -509,28 +563,28 @@ int lm_currenttexture = 0;
 
 static void R_NewBuildLightmap (msurface_t *surf, int ch)
 {
-	if (surf->samples)
+	if (!surf->samples)
+		return;
+
+	// copy over the lightmap beginning at the appropriate colour channel
+	byte *lightmap = surf->samples;
+
+	int smax = (surf->extents[0] >> 4) + 1;
+	int tmax = (surf->extents[1] >> 4) + 1;
+
+	for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
 	{
-		// copy over the lightmap beginning at the appropriate colour channel
-		byte *lightmap = surf->samples;
+		lighttexel_t *dest = lm_block[ch] + (surf->light_t * LIGHTMAP_SIZE) + surf->light_s;
 
-		int smax = (surf->extents[0] >> 4) + 1;
-		int tmax = (surf->extents[1] >> 4) + 1;
-
-		for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
+		for (int t = 0; t < tmax; t++)
 		{
-			lighttexel_t *dest = lm_block[ch] + (surf->light_t * LIGHTMAP_SIZE) + surf->light_s;
-
-			for (int t = 0; t < tmax; t++)
+			for (int s = 0; s < smax; s++)
 			{
-				for (int s = 0; s < smax; s++)
-				{
-					dest[s].styles[maps] = lightmap[ch];	// 'ch' is intentional here
-					lightmap += 3;
-				}
-
-				dest += LIGHTMAP_SIZE;
+				dest[s].styles[maps] = lightmap[ch];	// 'ch' is intentional here
+				lightmap += 3;
 			}
+
+			dest += LIGHTMAP_SIZE;
 		}
 	}
 }
@@ -547,11 +601,14 @@ static void LM_UploadBlock (void)
 {
 	char	name[24];
 
-	sprintf (name, "lightmap%07i", lm_currenttexture);
+	sprintf (name, "lightmap_%02i", lm_currenttexture);
 
-	gl_lightmaps[0][lm_currenttexture] = TexMgr_LoadImage (cl.worldmodel, va ("%s_r", name), LIGHTMAP_SIZE, LIGHTMAP_SIZE, SRC_LIGHTMAP, (byte *) lm_block[0], "", (src_offset_t) lm_block[0], TEXPREF_LINEAR);
-	gl_lightmaps[1][lm_currenttexture] = TexMgr_LoadImage (cl.worldmodel, va ("%s_g", name), LIGHTMAP_SIZE, LIGHTMAP_SIZE, SRC_LIGHTMAP, (byte *) lm_block[1], "", (src_offset_t) lm_block[1], TEXPREF_LINEAR);
-	gl_lightmaps[2][lm_currenttexture] = TexMgr_LoadImage (cl.worldmodel, va ("%s_b", name), LIGHTMAP_SIZE, LIGHTMAP_SIZE, SRC_LIGHTMAP, (byte *) lm_block[2], "", (src_offset_t) lm_block[2], TEXPREF_LINEAR);
+#define LM_UPLOAD_PARAMS(channel) \
+	LIGHTMAP_SIZE, LIGHTMAP_SIZE, SRC_LIGHTMAP, (byte *) lm_block[channel], "", (src_offset_t) lm_block[channel], TEXPREF_LINEAR
+
+	gl_lightmaps[0][lm_currenttexture] = TexMgr_LoadImage (cl.worldmodel, va ("%s_r", name), LM_UPLOAD_PARAMS (0));
+	gl_lightmaps[1][lm_currenttexture] = TexMgr_LoadImage (cl.worldmodel, va ("%s_g", name), LM_UPLOAD_PARAMS (1));
+	gl_lightmaps[2][lm_currenttexture] = TexMgr_LoadImage (cl.worldmodel, va ("%s_b", name), LM_UPLOAD_PARAMS (2));
 
 	if (++lm_currenttexture >= MAX_LIGHTMAPS)
 		Sys_Error ("LM_UploadBlock : MAX_LIGHTMAPS exceeded");
@@ -614,9 +671,7 @@ void GL_CreateSurfaceLightmap (msurface_t *surf)
 		LM_InitBlock ();
 
 		if (!LM_AllocBlock (smax, tmax, &surf->light_s, &surf->light_t))
-		{
 			Sys_Error ("GL_CreateSurfaceLightmap : Consecutive calls to R_AllocBlock (%d, %d) failed", smax, tmax);
-		}
 	}
 
 	surf->lightmaptexturenum = lm_currenttexture;
