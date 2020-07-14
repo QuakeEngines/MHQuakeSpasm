@@ -56,10 +56,8 @@ In some cases I've gone back to Quake utility source code. So, for example, I re
 
 In one case I used an old .plan file entry from 1996 to determine the intent behind a strange-looking piece of code in the original sources. 
 
-### Where's r_drawflat? Your engine sucks! I hate you forever!
-That's OK.
-
-More seriously, if you need functionality like r_drawflat, r_fullbright, r_showtris, etc, then I'd suggest that just using QuakeSpasm instead may be a more suitable option for you.  As part of a code simplification pass these features were removed, and while it wouldn't necessarily be a huge imposition to add them back, there's likewise no real requirement to do so either.
+### Help! r_drawflat melted my GPU! 
+Sorry about that. I haven't implemented r_drawflat in a robust or performant way, because it's not really intended to be a performant codepath to begin with. While it is useful to see how badly QBSP chopped up your geometry, with draw call batching that's really no longer something that badly affects performance. I guess you can switch it on if you just want to look at it, but otherwise it's value seems dubious. 
 
 ### Will you support Nehahra? 
 Maybe. But a friendly word of advice: badgering me over and over again until I eventually do it just to shut you up won't endear you to me. 
