@@ -503,18 +503,9 @@ void GLDraw_CreateShaders (void)
 ==============================================================================
 */
 
-void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h, unsigned colour, float sl, float sh, float tl, float th)
+void Draw_TexturedVertexes (float x, float y, float w, float h, unsigned colour, float sl, float sh, float tl, float th)
 {
-	if (((byte *) &colour)[3] < 255)
-		GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	else GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
-
-	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
-	GL_BindPrograms (draw_textured_vp, draw_textured_fp);
-	GL_BindTexture (GL_TEXTURE0, texture);
-
-	glBegin (GL_QUADS);
-
+	// common to a few routines
 	glVertexAttrib2f (2, sl, tl);
 	glVertexAttrib4Nubv (1, (byte *) &colour);
 	glVertexAttrib2f (0, x, y);
@@ -530,7 +521,21 @@ void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h
 	glVertexAttrib2f (2, sl, th);
 	glVertexAttrib4Nubv (1, (byte *) &colour);
 	glVertexAttrib2f (0, x, y + h);
+}
 
+
+void Draw_TexturedQuad (gltexture_t *texture, float x, float y, float w, float h, unsigned colour, float sl, float sh, float tl, float th)
+{
+	if (((byte *) &colour)[3] < 255)
+		GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	else GL_BlendState (GL_FALSE, GL_NONE, GL_NONE);
+
+	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);
+	GL_BindPrograms (draw_textured_vp, draw_textured_fp);
+	GL_BindTexture (GL_TEXTURE0, texture);
+
+	glBegin (GL_QUADS);
+	Draw_TexturedVertexes (x, y, w, h, colour, sl, sh, tl, th);
 	glEnd ();
 }
 
@@ -593,21 +598,7 @@ void Draw_StringWithSpacing (int x, int y, const char *str, int spacing)
 		float size = 0.0625;
 		unsigned colour = 0xffffffff;
 
-		glVertexAttrib2f (2, fcol, frow);
-		glVertexAttrib4Nubv (1, (byte *) &colour);
-		glVertexAttrib2f (0, x, y);
-
-		glVertexAttrib2f (2, fcol + size, frow);
-		glVertexAttrib4Nubv (1, (byte *) &colour);
-		glVertexAttrib2f (0, x + 8, y);
-
-		glVertexAttrib2f (2, fcol + size, frow + size);
-		glVertexAttrib4Nubv (1, (byte *) &colour);
-		glVertexAttrib2f (0, x + 8, y + 8);
-
-		glVertexAttrib2f (2, fcol, frow + size);
-		glVertexAttrib4Nubv (1, (byte *) &colour);
-		glVertexAttrib2f (0, x, y + 8);
+		Draw_TexturedVertexes (x, y, 8, 8, colour, fcol, fcol + size, frow, frow + size);
 	}
 
 	glEnd ();
