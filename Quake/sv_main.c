@@ -37,6 +37,8 @@ int		sv_protocol = PROTOCOL_FITZQUAKE; // johnfitz
 
 extern qboolean	pr_alpha_supported; // johnfitz
 
+cvar_t	sv_novis = { "sv_novis", "0" };
+
 // ============================================================================
 
 
@@ -157,6 +159,7 @@ void SV_Init (void)
 
 	sv.edicts = NULL; // ericw -- sv.edicts switched to use malloc()
 
+	Cvar_RegisterVariable (&sv_novis);
 	Cvar_RegisterVariable (&sv_maxvelocity);
 	Cvar_RegisterVariable (&sv_gravity);
 	Cvar_RegisterVariable (&sv_friction);
@@ -611,8 +614,8 @@ qboolean SV_EdictVisibleFromHeadnode (mnode_t *node, byte *visbits)
 qboolean SV_EdictVisibleToClient (edict_t *ent, byte *visbits)
 {
 	// skip visibility checks and always send (this may cause protocol packet overflows)
-	//if (sv_novis.value)
-	//	return true;
+	if (sv_novis.value)
+		return true;
 
 	// this can happen if the ent is in solid
 	if (!ent->headnode)
