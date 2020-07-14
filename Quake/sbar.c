@@ -832,16 +832,12 @@ void Sbar_DrawFace (void)
 
 		if (top == 8)
 		{
-			if (num[0] != ' ') Sbar_DrawCharacter (113, 3, 18 + num[0] - '0');
-			if (num[1] != ' ') Sbar_DrawCharacter (120, 3, 18 + num[1] - '0');
-			if (num[2] != ' ') Sbar_DrawCharacter (127, 3, 18 + num[2] - '0');
+			if (num[0] != ' ') num[0] = 18 + num[0] - '0';
+			if (num[1] != ' ') num[1] = 18 + num[1] - '0';
+			if (num[2] != ' ') num[2] = 18 + num[2] - '0';
+			Draw_StringWithSpacing (113, 27, num, 7);
 		}
-		else
-		{
-			Sbar_DrawCharacter (113, 3, num[0]);
-			Sbar_DrawCharacter (120, 3, num[1]);
-			Sbar_DrawCharacter (127, 3, num[2]);
-		}
+		else Draw_StringWithSpacing (113, 27, num, 7);
 
 		return;
 	}
@@ -909,7 +905,7 @@ void Sbar_Draw (void)
 	{
 		if (scr_sbaralpha.value < 1)
 			Draw_TileClear (0, glheight - sb_lines, glwidth, sb_lines);
-		if (cl.gametype == GAME_DEATHMATCH)
+		else if (cl.gametype == GAME_DEATHMATCH)
 			Draw_TileClear (w, glheight - sb_lines, glwidth - w, sb_lines);
 		else
 		{
@@ -941,10 +937,8 @@ void Sbar_Draw (void)
 		// MED 01/04/97 moved keys here so they would not be overwritten
 		if (hipnotic)
 		{
-			if (cl.items & IT_KEY1)
-				Sbar_DrawPic (209, 3, sb_items[0]);
-			if (cl.items & IT_KEY2)
-				Sbar_DrawPic (209, 12, sb_items[1]);
+			if (cl.items & IT_KEY1) Sbar_DrawPic (209, 3, sb_items[0]);
+			if (cl.items & IT_KEY2) Sbar_DrawPic (209, 12, sb_items[1]);
 		}
 		// armor
 		if (cl.items & IT_INVULNERABILITY)

@@ -115,7 +115,6 @@ typedef struct medge_s {
 
 typedef struct mtexinfo_s {
 	float		vecs[2][4];
-	float		mipadjust;
 	texture_t *texture;
 	int			flags;
 } mtexinfo_t;

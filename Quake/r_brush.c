@@ -326,7 +326,7 @@ void R_BatchSurface (msurface_t *s)
 	{
 		// r_drawflat isn't meant to be a robust performant mode anyway....
 		extern byte r_flatcolor[1024][4];
-		glVertexAttrib4Nubv (4, r_flatcolor[(int) s & 1023]);
+		glVertexAttrib4Nubv (4, r_flatcolor[s->firstvertex & 1023]);
 		glDrawArrays (GL_TRIANGLE_FAN, s->firstvertex, s->numedges);
 	}
 	else

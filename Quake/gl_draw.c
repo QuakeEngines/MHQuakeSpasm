@@ -565,7 +565,7 @@ void Draw_ColouredQuad (float x, float y, float w, float h, unsigned colour)
 Draw_String
 ================
 */
-void Draw_String (int x, int y, const char *str)
+void Draw_StringWithSpacing (int x, int y, const char *str, int spacing)
 {
 	// totally off screen
 	if (y <= -8) return;
@@ -609,6 +609,13 @@ void Draw_String (int x, int y, const char *str)
 	}
 
 	glEnd ();
+}
+
+
+void Draw_String (int x, int y, const char *str)
+{
+	// default spacing (8) can be overridden for sbar widgets which sometimes use 6, 7...
+	Draw_StringWithSpacing (x, y, str, 8);
 }
 
 
