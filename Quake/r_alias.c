@@ -296,7 +296,9 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 		// r_drawflat isn't meant to be a robust performant mode anyway....
 		for (int i = 0; i < set->numindexes; i += 3)
 		{
-			glVertexAttrib4Nubv (5, (byte *) &d_8to24table[i & 255]);
+			// r_drawflat isn't meant to be a robust performant mode anyway....
+			extern byte r_flatcolor[1024][4];
+			glVertexAttrib4Nubv (5, r_flatcolor[(i / 3) & 1023]);
 			glDrawElements (GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, (void *) (intptr_t) (i * sizeof (unsigned short)));
 		}
 	}

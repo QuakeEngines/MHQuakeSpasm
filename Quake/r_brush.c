@@ -157,19 +157,11 @@ void GL_BuildPolygonForSurface (qmodel_t *mod, msurface_t *surf, brushpolyvert_t
 			verts->st[0] = (Vector3Dot (verts->xyz, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3]) / surf->texinfo->texture->width;
 			verts->st[1] = (Vector3Dot (verts->xyz, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3]) / surf->texinfo->texture->height;
 
-			// lightmap coords are always in the 0..1 range; this allows us to store them as DXGI_FORMAT_R16G16_UNORM
-			// which in turn allows for further compression of the brushpolyvert_t struct down to a nice cache-friendly 32 bytes.
-			int s = (int) ((Vector3Dot (verts->xyz, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3]) + 0.5f);
-			int t = (int) ((Vector3Dot (verts->xyz, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3]) + 0.5f);
+			float s = (Vector3Dot (verts->xyz, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3]) - surf->texturemins[0];
+			float t = (Vector3Dot (verts->xyz, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3]) - surf->texturemins[1];
 
-			s -= surf->texturemins[0];
-			s += surf->light_s * 16;
-
-			t -= surf->texturemins[1];
-			t += surf->light_t * 16;
-
-			verts->lm[0] = (s + 8) * (4096 / LIGHTMAP_SIZE);
-			verts->lm[1] = (t + 8) * (4096 / LIGHTMAP_SIZE);
+			verts->lm[0] = (s + surf->light_s * 16 + 8) / (float) (LIGHTMAP_SIZE * 16);
+			verts->lm[1] = (t + surf->light_t * 16 + 8) / (float) (LIGHTMAP_SIZE * 16);
 		}
 
 		// copy over the normals for dynamic lighting
@@ -266,7 +258,7 @@ void R_SetupWorldVBOState (void)
 
 	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, xyz));
 	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, st));
-	glVertexAttribPointer (2, 2, GL_UNSIGNED_SHORT, GL_TRUE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, lm));
+	glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, lm));
 	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (brushpolyvert_t), (const void *) offsetof (brushpolyvert_t, norm));
 }
 
@@ -333,7 +325,8 @@ void R_BatchSurface (msurface_t *s)
 	if (r_drawflat_cheatsafe)
 	{
 		// r_drawflat isn't meant to be a robust performant mode anyway....
-		glVertexAttrib4Nubv (4, (byte *) &d_8to24table[(int) s & 255]);
+		extern byte r_flatcolor[1024][4];
+		glVertexAttrib4Nubv (4, r_flatcolor[(int) s & 1023]);
 		glDrawArrays (GL_TRIANGLE_FAN, s->firstvertex, s->numedges);
 	}
 	else

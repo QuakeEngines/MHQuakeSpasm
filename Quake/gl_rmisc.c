@@ -44,6 +44,9 @@ static int r_registration_sequence = 1;
 // generic buffersets that may be used for any model type
 static bufferset_t r_buffersets[MAX_MODELS];
 
+// for r_drawflat
+byte r_flatcolor[1024][4];
+
 
 int R_GetBufferSetForName (char *name)
 {
@@ -278,6 +281,17 @@ void R_Init (void)
 	Cvar_RegisterVariable (&r_drawflat);
 	Cvar_RegisterVariable (&r_showtris);
 	Cvar_RegisterVariable (&r_showbboxes);
+
+	// for r_drawflat
+	srand (350125); // GO!
+
+	for (int i = 0; i < 1024; i++)
+	{
+		r_flatcolor[i][0] = rand () & 255;
+		r_flatcolor[i][1] = rand () & 255;
+		r_flatcolor[i][2] = rand () & 255;
+		r_flatcolor[i][3] = 255;
+	}
 
 	R_InitParticles ();
 	R_SetClearColor_f (&r_clearcolor); // johnfitz

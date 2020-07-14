@@ -130,7 +130,7 @@ typedef struct gl_rect_s {
 typedef struct brushpolyvert_s {
 	float xyz[3];
 	float st[2];
-	unsigned short lm[2];
+	float lm[2];
 	signed char norm[4];
 } brushpolyvert_t;
 
