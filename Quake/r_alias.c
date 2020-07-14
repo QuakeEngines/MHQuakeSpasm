@@ -253,32 +253,17 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 	glVertexAttribPointer (3, 4, GL_BYTE, GL_TRUE, sizeof (meshxyz_t), GLARB_GetNormalOffset (set, hdr, lerpdata->pose2));
 	glVertexAttribPointer (4, 2, GL_FLOAT, GL_FALSE, sizeof (meshst_t), (void *) (intptr_t) set->vbostofs);
 
-	// set textures
-	GL_BindTexture (GL_TEXTURE0, tx);
-
 	// select shaders
 	if (r_drawflat_cheatsafe)
 		GL_BindPrograms (r_alias_drawflat_vp, r_alias_drawflat_fp);
 	else if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
+	{
+		GL_BindTexture (GL_TEXTURE0, tx);
 		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_fullbright_fp);
+	}
 	else
 	{
-		// select the shader to use
-		int shaderflag = SHADERFLAG_NONE;
-
-		if (fb)
-		{
-			GL_BindTexture (GL_TEXTURE1, fb);
-			shaderflag |= SHADERFLAG_LUMA;
-		}
-
-		// fence texture test
-		if (e->model->flags & MF_HOLEY) shaderflag |= SHADERFLAG_FENCE;
-
-		// fog on/off
-		if (Fog_GetDensity () > 0) shaderflag |= SHADERFLAG_FOG;
-
-		// bind the selected programs
+		int shaderflag = R_SelectTexturesAndShaders (tx, fb, e->model->flags & MF_HOLEY);
 		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_lightmapped_fp[shaderflag]);
 	}
 
@@ -671,9 +656,7 @@ void R_DrawAliasModel (entity_t *e)
 	glMultMatrixf (localMatrix.m16);
 
 	// draw it
-	if (r_lightmap_cheatsafe)
-		GL_DrawAliasFrame_ARB (e, &localMatrix, hdr, &lerpdata, greytexture, NULL);
-	else GL_DrawAliasFrame_ARB (e, &localMatrix, hdr, &lerpdata, tx, fb);
+	GL_DrawAliasFrame_ARB (e, &localMatrix, hdr, &lerpdata, tx, fb);
 
 	// set up dynamic lighting (this depends on state from GL_DrawAliasFrame_ARB so don't call it from anywhere else!)
 	if (alpha < 1)

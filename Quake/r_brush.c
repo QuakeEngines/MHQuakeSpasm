@@ -160,8 +160,8 @@ void GL_BuildPolygonForSurface (qmodel_t *mod, msurface_t *surf, brushpolyvert_t
 			float s = (Vector3Dot (verts->xyz, surf->texinfo->vecs[0]) + surf->texinfo->vecs[0][3]) - surf->texturemins[0];
 			float t = (Vector3Dot (verts->xyz, surf->texinfo->vecs[1]) + surf->texinfo->vecs[1][3]) - surf->texturemins[1];
 
-			verts->lm[0] = (s + surf->light_s * 16 + 8) / (float) (LIGHTMAP_SIZE * 16);
-			verts->lm[1] = (t + surf->light_t * 16 + 8) / (float) (LIGHTMAP_SIZE * 16);
+			verts->lm[0] = GL_SetLightmapTexCoord (s + surf->light_s * 16 + 8);
+			verts->lm[1] = GL_SetLightmapTexCoord (t + surf->light_t * 16 + 8);
 		}
 
 		// copy over the normals for dynamic lighting

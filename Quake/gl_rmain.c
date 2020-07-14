@@ -46,8 +46,6 @@ refdef_t	r_refdef;
 
 mleaf_t *r_viewleaf, *r_oldviewleaf;
 
-float	d_lightstylevalue[256];	// 8.8 fraction of base light value
-
 
 // MH - reverted a lot of these to Quake defaults
 cvar_t	r_norefresh = { "r_norefresh", "0", CVAR_NONE };
@@ -829,10 +827,10 @@ void R_ScaleView (void)
 	glActiveTexture (GL_TEXTURE5);
 	glBindTexture (GL_TEXTURE_RECTANGLE, 0);
 
-	// we enforced requiring a rectangle texture extension so we don't need to worry abour np2 stuff
+	// we enforced requiring a rectangle texture extension so we don't need to worry about np2 stuff
 	glCopyTexImage2D (GL_TEXTURE_RECTANGLE, 0, GL_RGBA, srcx, srcy, srcw, srch, 0);
-	glTexParameteri (GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri (GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri (GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri (GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf (GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf (GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -859,6 +857,7 @@ void R_ScaleView (void)
 
 	glDrawArrays (GL_QUADS, 0, 4);
 }
+
 
 /*
 ================

@@ -458,7 +458,16 @@ void GLSky_CreateShaders (void)
 
 void Sky_SetShaderConstants (void)
 {
-	if (r_fastsky.value)
+	if (r_lightmap_cheatsafe)
+	{
+		glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB,
+			1,
+			1,
+			1,
+			1,
+			Fog_GetDensity () > 0 ? skyfog : 0);
+	}
+	else if (r_fastsky.value)
 	{
 		glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB,
 			1,
@@ -508,7 +517,7 @@ void Sky_SetShaderConstants (void)
 
 void R_DrawSkychain_ARB (msurface_t *s)
 {
-	if (r_fastsky.value)
+	if (r_fastsky.value || r_lightmap_cheatsafe)
 		GL_BindPrograms (r_skyfast_vp, r_skyfast_fp);
 	else if (skybox_name[0])
 	{

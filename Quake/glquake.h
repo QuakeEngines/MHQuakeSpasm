@@ -94,7 +94,6 @@ extern	float	r_origin[4];
 // screen size info
 extern	refdef_t	r_refdef;
 extern	mleaf_t *r_viewleaf, *r_oldviewleaf;
-extern	float		d_lightstylevalue[256];	// 8.8 fraction of base light value
 
 extern	cvar_t	r_norefresh;
 extern	cvar_t	r_drawentities;
@@ -184,11 +183,9 @@ extern overflowtimes_t dev_overflows; // this stores the last time overflow mess
 
 
 // lightmap stuff
-#define LIGHTMAP_SIZE	256	// FIXME: make dynamic. if we have a decent card there's no real reason not to use 4k or 16k (assuming there's no lightstyles/dynamics that need uploading...)
-#define MAX_LIGHTMAPS	1024
-
-extern gltexture_t *gl_lightmaps[3][MAX_LIGHTMAPS];
-extern int lm_currenttexture;	// allocated lightmaps
+void GL_BindLightmaps (int lightmaptexturenum);
+float GL_SetLightmapTexCoord (float base);
+void GL_SetSurfaceStyles (msurface_t *surf);
 
 extern float	map_wateralpha, map_lavaalpha, map_telealpha, map_slimealpha; // ericw
 
@@ -246,6 +243,9 @@ qboolean R_AllocBlock (int w, int h, int *x, int *y, int *allocated, int block_w
 #define SHADERFLAG_FENCE	(1 << 0)
 #define SHADERFLAG_LUMA		(1 << 1)
 #define SHADERFLAG_FOG		(1 << 2)
+
+// common flag setup for alias and brush
+int R_SelectTexturesAndShaders (gltexture_t *tx, gltexture_t *fb, int alphaflag);
 
 GLuint GL_CreateARBProgram (GLenum mode, const GLchar *progstr);
 const GLchar *GL_GetVertexProgram (const GLchar *base, int shaderflag);

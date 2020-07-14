@@ -736,7 +736,7 @@ TexMgr_LoadLightmap -- handles lightmap data
 static void TexMgr_LoadLightmap (gltexture_t *glt, byte *data)
 {
 	// upload it
-	GL_BindTexture (GL_TEXTURE1, glt);
+	GL_BindTexture (GL_TEXTURE0, glt);
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, glt->width, glt->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
 	// set filter modes

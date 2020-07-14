@@ -183,6 +183,8 @@ int	r_dlightframecount = 1;
 extern cvar_t r_flatlightstyles; // johnfitz
 extern cvar_t gl_fullbrights; // johnfitz
 
+float	d_lightstylevalue[256];	// 8.8 fraction of base light value
+
 
 /*
 ==================
@@ -483,6 +485,9 @@ LIGHTMAP ALLOCATION
 =============================================================================
 */
 
+#define LIGHTMAP_SIZE	256	// FIXME: make dynamic. if we have a decent card there's no real reason not to use 4k or 16k (assuming there's no lightstyles/dynamics that need uploading...)
+#define MAX_LIGHTMAPS	1024
+
 // to do - move all of the lighting stuff to gl_rlight.c
 extern cvar_t gl_fullbrights; // johnfitz
 
@@ -653,4 +658,31 @@ void GL_BuildLightmaps (void)
 	LM_UploadBlock ();
 }
 
+
+void GL_BindLightmaps (int lightmaptexturenum)
+{
+	GL_BindTexture (GL_TEXTURE2, gl_lightmaps[0][lightmaptexturenum]);
+	GL_BindTexture (GL_TEXTURE3, gl_lightmaps[1][lightmaptexturenum]);
+	GL_BindTexture (GL_TEXTURE4, gl_lightmaps[2][lightmaptexturenum]);
+}
+
+
+float GL_SetLightmapTexCoord (float base)
+{
+	return base / (float) (LIGHTMAP_SIZE * 16);
+}
+
+
+void GL_SetSurfaceStyles (msurface_t *surf)
+{
+	// build the new style
+	float fstyles[4] = { 0, 0, 0, 0 };
+
+	for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
+		fstyles[maps] = d_lightstylevalue[surf->styles[maps]];
+
+	// write them out
+	// (to do - benchmark this vs sending them as a glVertexAttrib call - right now it's plenty fast enough)
+	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, fstyles);
+}
 

@@ -460,42 +460,42 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\README.md" />
-    <None Include="..\codecs\x86\libmad-0.dll">
-      <Filter>Codecs</Filter>
-    </None>
-    <None Include="..\codecs\x86\libmikmod-3.dll">
-      <Filter>Codecs</Filter>
-    </None>
-    <None Include="..\codecs\x86\libmpg123-0.dll">
-      <Filter>Codecs</Filter>
-    </None>
-    <None Include="..\codecs\x86\libogg-0.dll">
-      <Filter>Codecs</Filter>
-    </None>
-    <None Include="..\codecs\x86\libopus-0.dll">
-      <Filter>Codecs</Filter>
-    </None>
-    <None Include="..\codecs\x86\libopusfile-0.dll">
-      <Filter>Codecs</Filter>
-    </None>
-    <None Include="..\codecs\x86\libvorbis-0.dll">
-      <Filter>Codecs</Filter>
-    </None>
-    <None Include="..\codecs\x86\libvorbisfile-3.dll">
-      <Filter>Codecs</Filter>
-    </None>
-    <None Include="..\codecs\x86\libvorbisidec-1.dll">
-      <Filter>Codecs</Filter>
-    </None>
-    <None Include="..\codecs\x86\libxmp.dll">
-      <Filter>Codecs</Filter>
-    </None>
-    <None Include="..\SDL2\lib\SDL2.dll">
-      <Filter>Codecs</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\codecs\x86\libFLAC-8.dll">
+      <Filter>Codecs</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\codecs\x86\libmad-0.dll">
+      <Filter>Codecs</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\codecs\x86\libmikmod-3.dll">
+      <Filter>Codecs</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\codecs\x86\libmpg123-0.dll">
+      <Filter>Codecs</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\codecs\x86\libogg-0.dll">
+      <Filter>Codecs</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\codecs\x86\libopus-0.dll">
+      <Filter>Codecs</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\codecs\x86\libopusfile-0.dll">
+      <Filter>Codecs</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\codecs\x86\libvorbis-0.dll">
+      <Filter>Codecs</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\codecs\x86\libvorbisfile-3.dll">
+      <Filter>Codecs</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\codecs\x86\libvorbisidec-1.dll">
+      <Filter>Codecs</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\codecs\x86\libxmp.dll">
+      <Filter>Codecs</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="..\SDL2\lib\SDL2.dll">
       <Filter>Codecs</Filter>
     </CopyFileToFolders>
   </ItemGroup>

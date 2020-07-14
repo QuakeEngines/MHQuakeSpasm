@@ -81,16 +81,16 @@ void GLWorld_CreateShaders (void)
 		"\n"
 		"# perform the texturing\n"
 		"TEX diff, fragment.texcoord[0], texture[0], 2D;\n"
-		"TEX luma, fragment.texcoord[0], texture[4], 2D;\n"
+		"TEX luma, fragment.texcoord[0], texture[1], 2D;\n"
 		"\n"
 		"# fence texture test\n"
 		"SUB fence, diff, 0.666;\n"
 		"KIL fence.a;\n"
 		"\n"
 		"# read the lightmaps\n"
-		"TEX lmr, fragment.texcoord[1], texture[1], 2D;\n"
-		"TEX lmg, fragment.texcoord[1], texture[2], 2D;\n"
-		"TEX lmb, fragment.texcoord[1], texture[3], 2D;\n"
+		"TEX lmr, fragment.texcoord[1], texture[2], 2D;\n"
+		"TEX lmg, fragment.texcoord[1], texture[3], 2D;\n"
+		"TEX lmb, fragment.texcoord[1], texture[4], 2D;\n"
 		"\n"
 		"# apply the lightstyles\n"
 		"DP4 lmap.r, lmr, program.local[0];\n"
@@ -231,28 +231,7 @@ void R_ChainSurface (msurface_t *surf, texchain_t chain)
 
 void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 {
-	int shaderflag = SHADERFLAG_NONE;
-
-	// and now we can draw it
-	if (r_lightmap_cheatsafe)
-		GL_BindTexture (GL_TEXTURE0, greytexture);
-	else
-	{
-		GL_BindTexture (GL_TEXTURE0, t->gltexture);
-
-		// Enable/disable TMU 2 (fullbrights)
-		if (gl_fullbrights.value && t->fullbright)
-		{
-			GL_BindTexture (GL_TEXTURE4, t->fullbright);
-			shaderflag |= SHADERFLAG_LUMA;
-		}
-
-		// fence texture test
-		if (s->flags & SURF_DRAWFENCE) shaderflag |= SHADERFLAG_FENCE;
-	}
-
-	// fog on/off
-	if (Fog_GetDensity () > 0) shaderflag |= SHADERFLAG_FOG;
+	int shaderflag = R_SelectTexturesAndShaders (t->gltexture, t->fullbright, s->flags & SURF_DRAWFENCE);
 
 	// bind the selected programs
 	GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[shaderflag]);
@@ -269,9 +248,7 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 			R_FlushBatch (); // first time through there will be nothing in the batch
 
 			// bind all the lightmaps
-			GL_BindTexture (GL_TEXTURE1, gl_lightmaps[0][s->lightmaptexturenum]);
-			GL_BindTexture (GL_TEXTURE2, gl_lightmaps[1][s->lightmaptexturenum]);
-			GL_BindTexture (GL_TEXTURE3, gl_lightmaps[2][s->lightmaptexturenum]);
+			GL_BindLightmaps (s->lightmaptexturenum);
 
 			// store back
 			currentlightmap = s->lightmaptexturenum;
@@ -283,14 +260,7 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 			R_FlushBatch (); // first time through there will be nothing in the batch
 
 			// build the new style
-			float fstyles[4] = { 0, 0, 0, 0 };
-
-			for (int maps = 0; maps < MAXLIGHTMAPS && s->styles[maps] != 255; maps++)
-				fstyles[maps] = d_lightstylevalue[s->styles[maps]];
-
-			// write them out
-			// (to do - benchmark this vs sending them as a glVertexAttrib call - right now it's plenty fast enough)
-			glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, fstyles);
+			GL_SetSurfaceStyles (s);
 
 			// store back
 			oldstyle = s->fullstyle;
@@ -408,17 +378,8 @@ void R_DrawTextureChains (qmodel_t *model, entity_t *ent, QMATRIX *localMatrix, 
 		}
 		else if (s->flags & SURF_DRAWSKY)
 		{
-			if (r_lightmap_cheatsafe)
-			{
-				GL_BindTexture (GL_TEXTURE0, whitetexture);
-				GL_BindPrograms (r_brush_notexture_vp, r_brush_notexture_fp);
-				R_DrawSimpleTexturechain (s);
-			}
-			else
-			{
-				// sky; either layers or cubemap
-				R_DrawSkychain_ARB (s);
-			}
+			// sky; either layers or cubemap
+			R_DrawSkychain_ARB (s);
 		}
 		else if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe)
 		{

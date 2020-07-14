@@ -847,6 +847,35 @@ void R_BeginTransparentDrawing (float alpha)
 }
 
 
+int R_SelectTexturesAndShaders (gltexture_t *tx, gltexture_t *fb, int alphaflag)
+{
+	// common for alias and world
+	int shaderflag = SHADERFLAG_NONE;
+
+	if (r_lightmap_cheatsafe)
+		GL_BindTexture (GL_TEXTURE0, greytexture);
+	else
+	{
+		GL_BindTexture (GL_TEXTURE0, tx);
+
+		// Enable/disable TMU 2 (fullbrights)
+		if (gl_fullbrights.value && fb)
+		{
+			GL_BindTexture (GL_TEXTURE1, fb);
+			shaderflag |= SHADERFLAG_LUMA;
+		}
+
+		// fence texture test
+		if (alphaflag) shaderflag |= SHADERFLAG_FENCE;
+	}
+
+	// fog on/off
+	if (Fog_GetDensity () > 0) shaderflag |= SHADERFLAG_FOG;
+
+	return shaderflag;
+}
+
+
 // returns a texture number and the position inside it
 qboolean R_AllocBlock (int w, int h, int *x, int *y, int *allocated, int block_width, int block_height)
 {
