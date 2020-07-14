@@ -158,8 +158,9 @@ void R_CheckEfrags (void)
 		Con_DWarning ("%i efrags exceeds standard limit of 640.\n", cl.num_efrags);
 
 	dev_stats.efrags = cl.num_efrags;
-	dev_peakstats.efrags = q_max (cl.num_efrags, dev_peakstats.efrags);
+	dev_peakstats.efrags = Q_imax (cl.num_efrags, dev_peakstats.efrags);
 }
+
 
 /*
 ===========

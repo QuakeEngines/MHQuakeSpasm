@@ -102,7 +102,7 @@ void Fog_ParseServerMessage (void)
 	red = MSG_ReadByte () / 255.0;
 	green = MSG_ReadByte () / 255.0;
 	blue = MSG_ReadByte () / 255.0;
-	time = q_max (0.0, MSG_ReadShort () / 100.0);
+	time = Q_fmax (0.0, MSG_ReadShort () / 100.0);
 
 	Fog_Update (density, red, green, blue, time);
 }
@@ -132,7 +132,7 @@ void Fog_FogCommand_f (void)
 		break;
 
 	case 2:
-		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
+		Fog_Update (Q_fmax (0.0, atof (Cmd_Argv (1))),
 			fog_red,
 			fog_green,
 			fog_blue,
@@ -140,7 +140,7 @@ void Fog_FogCommand_f (void)
 		break;
 
 	case 3: // TEST
-		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
+		Fog_Update (Q_fmax (0.0, atof (Cmd_Argv (1))),
 			fog_red,
 			fog_green,
 			fog_blue,
@@ -156,7 +156,7 @@ void Fog_FogCommand_f (void)
 		break;
 
 	case 5:
-		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
+		Fog_Update (Q_fmax (0.0, atof (Cmd_Argv (1))),
 			Q_fclamp (atof (Cmd_Argv (2)), 0.0, 1.0),
 			Q_fclamp (atof (Cmd_Argv (3)), 0.0, 1.0),
 			Q_fclamp (atof (Cmd_Argv (4)), 0.0, 1.0),
@@ -164,7 +164,7 @@ void Fog_FogCommand_f (void)
 		break;
 
 	case 6: // TEST
-		Fog_Update (q_max (0.0, atof (Cmd_Argv (1))),
+		Fog_Update (Q_fmax (0.0, atof (Cmd_Argv (1))),
 			Q_fclamp (atof (Cmd_Argv (2)), 0.0, 1.0),
 			Q_fclamp (atof (Cmd_Argv (3)), 0.0, 1.0),
 			Q_fclamp (atof (Cmd_Argv (4)), 0.0, 1.0),

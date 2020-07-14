@@ -95,7 +95,7 @@ char *PL_GetClipboardData (void)
 				 * such as an ip address, etc:  do chop the size
 				 * here, otherwise we may experience Q_zmalloc()
 				 * failures and all other not-oh-so-fun stuff. */
-				size = q_min (MAX_CLIPBOARDTXT, size);
+				size = Q_imin (MAX_CLIPBOARDTXT, size);
 				data = (char *) Q_zmalloc (size);
 				q_strlcpy (data, cliptext, size);
 				GlobalUnlock (hClipboardData);
@@ -108,7 +108,6 @@ char *PL_GetClipboardData (void)
 
 void PL_ErrorDialog (const char *errorMsg)
 {
-	MessageBox (NULL, errorMsg, "Quake Error",
-		MB_OK | MB_SETFOREGROUND | MB_ICONSTOP);
+	MessageBox (NULL, errorMsg, "Quake Error", MB_OK | MB_SETFOREGROUND | MB_ICONSTOP);
 }
 

@@ -773,7 +773,7 @@ int Image_SafeTextureSize (int s)
 {
 	if (!GLEW_ARB_texture_non_power_of_two)
 		s = Image_Pad (s);
-	s = q_min (gl_hardware_maxsize, s);
+	s = Q_imin (gl_hardware_maxsize, s);
 	return s;
 }
 

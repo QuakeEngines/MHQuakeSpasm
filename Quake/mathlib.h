@@ -50,8 +50,6 @@ static inline int IS_NAN (float x)
 }
 #endif
 
-#define Q_rint(x) ((x) > 0 ? (int)((x) + 0.5) : (int)((x) - 0.5)) // johnfitz -- from joequake
-
 #define DotProduct(x,y) (x[0]*y[0]+x[1]*y[1]+x[2]*y[2])
 #define DoublePrecisionDotProduct(x,y) ((double)x[0]*y[0]+(double)x[1]*y[1]+(double)x[2]*y[2])
 #define VectorSubtract(a,b,c) {c[0]=a[0]-b[0];c[1]=a[1]-b[1];c[2]=a[2]-b[2];}
@@ -709,7 +707,7 @@ __inline float Q_fclamp (const float val, const float mins, const float maxs)
 }
 
 
-__inline float Q_iclamp (const int val, const int mins, const int maxs)
+__inline int Q_iclamp (const int val, const int mins, const int maxs)
 {
 	if (val < mins)
 		return mins;
@@ -719,16 +717,30 @@ __inline float Q_iclamp (const int val, const int mins, const int maxs)
 }
 
 
-__inline float Q_fmin (const float _1, const float _2)
-{
+__inline float Q_fmin (const float _1, const float _2) {
 	return ((_1 < _2) ? _1 : _2);
 }
 
 
-__inline float Q_fmax (const float _1, const float _2)
-{
+__inline float Q_fmax (const float _1, const float _2) {
 	return ((_1 > _2) ? _1 : _2);
 }
+
+
+__inline int Q_imin (const int _1, const int _2) {
+	return ((_1 < _2) ? _1 : _2);
+}
+
+
+__inline int Q_imax (const int _1, const int _2) {
+	return ((_1 > _2) ? _1 : _2);
+}
+
+
+_inline int Q_rint (float x) {
+	// mh - made this a function instead of a define so that (x) isn't evaluated 3 times!
+	return (x > 0 ? (int) (x + 0.5) : (int) (x - 0.5));
+} // johnfitz -- from joequake
 
 
 __inline void Vector2Inverse (float *v)

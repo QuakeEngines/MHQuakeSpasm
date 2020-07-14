@@ -333,12 +333,12 @@ void SCR_CalcRefdef (void)
 		sb_lines = 24 * scale;
 	else sb_lines = 48 * scale;
 
-	size = q_min (scr_viewsize.value, 100) / 100;
+	size = Q_fmin (scr_viewsize.value, 100) / 100;
 	// johnfitz
 
 	// johnfitz -- rewrote this section
-	r_refdef.vrect.width = q_max (glwidth * size, 96); // no smaller than 96, for icons
-	r_refdef.vrect.height = q_min (glheight * size, glheight - sb_lines); // make room for sbar
+	r_refdef.vrect.width = Q_imax (glwidth * size, 96); // no smaller than 96, for icons
+	r_refdef.vrect.height = Q_imin (glheight * size, glheight - sb_lines); // make room for sbar
 	r_refdef.vrect.x = (glwidth - r_refdef.vrect.width) / 2;
 	r_refdef.vrect.y = (glheight - sb_lines - r_refdef.vrect.height) / 2;
 	// johnfitz

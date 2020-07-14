@@ -331,74 +331,51 @@ void Sbar_DrawScrollString (int x, int y, int width, char *str)
 }
 
 
-/*
-=============
-Sbar_itoa
-=============
-*/
-int Sbar_itoa (int num, char *buf)
+void Sbar_DrawNum (int x, int y, char *str, int color, void (Sbar_DrawNumFunc) (int, int, qpic_t *))
 {
-	char *str;
-	int	pow10;
-	int	dig;
-
-	str = buf;
-
-	if (num < 0)
+	for (int i = 0;; i++)
 	{
-		*str++ = '-';
-		num = -num;
-	}
+		qpic_t *pic = NULL;
+		int frame = 0;
 
-	for (pow10 = 10; num >= pow10; pow10 *= 10)
-		;
+		switch (str[i])
+		{
+			// this is hellishly cute :)
+		case 0: return;
+		case '-': pic = sb_nums[color][STAT_MINUS]; break;
+		case '/': pic = sb_slash; break;
+		case ':': pic = sb_colon; break;
+		case '9': frame++;
+		case '8': frame++;
+		case '7': frame++;
+		case '6': frame++;
+		case '5': frame++;
+		case '4': frame++;
+		case '3': frame++;
+		case '2': frame++;
+		case '1': frame++;
+		case '0': pic = sb_nums[color][frame]; break;
+		default:
+			x += 24;
+			continue;
+		}
 
-	do
-	{
-		pow10 /= 10;
-		dig = num / pow10;
-		*str++ = '0' + dig;
-		num -= dig * pow10;
-	} while (pow10 != 1);
-
-	*str = 0;
-
-	return str - buf;
-}
-
-
-/*
-=============
-Sbar_DrawNum
-=============
-*/
-void Sbar_DrawNum (int x, int y, int num, int digits, int color)
-{
-	char	str[12];
-	char *ptr;
-	int	l, frame;
-
-	num = q_min (999, num); // johnfitz -- cap high values rather than truncating number
-
-	l = Sbar_itoa (num, str);
-	ptr = str;
-	if (l > digits)
-		ptr += (l - digits);
-	if (l < digits)
-		x += (digits - l) * 24;
-
-	while (*ptr)
-	{
-		if (*ptr == '-')
-			frame = STAT_MINUS;
-		else
-			frame = *ptr - '0';
-
-		Sbar_DrawPic (x, y, sb_nums[color][frame]); // johnfitz -- DrawTransPic is obsolete
-		x += 24;
-		ptr++;
+		Sbar_DrawNumFunc (x, y, pic);
+		x += pic->width;
 	}
 }
+
+
+/*
+=============
+Sbar_DrawStatistic
+=============
+*/
+void Sbar_DrawStatistic (int x, int y, int num, int color)
+{
+	Sbar_DrawNum (x, y, va ("%3i", Q_iclamp (num, -99, 999)), color, Sbar_DrawPic);
+}
+
 
 // =============================================================================
 
@@ -539,7 +516,7 @@ Sbar_DrawInventory
 */
 void Sbar_DrawInventory (void)
 {
-	int	i, val;
+	int	i;
 	char	num[6];
 	float	time;
 	int	flashon;
@@ -650,9 +627,7 @@ void Sbar_DrawInventory (void)
 	// ammo counts
 	for (i = 0; i < 4; i++)
 	{
-		val = cl.stats[STAT_SHELLS + i];
-		val = (val < 0) ? 0 : q_min (999, val);// johnfitz -- cap displayed value to 999
-		sprintf (num, "%3i", val);
+		sprintf (num, "%3i", Q_iclamp (cl.stats[STAT_SHELLS + i], 0, 999));
 
 		// switch the colour
 		if (num[0] != ' ') num[0] = 18 + num[0] - '0';
@@ -758,7 +733,7 @@ void Sbar_DrawFrags (void)
 	Sbar_SortFrags ();
 
 	// draw the text
-	numscores = q_min (scoreboardlines, 4);
+	numscores = Q_imin (scoreboardlines, 4);
 
 	for (i = 0, x = 184; i < numscores; i++, x += 32)
 	{
@@ -943,14 +918,14 @@ void Sbar_Draw (void)
 		// armor
 		if (cl.items & IT_INVULNERABILITY)
 		{
-			Sbar_DrawNum (24, 0, 666, 3, 1);
+			Sbar_DrawStatistic (24, 0, 666, 1);
 			Sbar_DrawPic (0, 0, draw_disc);
 		}
 		else
 		{
 			if (rogue)
 			{
-				Sbar_DrawNum (24, 0, cl.stats[STAT_ARMOR], 3, cl.stats[STAT_ARMOR] <= 25);
+				Sbar_DrawStatistic (24, 0, cl.stats[STAT_ARMOR], cl.stats[STAT_ARMOR] <= 25);
 				if (cl.items & RIT_ARMOR3)
 					Sbar_DrawPic (0, 0, sb_armor[2]);
 				else if (cl.items & RIT_ARMOR2)
@@ -960,7 +935,7 @@ void Sbar_Draw (void)
 			}
 			else
 			{
-				Sbar_DrawNum (24, 0, cl.stats[STAT_ARMOR], 3, cl.stats[STAT_ARMOR] <= 25);
+				Sbar_DrawStatistic (24, 0, cl.stats[STAT_ARMOR], cl.stats[STAT_ARMOR] <= 25);
 				if (cl.items & IT_ARMOR3)
 					Sbar_DrawPic (0, 0, sb_armor[2]);
 				else if (cl.items & IT_ARMOR2)
@@ -974,7 +949,7 @@ void Sbar_Draw (void)
 		Sbar_DrawFace ();
 
 		// health
-		Sbar_DrawNum (136, 0, cl.stats[STAT_HEALTH], 3, cl.stats[STAT_HEALTH] <= 25);
+		Sbar_DrawStatistic (136, 0, cl.stats[STAT_HEALTH], cl.stats[STAT_HEALTH] <= 25);
 
 		// ammo icon
 		if (rogue)
@@ -1006,7 +981,7 @@ void Sbar_Draw (void)
 				Sbar_DrawPic (224, 0, sb_ammo[3]);
 		}
 
-		Sbar_DrawNum (248, 0, cl.stats[STAT_AMMO], 3, cl.stats[STAT_AMMO] <= 10);
+		Sbar_DrawStatistic (248, 0, cl.stats[STAT_AMMO], cl.stats[STAT_AMMO] <= 10);
 	}
 
 	// johnfitz -- removed the vid.width > 320 check here
@@ -1015,38 +990,6 @@ void Sbar_Draw (void)
 }
 
 // =============================================================================
-
-/*
-==================
-Sbar_IntermissionNumber
-
-==================
-*/
-void Sbar_IntermissionNumber (int x, int y, int num, int digits, int color)
-{
-	char	str[12];
-	char *ptr;
-	int	l, frame;
-
-	l = Sbar_itoa (num, str);
-	ptr = str;
-	if (l > digits)
-		ptr += (l - digits);
-	if (l < digits)
-		x += (digits - l) * 24;
-
-	while (*ptr)
-	{
-		if (*ptr == '-')
-			frame = STAT_MINUS;
-		else
-			frame = *ptr - '0';
-
-		Draw_Pic (x, y, sb_nums[color][frame]); // johnfitz -- stretched menus
-		x += 24;
-		ptr++;
-	}
-}
 
 /*
 ==================
@@ -1176,36 +1119,7 @@ void Sbar_MiniDeathmatchOverlay (void)
 
 void Sbar_DrawIntermissionStat (int x, int y, char *str)
 {
-	for (int i = 0;; i++)
-	{
-		qpic_t *pic = NULL;
-
-		if (!str[i]) break;
-
-		if (str[i] == '-')
-			pic = sb_nums[0][STAT_MINUS];
-		else if (str[i] == '/')
-			pic = sb_slash;
-		else if (str[i] == ':')
-			pic = sb_colon;
-		else
-		{
-			int frame = str[i] - '0';
-
-			if (frame >= 0 && frame < 10)
-				pic = sb_nums[0][frame];
-			else pic = NULL;
-		}
-
-		if (!pic)
-		{
-			x += 24;
-			continue;
-		}
-
-		M_DrawPic (x, y, pic);
-		x += pic->width;
-	}
+	Sbar_DrawNum (x, y, str, 0, M_DrawPic);
 }
 
 

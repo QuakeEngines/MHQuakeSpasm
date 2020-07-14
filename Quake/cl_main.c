@@ -807,13 +807,13 @@ int CL_ReadFromServer (double frametime)
 	if (cl_numvisedicts > 256 && dev_peakstats.visedicts <= 256)
 		Con_DWarning ("%i visedicts exceeds standard limit of 256.\n", cl_numvisedicts);
 	dev_stats.visedicts = cl_numvisedicts;
-	dev_peakstats.visedicts = q_max (cl_numvisedicts, dev_peakstats.visedicts);
+	dev_peakstats.visedicts = Q_imax (cl_numvisedicts, dev_peakstats.visedicts);
 
 	// temp entities
 	if (num_temp_entities > 64 && dev_peakstats.tempents <= 64)
 		Con_DWarning ("%i tempentities exceeds standard limit of 64 (max = %d).\n", num_temp_entities, MAX_TEMP_ENTITIES);
 	dev_stats.tempents = num_temp_entities;
-	dev_peakstats.tempents = q_max (num_temp_entities, dev_peakstats.tempents);
+	dev_peakstats.tempents = Q_imax (num_temp_entities, dev_peakstats.tempents);
 
 	// beams
 	for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++)
@@ -822,7 +822,7 @@ int CL_ReadFromServer (double frametime)
 	if (num_beams > 24 && dev_peakstats.beams <= 24)
 		Con_DWarning ("%i beams exceeded standard limit of 24 (max = %d).\n", num_beams, MAX_BEAMS);
 	dev_stats.beams = num_beams;
-	dev_peakstats.beams = q_max (num_beams, dev_peakstats.beams);
+	dev_peakstats.beams = Q_imax (num_beams, dev_peakstats.beams);
 
 	// dlights
 	for (i = 0, dl = cl_dlights; i < MAX_DLIGHTS; i++, dl++)
@@ -833,7 +833,7 @@ int CL_ReadFromServer (double frametime)
 		Con_DWarning ("%i dlights exceeded standard limit of 32 (max = %d).\n", num_dlights, MAX_DLIGHTS);
 
 	dev_stats.dlights = num_dlights;
-	dev_peakstats.dlights = q_max (num_dlights, dev_peakstats.dlights);
+	dev_peakstats.dlights = Q_imax (num_dlights, dev_peakstats.dlights);
 
 	// johnfitz
 

@@ -77,8 +77,8 @@ const char *Con_Quakebar (int len)
 	static char bar[42];
 	int i;
 
-	len = q_min (len, (int) sizeof (bar) - 2);
-	len = q_min (len, con_linewidth);
+	len = Q_imin (len, (int) sizeof (bar) - 2);
+	len = Q_imin (len, con_linewidth);
 
 	bar[0] = '\35';
 	for (i = 1; i < len - 1; i++)
@@ -312,7 +312,7 @@ void Con_Init (void)
 	// johnfitz -- user settable console buffer size
 	i = COM_CheckParm ("-consize");
 	if (i && i < com_argc - 1)
-		con_buffersize = q_max (CON_MINSIZE, Q_atoi (com_argv[i + 1]) * 1024);
+		con_buffersize = Q_imax (CON_MINSIZE, Q_atoi (com_argv[i + 1]) * 1024);
 	else
 		con_buffersize = CON_TEXTSIZE;
 	// johnfitz
@@ -659,7 +659,7 @@ void Con_CenterPrintf (int linewidth, const char *fmt, ...)
 	q_vsnprintf (msg, sizeof (msg), fmt, argptr);
 	va_end (argptr);
 
-	linewidth = q_min (linewidth, con_linewidth);
+	linewidth = Q_imin (linewidth, con_linewidth);
 	for (src = msg; *src; )
 	{
 		dst = line;

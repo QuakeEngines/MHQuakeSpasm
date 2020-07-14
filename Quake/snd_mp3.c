@@ -182,7 +182,7 @@ static int mp3_decode (snd_stream_t *stream, byte *buf, int len)
 	do
 	{
 		x = (p->Synth.pcm.length - p->cursamp) * stream->info.channels;
-		donow = q_min (len, x);
+		donow = Q_imin (len, x);
 		i = 0;
 		while (i < donow)
 		{

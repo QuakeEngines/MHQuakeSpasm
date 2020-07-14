@@ -503,7 +503,7 @@ static joyaxis_t IN_ApplyDeadzone (joyaxis_t axis, float deadzone)
 
 	if (magnitude > deadzone)
 	{
-		const vec_t new_magnitude = q_min (1.0, (magnitude - deadzone) / (1.0 - deadzone));
+		const vec_t new_magnitude = Q_fmin (1.0, (magnitude - deadzone) / (1.0 - deadzone));
 		const vec_t scale = new_magnitude / magnitude;
 		result.x = axis.x * scale;
 		result.y = axis.y * scale;

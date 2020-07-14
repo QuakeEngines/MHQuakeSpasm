@@ -712,7 +712,7 @@ void Host_ServerFrame (void)
 				Con_DWarning ("%i edicts exceeds standard limit of 600.\n", active);
 
 			dev_stats.edicts = active;
-			dev_peakstats.edicts = q_max (active, dev_peakstats.edicts);
+			dev_peakstats.edicts = Q_imax (active, dev_peakstats.edicts);
 		}
 		// johnfitz
 

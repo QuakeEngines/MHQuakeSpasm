@@ -929,7 +929,7 @@ static void S_Update_ (void)
 	// mix ahead of current position
 	endtime = soundtime + (unsigned int) (_snd_mixahead.value * shm->speed);
 	samps = shm->samples >> (shm->channels - 1);
-	endtime = q_min (endtime, (unsigned int) (soundtime + samps));
+	endtime = Q_imin (endtime, (unsigned int) (soundtime + samps));
 
 	S_PaintChannels (endtime);
 

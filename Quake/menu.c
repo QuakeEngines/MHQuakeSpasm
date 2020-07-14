@@ -1706,7 +1706,7 @@ void M_Quit_Draw (void) // johnfitz -- modified for new quit message
 	// okay, this is kind of fucked up.  M_DrawTextBox will always act as if
 	// width is even. Also, the width and lines values are for the interior of the box,
 	// but the x and y values include the border.
-	boxlen = q_max (strlen (msg1), q_max ((sizeof (msg2) - 1), (sizeof (msg3) - 1))) + 1;
+	boxlen = Q_imax (strlen (msg1), Q_imax ((sizeof (msg2) - 1), (sizeof (msg3) - 1))) + 1;
 	if (boxlen & 1) boxlen++;
 
 	// mh - boxlen > 38 will clip the left edge of the box by the canvas viewport, so we constrain the length and adjust the text

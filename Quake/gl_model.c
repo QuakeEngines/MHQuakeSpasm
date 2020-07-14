@@ -1983,23 +1983,23 @@ void Mod_BoundsFromClipNode (qmodel_t *mod, int hull, int nodenum)
 	{
 	case PLANE_X:
 		if (plane->signbits == 1)
-			mod->clipmins[0] = q_min (mod->clipmins[0], -plane->dist - mod->hulls[hull].clip_mins[0]);
+			mod->clipmins[0] = Q_fmin (mod->clipmins[0], -plane->dist - mod->hulls[hull].clip_mins[0]);
 		else
-			mod->clipmaxs[0] = q_max (mod->clipmaxs[0], plane->dist - mod->hulls[hull].clip_maxs[0]);
+			mod->clipmaxs[0] = Q_fmax (mod->clipmaxs[0], plane->dist - mod->hulls[hull].clip_maxs[0]);
 		break;
 
 	case PLANE_Y:
 		if (plane->signbits == 2)
-			mod->clipmins[1] = q_min (mod->clipmins[1], -plane->dist - mod->hulls[hull].clip_mins[1]);
+			mod->clipmins[1] = Q_fmin (mod->clipmins[1], -plane->dist - mod->hulls[hull].clip_mins[1]);
 		else
-			mod->clipmaxs[1] = q_max (mod->clipmaxs[1], plane->dist - mod->hulls[hull].clip_maxs[1]);
+			mod->clipmaxs[1] = Q_fmax (mod->clipmaxs[1], plane->dist - mod->hulls[hull].clip_maxs[1]);
 		break;
 
 	case PLANE_Z:
 		if (plane->signbits == 4)
-			mod->clipmins[2] = q_min (mod->clipmins[2], -plane->dist - mod->hulls[hull].clip_mins[2]);
+			mod->clipmins[2] = Q_fmin (mod->clipmins[2], -plane->dist - mod->hulls[hull].clip_mins[2]);
 		else
-			mod->clipmaxs[2] = q_max (mod->clipmaxs[2], plane->dist - mod->hulls[hull].clip_maxs[2]);
+			mod->clipmaxs[2] = Q_fmax (mod->clipmaxs[2], plane->dist - mod->hulls[hull].clip_maxs[2]);
 		break;
 
 	default:

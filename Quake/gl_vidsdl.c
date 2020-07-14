@@ -1045,9 +1045,9 @@ qboolean GL_BeginRendering (int *x, int *y, int *width, int *height)
 	// alpha test is never used in this engine so this is the only place it's set and it's an explicit disable
 	glDisable (GL_ALPHA_TEST);
 
-	// gamme and brightness
-	float contrastval = q_min (2.0, q_max (1.0, vid_contrast.value));
-	float gammaval = q_min (1.0, q_max (0.25, vid_gamma.value));
+	// gamma and brightness
+	float contrastval = Q_fclamp (vid_contrast.value, 1.0f, 2.0f);
+	float gammaval = Q_fclamp (vid_gamma.value, 0.25f, 1.0f);
 
 	// MH - variable overbright
 	// overbright clamping is now done entirely in shader code which simplifies the C-side and makes the effect totally consistent everywhere it's used
