@@ -485,8 +485,12 @@ LIGHTMAP ALLOCATION
 =============================================================================
 */
 
-#define LIGHTMAP_SIZE	256	// FIXME: make dynamic. if we have a decent card there's no real reason not to use 4k or 16k (assuming there's no lightstyles/dynamics that need uploading...)
-#define MAX_LIGHTMAPS	1024
+// 512 is sufficient to fit almost every id1 map into a single texture, ad_sepulcher takes 11; 1024 fits ad_sepulcher into 3 textures but is wasteful with id1
+#define LIGHTMAP_SIZE	512
+
+// with the higher LIGHTMAP_SIZE we can drop this right down and still be confident of never hitting it, so we don't need to do anything fancy like dynamic allocation.
+// this is sufficient to hold ~6x the size of ad_sepulcher, which seems a reasonable upper-bound that we'll never hit.
+#define MAX_LIGHTMAPS	64
 
 // to do - move all of the lighting stuff to gl_rlight.c
 extern cvar_t gl_fullbrights; // johnfitz
@@ -656,6 +660,7 @@ void GL_BuildLightmaps (void)
 
 	// upload the final built lightmap
 	LM_UploadBlock ();
+	// Con_Printf ("Using %i lightmaps\n", lm_currenttexture);
 }
 
 
