@@ -643,7 +643,7 @@ void CL_RelinkEntities (void)
 			}
 			else
 			{
-				// monster - to do...
+				// monster
 				if ((dl = CL_AllocDLightForModelFlags (ent, i, 200 + (rand () & 31))) == NULL)
 					dl = CL_AllocDlight (i, 200 + (rand () & 31), DL_COLOR_ORANGE);
 			}

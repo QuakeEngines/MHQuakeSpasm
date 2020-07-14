@@ -11,9 +11,3 @@ r_speeds counters are no longer really relevant; dlights can go, draw calls need
 Optional primitive restart
 Detect dx10 gpu for npot robustness
 
-Drawflat idea - Software Quake used ((int) s->data & 0xff) for a palette index.  FQ/QS used the polygon pointer as a random number seed.
-Make 256 1x1 textures - 1 for each palette index.  Some surface property - and it could be a random number - gives the texture to use.
-How to implement with MDLs?
-
-Other idea - add a "flatcolor" property to each triangle in everything.  This would bring brushpolyvert_t to 32-byte and add 4 bytes to MDLs.
-
