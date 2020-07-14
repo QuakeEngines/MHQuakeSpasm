@@ -854,8 +854,8 @@ static void GL_CheckExtensions (void)
 	}
 	else Con_Printf ("FOUND: SDL_GL_SetSwapInterval\n");
 
-	// anisotropic filtering
-	if (GLEW_EXT_texture_filter_anisotropic)
+	// anisotropic filtering - defines are the same here
+	if (GLEW_EXT_texture_filter_anisotropic || GLEW_ARB_texture_filter_anisotropic)
 	{
 		float test1, test2;
 		GLuint tex;
@@ -872,7 +872,9 @@ static void GL_CheckExtensions (void)
 
 		if (test1 == 1 && test2 == 2)
 		{
-			Con_Printf ("FOUND: EXT_texture_filter_anisotropic\n");
+			if (GLEW_ARB_texture_filter_anisotropic)
+				Con_Printf ("FOUND: ARB_texture_filter_anisotropic\n");
+			else Con_Printf ("FOUND: EXT_texture_filter_anisotropic\n");
 			gl_anisotropy_able = true;
 		}
 		else
