@@ -1,13 +1,10 @@
 Log of stuff to be done.
 
-Fix player textures. 
-Shadow plane orientation. 
-Drawflat/lightmap/fullbright/triangles/bboxes crap. 
+Shadow plane orientation.  
 Remove non-SDL2 stuff.
 Move sounds to hunk & remove cache memory.
 Green dynamic light is too bright???
-add sv_novis cvar
 r_speeds counters are no longer really relevant; dlights can go, draw calls needs to go in, etc.
 Optional primitive restart
 Detect dx10 gpu for npot robustness
-
+Programmatically reconstruct r_avertexnormals. It's just an icosahedron with 2 or 3 levels of subdivision. The order would be wrong but that doesn't matter because we build alias normals properly now. 
