@@ -260,7 +260,11 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 				GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[shaderflag | SHADERFLAG_4STYLE]);
 			else GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[shaderflag]);
 
+			// store back
 			oldnumstyles = s->numstyles;
+
+			// if the shader changes we reload the styles because they're local params (in practice a shader change is always a style change)
+			oldstyle = ~s->fullstyle;
 		}
 
 		// check for lightmap change
