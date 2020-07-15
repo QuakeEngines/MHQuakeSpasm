@@ -122,7 +122,7 @@ entity_t *CL_EntityNum (int num)
 
 			// set up initial values
 			cl_entities[cl.num_entities]->entitynum = cl.num_entities;
-			cl_entities[cl.num_entities]->colormap = vid.colormap;
+			cl_entities[cl.num_entities]->colormapped = false;
 			cl_entities[cl.num_entities]->lerpflags |= LERP_RESETMOVE | LERP_RESETANIM; // johnfitz
 			CL_ClearRocketTrail (cl_entities[cl.num_entities]);
 
@@ -498,14 +498,14 @@ void CL_ParseUpdate (int bits)
 		i = ent->baseline.colormap;
 
 	if (!i)
-		ent->colormap = vid.colormap;
+		ent->colormapped = false;
 	else
 	{
 		if (i > cl.maxclients)
 			Sys_Error ("i >= cl.maxclients");
 
-		// the actual contents of translations are unused in the GL engine; it just needs to be something that can be used in a pointer comparison with vid.colormap
-		ent->colormap = cl.scores[i - 1].translation;
+		// the actual contents of the colormap are unused in the GL engine, it just needs to flag if the ent should be translated
+		ent->colormapped = true;
 	}
 
 	if (bits & U_SKIN)
@@ -877,7 +877,7 @@ void CL_ParseStatic (int version) // johnfitz -- added a parameter
 	ent->lerpflags |= LERP_RESETANIM; // johnfitz -- lerping
 	ent->frame = ent->baseline.frame;
 
-	ent->colormap = vid.colormap;
+	ent->colormapped = false;
 	ent->skinnum = ent->baseline.skin;
 	ent->effects = ent->baseline.effects;
 	ent->alpha = ent->baseline.alpha; // johnfitz -- alpha

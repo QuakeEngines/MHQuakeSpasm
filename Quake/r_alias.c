@@ -644,7 +644,7 @@ void R_DrawAliasModel (entity_t *e)
 	gltexture_t *tx = skin->gltexture;
 	gltexture_t *fb = skin->fbtexture;
 
-	if (e->colormap != vid.colormap && !gl_nocolors.value)
+	if (e->colormapped && !gl_nocolors.value)
 		if (e->entitynum >= 1 && e->entitynum <= cl.maxclients)
 			tx = playertextures[e->entitynum - 1];
 

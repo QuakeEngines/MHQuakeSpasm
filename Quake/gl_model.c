@@ -2439,10 +2439,6 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	hdr->skinwidth = LittleLong (pinmodel->skinwidth);
 	hdr->skinheight = LittleLong (pinmodel->skinheight);
 
-	if (hdr->skinheight > MAX_LBM_HEIGHT)
-		Sys_Error ("model %s has a skin taller than %d", mod->name,
-			MAX_LBM_HEIGHT);
-
 	hdr->numverts = LittleLong (pinmodel->numverts);
 
 	if (hdr->numverts <= 0)

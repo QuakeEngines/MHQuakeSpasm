@@ -44,8 +44,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_MODE_LIST	600 // johnfitz -- was 30
 #define MAX_BPPS_LIST	5
 #define MAX_RATES_LIST	20
-#define WARP_WIDTH		320
-#define WARP_HEIGHT		200
 #define MAXWIDTH		10000
 #define MAXHEIGHT		10000
 
@@ -617,6 +615,7 @@ static void VID_Changed_f (cvar_t *var)
 	vid_changed = true;
 }
 
+
 /*
 ===================
 VID_Restart -- johnfitz -- change video modes on the fly
@@ -666,11 +665,8 @@ static void VID_Restart (void)
 	GL_SetupState ();
 	Fog_SetupState ();
 
-	// conwidth and conheight need to be recalculated (is this not the same as the other one?  can we not just do this consistently in one 
-	vid.conwidth = (scr_conwidth.value > 0) ? (int) scr_conwidth.value : (scr_conscale.value > 0) ? (int) (vid.width / scr_conscale.value) : vid.width;
-	vid.conwidth = Q_fclamp (vid.conwidth, 320, vid.width);
-	vid.conwidth &= 0xFFFFFFF8;
-	vid.conheight = vid.conwidth * vid.height / vid.width;
+	// conwidth and conheight need to be recalculated (push through here so we do it consistently in both places) 
+	SCR_Conwidth_f (&scr_conwidth);
 
 	// keep cvars in line with actual mode
 	VID_SyncCvars ();
@@ -920,8 +916,8 @@ static void GL_SetupState (void)
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// note: here, these only apply to texture object 0
-	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -957,8 +953,7 @@ static void GL_Init (void)
 #ifdef __APPLE__
 	// ericw -- enable multi-threaded OpenGL, gives a decent FPS boost.
 	// https://developer.apple.com/library/mac/technotes/tn2085/
-	if (host_parms->numcpus > 1 &&
-		kCGLNoError != CGLEnable (CGLGetCurrentContext (), kCGLCEMPEngine))
+	if (host_parms->numcpus > 1 && kCGLNoError != CGLEnable (CGLGetCurrentContext (), kCGLCEMPEngine))
 	{
 		Con_Warning ("Couldn't enable multi-threaded OpenGL");
 	}
@@ -1161,6 +1156,7 @@ static void VID_DescribeModes_f (void)
 			count++;
 		}
 	}
+
 	Con_Printf ("\n%i modes\n", count);
 }
 
@@ -1187,7 +1183,6 @@ VID_InitModelist
 */
 static void VID_InitModelist (void)
 {
-#if defined(USE_SDL2)
 	const int sdlmodes = SDL_GetNumDisplayModes (0);
 	int i;
 
@@ -1207,61 +1202,8 @@ static void VID_InitModelist (void)
 			nummodes++;
 		}
 	}
-#else /* !defined(USE_SDL2) */
-	SDL_PixelFormat	format;
-	SDL_Rect **modes;
-	Uint32		flags;
-	int		i, j, k, originalnummodes, existingmode;
-	int		bpps[] = { 16, 24, 32 }; // enumerate >8 bpp modes
-
-	originalnummodes = nummodes = 0;
-	format.palette = NULL;
-
-	// enumerate fullscreen modes
-	flags = DEFAULT_SDL_FLAGS | SDL_FULLSCREEN;
-	for (i = 0; i < (int) (sizeof (bpps) / sizeof (bpps[0])); i++)
-	{
-		if (nummodes >= MAX_MODE_LIST)
-			break;
-
-		format.BitsPerPixel = bpps[i];
-		modes = SDL_ListModes (&format, flags);
-
-		if (modes == (SDL_Rect **) 0 || modes == (SDL_Rect **) -1)
-			continue;
-
-		for (j = 0; modes[j]; j++)
-		{
-			if (modes[j]->w > MAXWIDTH || modes[j]->h > MAXHEIGHT || nummodes >= MAX_MODE_LIST)
-				continue;
-
-			modelist[nummodes].width = modes[j]->w;
-			modelist[nummodes].height = modes[j]->h;
-			modelist[nummodes].bpp = bpps[i];
-			modelist[nummodes].refreshrate = DEFAULT_REFRESHRATE;
-
-			for (k = originalnummodes, existingmode = 0; k < nummodes; k++)
-			{
-				if ((modelist[nummodes].width == modelist[k].width) &&
-					(modelist[nummodes].height == modelist[k].height) &&
-					(modelist[nummodes].bpp == modelist[k].bpp))
-				{
-					existingmode = 1;
-					break;
-				}
-			}
-
-			if (!existingmode)
-			{
-				nummodes++;
-			}
-		}
-	}
-
-	if (nummodes == originalnummodes)
-		Con_SafePrintf ("No fullscreen DIB modes found\n");
-#endif /* !defined(USE_SDL2) */
 }
+
 
 /*
 ===================
@@ -1436,11 +1378,6 @@ void	VID_Init (void)
 	}
 
 	vid_initialized = true;
-
-	vid.maxwarpwidth = WARP_WIDTH;
-	vid.maxwarpheight = WARP_HEIGHT;
-	vid.colormap = host_colormap;
-	vid.fullbright = 256 - LittleLong (*((int *) vid.colormap + 2048));
 
 	// set window icon
 	PL_SetWindowIcon ();

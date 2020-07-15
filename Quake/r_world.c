@@ -216,6 +216,8 @@ R_ChainSurface -- ericw -- adds the given surface to its texture chain
 */
 void R_ChainSurface (msurface_t *surf, texchain_t chain)
 {
+	extern int r_dlightframecount;
+
 	// marks this surf as having been seen in this dlight frame
 	surf->dlightframe = r_dlightframecount;
 

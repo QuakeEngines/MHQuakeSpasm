@@ -80,5 +80,8 @@ extern	cvar_t		scr_scale;
 extern	cvar_t		scr_crosshairscale;
 // johnfitz
 
+// used by video code as well
+void SCR_Conwidth_f (cvar_t *var);
+
 #endif	/* _QUAKE_SCREEN_H */
 

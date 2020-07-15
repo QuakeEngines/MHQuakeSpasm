@@ -26,18 +26,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // vid.h -- video driver defs
 
-#define VID_CBITS	6
-#define VID_GRADES	(1 << VID_CBITS)
-
-#define GAMMA_MAX	3.0
-
 // moved here for global use -- kristian
 typedef enum { MS_UNINIT, MS_WINDOWED, MS_FULLSCREEN } modestate_t;
 
 extern modestate_t	modestate;
-
-// a pixel can be one, two, or four bytes
-typedef byte pixel_t;
 
 typedef struct vrect_s {
 	int	x, y, width, height;
@@ -45,17 +37,10 @@ typedef struct vrect_s {
 } vrect_t;
 
 typedef struct viddef_s {
-	pixel_t *colormap;	// 256 * VID_GRADES size
-	int		fullbright;	// index of first fullbright color
-	int		rowbytes;	// may be > width if displayed in a window
 	int		width;
 	int		height;
-	float		aspect;		// width / height -- < 0 is taller than wide
-	int		conrowbytes;
 	int		conwidth;
 	int		conheight;
-	int		maxwarpwidth;
-	int		maxwarpheight;
 } viddef_t;
 
 extern	viddef_t	vid;				// global video state
