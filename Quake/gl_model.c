@@ -2195,11 +2195,11 @@ void *Mod_LoadAliasGroup (aliashdr_t *hdr, void *pin, maliasframedesc_t *frame)
 	}
 
 	daliasinterval_t *pin_intervals = (daliasinterval_t *) (pingroup + 1);
-	frame->pintervals = (float *) Hunk_Alloc (numframes * sizeof (float));
+	frame->intervals = (float *) Hunk_Alloc (numframes * sizeof (float));
 
 	// must copy these over now because we're going to advance pin_intervals
 	for (int i = 0; i < numframes; i++)
-		frame->pintervals[i] = LittleFloat (pin_intervals[i].interval);
+		frame->intervals[i] = LittleFloat (pin_intervals[i].interval);
 
 	void *ptemp = (void *) (pin_intervals + numframes);
 
@@ -2219,10 +2219,10 @@ void Mod_LoadAliasSkin (aliashdr_t *hdr, aliasskingroup_t *skingroup, int skinnu
 {
 	// save 8 bit texels for the player model to remap
 	int size = hdr->skinwidth * hdr->skinheight;
-	aliasskin_t *skin = &skingroup->pskins[skinnum];
+	aliasskin_t *skin = &skingroup->skins[skinnum];
 
-	skin->ptexels = (byte *) Hunk_AllocName (size, loadname);
-	memcpy (skin->ptexels, data, size);
+	skin->texels = (byte *) Hunk_AllocName (size, loadname);
+	memcpy (skin->texels, data, size);
 
 	if (Mod_CheckFullbrights (data, size))
 	{
@@ -2240,14 +2240,14 @@ void Mod_LoadAliasSkin (aliashdr_t *hdr, aliasskingroup_t *skingroup, int skinnu
 void Mod_LoadSkinGroupIntervals (aliashdr_t *hdr, aliasskingroup_t *skingroup, daliasskininterval_t *intervals, int numintervals)
 {
 	for (int i = 0; i < numintervals; i++)
-		skingroup->pintervals[i] = LittleFloat (intervals[i].interval);
+		skingroup->intervals[i] = LittleFloat (intervals[i].interval);
 }
 
 
 void Mod_AllocateSkinGroup (aliashdr_t *hdr, aliasskingroup_t *skingroup, int numskins)
 {
-	skingroup->pskins = (aliasskin_t *) Hunk_Alloc (sizeof (aliasskin_t) * numskins);
-	skingroup->pintervals = (float *) Hunk_Alloc (sizeof (float) * numskins);
+	skingroup->skins = (aliasskin_t *) Hunk_Alloc (sizeof (aliasskin_t) * numskins);
+	skingroup->intervals = (float *) Hunk_Alloc (sizeof (float) * numskins);
 	skingroup->numskins = numskins;
 }
 
@@ -2287,7 +2287,7 @@ void *Mod_LoadAllSkins (aliashdr_t *hdr, int numskins, daliasskintype_t *pskinty
 	// alloc and store out the skin groups
 	aliasskingroup_t *skingroups = (aliasskingroup_t *) Hunk_Alloc (sizeof (aliasskingroup_t) * numskins);
 
-	hdr->pskingroups = skingroups;
+	hdr->skingroups = skingroups;
 	hdr->numskingroups = numskins;
 
 	for (i = 0; i < numskins; i++)
@@ -2458,7 +2458,7 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	if (numframes < 1)
 		Sys_Error ("Mod_LoadAliasModel: Invalid # of frames: %d\n", numframes);
 
-	hdr->pframes = (maliasframedesc_t *) Hunk_AllocName (sizeof (maliasframedesc_t) * hdr->numframes, loadname);
+	hdr->frames = (maliasframedesc_t *) Hunk_AllocName (sizeof (maliasframedesc_t) * hdr->numframes, loadname);
 
 	hdr->size = LittleFloat (pinmodel->size) * ALIAS_BASE_SIZE_RATIO;
 	mod->synctype = (synctype_t) LittleLong (pinmodel->synctype);
@@ -2494,8 +2494,8 @@ void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 		frametype = (aliasframetype_t) LittleLong (pframetype->type);
 
 		if (frametype == ALIAS_SINGLE)
-			pframetype = (daliasframetype_t *) Mod_LoadAliasFrame (hdr, pframetype + 1, &hdr->pframes[i]);
-		else pframetype = (daliasframetype_t *) Mod_LoadAliasGroup (hdr, pframetype + 1, &hdr->pframes[i]);
+			pframetype = (daliasframetype_t *) Mod_LoadAliasFrame (hdr, pframetype + 1, &hdr->frames[i]);
+		else pframetype = (daliasframetype_t *) Mod_LoadAliasGroup (hdr, pframetype + 1, &hdr->frames[i]);
 	}
 
 	hdr->numposes = posenum;

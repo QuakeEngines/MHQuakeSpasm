@@ -37,7 +37,7 @@ typedef struct scoreboard_s {
 	float	entertime;
 	int		frags;
 	int		colors;			// two 4 bit fields
-	byte	translations[VID_GRADES * 256];
+	byte	translation[2]; // this was unused in the GL engine; it just needs to be something that can have it's pointer compared to vid.colormap, so...
 } scoreboard_t;
 
 typedef struct cshift_s {
@@ -338,7 +338,6 @@ void CL_TimeDemo_f (void);
 
 // cl_parse.c
 void CL_ParseServerMessage (void);
-void CL_NewTranslation (int slot);
 
 // view
 void V_RenderView (void);

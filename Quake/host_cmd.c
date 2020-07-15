@@ -2168,7 +2168,7 @@ void PrintFrameName (qmodel_t *m, int frame)
 	hdr = (aliashdr_t *) Mod_Extradata (m);
 	if (!hdr)
 		return;
-	pframedesc = &hdr->pframes[frame];
+	pframedesc = &hdr->frames[frame];
 
 	Con_Printf ("frame %i: %s\n", frame, pframedesc->name);
 }

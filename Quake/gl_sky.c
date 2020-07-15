@@ -191,56 +191,23 @@ Sky_NewMap
 */
 void Sky_NewMap (void)
 {
-	char	key[128], value[4096];
-	const char *data;
+	char *value;
 
 	// initially no sky
 	skybox_name[0] = 0;
 	skyfog = r_skyfog.value;
 
-	// read worldspawn (this is so ugly, and shouldn't it be done on the server?)
-	data = cl.worldmodel->entities;
-	if (!data)
-		return; // FIXME: how could this possibly ever happen? -- if there's no
-	// worldspawn then the sever wouldn't send the loadmap message to the client
+	if ((value = Mod_ValueForKeyFromWorldspawn (cl.worldmodel->entities, "sky")) != NULL)
+		Sky_LoadSkyBox (value);
+	else if ((value = Mod_ValueForKeyFromWorldspawn (cl.worldmodel->entities, "skyname")) != NULL)
+		Sky_LoadSkyBox (value);
+	else if ((value = Mod_ValueForKeyFromWorldspawn (cl.worldmodel->entities, "qlsky")) != NULL)
+		Sky_LoadSkyBox (value);
 
-	data = COM_Parse (data);
-	if (!data) // should never happen
-		return; // error
-	if (com_token[0] != '{') // should never happen
-		return; // error
-	while (1)
-	{
-		data = COM_Parse (data);
-		if (!data)
-			return; // error
-		if (com_token[0] == '}')
-			break; // end of worldspawn
-		if (com_token[0] == '_')
-			q_strlcpy (key, com_token + 1, sizeof (key));
-		else
-			q_strlcpy (key, com_token, sizeof (key));
-		while (key[0] && key[strlen (key) - 1] == ' ') // remove trailing spaces
-			key[strlen (key) - 1] = 0;
-		data = COM_Parse (data);
-		if (!data)
-			return; // error
-		q_strlcpy (value, com_token, sizeof (value));
-
-		if (!strcmp ("sky", key))
-			Sky_LoadSkyBox (value);
-
-		if (!strcmp ("skyfog", key))
-			skyfog = atof (value);
-
-#if 1 // also accept non-standard keys
-		else if (!strcmp ("skyname", key)) // half-life
-			Sky_LoadSkyBox (value);
-		else if (!strcmp ("qlsky", key)) // quake lives
-			Sky_LoadSkyBox (value);
-#endif
-	}
+	if ((value = Mod_ValueForKeyFromWorldspawn (cl.worldmodel->entities, "skyfog")) != NULL)
+		skyfog = atof (value);
 }
+
 
 /*
 =================
@@ -262,6 +229,7 @@ void Sky_SkyCommand_f (void)
 	}
 }
 
+
 /*
 ====================
 R_SetSkyfog_f -- ericw
@@ -272,6 +240,7 @@ static void R_SetSkyfog_f (cvar_t *var)
 	// clear any skyfog setting from worldspawn
 	skyfog = var->value;
 }
+
 
 /*
 =============

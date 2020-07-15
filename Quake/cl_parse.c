@@ -496,24 +496,30 @@ void CL_ParseUpdate (int bits)
 		i = MSG_ReadByte ();
 	else
 		i = ent->baseline.colormap;
+
 	if (!i)
 		ent->colormap = vid.colormap;
 	else
 	{
 		if (i > cl.maxclients)
 			Sys_Error ("i >= cl.maxclients");
-		ent->colormap = cl.scores[i - 1].translations;
+
+		// the actual contents of translations are unused in the GL engine; it just needs to be something that can be used in a pointer comparison with vid.colormap
+		ent->colormap = cl.scores[i - 1].translation;
 	}
+
 	if (bits & U_SKIN)
 		skin = MSG_ReadByte ();
 	else
 		skin = ent->baseline.skin;
+
 	if (skin != ent->skinnum)
 	{
 		ent->skinnum = skin;
 		if (num > 0 && num <= cl.maxclients)
-			R_TranslateNewPlayerSkin (num - 1); // johnfitz -- was R_TranslatePlayerSkin
+			R_TranslateNewPlayerSkin (num - 1);
 	}
+
 	if (bits & U_EFFECTS)
 		ent->effects = MSG_ReadByte ();
 	else
@@ -527,6 +533,7 @@ void CL_ParseUpdate (int bits)
 		ent->msg_origins[0][0] = MSG_ReadCoord (cl.protocolflags);
 	else
 		ent->msg_origins[0][0] = ent->baseline.origin[0];
+
 	if (bits & U_ANGLE1)
 		ent->msg_angles[0][0] = MSG_ReadAngle (cl.protocolflags);
 	else
@@ -536,6 +543,7 @@ void CL_ParseUpdate (int bits)
 		ent->msg_origins[0][1] = MSG_ReadCoord (cl.protocolflags);
 	else
 		ent->msg_origins[0][1] = ent->baseline.origin[1];
+
 	if (bits & U_ANGLE2)
 		ent->msg_angles[0][1] = MSG_ReadAngle (cl.protocolflags);
 	else
@@ -545,6 +553,7 @@ void CL_ParseUpdate (int bits)
 		ent->msg_origins[0][2] = MSG_ReadCoord (cl.protocolflags);
 	else
 		ent->msg_origins[0][2] = ent->baseline.origin[2];
+
 	if (bits & U_ANGLE3)
 		ent->msg_angles[0][2] = MSG_ReadAngle (cl.protocolflags);
 	else
@@ -567,19 +576,17 @@ void CL_ParseUpdate (int bits)
 			ent->alpha = MSG_ReadByte ();
 		else
 			ent->alpha = ent->baseline.alpha;
-		if (bits & U_SCALE)
-			MSG_ReadByte (); // PROTOCOL_RMQ: currently ignored
-		if (bits & U_FRAME2)
-			ent->frame = (ent->frame & 0x00FF) | (MSG_ReadByte () << 8);
-		if (bits & U_MODEL2)
-			modnum = (modnum & 0x00FF) | (MSG_ReadByte () << 8);
+
+		if (bits & U_SCALE) MSG_ReadByte (); // PROTOCOL_RMQ: currently ignored
+		if (bits & U_FRAME2) ent->frame = (ent->frame & 0x00FF) | (MSG_ReadByte () << 8);
+		if (bits & U_MODEL2) modnum = (modnum & 0x00FF) | (MSG_ReadByte () << 8);
+
 		if (bits & U_LERPFINISH)
 		{
 			ent->lerpfinish = ent->msgtime + ((float) (MSG_ReadByte ()) / 255);
 			ent->lerpflags |= LERP_FINISH;
 		}
-		else
-			ent->lerpflags &= ~LERP_FINISH;
+		else ent->lerpflags &= ~LERP_FINISH;
 	}
 	else if (cl.protocol == PROTOCOL_NETQUAKE)
 	{
@@ -596,8 +603,10 @@ void CL_ParseUpdate (int bits)
 
 			a = MSG_ReadFloat ();
 			b = MSG_ReadFloat (); // alpha
+
 			if (a == 2)
 				MSG_ReadFloat (); // fullbright (not using this yet)
+
 			ent->alpha = ENTALPHA_ENCODE (b);
 		}
 		else
@@ -607,22 +616,23 @@ void CL_ParseUpdate (int bits)
 
 	// johnfitz -- moved here from above
 	model = cl.model_precache[modnum];
+
 	if (model != ent->model)
 	{
 		ent->model = model;
+
 		// automatic animation (torches, etc) can be either all together
 		// or randomized
 		if (model)
 		{
 			if (model->synctype == ST_RAND)
 				ent->syncbase = (float) (rand () & 0x7fff) / 0x7fff;
-			else
-				ent->syncbase = 0.0;
+			else ent->syncbase = 0.0;
 		}
-		else
-			forcelink = true;	// hack to make null model players work
+		else forcelink = true;	// hack to make null model players work
+
 		if (num > 0 && num <= cl.maxclients)
-			R_TranslateNewPlayerSkin (num - 1); // johnfitz -- was R_TranslatePlayerSkin
+			R_TranslateNewPlayerSkin (num - 1);
 
 		ent->lerpflags |= LERP_RESETANIM; // johnfitz -- don't lerp animation across model changes
 	}
@@ -844,41 +854,10 @@ void CL_ParseClientdata (void)
 CL_NewTranslation
 =====================
 */
-void Image_NewTranslation (int top, int bottom, byte *translation);
-
 void CL_NewTranslation (int slot)
 {
-	int		i, j;
-	int		top, bottom;
-	byte *dest, *source;
-
-	if (slot > cl.maxclients)
-		Sys_Error ("CL_NewTranslation: slot > cl.maxclients");
-	dest = cl.scores[slot].translations;
-	source = vid.colormap;
-	memcpy (dest, vid.colormap, sizeof (cl.scores[slot].translations));
-	top = cl.scores[slot].colors & 0xf0;
-	bottom = (cl.scores[slot].colors & 15) << 4;
+	// the actual contents of translations are unused in the GL engine; it just needs to be something that can be used in a pointer comparison with vid.colormap
 	R_TranslatePlayerSkin (slot);
-
-	for (i = 0; i < VID_GRADES; i++, dest += 256, source += 256)
-	{
-		if (top < 128)	// the artists made some backwards ranges.  sigh.
-			memcpy (dest + TOP_RANGE, source + top, 16);
-		else
-		{
-			for (j = 0; j < 16; j++)
-				dest[TOP_RANGE + j] = source[top + 15 - j];
-		}
-
-		if (bottom < 128)
-			memcpy (dest + BOTTOM_RANGE, source + bottom, 16);
-		else
-		{
-			for (j = 0; j < 16; j++)
-				dest[BOTTOM_RANGE + j] = source[bottom + 15 - j];
-		}
-	}
 }
 
 /*

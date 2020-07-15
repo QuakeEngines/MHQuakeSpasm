@@ -35,7 +35,7 @@ extern cvar_t r_lerpmove;
 extern cvar_t r_nolerp_list;
 extern cvar_t r_noshadow_list;
 
-extern gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz
+gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz
 
 // must init to non-zero so that a memset-0 doesn't incorrectly cause a match
 static int r_registration_sequence = 1;
@@ -327,46 +327,36 @@ added bug fix from bengt jardup
 */
 void R_TranslateNewPlayerSkin (int playernum)
 {
-	/*
-	char		name[64];
-	aliashdr_t *paliashdr;
-	int		skinnum;
-
 	// get correct texture pixels
-	entity_t *e = &cl_entities[1 + playernum];
+	entity_t *e = cl_entities[1 + playernum];
 
 	if (!e->model || e->model->type != mod_alias)
 		return;
 
-	paliashdr = (aliashdr_t *) Mod_Extradata (e->model);
-
-	skinnum = e->skinnum;
+	aliashdr_t *hdr = (aliashdr_t *) Mod_Extradata (e->model);
+	int skinnum = e->skinnum;
 
 	// TODO: move these tests to the place where skinnum gets received from the server
-	if (skinnum < 0 || skinnum >= paliashdr->numskins)
+	if (skinnum < 0 || skinnum >= hdr->numskins)
 	{
 		Con_DPrintf ("(%d): Invalid player skin #%d\n", playernum, skinnum);
 		skinnum = 0;
 	}
 
 	// you just know there's a mod somewhere that has animating player skins
-	// this isn't quite right yet - playertextures[playernum] will be overwritten for each skin in the animation sequence
-	aliasskingroup_t *group = (aliasskingroup_t *) ((byte *) paliashdr + paliashdr->skingroups) + skinnum;
+	// because we don't want to write a general-case runtime dynamic colormapping system for ALL alias models we just take skin 0 from the group (this will be correct anyway if it's not animating)
+	aliasskingroup_t *group = &hdr->skingroups[skinnum];
+	aliasskin_t *skin = &group->skins[0];
+	byte *pixels = skin->texels;
+	int loadflags = TEXPREF_MIPMAP | TEXPREF_FLOODFILL | TEXPREF_PAD | TEXPREF_OVERWRITE;
+	char name[64];
 
-	for (int i = 0; i < group->numskins; i++)
-	{
-		aliasskin_t *skin = (aliasskin_t *) ((byte *) paliashdr + group->skins) + i;
-		byte *pixels = (byte *) paliashdr + skin->texels;
-
-		// upload new image
-		q_snprintf (name, sizeof (name), "player_%i%i", playernum, i);
-		playertextures[playernum] = TexMgr_LoadImage (e->model, name, paliashdr->skinwidth, paliashdr->skinheight,
-			SRC_INDEXED, pixels, skin->gltexture->source_file, skin->gltexture->source_offset, TEXPREF_MIPMAP | TEXPREF_FLOODFILL | TEXPREF_PAD | TEXPREF_OVERWRITE);
-	}
+	// upload new image
+	q_snprintf (name, sizeof (name), "player_%i", playernum);
+	playertextures[playernum] = TexMgr_LoadImage (e->model, name, hdr->skinwidth, hdr->skinheight, SRC_INDEXED, pixels, skin->gltexture->source_file, skin->gltexture->source_offset, loadflags);
 
 	// now recolor it
 	R_TranslatePlayerSkin (playernum);
-	*/
 }
 
 
@@ -392,49 +382,23 @@ called at map load
 */
 static void R_ParseWorldspawn (void)
 {
-	char key[128], value[4096];
-	const char *data;
+	char *value;
 
-	map_wateralpha = r_wateralpha.value;
-	map_lavaalpha = r_lavaalpha.value;
-	map_telealpha = r_telealpha.value;
-	map_slimealpha = r_slimealpha.value;
+	if ((value = Mod_ValueForKeyFromWorldspawn (cl.worldmodel->entities, "wateralpha")) != NULL)
+		map_wateralpha = atof (value);
+	else map_wateralpha = r_wateralpha.value;
 
-	data = COM_Parse (cl.worldmodel->entities);
-	if (!data)
-		return; // error
-	if (com_token[0] != '{')
-		return; // error
-	while (1)
-	{
-		data = COM_Parse (data);
-		if (!data)
-			return; // error
-		if (com_token[0] == '}')
-			break; // end of worldspawn
-		if (com_token[0] == '_')
-			q_strlcpy (key, com_token + 1, sizeof (key));
-		else
-			q_strlcpy (key, com_token, sizeof (key));
-		while (key[0] && key[strlen (key) - 1] == ' ') // remove trailing spaces
-			key[strlen (key) - 1] = 0;
-		data = COM_Parse (data);
-		if (!data)
-			return; // error
-		q_strlcpy (value, com_token, sizeof (value));
+	if ((value = Mod_ValueForKeyFromWorldspawn (cl.worldmodel->entities, "lavaalpha")) != NULL)
+		map_lavaalpha = atof (value);
+	else map_lavaalpha = r_lavaalpha.value;
 
-		if (!strcmp ("wateralpha", key))
-			map_wateralpha = atof (value);
+	if ((value = Mod_ValueForKeyFromWorldspawn (cl.worldmodel->entities, "telealpha")) != NULL)
+		map_telealpha = atof (value);
+	else map_telealpha = r_telealpha.value;
 
-		if (!strcmp ("lavaalpha", key))
-			map_lavaalpha = atof (value);
-
-		if (!strcmp ("telealpha", key))
-			map_telealpha = atof (value);
-
-		if (!strcmp ("slimealpha", key))
-			map_slimealpha = atof (value);
-	}
+	if ((value = Mod_ValueForKeyFromWorldspawn (cl.worldmodel->entities, "slimealpha")) != NULL)
+		map_slimealpha = atof (value);
+	else map_slimealpha = r_slimealpha.value;
 }
 
 
@@ -445,6 +409,9 @@ R_NewMap
 */
 void R_NewMap (void)
 {
+	// reset for the new map
+	r_framecount = 1;
+
 	// clear out efrags in case the level hasn't been reloaded
 	// FIXME: is this one short?
 	for (int i = 0; i < cl.worldmodel->numleafs; i++)

@@ -182,9 +182,6 @@ called at map load
 */
 void Fog_ParseWorldspawn (void)
 {
-	char key[128], value[4096];
-	const char *data;
-
 	// initially no fog
 	fog_density = DEFAULT_DENSITY;
 	fog_red = DEFAULT_GRAY;
@@ -199,45 +196,12 @@ void Fog_ParseWorldspawn (void)
 	fade_time = 0.0;
 	fade_done = 0.0;
 
-	data = COM_Parse (cl.worldmodel->entities);
+	char *value;
 
-	if (!data)
-		return; // error
-
-	if (com_token[0] != '{')
-		return; // error
-
-	while (1)
-	{
-		data = COM_Parse (data);
-
-		if (!data)
-			return; // error
-
-		if (com_token[0] == '}')
-			break; // end of worldspawn
-
-		if (com_token[0] == '_')
-			q_strlcpy (key, com_token + 1, sizeof (key));
-		else
-			q_strlcpy (key, com_token, sizeof (key));
-
-		while (key[0] && key[strlen (key) - 1] == ' ') // remove trailing spaces
-			key[strlen (key) - 1] = 0;
-
-		data = COM_Parse (data);
-
-		if (!data)
-			return; // error
-
-		q_strlcpy (value, com_token, sizeof (value));
-
-		if (!strcmp ("fog", key))
-		{
-			sscanf (value, "%f %f %f %f", &fog_density, &fog_red, &fog_green, &fog_blue);
-		}
-	}
+	if ((value = Mod_ValueForKeyFromWorldspawn (cl.worldmodel->entities, "fog")) != NULL)
+		sscanf (value, "%f %f %f %f", &fog_density, &fog_red, &fog_green, &fog_blue);
 }
+
 
 /*
 =============

@@ -300,7 +300,7 @@ typedef struct meshst_s {
 typedef struct maliasframedesc_s {
 	int					firstpose;
 	int					numposes;
-	float				*pintervals;
+	float				*intervals;
 	trivertx_t			bboxmin;
 	trivertx_t			bboxmax;
 	int					frame;
@@ -327,12 +327,12 @@ typedef struct aliasskin_s {
 	struct gltexture_s *fbtexture; // johnfitz
 
 	// needed for reloading colormapped skins
-	byte *ptexels;
+	byte *texels;
 } aliasskin_t;
 
 typedef struct aliasskingroup_s {
-	aliasskin_t *pskins;
-	float *pintervals;
+	aliasskin_t *skins;
+	float *intervals;
 	int numskins;
 } aliasskingroup_t;
 
@@ -355,7 +355,7 @@ typedef struct aliashdr_s {
 	int			numposes;
 
 	// mh - fix skin auto-animation
-	aliasskingroup_t	*pskingroups;
+	aliasskingroup_t	*skingroups;
 	int			numskingroups; // same as below?????
 	int			numskins; // same as above?????
 	int			skinwidth;
@@ -367,7 +367,7 @@ typedef struct aliashdr_s {
 	intptr_t	ofs_frames;
 
 	// frames follow
-	maliasframedesc_t	*pframes;
+	maliasframedesc_t	*frames;
 	int			numframes;
 } aliashdr_t;
 

@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern cvar_t gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
 
 // up to 16 color translated skins
-gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz -- changed to an array of pointers
+extern gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz -- changed to an array of pointers
 
 static float	shadelight[4]; // johnfitz -- lit support via lordhavoc / MH - padded for shader params
 
@@ -413,18 +413,18 @@ void R_SetupAliasFrame (entity_t *e, aliashdr_t *hdr, int frame, lerpdata_t *ler
 		frame = 0;
 	}
 
-	int posenum = hdr->pframes[frame].firstpose;
-	int numposes = hdr->pframes[frame].numposes;
+	int posenum = hdr->frames[frame].firstpose;
+	int numposes = hdr->frames[frame].numposes;
 
 	if (numposes > 1)
 	{
 		// get the correct group frame
-		int groupframe = Mod_GetAutoAnimation (hdr->pframes[frame].pintervals, numposes, e->syncbase);
+		int groupframe = Mod_GetAutoAnimation (hdr->frames[frame].intervals, numposes, e->syncbase);
 
 		// get the correct interval
 		if (groupframe == 0)
-			e->lerptime = hdr->pframes[frame].pintervals[groupframe];
-		else e->lerptime = hdr->pframes[frame].pintervals[groupframe] - hdr->pframes[frame].pintervals[groupframe - 1];
+			e->lerptime = hdr->frames[frame].intervals[groupframe];
+		else e->lerptime = hdr->frames[frame].intervals[groupframe] - hdr->frames[frame].intervals[groupframe - 1];
 
 		// advance to this frame
 		posenum += groupframe;
@@ -599,8 +599,8 @@ void R_SetupAliasLighting (entity_t *e, lerpdata_t *lerpdata)
 
 aliasskin_t *R_GetAliasSkin (entity_t *e, aliashdr_t *hdr)
 {
-	aliasskingroup_t *group = hdr->pskingroups + (e->skinnum < 0 ? 0 : (e->skinnum >= hdr->numskingroups ? 0 : e->skinnum));
-	return &group->pskins[Mod_GetAutoAnimation (group->pintervals, group->numskins, e->syncbase)];
+	aliasskingroup_t *group = hdr->skingroups + (e->skinnum < 0 ? 0 : (e->skinnum >= hdr->numskingroups ? 0 : e->skinnum));
+	return &group->skins[Mod_GetAutoAnimation (group->intervals, group->numskins, e->syncbase)];
 }
 
 

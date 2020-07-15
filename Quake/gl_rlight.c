@@ -540,8 +540,6 @@ with all the surfaces from all brush models
 */
 void GL_BuildLightmaps (void)
 {
-	r_framecount = 1; // no dlightcache
-
 	// reset the lightmaps
 	memset (gl_lightmaps, 0, sizeof (gl_lightmaps));
 	LM_InitBlock ();
