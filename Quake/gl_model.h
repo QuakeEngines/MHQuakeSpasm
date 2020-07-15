@@ -167,6 +167,7 @@ typedef struct msurface_s {
 		unsigned	fullstyle;
 	};
 
+	int		numstyles;
 	byte *samples;		// [numstyles*surfsize]
 } msurface_t;
 

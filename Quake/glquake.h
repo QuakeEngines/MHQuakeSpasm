@@ -208,6 +208,7 @@ int R_LightPoint (vec3_t p, float *color);
 #define SHADERFLAG_FENCE	(1 << 0)
 #define SHADERFLAG_LUMA		(1 << 1)
 #define SHADERFLAG_FOG		(1 << 2)
+#define SHADERFLAG_4STYLE	(1 << 3)
 
 // common flag setup for alias and brush
 int R_SelectTexturesAndShaders (gltexture_t *tx, gltexture_t *fb, int alphaflag);

@@ -771,6 +771,23 @@ const GLchar *GL_GetFragmentProgram (const GLchar *base, int shaderflag)
 		if ((test = strstr (modified, "LRP diff.rgb, fogFactor.x, diff, state.fog.color;")) != NULL) test[0] = '#';
 	}
 
+	if (shaderflag & SHADERFLAG_4STYLE)
+	{
+		// remove single lightstyle
+		if ((test = strstr (modified, "TEX lmap, fragment.texcoord[1], texture[2], 2D;")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "MUL lmap, lmap, program.local[0].x;")) != NULL) test[0] = '#';
+	}
+	else
+	{
+		// remove 4 styles
+		if ((test = strstr (modified, "TEX lmr, fragment.texcoord[1], texture[2], 2D;")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "TEX lmg, fragment.texcoord[1], texture[3], 2D;")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "TEX lmb, fragment.texcoord[1], texture[4], 2D;")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "DP4 lmap.r, lmr, program.local[0];")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "DP4 lmap.g, lmg, program.local[0];")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "DP4 lmap.b, lmb, program.local[0];")) != NULL) test[0] = '#';
+	}
+
 	// hand back the modified shader source
 	return modified;
 }

@@ -30,7 +30,7 @@ int vis_changed;
 
 
 static GLuint r_brush_lightmapped_vp = 0;
-static GLuint r_brush_lightmapped_fp[8] = { 0 };
+static GLuint r_brush_lightmapped_fp[16] = { 0 };
 
 static GLuint r_brush_dynamic_vp = 0;
 static GLuint r_brush_dynamic_fp = 0;
@@ -87,12 +87,16 @@ void GLWorld_CreateShaders (void)
 		"SUB fence, diff, 0.666;\n"
 		"KIL fence.a;\n"
 		"\n"
-		"# read the lightmaps\n"
+		"# read the lightmap and apply the lightstyle - single style\n"
+		"TEX lmap, fragment.texcoord[1], texture[2], 2D;\n"
+		"MUL lmap, lmap, program.local[0].x;\n"
+		"\n"
+		"# read the lightmaps - full styles\n"
 		"TEX lmr, fragment.texcoord[1], texture[2], 2D;\n"
 		"TEX lmg, fragment.texcoord[1], texture[3], 2D;\n"
 		"TEX lmb, fragment.texcoord[1], texture[4], 2D;\n"
 		"\n"
-		"# apply the lightstyles\n"
+		"# apply the lightstyles - full styles\n"
 		"DP4 lmap.r, lmr, program.local[0];\n"
 		"DP4 lmap.g, lmg, program.local[0];\n"
 		"DP4 lmap.b, lmb, program.local[0];\n"
@@ -173,7 +177,7 @@ void GLWorld_CreateShaders (void)
 
 	r_brush_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, GL_GetVertexProgram (vp_lightmapped_source, SHADERFLAG_NONE));
 
-	for (int shaderflag = 0; shaderflag < 8; shaderflag++)
+	for (int shaderflag = 0; shaderflag < 16; shaderflag++)
 		r_brush_lightmapped_fp[shaderflag] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFragmentProgram (fp_lightmapped_source, shaderflag));
 
 	r_brush_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_dynamic_source);
@@ -233,17 +237,32 @@ void R_ChainSurface (msurface_t *surf, texchain_t chain)
 
 void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 {
+	// select the base shader to use but don't set it yet as we'll want to switch between the 4-style and single-style paths below
 	int shaderflag = R_SelectTexturesAndShaders (t->gltexture, t->fullbright, s->flags & SURF_DRAWFENCE);
-
-	// bind the selected programs
-	GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[shaderflag]);
 
 	// beginning with an empty batch
 	R_ClearBatch ();
 
-	// set these up so that they will trigger a set first time it's seen
-	for (unsigned oldstyle = ~s->fullstyle, currentlightmap = ~s->lightmaptexturenum; s; s = s->texturechain)
+	// set these up so that they will trigger a set first time they're seen
+	unsigned oldstyle = ~s->fullstyle, currentlightmap = ~s->lightmaptexturenum, oldnumstyles = ~s->numstyles;
+
+	// and draw the chain
+	for (; s; s = s->texturechain)
 	{
+		// check for shader change
+		if (s->numstyles != oldnumstyles)
+		{
+			R_FlushBatch (); // first time through there will be nothing in the batch
+
+			// switch the shader - even if using the singlestyle shader we must bind all 3 lightmaps as there might be
+			// mixed style counts in a single lightmap texture further down the line
+			if (s->numstyles > 1)
+				GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[shaderflag | SHADERFLAG_4STYLE]);
+			else GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[shaderflag]);
+
+			oldnumstyles = s->numstyles;
+		}
+
 		// check for lightmap change
 		if (s->lightmaptexturenum != currentlightmap)
 		{

@@ -409,16 +409,39 @@ static int lm_allocated[LIGHTMAP_SIZE];
 int lm_currenttexture = 0;
 
 
-static void R_NewBuildLightmap (msurface_t *surf, int ch)
+static void R_OldBuildLightmap (msurface_t *surf, int smax, int tmax)
 {
+	// single-style build into lm_block[0]
+	if (!surf->samples) return;
+	if (surf->styles[0] == 255) return;
+
+	// copy over the full lightmap but for a single style
+	byte *lightmap = surf->samples;
+	lighttexel_t *dest = lm_block[0] + (surf->light_t * LIGHTMAP_SIZE) + surf->light_s;
+
+	for (int t = 0; t < tmax; t++)
+	{
+		for (int s = 0; s < smax; s++)
+		{
+			dest[s].styles[0] = lightmap[0];
+			dest[s].styles[1] = lightmap[1];
+			dest[s].styles[2] = lightmap[2];
+			lightmap += 3;
+		}
+
+		dest += LIGHTMAP_SIZE;
+	}
+}
+
+
+static void R_NewBuildLightmap (msurface_t *surf, int ch, int smax, int tmax)
+{
+	// 4-style build into lm_block[ch]
 	if (!surf->samples)
 		return;
 
 	// copy over the lightmap beginning at the appropriate colour channel
 	byte *lightmap = surf->samples;
-
-	int smax = (surf->extents[0] >> 4) + 1;
-	int tmax = (surf->extents[1] >> 4) + 1;
 
 	for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
 	{
@@ -524,9 +547,27 @@ void GL_CreateSurfaceLightmap (msurface_t *surf)
 
 	surf->lightmaptexturenum = lm_currenttexture;
 
-	R_NewBuildLightmap (surf, 0); // red
-	R_NewBuildLightmap (surf, 1); // green
-	R_NewBuildLightmap (surf, 2); // blue
+	// count the number of styles in use - this count just reflects whether to use the single-style or 4-style shader, it is not an accurate count otherwise
+	if (surf->styles[0] == 255 || surf->styles[1] == 255)
+		surf->numstyles = 1;
+	else surf->numstyles = 4;
+
+	// provide an optimization path - most surfaces in any given scene will just have a single lightstyle on them; if so we can
+	// do a faster path that only needs to read a single texture, rather than the more general-case path that reads all three.
+	// a possible two-style micro-optimization also exists but (and I'll admit that I haven't measured this) the potential gain
+	// seems dubious vs the trade-off of more shader combinations, greater code complexity and more state changes.
+	if (surf->numstyles > 1)
+	{
+		// full set of styles
+		R_NewBuildLightmap (surf, 0, smax, tmax); // red
+		R_NewBuildLightmap (surf, 1, smax, tmax); // green
+		R_NewBuildLightmap (surf, 2, smax, tmax); // blue
+	}
+	else
+	{
+		// single style - only need to store/read one texture
+		R_OldBuildLightmap (surf, smax, tmax);
+	}
 }
 
 
