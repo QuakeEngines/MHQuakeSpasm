@@ -122,6 +122,35 @@ void R_FreeAllBufferSets (void)
 
 
 /*
+================
+R_ReloadBufferSets
+
+Loop over all precached alias models, and upload each one to a VBO.
+================
+*/
+void GLMesh_ReloadAliasGeometry (qmodel_t *mod);
+void R_CreateSpriteFrames (qmodel_t *mod);
+
+void R_ReloadBufferSets (void)
+{
+	for (int j = 1; j < MAX_MODELS; j++)
+	{
+		qmodel_t *m;
+
+		if ((m = cl.model_precache[j]) == NULL) break;
+
+		// alias and sprites need to be reloaded through here; brush models are reloaded via GL_BuildBModelVertexBuffer
+		if (m->type == mod_alias) {
+			GLMesh_ReloadAliasGeometry (m);
+		}
+		else if (m->type == mod_sprite) {
+			R_CreateSpriteFrames (m);
+		}
+	}
+}
+
+
+/*
 ====================
 R_SetClearColor_f -- johnfitz
 ====================

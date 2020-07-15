@@ -2527,7 +2527,7 @@ SPRITE MODELS
 */
 
 // creates frames for rendering
-void R_CreateSpriteFrames (qmodel_t *mod, msprite_t *psprite);
+void R_CreateSpriteFrames (qmodel_t *mod);
 
 
 /*
@@ -2693,7 +2693,7 @@ void Mod_LoadSpriteModel (qmodel_t *mod, void *buffer)
 		else pframetype = (dspriteframetype_t *) Mod_LoadSpriteGroup (pframetype + 1, psprite, &psprite->frames[i].frameptr, i);
 	}
 
-	R_CreateSpriteFrames (mod, psprite);
+	R_CreateSpriteFrames (mod);
 
 	mod->type = mod_sprite;
 }

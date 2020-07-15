@@ -333,28 +333,4 @@ void GLMesh_ReloadAliasGeometry (qmodel_t *mod)
 }
 
 
-/*
-================
-GLMesh_ReloadVertexBuffers
-
-Loop over all precached alias models, and upload each one to a VBO.
-================
-*/
-void GLMesh_ReloadVertexBuffers (void)
-{
-	int j;
-	qmodel_t *m;
-	const aliashdr_t *hdr;
-
-	for (j = 1; j < MAX_MODELS; j++)
-	{
-		if (!(m = cl.model_precache[j])) break;
-		if (m->type != mod_alias) continue;
-
-		hdr = (const aliashdr_t *) Mod_Extradata (m);
-
-		GLMesh_ReloadAliasGeometry (m);
-	}
-}
-
 

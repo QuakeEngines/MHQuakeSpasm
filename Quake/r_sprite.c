@@ -117,8 +117,10 @@ void R_CreateSpriteFrame (spritepolyvert_t *verts, mspriteframe_t *frame)
 }
 
 
-void R_CreateSpriteFrames (qmodel_t *mod, msprite_t *psprite)
+void R_CreateSpriteFrames (qmodel_t *mod)
 {
+	msprite_t *psprite = (msprite_t *) mod->cache.data;
+
 	// check if the model already has a buffer set
 	if ((mod->buffsetset = R_GetBufferSetForName (mod->name)) != -1) return;
 
