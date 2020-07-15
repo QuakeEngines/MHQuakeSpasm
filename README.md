@@ -59,6 +59,9 @@ In one case I used an old .plan file entry from 1996 to determine the intent beh
 ### Help! r_drawflat melted my GPU! 
 Sorry about that. I haven't implemented r_drawflat in a robust or performant way, because it's not really intended to be a performant codepath to begin with. While it is useful to see how badly QBSP chopped up your geometry, with draw call batching that's really no longer something that badly affects performance. I guess you can switch it on if you just want to look at it, but otherwise it's value seems dubious. 
 
+### Where's r_showtris? Your engine sucks! I hate you forever! 
+That's OK. 
+
 ### Will you support Nehahra? 
 Maybe. But a friendly word of advice: badgering me over and over again until I eventually do it just to shut you up won't endear you to me. 
 
