@@ -74,3 +74,6 @@ The SDL2 build should be used; the regular SDL build has been exercised very lit
 
 ### What about Linux?  Mac OSX?  Other platforms?
 I consider the Visual Studio project to be the "master" version and I haven't bothered keeping makefiles/etc for other platforms up to date.  The only real change made to the project was the addition of the GLEW header and source files; aside from that I haven't knowingly done anything to explicitly break a build on any other platform, so you should be able to manually edit the makefiles and get a build.  To be honest, if you can't do this kind of thing yourself, you probably have no business building on Linux anyway.
+
+### Where's the OpenGL rant? This is not like you!
+There's not much need to repeat what I've said before. The summary of my position as of 2020 goes something like this. OpenGL 1.5 with the vertex and fragment program extensions is a great API. OpenGL 4.6 core profile with all the AZDO stuff is a great (if unusual) API. Everything else is varying degrees of an inconsistent, poorly-featured (or under-featured) mess. 
