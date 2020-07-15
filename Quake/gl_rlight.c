@@ -556,6 +556,9 @@ void GL_CreateSurfaceLightmap (msurface_t *surf)
 	// do a faster path that only needs to read a single texture, rather than the more general-case path that reads all three.
 	// a possible two-style micro-optimization also exists but (and I'll admit that I haven't measured this) the potential gain
 	// seems dubious vs the trade-off of more shader combinations, greater code complexity and more state changes.
+	// this is a more useful optimization than checking for white light because (1) if a LIT file is used most surfaces will have
+	// some degree of colour, (2) even if not (or if a LIT is not used) the single-style optimization will catch 95% of the
+	// same surfaces anyway, and (3) the single-style optimization will also catch most surfaces if there is not white light.
 	if (surf->numstyles > 1)
 	{
 		// full set of styles
