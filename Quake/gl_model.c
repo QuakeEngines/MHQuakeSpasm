@@ -350,10 +350,7 @@ Loads in a model for the given name
 */
 qmodel_t *Mod_ForName (const char *name, qboolean crash)
 {
-	qmodel_t *mod;
-
-	mod = Mod_FindName (name);
-
+	qmodel_t *mod = Mod_FindName (name);
 	return Mod_LoadModel (mod, crash);
 }
 
@@ -2573,10 +2570,16 @@ void *Mod_LoadSpriteFrame (void *pin, msprite_t *psprite, mspriteframe_t **ppfra
 
 	q_snprintf (name, sizeof (name), "%s:frame%i", loadmodel->name, framenum);
 	offset = (src_offset_t) (pinframe + 1) - (src_offset_t) mod_base; // johnfitz
-	pspriteframe->gltexture =
-		TexMgr_LoadImage (loadmodel, name, width, height, SRC_INDEXED,
-			(byte *) (pinframe + 1), loadmodel->name, offset,
-			TEXPREF_PAD | TEXPREF_ALPHA); // johnfitz -- TexMgr
+
+	byte *data = (byte *) (pinframe + 1);
+	pspriteframe->gltexture = TexMgr_LoadImage (loadmodel, name, width, height, SRC_INDEXED, data, loadmodel->name, offset, TEXPREF_PAD | TEXPREF_ALPHA); // johnfitz -- TexMgr
+
+	for (int i = 0; i < (width * height); i++)
+	{
+		if (data[i] == 255) continue;
+		pspriteframe->particlecolor = data[i];
+		break;
+	}
 
 	return (void *) ((byte *) pinframe + sizeof (dspriteframe_t) + size);
 }
@@ -2634,6 +2637,32 @@ void *Mod_LoadSpriteGroup (void *pin, msprite_t *psprite, mspriteframe_t **ppfra
 }
 
 
+char *ad_particles[] = {
+	"progs/s_dotmed_blue.spr",
+	"progs/s_dotmed_dblue.spr",
+	"progs/s_dotmed_grey.spr",
+	"progs/s_dotmed_grn.spr",
+	"progs/s_dotmed_lgrn.spr",
+	"progs/s_dotmed_purp.spr",
+	"progs/s_dotmed_red.spr",
+	"progs/s_dotmed_tor1.spr",
+	"progs/s_dotmed_tor2.spr",
+	"progs/s_dotmed_yell.spr",
+	"progs/s_dotsml_blue.spr",
+	"progs/s_dotsml_dblue.spr",
+	"progs/s_dotsml_gold.spr",
+	"progs/s_dotsml_grey.spr",
+	"progs/s_dotsml_grn.spr",
+	"progs/s_dotsml_lgrn.spr",
+	"progs/s_dotsml_purp.spr",
+	"progs/s_dotsml_red.spr",
+	"progs/s_dotsml_wht.spr",
+	"progs/s_dotsml_yell.spr"
+};
+
+const int num_ad_particles = sizeof (ad_particles) / sizeof (ad_particles[0]);
+
+
 /*
 =================
 Mod_LoadSpriteModel
@@ -2665,7 +2694,6 @@ void Mod_LoadSpriteModel (qmodel_t *mod, void *buffer)
 	psprite->type = LittleLong (pin->type);
 	psprite->maxwidth = LittleLong (pin->width);
 	psprite->maxheight = LittleLong (pin->height);
-	psprite->beamlength = LittleFloat (pin->beamlength);
 	mod->synctype = (synctype_t) LittleLong (pin->synctype);
 	psprite->numframes = numframes;
 
@@ -2694,6 +2722,20 @@ void Mod_LoadSpriteModel (qmodel_t *mod, void *buffer)
 	}
 
 	R_CreateSpriteFrames (mod);
+
+	if (arcdim)
+	{
+		// detecting AD sprite types
+		for (i = 0; i < num_ad_particles; i++)
+		{
+			if (strcmp (mod->name, ad_particles[i])) continue;
+
+			psprite->partsize = 1.0f;
+			if (strstr (mod->name, "_dotmed_")) psprite->partsize = 1.5f;
+			mod->flags |= EF_SINGLEPARTICLE;
+			break;
+		}
+	}
 
 	mod->type = mod_sprite;
 }
@@ -2811,6 +2853,4 @@ float Mod_PlaneDist (mplane_t *plane, float *org)
 		break;
 	}
 }
-
-
 

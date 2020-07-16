@@ -615,7 +615,7 @@ void CL_RelinkEntities (void)
 		}
 
 		if (ent->effects & EF_BRIGHTFIELD)
-			R_EntityParticles (ent);
+			R_EntityParticles (ent, 64, 16);
 
 		if (ent->effects & EF_MUZZLEFLASH)
 		{
@@ -747,6 +747,17 @@ void CL_RelinkEntities (void)
 		}
 
 		ent->forcelink = false;
+
+		if (ent->model->flags & EF_SINGLEPARTICLE)
+		{
+			// AD sprite override - push through the particle system instead of drawing sprites
+			msprite_t *spr = (msprite_t *) ent->model->cache.data;
+			mspriteframe_t *frame = R_GetSpriteFrame (ent);
+			R_SingleParticle (ent->origin, frame->particlecolor, spr->partsize);
+
+			// don't add it to the visedicts list
+			continue;
+		}
 
 		if (i == cl.viewentity && !chase_active.value)
 			continue;

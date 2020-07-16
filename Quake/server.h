@@ -160,10 +160,10 @@ typedef struct client_s {
 
 // entity effects
 
-#define	EF_BRIGHTFIELD			1
-#define	EF_MUZZLEFLASH 			2
-#define	EF_BRIGHTLIGHT 			4
-#define	EF_DIMLIGHT 			8
+#define	EF_BRIGHTFIELD			(1 << 0)
+#define	EF_MUZZLEFLASH 			(1 << 1)
+#define	EF_BRIGHTLIGHT 			(1 << 2)
+#define	EF_DIMLIGHT 			(1 << 3)
 
 #define	SPAWNFLAG_NOT_EASY			256
 #define	SPAWNFLAG_NOT_MEDIUM		512

@@ -35,11 +35,10 @@ m*_t structures are in-memory
 
 // entity effects
 
-#define	EF_BRIGHTFIELD			1
-#define	EF_MUZZLEFLASH 			2
-#define	EF_BRIGHTLIGHT 			4
-#define	EF_DIMLIGHT 			8
-
+#define	EF_BRIGHTFIELD			(1 << 0)
+#define	EF_MUZZLEFLASH 			(1 << 1)
+#define	EF_BRIGHTLIGHT 			(1 << 2)
+#define	EF_DIMLIGHT 			(1 << 3)
 
 /*
 ==============================================================================
@@ -240,6 +239,7 @@ typedef struct mspriteframe_s {
 	float				up, down, left, right;
 	float				smax, tmax; // johnfitz -- image might be padded
 	int					firstvertex;
+	int					particlecolor;
 	struct gltexture_s *gltexture;
 } mspriteframe_t;
 
@@ -264,11 +264,14 @@ typedef struct msprite_s {
 	int					maxwidth;
 	int					maxheight;
 	int					numframes;
-	int				numframeverts;
-	float				beamlength;		// remove?
-	void *cachespot;		// remove?
+	int					numframeverts;
+	float				partsize;
 	mspriteframedesc_t	frames[1];
 } msprite_t;
+
+
+// so we can call this from client code for AD particles
+mspriteframe_t *R_GetSpriteFrame (entity_t *e);
 
 
 /*
@@ -401,6 +404,8 @@ typedef enum { mod_brush, mod_sprite, mod_alias } modtype_t;
 #define EF_REDFLASH			(1 << 26)
 #define EF_YELLOWFLASH		(1 << 27)
 
+// replace AD sprites with particles
+#define EF_SINGLEPARTICLE	(1 << 28)
 
 // johnfitz -- extra flags for rendering
 #define	MOD_NOLERP		256		// don't lerp when animating

@@ -132,8 +132,6 @@ extern float	r_origin[4], vpn[4], vright[4], vup[4];
 
 
 void R_Init (void);
-void R_InitTextures (void);
-void R_InitEfrags (void);
 void R_RenderView (void);		// must set r_refdef first
 
 void R_CheckEfrags (void); // johnfitz
@@ -145,17 +143,14 @@ void R_NewMap (void);
 void R_ParseParticleEffect (void);
 void R_RunParticleEffect (vec3_t org, vec3_t dir, int color, int count);
 void R_RocketTrail (vec3_t start, vec3_t end, int type);
-void R_EntityParticles (entity_t *ent);
+void R_EntityParticles (entity_t *ent, float dist, float beamlength);
 void R_BlobExplosion (vec3_t org);
 void R_ParticleExplosion (vec3_t org);
 void R_ParticleExplosion2 (vec3_t org, int colorStart, int colorLength);
 void R_LavaSplash (vec3_t org);
 void R_TeleportSplash (vec3_t org);
+void R_SingleParticle (vec3_t org, int color, float size);
 
-
-int	D_SurfaceCacheForRes (int width, int height);
-void D_DeleteSurfaceCache (void);
-void D_InitCaches (void *buffer, int size);
 
 #endif	/* _QUAKE_RENDER_H */
 
