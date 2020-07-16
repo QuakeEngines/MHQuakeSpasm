@@ -8,3 +8,4 @@ r_speeds counters are no longer really relevant; dlights can go, draw calls need
 Optional primitive restart
 Detect dx10 gpu for npot robustness
 Programmatically reconstruct r_avertexnormals. It's just an icosahedron with 2 or 3 levels of subdivision. The order would be wrong but that doesn't matter because we build alias normals properly now. 
+Put AD particles through particle system! 
