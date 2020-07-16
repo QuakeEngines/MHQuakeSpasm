@@ -66,6 +66,12 @@ void GLWorld_CreateShaders (void)
 		"# copy over drawflat colour\n"
 		"MOV result.color, vertex.attrib[4];\n"
 		"\n"
+		"# copy over the normal in texcoord[1] so that we can do per-pixel lighting\n"
+		"MOV result.texcoord[1], vertex.attrib[3];\n"
+		"\n"
+		"# result.texcoord[2] is light vector\n"
+		"SUB result.texcoord[2], program.env[7], vertex.attrib[0];\n"
+		"\n"
 		"# set up fog coordinate\n"
 		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
 		"\n"
@@ -131,59 +137,15 @@ void GLWorld_CreateShaders (void)
 		"END\n"
 		"\n";
 
-	const GLchar *vp_dynamic_source = \
-		"!!ARBvp1.0\n"
-		"\n"
-		"# transform position to output\n"
-		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.attrib[0];\n"
-		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.attrib[0];\n"
-		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.attrib[0];\n"
-		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.attrib[0];\n"
-		"\n"
-		"# copy over diffuse texcoord\n"
-		"MOV result.texcoord[0], vertex.attrib[1];\n"
-		"\n"
-		"# copy over the normal in texcoord[1] so that we can do per-pixel lighting\n"
-		"MOV result.texcoord[1], vertex.attrib[3];\n"
-		"\n"
-		"# result.texcoord[2] is light vector\n"
-		"SUB result.texcoord[2], program.env[7], vertex.attrib[0];\n"
-		"\n"
-		"# set up fog coordinate\n"
-		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
-		"\n"
-		"# done\n"
-		"END\n"
-		"\n";
-
-	const GLchar *vp_notexture_source = \
-		"!!ARBvp1.0\n"
-		"\n"
-		"# transform position to output\n"
-		"DP4 result.position.x, state.matrix.mvp.row[0], vertex.attrib[0];\n"
-		"DP4 result.position.y, state.matrix.mvp.row[1], vertex.attrib[0];\n"
-		"DP4 result.position.z, state.matrix.mvp.row[2], vertex.attrib[0];\n"
-		"DP4 result.position.w, state.matrix.mvp.row[3], vertex.attrib[0];\n"
-		"\n"
-		"# copy over diffuse texcoord\n"
-		"MOV result.texcoord[0], vertex.attrib[1];\n"
-		"\n"
-		"# set up fog coordinate\n"
-		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
-		"\n"
-		"# done\n"
-		"END\n"
-		"\n";
-
 	r_brush_lightmapped_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, GL_GetVertexProgram (vp_lightmapped_source, SHADERFLAG_NONE));
 
 	for (int shaderflag = 0; shaderflag < 16; shaderflag++)
 		r_brush_lightmapped_fp[shaderflag] = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFragmentProgram (fp_lightmapped_source, shaderflag));
 
-	r_brush_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_dynamic_source);
+	r_brush_dynamic_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, GL_GetVertexProgram (vp_lightmapped_source, SHADERFLAG_DYNAMIC));
 	r_brush_dynamic_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetDynamicLightFragmentProgramSource ());
 
-	r_brush_notexture_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, vp_notexture_source);
+	r_brush_notexture_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, GL_GetVertexProgram (vp_lightmapped_source, SHADERFLAG_NOTEX));
 	r_brush_notexture_fp = GL_CreateARBProgram (GL_FRAGMENT_PROGRAM_ARB, GL_GetFullbrightFragmentProgramSource ());
 
 	r_brush_drawflat_vp = GL_CreateARBProgram (GL_VERTEX_PROGRAM_ARB, GL_GetVertexProgram (vp_lightmapped_source, SHADERFLAG_DRAWFLAT));

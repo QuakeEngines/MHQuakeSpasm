@@ -676,6 +676,11 @@ void CL_ParseBaseline (entity_t *ent, int version) // johnfitz -- added argument
 
 	ent->baseline.alpha = (bits & B_ALPHA) ? MSG_ReadByte () : ENTALPHA_DEFAULT; // johnfitz -- PROTOCOL_FITZQUAKE
 
+	// AD sends a LOT of ents as non statics that really SHOULD be statics, so we need to keep and parse a baseline for the lightpoint too...
+	// the model for this ent isn't set yet so we don't bother checking and just trace for them all
+	cl_numvisedicts = 0;
+	R_BaseLightPoint (ent->baseline.origin, &ent->baselightpoint);
+
 	CL_ClearRocketTrail (ent);
 }
 
@@ -860,6 +865,7 @@ void CL_NewTranslation (int slot)
 	R_TranslatePlayerSkin (slot);
 }
 
+
 /*
 =====================
 CL_ParseStatic
@@ -875,6 +881,7 @@ void CL_ParseStatic (int version) // johnfitz -- added a parameter
 	// copy it to the current state
 	ent->model = cl.model_precache[ent->baseline.modelindex];
 	ent->lerpflags |= LERP_RESETANIM; // johnfitz -- lerping
+	ent->lerpflags |= LERP_STATICENT; // mh - flag as a static ent for runtime fast-path checks
 	ent->frame = ent->baseline.frame;
 
 	ent->colormapped = false;
@@ -891,6 +898,14 @@ void CL_ParseStatic (int version) // johnfitz -- added a parameter
 	R_AddEfrags (ent);
 
 	CL_ClearRocketTrail (ent);
+
+	// rather than runtime-tracing the map for ents which don't move we'll do it once-only at spawn time and save a bunch of CPU time
+	// this will fail to take account of bmodels under the entity but in practice we assume that's not going to happen with static ents anyway
+	// ------------------------------------------------------------------------------------------------------------------------------------------
+	// note - AD spawns a LOT of unmoving/inactive/etc entities as regular entities rather than as statics, for some reason, so we need to do
+	// this in CL_ParseBaseline as well, and add a check for an entity that hasn't moved from it's baseline to R_SetupAliasLighting - those wacky modders!
+	cl_numvisedicts = 0; // ensure this doesn't attempt to trace bmodels which don't exist yet!
+	R_BaseLightPoint (ent->origin, &ent->lightpoint);
 
 	// track the count of statics allocated because people seem to like this stuff
 	cl.num_statics++;

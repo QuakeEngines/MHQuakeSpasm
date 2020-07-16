@@ -193,8 +193,6 @@ void GL_DeleteBModelVertexBuffer (void);
 void GL_BuildBModelVertexBuffer (void);
 void R_ReloadBufferSets (void);
 
-int R_LightPoint (vec3_t p, float *color);
-
 
 // MH - ARB programs
 // common flags
@@ -203,6 +201,7 @@ int R_LightPoint (vec3_t p, float *color);
 // vertex program flags
 #define SHADERFLAG_DYNAMIC	(1 << 0)
 #define SHADERFLAG_DRAWFLAT	(1 << 1)
+#define SHADERFLAG_NOTEX	(1 << 2)
 
 // fragment program flags
 #define SHADERFLAG_FENCE	(1 << 0)

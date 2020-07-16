@@ -706,6 +706,7 @@ void R_DeleteShaders (void)
 }
 
 
+// fixme - this is getting a little messy and potentially fragile now
 const GLchar *GL_GetVertexProgram (const GLchar *base, int shaderflag)
 {
 	// shader combinations are dealt with by keeping a single copy of the shader source and selectively commenting out parts of it
@@ -717,11 +718,28 @@ const GLchar *GL_GetVertexProgram (const GLchar *base, int shaderflag)
 	// copy off the shader because we're going to modify it
 	strcpy (modified, base);
 
+	if (shaderflag & SHADERFLAG_NOTEX)
+	{
+		// remove light/etc so we're just left with diffuse and fogcoord
+		if ((test = strstr (modified, "MOV result.texcoord[1], vertex.attrib[2];")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "MOV result.texcoord[1], vertex.attrib[3];")) != NULL) test[0] = '#'; // brush
+		if ((test = strstr (modified, "MOV result.color, vertex.attrib[4];")) != NULL) test[0] = '#';
+	}
+
 	if (!(shaderflag & SHADERFLAG_DYNAMIC))
 	{
 		// remove lightvector computations
 		if ((test = strstr (modified, "SUB result.texcoord[2], program.env[7], position;")) != NULL) test[0] = '#'; // alias
 		if ((test = strstr (modified, "SUB result.texcoord[2], program.env[7], vertex.attrib[0];")) != NULL) test[0] = '#'; // brush
+
+		// remove normal from brush models
+		if ((test = strstr (modified, "MOV result.texcoord[1], vertex.attrib[3];")) != NULL) test[0] = '#'; // brush
+	}
+	else
+	{
+		// remove light/etc so we're just left with diffuse and fogcoord
+		if ((test = strstr (modified, "MOV result.texcoord[1], vertex.attrib[2];")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "MOV result.color, vertex.attrib[4];")) != NULL) test[0] = '#';
 	}
 
 	if (!(shaderflag & SHADERFLAG_DRAWFLAT))
