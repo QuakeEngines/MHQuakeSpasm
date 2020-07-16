@@ -125,7 +125,7 @@ void GLAlias_CreateShaders (void)
 		"MAD result.texcoord[1], lerpfactor, normal, vertex.attrib[3];\n"
 		"\n"
 		"# result.texcoord[2] is light vector\n"
-		"SUB result.texcoord[2], program.local[1], position;\n"
+		"SUB result.texcoord[2], program.env[7], position;\n"
 		"\n"
 		"# copy over drawflat colour\n"
 		"MOV result.color, vertex.attrib[5];\n"
@@ -140,8 +140,8 @@ void GLAlias_CreateShaders (void)
 	const GLchar *fp_lightmapped_source = \
 		"!!ARBfp1.0\n"
 		"\n"
-		"PARAM shadelight = program.local[0];\n"
-		"PARAM shadevector = program.local[1];\n"
+		"PARAM shadelight = program.env[3];\n"
+		"PARAM shadevector = program.env[4];\n"
 		"\n"
 		"TEMP diff, lmap, luma, fence;\n"
 		"TEMP normal, shadedot, dothi, dotlo;\n"
@@ -205,8 +205,8 @@ void GLAlias_CreateShaders (void)
 		"MUL fogFactor.x, state.fog.params.x, fragment.fogcoord.x;\n"
 		"MUL fogFactor.x, fogFactor.x, fogFactor.x;\n"
 		"EX2_SAT fogFactor.x, -fogFactor.x;\n"
-		"LRP result.color.rgb, fogFactor.x, program.local[0], state.fog.color;\n"
-		"MOV result.color.a, program.local[0].a;\n"
+		"LRP result.color.rgb, fogFactor.x, program.env[8], state.fog.color;\n"
+		"MOV result.color.a, program.env[8].a;\n"
 		"\n"
 		"# done\n"
 		"END\n"
@@ -267,13 +267,13 @@ void GL_DrawAliasFrame_ARB (entity_t *e, QMATRIX *localMatrix, aliashdr_t *hdr, 
 		GL_BindPrograms (r_alias_lightmapped_vp, r_alias_lightmapped_fp[shaderflag]);
 	}
 
-	// set uniforms - these need to be env params so that the dynamic and shadow programs can also access them
+	// set uniforms
 	glProgramEnvParameter4fARB (GL_VERTEX_PROGRAM_ARB, 10, blend, blend, blend, 0);
 	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 11, hdr->scale);
 	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 12, hdr->scale_origin);
 
-	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, shadelight);
-	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, shadevector);
+	glProgramEnvParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 3, shadelight);
+	glProgramEnvParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 4, shadevector);
 
 	// draw
 	if (r_drawflat_cheatsafe)
@@ -378,9 +378,6 @@ P.d * L.x      P.d * L.y      P.d * L.z      P.d * L.w + d
 
 	// we can just reuse the lightmapped vp because it does everything we need without much extra overhead
 	GL_BindPrograms (r_alias_lightmapped_vp, r_alias_shadow_fp);
-
-	// shadow colour - allow different values of r_shadows to change the colour
-	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, 0, 0, 0, 0.5f * r_shadows.value);
 
 	// move it
 	glPushMatrix ();

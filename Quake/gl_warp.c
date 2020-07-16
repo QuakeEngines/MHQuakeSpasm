@@ -100,7 +100,7 @@ void GLWarp_CreateShaders (void)
 		"\n"
 		"# copy over texcoords\n"
 		"MOV result.texcoord[0], vertex.attrib[1];\n"
-		"ADD result.texcoord[1], vertex.attrib[2], program.local[0];\n"
+		"ADD result.texcoord[1], vertex.attrib[2], program.env[6];\n"
 		"\n"
 		"# done\n"
 		"END\n"
@@ -114,13 +114,13 @@ void GLWarp_CreateShaders (void)
 		"\n"
 		"# read the noise image\n"
 		"TEX noisecoord, fragment.texcoord[1], texture[0], 2D;\n"
-		"MAD noisecoord, noisecoord, program.local[1], fragment.texcoord[0];\n"
+		"MAD noisecoord, noisecoord, program.env[9], fragment.texcoord[0];\n"
 		"\n"
 		"# perform the texturing\n"
 		"TEX diff, noisecoord, texture[5], RECT;\n"
 		"\n"
 		"# blend to output\n"
-		"LRP result.color, program.local[0].a, program.local[0], diff;\n"
+		"LRP result.color, program.env[7].a, program.env[7], diff;\n"
 		"\n"
 		"# done\n"
 		"END\n"
@@ -264,20 +264,12 @@ void R_UnderwaterWarp (void)
 	GL_BindPrograms (r_underwater_vp, r_underwater_fp);
 
 	// move the warp
-	glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, (cl.time * 0.09f) - (int) (cl.time * 0.09f), -((cl.time * 0.11f) - (int) (cl.time * 0.11f)), 0, 0);
-
-	// gamma-correct the polyblend; the framebuffer source is a post-process that has already been gamma-corrected so it doesn't need it;
-	// correcting the polyblend here let's us just do it once for the entire screen rather than per-fragment.
-	v_blend[0] = pow ((v_blend[0] * vid_contrast.value), vid_gamma.value);
-	v_blend[1] = pow ((v_blend[1] * vid_contrast.value), vid_gamma.value);
-	v_blend[2] = pow ((v_blend[2] * vid_contrast.value), vid_gamma.value);
-
-	// merge the polyblend into the water warp for perf
-	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, v_blend);
+	glProgramEnvParameter4fARB (GL_VERTEX_PROGRAM_ARB, 6, (cl.time * 0.09f) - (int) (cl.time * 0.09f), -((cl.time * 0.11f) - (int) (cl.time * 0.11f)), 0, 0);
 
 	// scale the warp to compensate for non-normalized rectangle texture sizes
-	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 1, (float) srch / 64.0f, (float) srch / 64.0f, 0, 0);
+	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 9, (float) srch / 64.0f, (float) srch / 64.0f, 0, 0);
 
+	// go back to the main viewport
 	glViewport (srcx, srcy, r_refdef.vrect.width, r_refdef.vrect.height);
 
 	float positions[] = { -1, -1, 1, -1, 1, 1, -1, 1 };

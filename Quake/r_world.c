@@ -89,7 +89,7 @@ void GLWorld_CreateShaders (void)
 		"\n"
 		"# read the lightmap and apply the lightstyle - single style\n"
 		"TEX lmap, fragment.texcoord[1], texture[2], 2D;\n"
-		"MUL lmap, lmap, program.local[0].x;\n"
+		"MUL lmap, lmap, program.env[2].x;\n"
 		"\n"
 		"# read the lightmaps - full styles\n"
 		"TEX lmr, fragment.texcoord[1], texture[2], 2D;\n"
@@ -97,9 +97,9 @@ void GLWorld_CreateShaders (void)
 		"TEX lmb, fragment.texcoord[1], texture[4], 2D;\n"
 		"\n"
 		"# apply the lightstyles - full styles\n"
-		"DP4 lmap.r, lmr, program.local[0];\n"
-		"DP4 lmap.g, lmg, program.local[0];\n"
-		"DP4 lmap.b, lmb, program.local[0];\n"
+		"DP4 lmap.r, lmr, program.env[2];\n"
+		"DP4 lmap.g, lmg, program.env[2];\n"
+		"DP4 lmap.b, lmb, program.env[2];\n"
 		"\n"
 		"# perform the overbrighting\n"
 		"MUL_SAT lmap.rgb, lmap, program.env[10].w; # inverse overbright factor\n"
@@ -147,7 +147,7 @@ void GLWorld_CreateShaders (void)
 		"MOV result.texcoord[1], vertex.attrib[3];\n"
 		"\n"
 		"# result.texcoord[2] is light vector\n"
-		"SUB result.texcoord[2], program.local[1], vertex.attrib[0];\n"
+		"SUB result.texcoord[2], program.env[7], vertex.attrib[0];\n"
 		"\n"
 		"# set up fog coordinate\n"
 		"DP4 result.fogcoord.x, state.matrix.mvp.row[3], vertex.attrib[0];\n"
@@ -249,7 +249,8 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 		// check for lightmap change
 		if (s->lightmaptexturenum != currentlightmap)
 		{
-			R_FlushBatch (); // first time through there will be nothing in the batch
+			// first time through there will be nothing in the batch
+			R_FlushBatch ();
 
 			// bind all the lightmaps
 			GL_BindLightmaps (s->lightmaptexturenum);
@@ -261,7 +262,8 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 		// check for lightstyle change
 		if (s->fullstyle != oldstyle)
 		{
-			R_FlushBatch (); // first time through there will be nothing in the batch
+			// first time through there will be nothing in the batch
+			R_FlushBatch ();
 
 			// switch the shader - even if using the singlestyle shader we must bind all 3 lightmaps as there might be
 			// mixed style counts in a single lightmap texture further down the line

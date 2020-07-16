@@ -612,8 +612,8 @@ const GLchar *GL_GetDynamicLightFragmentProgramSource (void)
 		"# fragment.texcoord[1] is normal\n"
 		"# fragment.texcoord[2] is light vector\n"
 		"\n"
-		"# program.local[0] is light radius\n"
-		"# program.local[1] is light colour\n"
+		"# program.env[5] is light radius\n"
+		"# program.env[6] is light colour\n"
 		"\n"
 		"TEMP diff;\n"
 		"TEMP normal;\n"
@@ -650,9 +650,9 @@ const GLchar *GL_GetDynamicLightFragmentProgramSource (void)
 		"MAD angle, angle, 0.5, 0.5;\n"
 		"\n"
 		"# get the light attenuation\n"
-		"SUB light, program.local[0], dist;\n"
+		"SUB light, program.env[5], dist;\n"
 		"MUL light, light, rescale;\n"
-		"MUL light, light, program.local[1];\n"
+		"MUL light, light, program.env[6];\n"
 		"MUL light, light, angle;\n"
 		"\n"
 		"# clamp any fragments with negative light contribution otherwise the POW in the gamma calc will bring them to positive - this is faster than KIL\n"
@@ -720,8 +720,8 @@ const GLchar *GL_GetVertexProgram (const GLchar *base, int shaderflag)
 	if (!(shaderflag & SHADERFLAG_DYNAMIC))
 	{
 		// remove lightvector computations
-		if ((test = strstr (modified, "SUB result.texcoord[2], program.local[1], position;")) != NULL) test[0] = '#'; // alias
-		if ((test = strstr (modified, "SUB result.texcoord[2], program.local[1], vertex.attrib[0];")) != NULL) test[0] = '#'; // brush
+		if ((test = strstr (modified, "SUB result.texcoord[2], program.env[7], position;")) != NULL) test[0] = '#'; // alias
+		if ((test = strstr (modified, "SUB result.texcoord[2], program.env[7], vertex.attrib[0];")) != NULL) test[0] = '#'; // brush
 	}
 
 	if (!(shaderflag & SHADERFLAG_DRAWFLAT))
@@ -775,7 +775,7 @@ const GLchar *GL_GetFragmentProgram (const GLchar *base, int shaderflag)
 	{
 		// remove single lightstyle
 		if ((test = strstr (modified, "TEX lmap, fragment.texcoord[1], texture[2], 2D;")) != NULL) test[0] = '#';
-		if ((test = strstr (modified, "MUL lmap, lmap, program.local[0].x;")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "MUL lmap, lmap, program.env[2].x;")) != NULL) test[0] = '#';
 	}
 	else
 	{
@@ -783,9 +783,9 @@ const GLchar *GL_GetFragmentProgram (const GLchar *base, int shaderflag)
 		if ((test = strstr (modified, "TEX lmr, fragment.texcoord[1], texture[2], 2D;")) != NULL) test[0] = '#';
 		if ((test = strstr (modified, "TEX lmg, fragment.texcoord[1], texture[3], 2D;")) != NULL) test[0] = '#';
 		if ((test = strstr (modified, "TEX lmb, fragment.texcoord[1], texture[4], 2D;")) != NULL) test[0] = '#';
-		if ((test = strstr (modified, "DP4 lmap.r, lmr, program.local[0];")) != NULL) test[0] = '#';
-		if ((test = strstr (modified, "DP4 lmap.g, lmg, program.local[0];")) != NULL) test[0] = '#';
-		if ((test = strstr (modified, "DP4 lmap.b, lmb, program.local[0];")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "DP4 lmap.r, lmr, program.env[2];")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "DP4 lmap.g, lmg, program.env[2];")) != NULL) test[0] = '#';
+		if ((test = strstr (modified, "DP4 lmap.b, lmb, program.env[2];")) != NULL) test[0] = '#';
 	}
 
 	// hand back the modified shader source

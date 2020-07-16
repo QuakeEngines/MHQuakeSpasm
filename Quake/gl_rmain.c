@@ -127,16 +127,8 @@ void GLMain_CreateShaders (void)
 	const GLchar *fp_polyblend_source = \
 		"!!ARBfp1.0\n"
 		"\n"
-		"TEMP diff;\n"
-		"\n"
-		"# apply the contrast\n"
-		"MUL diff, program.local[0], program.env[10].x;\n"
-		"\n"
-		"# apply the gamma (POW only operates on scalars)\n"
-		"POW result.color.r, diff.r, program.env[10].y;\n"
-		"POW result.color.g, diff.g, program.env[10].y;\n"
-		"POW result.color.b, diff.b, program.env[10].y;\n"
-		"MOV result.color.a, diff.a;\n"
+		"# this is a post-process so the input has already had gamma applied; v_blend is gamma-corrected on the CPU\n"
+		"MOV result.color, program.env[7];\n"
 		"\n"
 		"# done\n"
 		"END\n"
@@ -519,6 +511,24 @@ void R_SetupGL (void)
 	// set up shader constants
 	Sky_SetShaderConstants ();
 	Warp_SetShaderConstants ();
+
+	// gamma-correct the polyblend; the framebuffer source is a post-process that has already been gamma-corrected so it doesn't need it;
+	// correcting the polyblend here let's us just do it once for the entire screen rather than per-fragment.
+	v_blend[0] = pow ((v_blend[0] * vid_contrast.value), vid_gamma.value);
+	v_blend[1] = pow ((v_blend[1] * vid_contrast.value), vid_gamma.value);
+	v_blend[2] = pow ((v_blend[2] * vid_contrast.value), vid_gamma.value);
+
+	// merge the polyblend into the water warp for perf
+	glProgramEnvParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 7, v_blend);
+
+	// shadow colour - allow different values of r_shadows to change the colour
+	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 8, 0, 0, 0, 0.5f * r_shadows.value);
+
+	// right now only particles use these but something else could
+	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 2, r_origin);
+	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 3, vpn);
+	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 4, vup);
+	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 5, vright);
 }
 
 
@@ -780,8 +790,6 @@ mh - put it back and using no matrices so it doesn't corrupt current matrix stat
 */
 void R_DrawPolyBlend (void)
 {
-	float verts[] = { -1.0, -1.0, -1.0, 3.0, 3.0, -1.0 };
-
 	if (!gl_polyblend.value || !(v_blend[3] > 0))
 		return;
 
@@ -789,8 +797,8 @@ void R_DrawPolyBlend (void)
 	GL_EnableVertexAttribArrays (VAA0);
 	GL_BindPrograms (r_polyblend_vp, r_polyblend_fp);
 
+	float verts[] = { -1.0, -1.0, -1.0, 3.0, 3.0, -1.0 };
 	glVertexAttribPointer (0, 2, GL_FLOAT, GL_FALSE, 0, verts);
-	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, v_blend);
 
 	GL_BlendState (GL_TRUE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	GL_DepthState (GL_FALSE, GL_NONE, GL_FALSE);

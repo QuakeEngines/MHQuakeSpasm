@@ -93,11 +93,11 @@ void GLParticles_CreateShaders (void)
 		"!!ARBvp1.0\n"
 		"\n"
 		"# pick friendly names for the params\n"
-		"PARAM scales = program.local[0];\n"
-		"PARAM r_origin = program.local[1];\n"
-		"PARAM vpn = program.local[2];\n"
-		"PARAM vup = program.local[3];\n"
-		"PARAM vright = program.local[4];\n"
+		"PARAM scales = program.env[1];\n"
+		"PARAM r_origin = program.env[2];\n"
+		"PARAM vpn = program.env[3];\n"
+		"PARAM vup = program.env[4];\n"
+		"PARAM vright = program.env[5];\n"
 		"\n"
 		"# pick friendly names for the attribs\n"
 		"ATTRIB offsets = vertex.attrib[0];\n"
@@ -825,20 +825,14 @@ void R_DrawParticlesARB (void)
 	{
 	case 1:
 		GL_BindPrograms (r_particle_vp, r_particle_fp_circle);
-		glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, 0.666f, 0.002f, 1.0f, 0.0f);
+		glProgramEnvParameter4fARB (GL_VERTEX_PROGRAM_ARB, 1, 0.666f, 0.002f, 1.0f, 0.0f);
 		break;
 
 	default:
 		GL_BindPrograms (r_particle_vp, r_particle_fp_square);
-		glProgramLocalParameter4fARB (GL_VERTEX_PROGRAM_ARB, 0, 0.5f, 0.002f, 1.0f, 0.0f);
+		glProgramEnvParameter4fARB (GL_VERTEX_PROGRAM_ARB, 1, 0.5f, 0.002f, 1.0f, 0.0f);
 		break;
 	}
-
-	// set uniforms
-	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 1, r_origin);
-	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 2, vpn);
-	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 3, vup);
-	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 4, vright);
 
 	// set up states for particle drawing
 	GL_DepthState (GL_TRUE, GL_LEQUAL, GL_FALSE);

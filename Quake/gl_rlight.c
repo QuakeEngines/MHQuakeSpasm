@@ -195,11 +195,11 @@ void R_PushDlights_New (entity_t *e, QMATRIX *localMatrix, qmodel_t *mod, mnode_
 void GL_SetupDynamicLight (dlight_t *dl)
 {
 	// the correct vertex and fragment pgograms are already bound so this just sets up some local params containing the light properties
-	glProgramLocalParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 1, dl->transformed);
+	glProgramEnvParameter4fvARB (GL_VERTEX_PROGRAM_ARB, 7, dl->transformed);
 
 	// fragment program params
-	glProgramLocalParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 0, dl->radius, dl->radius, dl->radius, 0);
-	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 1, dl->rgba);
+	glProgramEnvParameter4fARB (GL_FRAGMENT_PROGRAM_ARB, 5, dl->radius, dl->radius, dl->radius, 0);
+	glProgramEnvParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 6, dl->rgba);
 }
 
 
@@ -630,6 +630,6 @@ void GL_SetSurfaceStyles (msurface_t *surf)
 
 	// write them out
 	// (to do - benchmark this vs sending them as a glVertexAttrib call - right now it's plenty fast enough)
-	glProgramLocalParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 0, fstyles);
+	glProgramEnvParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 2, fstyles);
 }
 
