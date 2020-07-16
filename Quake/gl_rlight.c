@@ -547,11 +547,6 @@ void GL_CreateSurfaceLightmap (msurface_t *surf)
 
 	surf->lightmaptexturenum = lm_currenttexture;
 
-	// count the number of styles in use - this count just reflects whether to use the single-style or 4-style shader, it is not an accurate count otherwise
-	if (surf->styles[0] == 255 || surf->styles[1] == 255)
-		surf->numstyles = 1;
-	else surf->numstyles = 4;
-
 	// provide an optimization path - most surfaces in any given scene will just have a single lightstyle on them; if so we can
 	// do a faster path that only needs to read a single texture, rather than the more general-case path that reads all three.
 	// a possible two-style micro-optimization also exists but (and I'll admit that I haven't measured this) the potential gain
@@ -559,17 +554,19 @@ void GL_CreateSurfaceLightmap (msurface_t *surf)
 	// this is a more useful optimization than checking for white light because (1) if a LIT file is used most surfaces will have
 	// some degree of colour, (2) even if not (or if a LIT is not used) the single-style optimization will catch 95% of the
 	// same surfaces anyway, and (3) the single-style optimization will also catch most surfaces if there is not white light.
-	if (surf->numstyles > 1)
+	if (surf->styles[0] == 255)
+		; // no light data
+	else if (surf->styles[1] == 255)
+	{
+		// single style - only need to store/read one texture
+		R_OldBuildLightmap (surf, smax, tmax);
+	}
+	else
 	{
 		// full set of styles
 		R_NewBuildLightmap (surf, 0, smax, tmax); // red
 		R_NewBuildLightmap (surf, 1, smax, tmax); // green
 		R_NewBuildLightmap (surf, 2, smax, tmax); // blue
-	}
-	else
-	{
-		// single style - only need to store/read one texture
-		R_OldBuildLightmap (surf, smax, tmax);
 	}
 }
 

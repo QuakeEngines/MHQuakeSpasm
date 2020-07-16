@@ -243,30 +243,9 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 	// beginning with an empty batch
 	R_ClearBatch ();
 
-	// set these up so that they will trigger a set first time they're seen
-	unsigned oldstyle = ~s->fullstyle, currentlightmap = ~s->lightmaptexturenum, oldnumstyles = ~s->numstyles;
-
-	// and draw the chain
-	for (; s; s = s->texturechain)
+	// set these up so that they will trigger a set first time they're seen, and draw the chain
+	for (unsigned oldstyle = ~s->fullstyle, currentlightmap = ~s->lightmaptexturenum; s; s = s->texturechain)
 	{
-		// check for shader change
-		if (s->numstyles != oldnumstyles)
-		{
-			R_FlushBatch (); // first time through there will be nothing in the batch
-
-			// switch the shader - even if using the singlestyle shader we must bind all 3 lightmaps as there might be
-			// mixed style counts in a single lightmap texture further down the line
-			if (s->numstyles > 1)
-				GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[shaderflag | SHADERFLAG_4STYLE]);
-			else GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[shaderflag]);
-
-			// store back
-			oldnumstyles = s->numstyles;
-
-			// if the shader changes we reload the styles because they're local params (in practice a shader change is always a style change)
-			oldstyle = ~s->fullstyle;
-		}
-
 		// check for lightmap change
 		if (s->lightmaptexturenum != currentlightmap)
 		{
@@ -284,7 +263,13 @@ void R_DrawLightmappedChain (msurface_t *s, texture_t *t)
 		{
 			R_FlushBatch (); // first time through there will be nothing in the batch
 
-			// build the new style
+			// switch the shader - even if using the singlestyle shader we must bind all 3 lightmaps as there might be
+			// mixed style counts in a single lightmap texture further down the line
+			if (s->styles[0] == 255 || s->styles[1] == 255)
+				GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[shaderflag]);
+			else GL_BindPrograms (r_brush_lightmapped_vp, r_brush_lightmapped_fp[shaderflag | SHADERFLAG_4STYLE]);
+
+			// build the new style (after switching programs as the style is a local param)
 			GL_SetSurfaceStyles (s);
 
 			// store back
