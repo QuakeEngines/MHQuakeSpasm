@@ -65,6 +65,9 @@ That's OK.
 ### Will you support Nehahra? 
 Maybe. But a friendly word of advice: badgering me over and over again until I eventually do it just to shut you up won't endear you to me. 
 
+### I want to use this engine as a server. 
+Do not use this engine as a server. If you use this engine as a server Baby Jesus will stamp on puppies heads. Use something else instead. 
+
 ### How do you compile this?
 On Windows, mhQuakeSpasm is a Visual Studio 2019 project.  It has been built and tested with a stock Visual Studio 2019 Community Edition installation, with no other tools or components being required.  So the build procedure is:
  - Download and install Visual Studio 2019 Community.
