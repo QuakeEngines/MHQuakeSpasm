@@ -347,6 +347,8 @@ void R_BaseLightPoint (vec3_t p, lightpoint_t *lightpoint)
 	// find bmodels under the lightpoint - move the point to bmodel space, trace down, then check; if r < 0
 	// it didn't find a bmodel, otherwise it did (a bmodel under a valid world hit will hit here too)
 	// fixme: is it possible for a bmodel to not be in the PVS but yet be a valid candidate for this???
+#if 0
+	// fixme - this breaks on certain models (fiends in the ogre citadel, etc)  -find out why & fix or remove it!!!
 	for (int i = 0; i < cl_numvisedicts; i++)
 	{
 		entity_t *e = cl_visedicts[i];
@@ -380,6 +382,7 @@ void R_BaseLightPoint (vec3_t p, lightpoint_t *lightpoint)
 			}
 		}
 	}
+#endif
 }
 
 

@@ -86,6 +86,7 @@ static efrag_t *R_GetEfrag (void)
 	}
 }
 
+
 /*
 ===================
 R_SplitEntityOnNode
@@ -99,12 +100,9 @@ void R_SplitEntityOnNode (mnode_t *node)
 	int			sides;
 
 	if (node->contents == CONTENTS_SOLID)
-	{
 		return;
-	}
 
 	// add an efrag if the node is a leaf
-
 	if (node->contents < 0)
 	{
 		if (!r_pefragtopnode)
@@ -124,7 +122,6 @@ void R_SplitEntityOnNode (mnode_t *node)
 	}
 
 	// NODE_MIXED
-
 	splitplane = node->plane;
 	sides = BoxOnPlaneSide (r_emins, r_emaxs, splitplane);
 
@@ -137,12 +134,10 @@ void R_SplitEntityOnNode (mnode_t *node)
 	}
 
 	// recurse down the contacted sides
-	if (sides & 1)
-		R_SplitEntityOnNode (node->children[0]);
-
-	if (sides & 2)
-		R_SplitEntityOnNode (node->children[1]);
+	if (sides & 1) R_SplitEntityOnNode (node->children[0]);
+	if (sides & 2) R_SplitEntityOnNode (node->children[1]);
 }
+
 
 /*
 ===========
@@ -169,22 +164,20 @@ R_AddEfrags
 */
 void R_AddEfrags (entity_t *ent)
 {
-	qmodel_t *entmodel;
-	QMATRIX localMatrix;
-
 	if (!ent->model)
 		return;
 
 	r_addent = ent;
-
 	r_pefragtopnode = NULL;
 
-	// to do - proper bboxes
-	entmodel = ent->model;
+	// proper bboxes
+	qmodel_t *entmodel = ent->model;
+	QMATRIX localMatrix;
 
 	// compute proper bounding boxes for these
 	if (entmodel->type == mod_alias)
 	{
+		// static entities won't be move-lerped (or even moved at all) so it's ok to just use the origin and angles
 		R_TransformEntityToLocalMatrix (&localMatrix, ent->origin, ent->angles, mod_alias);
 		R_AliasModelBBox (ent, &localMatrix, true, r_emins, r_emaxs); // this doesn't happen at runtime so we can use the slower general case
 	}
@@ -214,12 +207,11 @@ R_StoreEfrags -- johnfitz -- pointless switch statement removed.
 */
 void R_StoreEfrags (efrag_t **ppefrag)
 {
-	entity_t *pent;
 	efrag_t *pefrag;
 
 	while ((pefrag = *ppefrag) != NULL)
 	{
-		pent = pefrag->entity;
+		entity_t *pent = pefrag->entity;
 
 		if ((pent->visframe != r_framecount) && (cl_numvisedicts < MAX_EDICTS))
 		{
