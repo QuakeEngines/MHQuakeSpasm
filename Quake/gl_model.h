@@ -240,6 +240,7 @@ typedef struct mspriteframe_s {
 	float				smax, tmax; // johnfitz -- image might be padded
 	int					firstvertex;
 	int					particlecolor;
+	float				particlesize;
 	struct gltexture_s *gltexture;
 } mspriteframe_t;
 
@@ -265,7 +266,6 @@ typedef struct msprite_s {
 	int					maxheight;
 	int					numframes;
 	int					numframeverts;
-	float				partsize;
 	mspriteframedesc_t	frames[1];
 } msprite_t;
 

@@ -753,7 +753,7 @@ void CL_RelinkEntities (void)
 			// AD sprite override - push through the particle system instead of drawing sprites
 			msprite_t *spr = (msprite_t *) ent->model->cache.data;
 			mspriteframe_t *frame = R_GetSpriteFrame (ent);
-			R_SingleParticle (ent->origin, frame->particlecolor, spr->partsize);
+			R_SingleParticle (ent->origin, frame->particlecolor, frame->particlesize);
 
 			// don't add it to the visedicts list
 			continue;

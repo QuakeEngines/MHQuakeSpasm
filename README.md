@@ -56,6 +56,11 @@ In some cases I've gone back to Quake utility source code. So, for example, I re
 
 In one case I used an old .plan file entry from 1996 to determine the intent behind a strange-looking piece of code in the original sources. 
 
+### Why did you replace certain Arcane Dimensions sprites with particles?
+Performance.  The AD "particle system" is lovely, but it chugs badly on lower-end machines.  On one HP tablet I tested, doing this more than doubled framerates, and maps went from being almost unplayable to being quite playable.  I've tried to match the original sprites closely enough, and anyway, QSS replaces them as well, so I guess that makes it more acceptable.
+
+At some stage I might go back and try some optimizations to sprite drawing that may make it possible to roll-back this replacement.
+
 ### Help! r_drawflat melted my GPU! 
 Sorry about that. I haven't implemented r_drawflat in a robust or performant way, because it's not really intended to be a performant codepath to begin with. While it is useful to see how badly QBSP chopped up your geometry, with draw call batching that's really no longer something that badly affects performance. I guess you can switch it on if you just want to look at it, but otherwise it's value seems dubious. 
 

@@ -355,6 +355,35 @@ qmodel_t *Mod_ForName (const char *name, qboolean crash)
 }
 
 
+int Mod_PaletteMatch (int r, int g, int b)
+{
+	int bestmatch = 0;
+	int bestrange = (r * r) + (g * g) + (b * b) * 2;
+
+	for (int i = 0; i < 256; i++)
+	{
+		byte *rgb = (byte *) &d_8to24table[i];
+
+		// check for an exact match
+		if (rgb[0] == r && rgb[1] == g && rgb[2] == b) return i;
+
+		int range = 0;
+
+		range += (r - rgb[0]) * (r - rgb[0]);
+		range += (g - rgb[1]) * (r - rgb[1]);
+		range += (b - rgb[2]) * (r - rgb[2]);
+
+		if (range < bestrange)
+		{
+			bestrange = range;
+			bestmatch = i;
+		}
+	}
+
+	return bestmatch;
+}
+
+
 /*
 ============================================================================================================================================================
 
@@ -2574,11 +2603,33 @@ void *Mod_LoadSpriteFrame (void *pin, msprite_t *psprite, mspriteframe_t **ppfra
 	byte *data = (byte *) (pinframe + 1);
 	pspriteframe->gltexture = TexMgr_LoadImage (loadmodel, name, width, height, SRC_INDEXED, data, loadmodel->name, offset, TEXPREF_PAD | TEXPREF_ALPHA); // johnfitz -- TexMgr
 
+	// figure a colour and size for ad particle replacements
+	// the intent is that only "dot-style" sprites get replaced, as these are most easily replaced and ad tends to spam them quite heavily.  because we're
+	// replacing a sprite which may have multiple colours with a particle which has only one colour, we need to figure an average and palette-match it.
+	// an ad sprite where the colour part is 2x2 should map to a particle size of 1.5
+	int r = 0, g = 0, b = 0;
+	int numcolors = 0;
+
 	for (int i = 0; i < (width * height); i++)
 	{
 		if (data[i] == 255) continue;
-		pspriteframe->particlecolor = data[i];
-		break;
+
+		r += ((byte *) &d_8to24table[data[i]])[0];
+		g += ((byte *) &d_8to24table[data[i]])[1];
+		b += ((byte *) &d_8to24table[data[i]])[2];
+		numcolors++;
+	}
+
+	// it's possible, but unlikely, for a frame to be full alpha; i guess in an auto-animating sequence where a modder might want a sprite to blink on and off
+	if (numcolors)
+	{
+		pspriteframe->particlecolor = Mod_PaletteMatch (r / numcolors, g / numcolors, b / numcolors);
+		pspriteframe->particlesize = 1.0f + sqrtf ((float) numcolors) * 0.25f;
+	}
+	else
+	{
+		pspriteframe->particlecolor = 255;
+		pspriteframe->particlesize = 0;
 	}
 
 	return (void *) ((byte *) pinframe + sizeof (dspriteframe_t) + size);
@@ -2638,6 +2689,23 @@ void *Mod_LoadSpriteGroup (void *pin, msprite_t *psprite, mspriteframe_t **ppfra
 
 
 char *ad_particles[] = {
+	// these are the sprites that AD spams heavily and that kill perf on slower machines
+	"progs/s_bubble_blue1.spr",
+	"progs/s_bubble_blue2.spr",
+	"progs/s_bubble_brnd1.spr",
+	"progs/s_bubble_brnd2.spr",
+	"progs/s_bubble_brnl1.spr",
+	"progs/s_bubble_brnl2.spr",
+	"progs/s_bubble_grey.spr",
+	"progs/s_bubble_grn1.spr",
+	"progs/s_bubble_grn2.spr",
+	"progs/s_bubble_pinkyel.spr",
+	"progs/s_bubble_purp1.spr",
+	"progs/s_bubble_purp2.spr",
+	"progs/s_bubble_red1.spr",
+	"progs/s_bubble_red2.spr",
+	"progs/s_bubble_wht.spr",
+	"progs/s_bubble_yell.spr",
 	"progs/s_dotmed_blue.spr",
 	"progs/s_dotmed_dblue.spr",
 	"progs/s_dotmed_grey.spr",
@@ -2729,9 +2797,6 @@ void Mod_LoadSpriteModel (qmodel_t *mod, void *buffer)
 		for (i = 0; i < num_ad_particles; i++)
 		{
 			if (strcmp (mod->name, ad_particles[i])) continue;
-
-			psprite->partsize = 1.0f;
-			if (strstr (mod->name, "_dotmed_")) psprite->partsize = 1.5f;
 			mod->flags |= EF_SINGLEPARTICLE;
 			break;
 		}
