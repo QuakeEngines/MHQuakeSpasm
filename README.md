@@ -5,7 +5,7 @@ This is my personal fork of QuakeSpasm.  Whereas back in 2010 it made sense to h
 
 It no longer makes sense to have a Direct3D engine as a solution to those problems, and these days I suggest that you're just better off using QuakeSpasm for everything.
 
-However, there are - in my opinion - certain serious issues with the QuakeSpasm renderer that stem from it's origins in the OpenGL 1.0/1.1 based FitzQuake.  At that API level hardware features that implement the Quake renderer in high quality and with high performance are just not available, and so FitzQuake often took the path of brute-forcing in software.  True, it's an excellent quality implementation in those terms, but it's not what I want.
+However, there are - in my opinion - issues with the QuakeSpasm renderer that stem from it's origins in the OpenGL 1.0/1.1 based FitzQuake.  At that API level hardware features that implement the Quake renderer in high quality and with high performance are just not available, and so FitzQuake often took the path of brute-forcing in software.  True, it's an excellent quality implementation in those terms, but it's not what I want.
 
 The primary purpose of this fork is to take this renderer and lift it up to a higher-quality and higher-performance implementation.  QuakeSpasm itself already takes steps in that direction with it's lightmapped surface and alias model paths, so this is just a logical evolution towards the rest of the way.  At the same time the various legacy codepaths will be removed to clean up and simplify the renderer.
 
