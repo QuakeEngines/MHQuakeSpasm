@@ -26,9 +26,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern cvar_t gl_fullbrights, r_lerpmodels, r_lerpmove; // johnfitz
 
-// up to 16 color translated skins
-extern gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz -- changed to an array of pointers
-
 static float	shadelight[4]; // johnfitz -- lit support via lordhavoc / MH - padded for shader params
 static float	shadevector[4]; // padded for shader uniforms
 
@@ -664,7 +661,7 @@ void R_DrawAliasModel (entity_t *e)
 
 	if (e->colormapped && !gl_nocolors.value)
 		if (e->entitynum >= 1 && e->entitynum <= cl.maxclients)
-			tx = playertextures[e->entitynum - 1];
+			tx = R_GetPlayerTexture (e, hdr, e->entitynum - 1, skin);
 
 	if (!gl_fullbrights.value)
 		fb = NULL;

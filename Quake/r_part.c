@@ -260,7 +260,8 @@ particle_t *R_AllocParticle (void)
 	p->flags = 0;
 
 	// regular particle; may be overridden for some types
-	p->size = 1;
+	// slightly randomize the size to make them more visually interesting (but not too much, variation of 0.85-1.15 is sufficient)
+	p->size = 0.85f + (float) (rand () & 31) / 100.0f;
 
 	// and return what we got
 	return p;

@@ -516,8 +516,6 @@ void CL_ParseUpdate (int bits)
 	if (skin != ent->skinnum)
 	{
 		ent->skinnum = skin;
-		if (num > 0 && num <= cl.maxclients)
-			R_TranslateNewPlayerSkin (num - 1);
 	}
 
 	if (bits & U_EFFECTS)
@@ -630,9 +628,6 @@ void CL_ParseUpdate (int bits)
 			else ent->syncbase = 0.0;
 		}
 		else forcelink = true;	// hack to make null model players work
-
-		if (num > 0 && num <= cl.maxclients)
-			R_TranslateNewPlayerSkin (num - 1);
 
 		ent->lerpflags |= LERP_RESETANIM; // johnfitz -- don't lerp animation across model changes
 	}
@@ -846,17 +841,6 @@ void CL_ParseClientdata (void)
 		cl.viewent.lerpflags |= LERP_RESETANIM; // don't lerp animation across model changes
 	}
 	// johnfitz
-}
-
-/*
-=====================
-CL_NewTranslation
-=====================
-*/
-void CL_NewTranslation (int slot)
-{
-	// the actual contents of translations are unused in the GL engine; it just needs to be something that can be used in a pointer comparison with vid.colormap
-	R_TranslatePlayerSkin (slot);
 }
 
 
@@ -1090,12 +1074,10 @@ void CL_ParseServerMessage (void)
 			break;
 
 		case svc_updatecolors:
-			Sbar_Changed ();
 			i = MSG_ReadByte ();
 			if (i >= cl.maxclients)
 				Host_Error ("CL_ParseServerMessage: svc_updatecolors > MAX_SCOREBOARD");
 			cl.scores[i].colors = MSG_ReadByte ();
-			CL_NewTranslation (i);
 			break;
 
 		case svc_particle:

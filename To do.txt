@@ -7,5 +7,5 @@ Green dynamic light is too bright???
 r_speeds counters are no longer really relevant; dlights can go, draw calls needs to go in, etc.
 Optional primitive restart
 Detect dx10 gpu for npot robustness
-Programmatically reconstruct r_avertexnormals. It's just an icosahedron with 2 or 3 levels of subdivision. The order would be wrong but that doesn't matter because we build alias normals properly now. 
-Put AD particles through particle system! 
+
+Can SDL2 resize without deleting and recreating the context?  Every time I need to use the TexMgr code I just want to rip it to pieces and rewrite, and this would enable me to do a huge simplification pass.

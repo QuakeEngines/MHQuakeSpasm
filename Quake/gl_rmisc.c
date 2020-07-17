@@ -35,8 +35,6 @@ extern cvar_t r_lerpmove;
 extern cvar_t r_nolerp_list;
 extern cvar_t r_noshadow_list;
 
-gltexture_t *playertextures[MAX_SCOREBOARD]; // johnfitz
-
 // must init to non-zero so that a memset-0 doesn't incorrectly cause a match
 static int r_registration_sequence = 1;
 
@@ -330,71 +328,58 @@ void R_Init (void)
 }
 
 
-/*
-===============
-R_TranslatePlayerSkin -- johnfitz -- rewritten.  also, only handles new colors, not new skins
-===============
-*/
-void R_TranslatePlayerSkin (int playernum)
+typedef struct playertexture_s {
+	gltexture_t *glt;
+	int shirt;
+	int pants;
+	aliasskin_t *skin;
+} playertexture_t;
+
+
+playertexture_t r_playertextures[MAX_SCOREBOARD];
+
+
+gltexture_t *R_GetPlayerTexture (entity_t *e, aliashdr_t *hdr, int playernum, aliasskin_t *skin)
 {
-#if 0
-	int top = (cl.scores[playernum].colors & 0xf0) >> 4;
-	int bottom = cl.scores[playernum].colors & 15;
-
-	// FIXME: if gl_nocolors is on, then turned off, the textures may be out of sync with the scoreboard colors.
-	if (!gl_nocolors.value)
+	// new texture, skin change or model change (skins are specific to models so if the model changes the skin always will too)
+	if (!r_playertextures[playernum].glt || skin != r_playertextures[playernum].skin)
 	{
-		if (playertextures[playernum])
-		{
-			gltexture_t *glt = playertextures[playernum];
-			TexMgr_ReloadImage (playertextures[playernum], top, bottom);
-		}
-	}
-#endif
-}
+		// load or reload it - locate the source pixels
+		// this will handle general-case stuff like animating player skins, although that would require constantly reloading the skin and would be quite slow; it would work, though...
+		byte *pixels = skin->texels;
+		int loadflags = TEXPREF_MIPMAP | TEXPREF_FLOODFILL | TEXPREF_PAD | TEXPREF_OVERWRITE;
+		gltexture_t *source = skin->gltexture;
+		char name[64];
 
+		// upload new image
+		q_snprintf (name, sizeof (name), "player_%i", playernum);
+		r_playertextures[playernum].glt = TexMgr_LoadImage (e->model, name, hdr->skinwidth, hdr->skinheight, SRC_INDEXED, pixels, source->source_file, source->source_offset, loadflags);
 
-/*
-===============
-R_TranslateNewPlayerSkin -- johnfitz -- split off of TranslatePlayerSkin -- this is called when
-the skin or model actually changes, instead of just new colors
-added bug fix from bengt jardup
-===============
-*/
-void R_TranslateNewPlayerSkin (int playernum)
-{
-#if 0
-	// get correct texture pixels
-	entity_t *e = cl_entities[1 + playernum];
+		// store back skin
+		r_playertextures[playernum].skin = skin;
 
-	if (!e->model || e->model->type != mod_alias)
-		return;
-
-	aliashdr_t *hdr = (aliashdr_t *) Mod_Extradata (e->model);
-	int skinnum = e->skinnum;
-
-	// TODO: move these tests to the place where skinnum gets received from the server
-	if (skinnum < 0 || skinnum >= hdr->numskins)
-	{
-		Con_DPrintf ("(%d): Invalid player skin #%d\n", playernum, skinnum);
-		skinnum = 0;
+		// force a colour change if the skin was changed
+		r_playertextures[playernum].shirt = -1;
+		r_playertextures[playernum].pants = -1;
 	}
 
-	// you just know there's a mod somewhere that has animating player skins
-	// because we don't want to write a general-case runtime dynamic colormapping system for ALL alias models we just take skin 0 from the group (this will be correct anyway if it's not animating)
-	aliasskingroup_t *group = &hdr->skingroups[skinnum];
-	aliasskin_t *skin = &group->skins[0];
-	byte *pixels = skin->texels;
-	int loadflags = TEXPREF_MIPMAP | TEXPREF_FLOODFILL | TEXPREF_PAD | TEXPREF_OVERWRITE;
-	char name[64];
+	// now check for colour change on either a new player texture or an existing one
+	int shirt = (cl.scores[playernum].colors & 0xf0) >> 4;
+	int pants = cl.scores[playernum].colors & 15;
 
-	// upload new image
-	q_snprintf (name, sizeof (name), "player_%i", playernum);
-	playertextures[playernum] = TexMgr_LoadImage (e->model, name, hdr->skinwidth, hdr->skinheight, SRC_INDEXED, pixels, skin->gltexture->source_file, skin->gltexture->source_offset, loadflags);
+	// colour change
+	if (shirt != r_playertextures[playernum].shirt || pants != r_playertextures[playernum].pants)
+	{
+		// run the colour change
+		TexMgr_ReloadImage (r_playertextures[playernum].glt, shirt, pants);
 
-	// now recolor it
-	R_TranslatePlayerSkin (playernum);
-#endif
+		// store back colour
+		r_playertextures[playernum].shirt = shirt;
+		r_playertextures[playernum].pants = pants;
+	}
+
+	// return the texture
+	return r_playertextures[playernum].glt;
 }
 
 
@@ -405,9 +390,8 @@ R_NewGame -- johnfitz -- handle a game switch
 */
 void R_NewGame (void)
 {
-	// clear playertexture pointers (the textures themselves were freed by texmgr_newgame)
-	for (int i = 0; i < MAX_SCOREBOARD; i++)
-		playertextures[i] = NULL;
+	// wipe the playertextures structs
+	memset (r_playertextures, 0, sizeof (r_playertextures));
 }
 
 
