@@ -57,7 +57,7 @@ In some cases I've gone back to Quake utility source code. So, for example, I re
 In one case I used an old .plan file entry from 1996 to determine the intent behind a strange-looking piece of code in the original sources. 
 
 ### Why did you replace certain Arcane Dimensions sprites with particles?
-Performance.  The AD "particle system" is lovely, but it chugs badly on lower-end machines.  On one HP tablet I tested, doing this more than doubled framerates, and maps went from being almost unplayable to being quite playable.  I've tried to match the original sprites closely enough, and anyway, QSS replaces them as well, so I guess that makes it more acceptable.
+Performance.  The AD "particle system" is lovely, but it chugs badly on lower-end machines.  On one HP tablet I tested, doing this more than doubled framerates, and maps went from being almost unplayable to being quite playable.  I've tried to match the original sprites closely enough, and anyway, QSS replaces them as well, so I guess that makes it more acceptable to do something like this. 
 
 At some stage I might go back and try some optimizations to sprite drawing that may make it possible to roll-back this replacement.
 
