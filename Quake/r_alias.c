@@ -614,6 +614,33 @@ aliasskin_t *R_GetAliasSkin (entity_t *e, aliashdr_t *hdr)
 }
 
 
+void R_AliasModelBBox (entity_t *e, QMATRIX *localMatrix, qboolean rotated, float *bbmins, float *bbmaxs)
+{
+	// per modelgen.c, alias bounds are 0...255 which are then scaled and offset by header->scale and header->scale_origin
+	aliashdr_t *hdr = (aliashdr_t *) Mod_Extradata (e->model);
+	vec3_t amins, amaxs;
+
+	// reconstruct the bbox
+	for (int i = 0; i < 3; i++)
+	{
+		amins[i] = hdr->scale_origin[i];
+		amaxs[i] = amins[i] + hdr->scale[i] * 255;
+	}
+
+	if (rotated)
+	{
+		// and rotate it
+		R_RotateBBox (localMatrix, amins, amaxs, bbmins, bbmaxs);
+	}
+	else
+	{
+		// fast case - we can't use e->origin because it might be lerped, so the actual origin used for the transform is in m4x4[3]
+		Vector3Add (bbmins, localMatrix->m4x4[3], amins);
+		Vector3Add (bbmaxs, localMatrix->m4x4[3], amaxs);
+	}
+}
+
+
 /*
 =================
 R_DrawAliasModel -- johnfitz -- almost completely rewritten
@@ -630,9 +657,7 @@ void R_DrawAliasModel (entity_t *e)
 	R_SetupEntityTransform (e, &lerpdata);
 
 	// this needs to be calced early so we can cull it properly
-	R_IdentityMatrix (&localMatrix);
-	if (lerpdata.origin[0] || lerpdata.origin[1] || lerpdata.origin[2]) R_TranslateMatrix (&localMatrix, lerpdata.origin[0], lerpdata.origin[1], lerpdata.origin[2]);
-	if (lerpdata.angles[0] || lerpdata.angles[1] || lerpdata.angles[2]) R_RotateMatrix (&localMatrix, -lerpdata.angles[0], lerpdata.angles[1], lerpdata.angles[2]);
+	R_TransformEntityToLocalMatrix (&localMatrix, lerpdata.origin, lerpdata.angles, mod_alias);
 
 	// cull it
 	if (R_CullModelForEntity (e, &localMatrix, (lerpdata.angles[0] || lerpdata.angles[1] || lerpdata.angles[2])))

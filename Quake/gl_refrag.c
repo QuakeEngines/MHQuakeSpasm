@@ -170,7 +170,7 @@ R_AddEfrags
 void R_AddEfrags (entity_t *ent)
 {
 	qmodel_t *entmodel;
-	int			i;
+	QMATRIX localMatrix;
 
 	if (!ent->model)
 		return;
@@ -179,12 +179,24 @@ void R_AddEfrags (entity_t *ent)
 
 	r_pefragtopnode = NULL;
 
+	// to do - proper bboxes
 	entmodel = ent->model;
 
-	for (i = 0; i < 3; i++)
+	// compute proper bounding boxes for these
+	if (entmodel->type == mod_alias)
 	{
-		r_emins[i] = ent->origin[i] + entmodel->mins[i];
-		r_emaxs[i] = ent->origin[i] + entmodel->maxs[i];
+		R_TransformEntityToLocalMatrix (&localMatrix, ent->origin, ent->angles, mod_alias);
+		R_AliasModelBBox (ent, &localMatrix, true, r_emins, r_emaxs); // this doesn't happen at runtime so we can use the slower general case
+	}
+	else if (entmodel->type == mod_brush)
+	{
+		R_TransformEntityToLocalMatrix (&localMatrix, ent->origin, ent->angles, mod_brush);
+		R_BrushModelBBox (ent, &localMatrix, true, r_emins, r_emaxs); // this doesn't happen at runtime so we can use the slower general case
+	}
+	else
+	{
+		Vector3Add (r_emins, ent->origin, entmodel->mins);
+		Vector3Add (r_emaxs, ent->origin, entmodel->maxs);
 	}
 
 	R_SplitEntityOnNode (cl.worldmodel->nodes);

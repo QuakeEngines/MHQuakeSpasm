@@ -657,18 +657,17 @@ CL_ParseBaseline
 */
 void CL_ParseBaseline (entity_t *ent, int version) // johnfitz -- added argument
 {
-	int	i;
-	int bits; // johnfitz
-
 	// johnfitz -- PROTOCOL_FITZQUAKE
-	bits = (version == 2) ? MSG_ReadByte () : 0;
+	int bits = (version == 2) ? MSG_ReadByte () : 0;
+
 	ent->baseline.modelindex = (bits & B_LARGEMODEL) ? MSG_ReadShort () : MSG_ReadByte ();
 	ent->baseline.frame = (bits & B_LARGEFRAME) ? MSG_ReadShort () : MSG_ReadByte ();
 	// johnfitz
 
 	ent->baseline.colormap = MSG_ReadByte ();
 	ent->baseline.skin = MSG_ReadByte ();
-	for (i = 0; i < 3; i++)
+
+	for (int i = 0; i < 3; i++)
 	{
 		ent->baseline.origin[i] = MSG_ReadCoord (cl.protocolflags);
 		ent->baseline.angles[i] = MSG_ReadAngle (cl.protocolflags);
@@ -876,6 +875,7 @@ void CL_ParseStatic (int version) // johnfitz -- added a parameter
 	// MH - we can just alloc these directly on the hunk
 	entity_t *ent = (entity_t *) Hunk_Alloc (sizeof (entity_t));
 
+	// mh - this also clears rockettrails so we don't need to do it separately
 	CL_ParseBaseline (ent, version); // johnfitz -- added second parameter
 
 	// copy it to the current state
@@ -895,17 +895,17 @@ void CL_ParseStatic (int version) // johnfitz -- added a parameter
 
 	VectorCopy (ent->baseline.origin, ent->origin);
 	VectorCopy (ent->baseline.angles, ent->angles);
-	R_AddEfrags (ent);
 
-	CL_ClearRocketTrail (ent);
+	// mark leaves touched by this ent
+	R_AddEfrags (ent);
 
 	// rather than runtime-tracing the map for ents which don't move we'll do it once-only at spawn time and save a bunch of CPU time
 	// this will fail to take account of bmodels under the entity but in practice we assume that's not going to happen with static ents anyway
 	// ------------------------------------------------------------------------------------------------------------------------------------------
 	// note - AD spawns a LOT of unmoving/inactive/etc entities as regular entities rather than as statics, for some reason, so we need to do
 	// this in CL_ParseBaseline as well, and add a check for an entity that hasn't moved from it's baseline to R_SetupAliasLighting - those wacky modders!
-	cl_numvisedicts = 0; // ensure this doesn't attempt to trace bmodels which don't exist yet!
-	R_BaseLightPoint (ent->origin, &ent->lightpoint);
+	// this means that it's already been done so we just need to copy it over!
+	memcpy (&ent->lightpoint, &ent->baselightpoint, sizeof (lightpoint_t));
 
 	// track the count of statics allocated because people seem to like this stuff
 	cl.num_statics++;

@@ -171,9 +171,15 @@ void R_AnimateLight (double time);
 void R_MarkLeaves (void);
 void R_DrawWorld_Old (void);
 
+// --------------------------------------------------------------------------------------------------------------------------------------------
+// culling and bboxes
 qboolean R_CullBox (vec3_t emins, vec3_t emaxs);
 void R_StoreEfrags (efrag_t **ppefrag);
 qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix, qboolean rotated);
+void R_RotateBBox (QMATRIX *matrix, const float *inmins, const float *inmaxs, float *outmins, float *outmaxs);
+void R_AliasModelBBox (entity_t *e, QMATRIX *localMatrix, qboolean rotated, float *bbmins, float *bbmaxs);
+void R_BrushModelBBox (entity_t *e, QMATRIX *localMatrix, qboolean rotated, float *bbmins, float *bbmaxs);
+void R_TransformEntityToLocalMatrix (QMATRIX *localMatrix, float *origin, float *angles, modtype_t type);
 
 void R_InitParticles (void);
 void R_DrawParticlesARB (void);

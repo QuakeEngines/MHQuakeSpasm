@@ -301,42 +301,13 @@ qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix, qboolean rotat
 	}
 	else if (e->model->type == mod_alias)
 	{
-		// per modelgen.c, alias bounds are 0...255 which are then scaled and offset by header->scale and header->scale_origin
-		aliashdr_t *hdr = (aliashdr_t *) Mod_Extradata (e->model);
-		vec3_t amins, amaxs;
-
-		// reconstruct the bbox
-		for (int i = 0; i < 3; i++)
-		{
-			amins[i] = hdr->scale_origin[i];
-			amaxs[i] = amins[i] + hdr->scale[i] * 255;
-		}
-
-		if (rotated)
-		{
-			// and rotate it
-			R_RotateBBox (localMatrix, amins, amaxs, bbmins, bbmaxs);
-		}
-		else
-		{
-			// fast case - we can't use e->origin because it might be lerped, so the actual origin used for the transform is in m4x4[3]
-			Vector3Add (bbmins, localMatrix->m4x4[3], amins);
-			Vector3Add (bbmaxs, localMatrix->m4x4[3], amaxs);
-		}
+		// alias model
+		R_AliasModelBBox (e, localMatrix, rotated, bbmins, bbmaxs);
 	}
 	else if (e->model->type == mod_brush)
 	{
-		if (rotated)
-		{
-			// straightforward bbox rotation
-			R_RotateBBox (localMatrix, e->model->mins, e->model->maxs, bbmins, bbmaxs);
-		}
-		else
-		{
-			// fast case
-			Vector3Add (bbmins, e->origin, e->model->mins);
-			Vector3Add (bbmaxs, e->origin, e->model->maxs);
-		}
+		// brush model
+		R_BrushModelBBox (e, localMatrix, rotated, bbmins, bbmaxs);
 	}
 	else
 	{
@@ -346,6 +317,24 @@ qboolean R_CullModelForEntity (entity_t *e, QMATRIX *localMatrix, qboolean rotat
 
 	// now do the cull test correctly on the rotated bbox
 	return R_CullBox (bbmins, bbmaxs);
+}
+
+
+void R_TransformEntityToLocalMatrix (QMATRIX *localMatrix, float *origin, float *angles, modtype_t type)
+{
+	R_IdentityMatrix (localMatrix);
+
+	if (type == mod_alias)
+	{
+		if (origin[0] || origin[1] || origin[2]) R_TranslateMatrix (localMatrix, origin[0], origin[1], origin[2]);
+		if (angles[0] || angles[1] || angles[2]) R_RotateMatrix (localMatrix, -angles[0], angles[1], angles[2]);
+	}
+	else if (type == mod_brush)
+	{
+		if (origin[0] || origin[1] || origin[2]) R_TranslateMatrix (localMatrix, origin[0], origin[1], origin[2]);
+		if (angles[0] || angles[1] || angles[2]) R_RotateMatrix (localMatrix, angles[0], angles[1], angles[2]);
+	}
+	else R_TranslateMatrix (localMatrix, origin[0], origin[1], origin[2]);
 }
 
 

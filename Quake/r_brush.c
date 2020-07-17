@@ -63,6 +63,23 @@ texture_t *R_TextureAnimation (texture_t *base, int frame)
 =============================================================
 */
 
+
+void R_BrushModelBBox (entity_t *e, QMATRIX *localMatrix, qboolean rotated, float *bbmins, float *bbmaxs)
+{
+	if (rotated)
+	{
+		// straightforward bbox rotation
+		R_RotateBBox (localMatrix, e->model->mins, e->model->maxs, bbmins, bbmaxs);
+	}
+	else
+	{
+		// fast case
+		Vector3Add (bbmins, e->origin, e->model->mins);
+		Vector3Add (bbmaxs, e->origin, e->model->maxs);
+	}
+}
+
+
 /*
 =================
 R_DrawBrushModel
@@ -73,9 +90,7 @@ void R_DrawBrushModel (entity_t *e)
 	QMATRIX		localMatrix;
 
 	// this needs to be calced early so we can cull it properly
-	R_IdentityMatrix (&localMatrix);
-	if (e->origin[0] || e->origin[1] || e->origin[2]) R_TranslateMatrix (&localMatrix, e->origin[0], e->origin[1], e->origin[2]);
-	if (e->angles[0] || e->angles[1] || e->angles[2]) R_RotateMatrix (&localMatrix, e->angles[0], e->angles[1], e->angles[2]);
+	R_TransformEntityToLocalMatrix (&localMatrix, e->origin, e->angles, mod_brush);
 
 	if (R_CullModelForEntity (e, &localMatrix, (e->angles[0] || e->angles[1] || e->angles[2])))
 		return;
