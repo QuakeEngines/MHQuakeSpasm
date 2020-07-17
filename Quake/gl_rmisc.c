@@ -337,13 +337,20 @@ R_TranslatePlayerSkin -- johnfitz -- rewritten.  also, only handles new colors, 
 */
 void R_TranslatePlayerSkin (int playernum)
 {
+#if 0
 	int top = (cl.scores[playernum].colors & 0xf0) >> 4;
 	int bottom = cl.scores[playernum].colors & 15;
 
 	// FIXME: if gl_nocolors is on, then turned off, the textures may be out of sync with the scoreboard colors.
 	if (!gl_nocolors.value)
+	{
 		if (playertextures[playernum])
+		{
+			gltexture_t *glt = playertextures[playernum];
 			TexMgr_ReloadImage (playertextures[playernum], top, bottom);
+		}
+	}
+#endif
 }
 
 
@@ -356,6 +363,7 @@ added bug fix from bengt jardup
 */
 void R_TranslateNewPlayerSkin (int playernum)
 {
+#if 0
 	// get correct texture pixels
 	entity_t *e = cl_entities[1 + playernum];
 
@@ -386,6 +394,7 @@ void R_TranslateNewPlayerSkin (int playernum)
 
 	// now recolor it
 	R_TranslatePlayerSkin (playernum);
+#endif
 }
 
 

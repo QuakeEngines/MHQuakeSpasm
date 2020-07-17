@@ -353,7 +353,7 @@ P.b * L.x      P.b * L.y + d  P.b * L.z      P.b * L.w
 P.c * L.x      P.c * L.y      P.c * L.z + d  P.c * L.w
 P.d * L.x      P.d * L.y      P.d * L.z      P.d * L.w + d
 	*/
-	float	lheight = lerpdata->origin[2] - e->lightpoint.lightspot[2];
+	float	lheight = lerpdata->origin[2] - lightspot[2];
 	QMATRIX	localMatrix;
 
 	// position the shadow
@@ -547,24 +547,7 @@ void R_MinimumLight (float *light, float minlight)
 
 void R_SetupAliasLighting (entity_t *e, lerpdata_t *lerpdata)
 {
-	// get base lighting - this should use the lerped origin
-	if (e->lerpflags & LERP_STATICENT)
-		;	// entity is a static ent and doesn't move
-	else if (Vector3Compare (e->baseline.origin, lerpdata->origin))
-	{
-		// entity hasn't moved from it's baseline state so retrieve and use that (this is a crutch for AD which spawns a LOT of regular ents which should be, but are not, statics)
-		e->lightpoint.lightmap = e->baselightpoint.lightmap;
-		e->lightpoint.lightsurf = e->baselightpoint.lightsurf;
-		Vector3Copy (e->lightpoint.lightspot, e->baselightpoint.lightspot);
-	}
-	else
-	{
-		// normal moving ents need to do this each time they're seen; static ents already have it done once-only
-		R_BaseLightPoint (lerpdata->origin, &e->lightpoint);
-	}
-
-	// and now retrieve it properly
-	R_LightFromLightPoint (&e->lightpoint, shadelight);
+	R_LightPoint (lerpdata->origin, shadelight);
 
 	// minimum light value on gun (24)
 	if (e == &cl.viewent)

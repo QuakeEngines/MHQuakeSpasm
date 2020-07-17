@@ -333,5 +333,11 @@ void R_FreeAllBufferSets (void);
 bufferset_t *R_GetBufferSetForModel (qmodel_t *m);
 
 
+// light sampling
+extern mplane_t *lightplane;
+extern vec3_t	lightspot;
+
+int R_LightPoint (vec3_t p, float *lightcolor);
+
 #endif	/* __GLQUAKE_H */
 

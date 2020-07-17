@@ -211,50 +211,15 @@ LIGHT SAMPLING
 =============================================================================
 */
 
-int R_LightFromLightPoint (lightpoint_t *lightpoint, float *lightcolor)
-{
-	if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe || r_drawflat_cheatsafe)
-	{
-		// in practice this will go through an alternative shader path that just doesn't have lighting, so these values actually have no effect
-		lightcolor[0] = lightcolor[1] = lightcolor[2] = 255;
-		return 255;
-	}
+mplane_t *lightplane;
+vec3_t	lightspot;
 
-	// clear to no light
-	lightcolor[0] = lightcolor[1] = lightcolor[2] = 0;
-
-	if (!lightpoint->lightsurf)
-	{
-		// hit nothing so assume it's in solid - set to a lighting factor so that it doesn't go all-black
-		lightcolor[0] = 192;
-		lightcolor[1] = 192;
-		lightcolor[2] = 192;
-	}
-	else if (lightpoint->lightmap)
-	{
-		// add lighting contributions from the surface lightmap
-		msurface_t *surf = lightpoint->lightsurf;
-
-		// MH - changed this over to use the same lighting calc as R_BuildLightmap for consistency
-		byte *lightmap = lightpoint->lightmap;
-
-		for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
-		{
-			float scale = d_lightstylevalue[surf->styles[maps]];
-
-			lightcolor[0] += (float) lightmap[0] * scale;
-			lightcolor[1] += (float) lightmap[1] * scale;
-			lightcolor[2] += (float) lightmap[2] * scale;
-
-			lightmap += ((surf->extents[0] >> 4) + 1) * ((surf->extents[1] >> 4) + 1) * 3; // LordHavoc: *3 for colored lighting
-		}
-	}
-
-	return ((lightcolor[0] + lightcolor[1] + lightcolor[2]) * (1.0f / 3.0f));
-}
-
-
-qboolean R_TraceLightPoint (lightpoint_t *lightpoint, mnode_t *node, vec3_t start, vec3_t end)
+/*
+=============
+R_RecursiveLightPoint -- johnfitz -- replaced entire function for lit support via lordhavoc
+=============
+*/
+int R_RecursiveLightPoint (float *lightcolor, mnode_t *node, vec3_t start, vec3_t end)
 {
 	if (node->contents < 0)
 		return false;		// didn't hit anything
@@ -265,7 +230,7 @@ qboolean R_TraceLightPoint (lightpoint_t *lightpoint, mnode_t *node, vec3_t star
 
 	// mh - the compiler will optimize this better than we can
 	if ((back < 0) == (front < 0))
-		return R_TraceLightPoint (lightpoint, node->children[front < 0], start, end);
+		return R_RecursiveLightPoint (lightcolor, node->children[front < 0], start, end);
 
 	float frac = front / (front - back);
 
@@ -276,7 +241,7 @@ qboolean R_TraceLightPoint (lightpoint_t *lightpoint, mnode_t *node, vec3_t star
 	};
 
 	// go down front side
-	if (R_TraceLightPoint (lightpoint, node->children[front < 0], start, mid))
+	if (R_RecursiveLightPoint (lightcolor, node->children[front < 0], start, mid))
 		return true;	// hit something
 
 	// check for impact on this node
@@ -302,63 +267,88 @@ qboolean R_TraceLightPoint (lightpoint_t *lightpoint, mnode_t *node, vec3_t star
 		if (ds > surf->extents[0] || dt > surf->extents[1])
 			continue;
 
+		// clear to no light
+		lightcolor[0] = lightcolor[1] = lightcolor[2] = 0;
+
 		// accumulate light
 		if (surf->samples)
-			lightpoint->lightmap = surf->samples + ((dt >> 4) * ((surf->extents[0] >> 4) + 1) + (ds >> 4)) * 3; // LordHavoc: *3 for color
-		else lightpoint->lightmap = NULL; // no light on this surf
+		{
+			// MH - changed this over to use the same lighting calc as R_BuildLightmap for consistency
+			byte *lightmap = surf->samples + ((dt >> 4) * ((surf->extents[0] >> 4) + 1) + (ds >> 4)) * 3; // LordHavoc: *3 for color
+
+			for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
+			{
+				float scale = d_lightstylevalue[surf->styles[maps]];
+
+				lightcolor[0] += (float) lightmap[0] * scale;
+				lightcolor[1] += (float) lightmap[1] * scale;
+				lightcolor[2] += (float) lightmap[2] * scale;
+
+				lightmap += ((surf->extents[0] >> 4) + 1) * ((surf->extents[1] >> 4) + 1) * 3; // LordHavoc: *3 for colored lighting
+			}
+		}
 
 		// mh - these should only be saved off if we definitely establish that we have a hit
-		Vector3Copy (lightpoint->lightspot, mid);
-		lightpoint->lightsurf = surf;
+		VectorCopy (mid, lightspot);
+		lightplane = surf->plane;
 
 		return true; // success
 	}
 
 	// go down back side
-	return R_TraceLightPoint (lightpoint, node->children[front >= 0], mid, end);
+	return R_RecursiveLightPoint (lightcolor, node->children[front >= 0], mid, end);
 }
 
 
-void R_BaseLightPoint (vec3_t p, lightpoint_t *lightpoint)
+/*
+=============
+R_LightPoint -- johnfitz -- replaced entire function for lit support via lordhavoc
+=============
+*/
+int R_LightPoint (vec3_t p, float *lightcolor)
 {
+	if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe || r_drawflat_cheatsafe)
+	{
+		// in practice this will go through an alternative shader path that just doesn't have lighting, so these values actually have no effect
+		lightcolor[0] = lightcolor[1] = lightcolor[2] = 255;
+		return 255;
+	}
+
 	vec3_t	end = {
 		p[0],
 		p[1],
 		cl.worldmodel->mins[2] - 10.0f	// MH - trace the full worldmodel
 	};
 
-	// clear to nothing
-	memset (lightpoint, 0, sizeof (lightpoint_t));
-
-	if (!cl.worldmodel->lightdata || r_fullbright_cheatsafe || r_drawflat_cheatsafe)
-	{
-		Vector3Copy (lightpoint->lightspot, end);
-		return;
-	}
+	vec3_t hit, lightspot2, pointcolor;
 
 	// run an initial lightpoint against the world
-	if (!R_TraceLightPoint (lightpoint, cl.worldmodel->nodes, p, end))
+	if (R_RecursiveLightPoint (pointcolor, cl.worldmodel->nodes, p, end))
+	{
+		Vector3Copy (lightcolor, pointcolor);
+		Vector3Copy (hit, lightspot);
+	}
+	else
 	{
 		// objects outside the world (such as Strogg Viper flybys on base1) should be lit if they hit nothing
 		// the new end point (based on mins of r_worldmodel) ensures that we'll always hit if inside the world so this is OK
-		Vector3Copy (lightpoint->lightspot, end);
+		// don't make them too bright or they'll look like shit/
+		Vector3Set (pointcolor, 192, 192, 192);
+		Vector3Copy (hit, end);
 	}
 
 	// find bmodels under the lightpoint - move the point to bmodel space, trace down, then check; if r < 0
 	// it didn't find a bmodel, otherwise it did (a bmodel under a valid world hit will hit here too)
 	// fixme: is it possible for a bmodel to not be in the PVS but yet be a valid candidate for this???
-#if 0
-	// fixme - this breaks on certain models (fiends in the ogre citadel, etc)  -find out why & fix or remove it!!!
 	for (int i = 0; i < cl_numvisedicts; i++)
 	{
 		entity_t *e = cl_visedicts[i];
 		float estart[3], eend[3];
-		lightpoint_t bmpoint;
 
 		// NULL models don't light
 		if (!e->model) continue;
 
-		// only inline bmodel entities give light
+		// only bmodel entities give light
 		if (e->model->type != mod_brush) continue;
 		if (e->model->firstmodelsurface == 0) continue;
 
@@ -367,22 +357,25 @@ void R_BaseLightPoint (vec3_t p, lightpoint_t *lightpoint)
 		Vector3Subtract (eend, end, e->origin);
 
 		// and run the recursive light point on it too
-		if (R_TraceLightPoint (&bmpoint, e->model->nodes + e->model->hulls[0].firstclipnode, estart, eend))
+		if (R_RecursiveLightPoint (pointcolor, e->model->nodes + e->model->hulls[0].firstclipnode, estart, eend))
 		{
 			// a bmodel under a valid world hit will hit here too so take the highest lightspot on all hits
 			// move lightspot back to world space
-			Vector3Add (bmpoint.lightspot, bmpoint.lightspot, e->origin);
+			Vector3Add (lightspot2, lightspot, e->origin);
 
-			if (bmpoint.lightspot[2] > lightpoint->lightspot[2])
+			if (lightspot2[2] > hit[2])
 			{
 				// found a bmodel so copy it over
-				lightpoint->lightmap = bmpoint.lightmap;
-				lightpoint->lightsurf = bmpoint.lightsurf;
-				Vector3Copy (lightpoint->lightspot, bmpoint.lightspot);
+				Vector3Copy (lightcolor, pointcolor);
+				Vector3Copy (hit, lightspot2);
 			}
 		}
 	}
-#endif
+
+	// the final hit point is the valid lightspot
+	Vector3Copy (lightspot, hit);
+
+	return ((lightcolor[0] + lightcolor[1] + lightcolor[2]) * (1.0f / 3.0f));
 }
 
 
@@ -636,4 +629,5 @@ void GL_SetSurfaceStyles (msurface_t *surf)
 	// (to do - benchmark this vs sending them as a glVertexAttrib call - right now it's plenty fast enough)
 	glProgramEnvParameter4fvARB (GL_FRAGMENT_PROGRAM_ARB, 2, fstyles);
 }
+
 

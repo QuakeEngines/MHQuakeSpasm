@@ -675,11 +675,6 @@ void CL_ParseBaseline (entity_t *ent, int version) // johnfitz -- added argument
 
 	ent->baseline.alpha = (bits & B_ALPHA) ? MSG_ReadByte () : ENTALPHA_DEFAULT; // johnfitz -- PROTOCOL_FITZQUAKE
 
-	// AD sends a LOT of ents as non statics that really SHOULD be statics, so we need to keep and parse a baseline for the lightpoint too...
-	// the model for this ent isn't set yet so we don't bother checking and just trace for them all
-	cl_numvisedicts = 0;
-	R_BaseLightPoint (ent->baseline.origin, &ent->baselightpoint);
-
 	CL_ClearRocketTrail (ent);
 }
 
@@ -898,14 +893,6 @@ void CL_ParseStatic (int version) // johnfitz -- added a parameter
 
 	// mark leaves touched by this ent
 	R_AddEfrags (ent);
-
-	// rather than runtime-tracing the map for ents which don't move we'll do it once-only at spawn time and save a bunch of CPU time
-	// this will fail to take account of bmodels under the entity but in practice we assume that's not going to happen with static ents anyway
-	// ------------------------------------------------------------------------------------------------------------------------------------------
-	// note - AD spawns a LOT of unmoving/inactive/etc entities as regular entities rather than as statics, for some reason, so we need to do
-	// this in CL_ParseBaseline as well, and add a check for an entity that hasn't moved from it's baseline to R_SetupAliasLighting - those wacky modders!
-	// this means that it's already been done so we just need to copy it over!
-	memcpy (&ent->lightpoint, &ent->baselightpoint, sizeof (lightpoint_t));
 
 	// track the count of statics allocated because people seem to like this stuff
 	cl.num_statics++;

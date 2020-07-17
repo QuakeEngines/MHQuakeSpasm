@@ -38,17 +38,6 @@ typedef struct efrag_s {
 } efrag_t;
 
 
-typedef struct lightpoint_s {
-	byte *lightmap; // 3-component RGB, base lightmap for the surf offset for lightspot, NULL if hit nothing
-	struct msurface_s *lightsurf; // surface that was hit; if this is non-NULL and lightmap is NULL then the surf has no lighting; lightplane can be trivially retrieved from it
-	vec3_t lightspot; // for shadow positioning
-} lightpoint_t;
-
-
-void R_BaseLightPoint (vec3_t p, lightpoint_t *lightpoint);
-int R_LightFromLightPoint (lightpoint_t *lightpoint, float *lightcolor);
-
-
 // johnfitz -- for lerping
 #define LERP_MOVESTEP	(1 << 0) // this is a MOVETYPE_STEP entity, enable movement lerp
 #define LERP_RESETANIM	(1 << 1) // disable anim lerping until next anim frame
@@ -66,11 +55,6 @@ typedef struct entity_s {
 	int						entitynum;		// order allocated
 
 	entity_state_t			baseline;		// to fill in defaults in updates
-
-	lightpoint_t			lightpoint;		// cached once for static ents, re-eval'ed each frame for normal ents
-
-	// AD sends a LOT of ents as non statics that really SHOULD be statics, so we need to keep and parse a baseline for the lightpoint too...
-	lightpoint_t			baselightpoint;		// cached once for static ents, re-eval'ed each frame for normal ents
 
 	double					msgtime;		// time of last update
 	vec3_t					msg_origins[2];	// last two updates (0 is newest)
