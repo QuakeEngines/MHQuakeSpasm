@@ -61,6 +61,9 @@ Performance.  The AD "particle system" is lovely, but it chugs badly on lower-en
 
 At some stage I might go back and try some optimizations to sprite drawing that may make it possible to roll-back this replacement.
 
+### What's the deal with entity colormapping?
+This is a software Quake feature that was lost in GLQuake and derived engines.  Software Quake allowed any arbitrary entity (not just players) to be colormapped, but they were colormapped as if they were a player; i.e. the colours for an entity would be associated with the colors for a player.  I've restored this full behaviour.
+
 ### Help! r_drawflat melted my GPU! 
 Sorry about that. I haven't implemented r_drawflat in a robust or performant way, because it's not really intended to be a performant codepath to begin with. While it is useful to see how badly QBSP chopped up your geometry, with draw call batching that's really no longer something that badly affects performance. I guess you can switch it on if you just want to look at it, but otherwise it's value seems dubious. 
 

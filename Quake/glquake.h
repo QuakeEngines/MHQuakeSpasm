@@ -185,9 +185,6 @@ void R_InitParticles (void);
 void R_DrawParticlesARB (void);
 void R_ClearParticles (void);
 
-// mh - robust version
-gltexture_t *R_GetPlayerTexture (entity_t *e, aliashdr_t *hdr, int playernum, aliasskin_t *baseskin);
-
 void R_DrawAliasModel (entity_t *e);
 void R_DrawBrushModel (entity_t *e);
 void R_DrawSpriteModel (entity_t *e);

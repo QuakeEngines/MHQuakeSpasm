@@ -621,6 +621,57 @@ void R_AliasModelBBox (entity_t *e, QMATRIX *localMatrix, qboolean rotated, floa
 }
 
 
+gltexture_t *R_GetPlayerTexture (entity_t *e, aliashdr_t *hdr, aliasskin_t *baseskin)
+{
+	// implement gl_nocolors - just return the base skin, force the translation to rebuild next time it's needed
+	if (gl_nocolors.value)
+	{
+		e->translation.baseskin = NULL;
+		return baseskin->gltexture;
+	}
+
+	// new texture, skin change or model change (skins are specific to models so if the model changes the skin always will too)
+	if (!e->translation.translated || baseskin != e->translation.baseskin)
+	{
+		// load or reload it - locate the source pixels
+		// this will handle general-case stuff like animating player skins, although that would require constantly reloading the skin and would be quite slow; it would work, though...
+		byte *pixels = baseskin->texels;
+		int loadflags = TEXPREF_MIPMAP | TEXPREF_FLOODFILL | TEXPREF_PAD | TEXPREF_OVERWRITE;
+		gltexture_t *source = baseskin->gltexture;
+		char name[64];
+
+		// upload new image
+		q_snprintf (name, sizeof (name), "player_%i", e->playernum);
+		e->translation.translated = TexMgr_LoadImage (e->model, name, hdr->skinwidth, hdr->skinheight, SRC_INDEXED, pixels, source->source_file, source->source_offset, loadflags);
+
+		// store back skin
+		e->translation.baseskin = baseskin;
+
+		// set these to the values that would give a translated skin the same as the original
+		e->translation.shirt = 1;
+		e->translation.pants = 6;
+	}
+
+	// get the requested colours
+	int shirt = (cl.scores[e->playernum].colors & 0xf0) >> 4;
+	int pants = cl.scores[e->playernum].colors & 15;
+
+	// now check for colour change on either a new player texture or an existing one
+	if (shirt != e->translation.shirt || pants != e->translation.pants)
+	{
+		// run the colour change
+		TexMgr_ReloadImage (e->translation.translated, shirt, pants);
+
+		// store back colour
+		e->translation.shirt = shirt;
+		e->translation.pants = pants;
+	}
+
+	// return the texture
+	return e->translation.translated;
+}
+
+
 /*
 =================
 R_DrawAliasModel -- johnfitz -- almost completely rewritten
@@ -659,9 +710,17 @@ void R_DrawAliasModel (entity_t *e)
 	gltexture_t *tx = skin->gltexture;
 	gltexture_t *fb = skin->fbtexture;
 
-	if (e->colormapped && !gl_nocolors.value)
-		if (e->entitynum >= 1 && e->entitynum <= cl.maxclients)
-			tx = R_GetPlayerTexture (e, hdr, e->entitynum - 1, skin);
+#if 0
+	// this code is for testing the colormapping system; fiends will take on the colour of player 0
+	if (!strcmp (e->model->name, "progs/demon.mdl"))
+	{
+		e->colormapped = true;
+		e->playernum = 0;
+	}
+#endif
+
+	if (e->colormapped)
+		tx = R_GetPlayerTexture (e, hdr, skin);
 
 	if (!gl_fullbrights.value)
 		fb = NULL;

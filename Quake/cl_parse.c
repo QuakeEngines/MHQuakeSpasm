@@ -122,7 +122,18 @@ entity_t *CL_EntityNum (int num)
 
 			// set up initial values
 			cl_entities[cl.num_entities]->entitynum = cl.num_entities;
+
+			// init colormapping
 			cl_entities[cl.num_entities]->colormapped = false;
+			cl_entities[cl.num_entities]->playernum = 0;
+
+			// init translation
+			cl_entities[cl.num_entities]->translation.translated = NULL;
+			cl_entities[cl.num_entities]->translation.shirt = 1;
+			cl_entities[cl.num_entities]->translation.pants = 6;
+			cl_entities[cl.num_entities]->translation.baseskin = NULL;
+
+			// init lerping
 			cl_entities[cl.num_entities]->lerpflags |= LERP_RESETMOVE | LERP_RESETANIM; // johnfitz
 			CL_ClearRocketTrail (cl_entities[cl.num_entities]);
 
@@ -504,8 +515,8 @@ void CL_ParseUpdate (int bits)
 		if (i > cl.maxclients)
 			Sys_Error ("i >= cl.maxclients");
 
-		// the actual contents of the colormap are unused in the GL engine, it just needs to flag if the ent should be translated
-		ent->colormapped = true;
+		ent->colormapped = true;	// ent should be colormapped
+		ent->playernum = i - 1;		// colormap this ent from the shirt and pants from this player
 	}
 
 	if (bits & U_SKIN)

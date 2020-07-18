@@ -56,6 +56,17 @@ typedef struct entity_s {
 
 	entity_state_t			baseline;		// to fill in defaults in updates
 
+	// translated "player" texture
+	struct {
+		struct gltexture_s *translated;
+		int shirt;
+		int pants;
+		struct aliasskin_s *baseskin;
+	} translation;
+
+	qboolean				colormapped;	// if true uses a translated texture
+	int						playernum;		// player num to take the shirt and pants colour from
+
 	double					msgtime;		// time of last update
 	vec3_t					msg_origins[2];	// last two updates (0 is newest)
 	vec3_t					origin;
@@ -65,7 +76,6 @@ typedef struct entity_s {
 	struct efrag_s *efrag;			// linked list of efrags
 	int						frame;
 	float					syncbase;		// for client-side animations
-	qboolean				colormapped;
 	int						effects;		// light, particles, etc
 	int						skinnum;		// for Alias models
 	int						visframe;		// last frame this entity was
