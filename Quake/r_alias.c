@@ -641,7 +641,7 @@ gltexture_t *R_GetPlayerTexture (entity_t *e, aliashdr_t *hdr, aliasskin_t *base
 		char name[64];
 
 		// upload new image
-		q_snprintf (name, sizeof (name), "player_%i", e->playernum);
+		q_snprintf (name, sizeof (name), "translation_%i", e->entitynum); // giving it a more unique name...
 		e->translation.translated = TexMgr_LoadImage (e->model, name, hdr->skinwidth, hdr->skinheight, SRC_INDEXED, pixels, source->source_file, source->source_offset, loadflags);
 
 		// store back skin
@@ -709,15 +709,6 @@ void R_DrawAliasModel (entity_t *e)
 	aliasskin_t *skin = R_GetAliasSkin (e, hdr);
 	gltexture_t *tx = skin->gltexture;
 	gltexture_t *fb = skin->fbtexture;
-
-#if 0
-	// this code is for testing the colormapping system; fiends will take on the colour of player 0
-	if (!strcmp (e->model->name, "progs/demon.mdl"))
-	{
-		e->colormapped = true;
-		e->playernum = 0;
-	}
-#endif
 
 	if (e->colormapped)
 		tx = R_GetPlayerTexture (e, hdr, skin);
