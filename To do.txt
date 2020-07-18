@@ -9,3 +9,5 @@ Optional primitive restart
 Detect dx10 gpu for npot robustness
 
 Can SDL2 resize without deleting and recreating the context?  Every time I need to use the TexMgr code I just want to rip it to pieces and rewrite, and this would enable me to do a huge simplification pass.
+
+Software Quake allowed any arbitrary entity to be colormapped the same as a player texture slot

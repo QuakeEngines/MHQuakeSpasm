@@ -329,38 +329,45 @@ void R_Init (void)
 
 
 typedef struct playertexture_s {
-	gltexture_t *glt;
+	gltexture_t *translated;
 	int shirt;
 	int pants;
-	aliasskin_t *skin;
+	aliasskin_t *baseskin;
 } playertexture_t;
 
 
 playertexture_t r_playertextures[MAX_SCOREBOARD];
 
 
-gltexture_t *R_GetPlayerTexture (entity_t *e, aliashdr_t *hdr, int playernum, aliasskin_t *skin)
+gltexture_t *R_GetPlayerTexture (entity_t *e, aliashdr_t *hdr, int playernum, aliasskin_t *baseskin)
 {
+	// implement gl_nocolors - just return the base skin, force the translation to rebuild next time it's needed
+	if (gl_nocolors.value)
+	{
+		r_playertextures[playernum].baseskin = NULL;
+		return baseskin->gltexture;
+	}
+
 	// new texture, skin change or model change (skins are specific to models so if the model changes the skin always will too)
-	if (!r_playertextures[playernum].glt || skin != r_playertextures[playernum].skin)
+	if (!r_playertextures[playernum].translated || baseskin != r_playertextures[playernum].baseskin)
 	{
 		// load or reload it - locate the source pixels
 		// this will handle general-case stuff like animating player skins, although that would require constantly reloading the skin and would be quite slow; it would work, though...
-		byte *pixels = skin->texels;
+		byte *pixels = baseskin->texels;
 		int loadflags = TEXPREF_MIPMAP | TEXPREF_FLOODFILL | TEXPREF_PAD | TEXPREF_OVERWRITE;
-		gltexture_t *source = skin->gltexture;
+		gltexture_t *source = baseskin->gltexture;
 		char name[64];
 
 		// upload new image
 		q_snprintf (name, sizeof (name), "player_%i", playernum);
-		r_playertextures[playernum].glt = TexMgr_LoadImage (e->model, name, hdr->skinwidth, hdr->skinheight, SRC_INDEXED, pixels, source->source_file, source->source_offset, loadflags);
+		r_playertextures[playernum].translated = TexMgr_LoadImage (e->model, name, hdr->skinwidth, hdr->skinheight, SRC_INDEXED, pixels, source->source_file, source->source_offset, loadflags);
 
 		// store back skin
-		r_playertextures[playernum].skin = skin;
+		r_playertextures[playernum].baseskin = baseskin;
 
-		// force a colour change if the skin was changed
-		r_playertextures[playernum].shirt = -1;
-		r_playertextures[playernum].pants = -1;
+		// set these to the values that would give a translated skin the same as the original
+		r_playertextures[playernum].shirt = 1;
+		r_playertextures[playernum].pants = 6;
 	}
 
 	// now check for colour change on either a new player texture or an existing one
@@ -371,7 +378,7 @@ gltexture_t *R_GetPlayerTexture (entity_t *e, aliashdr_t *hdr, int playernum, al
 	if (shirt != r_playertextures[playernum].shirt || pants != r_playertextures[playernum].pants)
 	{
 		// run the colour change
-		TexMgr_ReloadImage (r_playertextures[playernum].glt, shirt, pants);
+		TexMgr_ReloadImage (r_playertextures[playernum].translated, shirt, pants);
 
 		// store back colour
 		r_playertextures[playernum].shirt = shirt;
@@ -379,7 +386,7 @@ gltexture_t *R_GetPlayerTexture (entity_t *e, aliashdr_t *hdr, int playernum, al
 	}
 
 	// return the texture
-	return r_playertextures[playernum].glt;
+	return r_playertextures[playernum].translated;
 }
 
 

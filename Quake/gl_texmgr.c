@@ -352,6 +352,8 @@ gltexture_t *TexMgr_NewTexture (void)
 
 // ericw -- workaround for preventing TexMgr_FreeTexture during TexMgr_ReloadImages
 static qboolean in_reload_images;
+static void GL_DeleteTexture (gltexture_t *texture);
+
 
 /*
 ================
@@ -375,7 +377,7 @@ void TexMgr_FreeTexture (gltexture_t *kill)
 		kill->next = free_gltextures;
 		free_gltextures = kill;
 
-		TexMgr_DeleteTexture (kill);
+		GL_DeleteTexture (kill);
 		numgltextures--;
 		return;
 	}
@@ -388,7 +390,7 @@ void TexMgr_FreeTexture (gltexture_t *kill)
 			kill->next = free_gltextures;
 			free_gltextures = kill;
 
-			TexMgr_DeleteTexture (kill);
+			GL_DeleteTexture (kill);
 			numgltextures--;
 			return;
 		}
@@ -445,7 +447,7 @@ TexMgr_DeleteTextureObjects
 void TexMgr_DeleteTextureObjects (void)
 {
 	for (gltexture_t *glt = active_gltextures; glt; glt = glt->next)
-		TexMgr_DeleteTexture (glt);
+		GL_DeleteTexture (glt);
 
 	Sky_FreeSkybox ();
 }
@@ -1107,13 +1109,13 @@ void GL_BindTexture (GLenum target, gltexture_t *texture)
 
 /*
 ================
-TexMgr_DeleteTexture -- ericw
+GL_DeleteTexture -- ericw
 
 Wrapper around glDeleteTextures that also clears the given texture number
 from our per-TMU cached texture binding table.
 ================
 */
-void TexMgr_DeleteTexture (gltexture_t *texture)
+static void GL_DeleteTexture (gltexture_t *texture)
 {
 	glDeleteTextures (1, &texture->texnum);
 
