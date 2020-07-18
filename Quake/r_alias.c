@@ -414,35 +414,35 @@ void R_SetupAliasFrame (entity_t *e, aliashdr_t *hdr, int frame, lerpdata_t *ler
 
 		// get the correct interval
 		if (groupframe == 0)
-			e->lerptime = hdr->frames[frame].intervals[groupframe];
-		else e->lerptime = hdr->frames[frame].intervals[groupframe] - hdr->frames[frame].intervals[groupframe - 1];
+			e->animlerp.interval = hdr->frames[frame].intervals[groupframe];
+		else e->animlerp.interval = hdr->frames[frame].intervals[groupframe] - hdr->frames[frame].intervals[groupframe - 1];
 
 		// advance to this frame
 		posenum += groupframe;
 	}
-	else e->lerptime = 0.1;
+	else e->animlerp.interval = 0.1;
 
 	if (e->lerpflags & LERP_RESETANIM) // kill any lerp in progress
 	{
-		e->lerpstart = 0;
-		e->previouspose = posenum;
-		e->currentpose = posenum;
+		e->animlerp.starttime = 0;
+		e->animlerp.previouspose = posenum;
+		e->animlerp.currentpose = posenum;
 		e->lerpflags &= ~LERP_RESETANIM;
 	}
-	else if (e->currentpose != posenum) // pose changed, start new lerp
+	else if (e->animlerp.currentpose != posenum) // pose changed, start new lerp
 	{
 		if (e->lerpflags & LERP_RESETANIM2) // defer lerping one more time
 		{
-			e->lerpstart = 0;
-			e->previouspose = posenum;
-			e->currentpose = posenum;
+			e->animlerp.starttime = 0;
+			e->animlerp.previouspose = posenum;
+			e->animlerp.currentpose = posenum;
 			e->lerpflags &= ~LERP_RESETANIM2;
 		}
 		else
 		{
-			e->lerpstart = cl.time;
-			e->previouspose = e->currentpose;
-			e->currentpose = posenum;
+			e->animlerp.starttime = cl.time;
+			e->animlerp.previouspose = e->animlerp.currentpose;
+			e->animlerp.currentpose = posenum;
 		}
 	}
 
@@ -450,11 +450,11 @@ void R_SetupAliasFrame (entity_t *e, aliashdr_t *hdr, int frame, lerpdata_t *ler
 	if (r_lerpmodels.value && !((e->model->flags & MOD_NOLERP) && r_lerpmodels.value != 2))
 	{
 		if ((e->lerpflags & LERP_FINISH) && numposes == 1)
-			lerpdata->blend = Q_fclamp ((cl.time - e->lerpstart) / (e->lerpfinish - e->lerpstart), 0, 1);
-		else lerpdata->blend = Q_fclamp ((cl.time - e->lerpstart) / e->lerptime, 0, 1);
+			lerpdata->blend = Q_fclamp ((cl.time - e->animlerp.starttime) / (e->lerpfinishtime - e->animlerp.starttime), 0, 1);
+		else lerpdata->blend = Q_fclamp ((cl.time - e->animlerp.starttime) / e->animlerp.interval, 0, 1);
 
-		lerpdata->pose1 = e->previouspose;
-		lerpdata->pose2 = e->currentpose;
+		lerpdata->pose1 = e->animlerp.previouspose;
+		lerpdata->pose2 = e->animlerp.currentpose;
 	}
 	else // don't lerp
 	{
@@ -479,37 +479,37 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 	// if LERP_RESETMOVE, kill any lerps in progress
 	if (e->lerpflags & LERP_RESETMOVE)
 	{
-		e->movelerpstart = 0;
-		VectorCopy (e->origin, e->previousorigin);
-		VectorCopy (e->origin, e->currentorigin);
-		VectorCopy (e->angles, e->previousangles);
-		VectorCopy (e->angles, e->currentangles);
+		e->movelerp.starttime = 0;
+		VectorCopy (e->origin, e->movelerp.previousorigin);
+		VectorCopy (e->origin, e->movelerp.currentorigin);
+		VectorCopy (e->angles, e->movelerp.previousangles);
+		VectorCopy (e->angles, e->movelerp.currentangles);
 		e->lerpflags &= ~LERP_RESETMOVE;
 	}
-	else if (!VectorCompare (e->origin, e->currentorigin) || !VectorCompare (e->angles, e->currentangles)) // origin/angles changed, start new lerp
+	else if (!VectorCompare (e->origin, e->movelerp.currentorigin) || !VectorCompare (e->angles, e->movelerp.currentangles)) // origin/angles changed, start new lerp
 	{
-		e->movelerpstart = cl.time;
-		VectorCopy (e->currentorigin, e->previousorigin);
-		VectorCopy (e->origin, e->currentorigin);
-		VectorCopy (e->currentangles, e->previousangles);
-		VectorCopy (e->angles, e->currentangles);
+		e->movelerp.starttime = cl.time;
+		VectorCopy (e->movelerp.currentorigin, e->movelerp.previousorigin);
+		VectorCopy (e->origin, e->movelerp.currentorigin);
+		VectorCopy (e->movelerp.currentangles, e->movelerp.previousangles);
+		VectorCopy (e->angles, e->movelerp.currentangles);
 	}
 
 	// set up values
 	if (r_lerpmove.value && e != &cl.viewent && (e->lerpflags & LERP_MOVESTEP))
 	{
 		if (e->lerpflags & LERP_FINISH)
-			blend = Q_fclamp ((cl.time - e->movelerpstart) / (e->lerpfinish - e->movelerpstart), 0, 1);
-		else blend = Q_fclamp ((cl.time - e->movelerpstart) / 0.1, 0, 1);
+			blend = Q_fclamp ((cl.time - e->movelerp.starttime) / (e->lerpfinishtime - e->movelerp.starttime), 0, 1);
+		else blend = Q_fclamp ((cl.time - e->movelerp.starttime) / 0.1, 0, 1);
 
 		// translation
-		VectorSubtract (e->currentorigin, e->previousorigin, d);
-		lerpdata->origin[0] = e->previousorigin[0] + d[0] * blend;
-		lerpdata->origin[1] = e->previousorigin[1] + d[1] * blend;
-		lerpdata->origin[2] = e->previousorigin[2] + d[2] * blend;
+		VectorSubtract (e->movelerp.currentorigin, e->movelerp.previousorigin, d);
+		lerpdata->origin[0] = e->movelerp.previousorigin[0] + d[0] * blend;
+		lerpdata->origin[1] = e->movelerp.previousorigin[1] + d[1] * blend;
+		lerpdata->origin[2] = e->movelerp.previousorigin[2] + d[2] * blend;
 
 		// rotation
-		VectorSubtract (e->currentangles, e->previousangles, d);
+		VectorSubtract (e->movelerp.currentangles, e->movelerp.previousangles, d);
 
 		for (i = 0; i < 3; i++)
 		{
@@ -517,9 +517,9 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 			if (d[i] < -180) d[i] += 360;
 		}
 
-		lerpdata->angles[0] = e->previousangles[0] + d[0] * blend;
-		lerpdata->angles[1] = e->previousangles[1] + d[1] * blend;
-		lerpdata->angles[2] = e->previousangles[2] + d[2] * blend;
+		lerpdata->angles[0] = e->movelerp.previousangles[0] + d[0] * blend;
+		lerpdata->angles[1] = e->movelerp.previousangles[1] + d[1] * blend;
+		lerpdata->angles[2] = e->movelerp.previousangles[2] + d[2] * blend;
 	}
 	else // don't lerp
 	{

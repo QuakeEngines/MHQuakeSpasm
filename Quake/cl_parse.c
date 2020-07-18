@@ -592,7 +592,7 @@ void CL_ParseUpdate (int bits)
 
 		if (bits & U_LERPFINISH)
 		{
-			ent->lerpfinish = ent->msgtime + ((float) (MSG_ReadByte ()) / 255);
+			ent->lerpfinishtime = ent->msgtime + ((float) (MSG_ReadByte ()) / 255);
 			ent->lerpflags |= LERP_FINISH;
 		}
 		else ent->lerpflags &= ~LERP_FINISH;

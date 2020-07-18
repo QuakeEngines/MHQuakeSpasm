@@ -462,19 +462,19 @@ static const double cl_traildelta = HALF_FRAMEDELTA;
 
 void CL_RocketTrail (entity_t *ent, int type)
 {
-	if (cl.time > ent->nexttrailtime)
+	if (cl.time > ent->trail.nexttime)
 	{
-		R_RocketTrail (ent->oldtrailorigin, ent->origin, type);
-		VectorCopy (ent->origin, ent->oldtrailorigin);
-		ent->nexttrailtime = cl.time + cl_traildelta;
+		R_RocketTrail (ent->trail.oldorigin, ent->origin, type);
+		Vector3Copy (ent->trail.oldorigin, ent->origin);
+		ent->trail.nexttime = cl.time + cl_traildelta;
 	}
 }
 
 
 void CL_ClearRocketTrail (entity_t *ent)
 {
-	VectorCopy (ent->origin, ent->oldtrailorigin);
-	ent->nexttrailtime = cl.time + cl_traildelta;
+	Vector3Copy (ent->trail.oldorigin, ent->origin);
+	ent->trail.nexttime = cl.time + cl_traildelta;
 }
 
 

@@ -58,10 +58,10 @@ typedef struct entity_s {
 
 	// translated "player" texture
 	struct {
-		struct gltexture_s *translated;
-		int shirt;
-		int pants;
-		struct aliasskin_s *baseskin;
+		struct gltexture_s	*translated;
+		int					shirt;
+		int					pants;
+		struct aliasskin_s	*baseskin;
 	} translation;
 
 	qboolean				colormapped;	// if true uses a translated texture
@@ -72,42 +72,48 @@ typedef struct entity_s {
 	vec3_t					origin;
 	vec3_t					msg_angles[2];	// last two updates (0 is newest)
 	vec3_t					angles;
+
 	struct qmodel_s *model;			// NULL = no model
 	struct efrag_s *efrag;			// linked list of efrags
+
 	int						frame;
 	float					syncbase;		// for client-side animations
 	int						effects;		// light, particles, etc
 	int						skinnum;		// for Alias models
-	int						visframe;		// last frame this entity was
-											//  found in an active leaf
-
+	int						visframe;		// last frame this entity was found in an active leaf
 	// rockettrails
-	vec3_t					oldtrailorigin;
-	double					nexttrailtime;
+	struct {
+		vec3_t				oldorigin;
+		double				nexttime;
+	} trail;
 
 	int						dlightframe;	// dynamic lighting
 	int						dlightbits;
 
 	// FIXME: could turn these into a union
 	int						trivial_accept;
-	struct mnode_s *topnode;		// for bmodels, first world node
-											//  that splits bmodel, or NULL if
-											//  not split
+	struct mnode_s			*topnode;		// for bmodels, first world node that splits bmodel, or NULL if not split
 
 	byte					alpha;			// johnfitz -- alpha
 	byte					lerpflags;		// johnfitz -- lerping
-	float					lerpstart;		// johnfitz -- animation lerping
-	float					lerptime;		// johnfitz -- animation lerping
-	float					lerpfinish;		// johnfitz -- lerping -- server sent us a more accurate interval, use it instead of 0.1
-	short					previouspose;	// johnfitz -- animation lerping
-	short					currentpose;	// johnfitz -- animation lerping
-//	short					futurepose;		// johnfitz -- animation lerping
-	float					movelerpstart;	// johnfitz -- transform lerping
-	vec3_t					previousorigin;	// johnfitz -- transform lerping
-	vec3_t					currentorigin;	// johnfitz -- transform lerping
-	vec3_t					previousangles;	// johnfitz -- transform lerping
-	vec3_t					currentangles;	// johnfitz -- transform lerping
+	float					lerpfinishtime;		// johnfitz -- lerping -- server sent us a more accurate interval, use it instead of 0.1
+
+	struct {
+		float				starttime;		// johnfitz -- animation lerping
+		float				interval;		// johnfitz -- animation lerping
+		short				previouspose;	// johnfitz -- animation lerping
+		short				currentpose;	// johnfitz -- animation lerping
+	} animlerp;
+
+	struct {
+		float				starttime;	// johnfitz -- transform lerping
+		vec3_t				previousorigin;	// johnfitz -- transform lerping
+		vec3_t				currentorigin;	// johnfitz -- transform lerping
+		vec3_t				previousangles;	// johnfitz -- transform lerping
+		vec3_t				currentangles;	// johnfitz -- transform lerping
+	} movelerp;
 } entity_t;
+
 
 // !!! if this is changed, it must be changed in asm_draw.h too !!!
 typedef struct refdef_s {
