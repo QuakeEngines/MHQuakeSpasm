@@ -309,6 +309,9 @@ entity_t *CL_NewTempEntity (void)
 	cl_numvisedicts++;
 
 	ent->colormapped = false;
+
+	// temp entities only last for 1 frame so there is nothing to lerp from
+	ent->lerpflags |= LERP_RESETANIM | LERP_RESETMOVE | LERP_TEMPENTITY;
 	return ent;
 }
 

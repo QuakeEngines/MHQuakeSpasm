@@ -37,6 +37,12 @@ typedef struct efrag_s {
 	struct entity_s *entity;
 } efrag_t;
 
+typedef struct lightpoint_s {
+	vec3_t lightspot;
+	struct msurface_s *lightsurf;	// lightplane is trivially reconstructed from this
+	byte *lightmap; // not surf->samples because it needs to be offset for the entity position
+} lightpoint_t;
+
 
 // johnfitz -- for lerping
 #define LERP_MOVESTEP	(1 << 0) // this is a MOVETYPE_STEP entity, enable movement lerp
@@ -45,8 +51,7 @@ typedef struct efrag_s {
 #define LERP_RESETMOVE	(1 << 3) // disable movement lerping until next origin/angles change
 #define LERP_FINISH		(1 << 4) // use lerpfinish time from server update instead of assuming interval of 0.1
 // johnfitz
-#define LERP_STATICENT	(1 << 5) // static entity doesn't lerp and may do other stuff
-#define LERP_NOMOVE		(1 << 6) // this bit is set if the ent hasn't moved from it's baseline state (we could just check origin i suppose....)
+#define LERP_TEMPENTITY	(1 << 5) // cheesy detection of a temp entity
 
 typedef struct entity_s {
 	qboolean				forcelink;		// model changed
@@ -55,6 +60,7 @@ typedef struct entity_s {
 	int						entitynum;		// order allocated
 
 	entity_state_t			baseline;		// to fill in defaults in updates
+	lightpoint_t			baselightpoint;
 
 	// translated "player" texture
 	struct {
@@ -73,8 +79,8 @@ typedef struct entity_s {
 	vec3_t					msg_angles[2];	// last two updates (0 is newest)
 	vec3_t					angles;
 
-	struct qmodel_s *model;			// NULL = no model
-	struct efrag_s *efrag;			// linked list of efrags
+	struct qmodel_s			*model;			// NULL = no model
+	struct efrag_s			*efrag;			// linked list of efrags
 
 	int						frame;
 	float					syncbase;		// for client-side animations
@@ -86,9 +92,6 @@ typedef struct entity_s {
 		vec3_t				oldorigin;
 		double				nexttime;
 	} trail;
-
-	int						dlightframe;	// dynamic lighting
-	int						dlightbits;
 
 	// FIXME: could turn these into a union
 	int						trivial_accept;
@@ -139,6 +142,8 @@ void R_AddEfrags (entity_t *ent);
 
 void R_NewMap (void);
 
+void R_LightFromLightPoint (lightpoint_t *lightpoint, float *lightcolor);
+void R_LightPointFromPosition (lightpoint_t *lightpoint, float *position);
 
 void R_ParseParticleEffect (void);
 void R_RunParticleEffect (vec3_t org, vec3_t dir, int color, int count);

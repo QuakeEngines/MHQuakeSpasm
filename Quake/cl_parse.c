@@ -681,6 +681,7 @@ void CL_ParseBaseline (entity_t *ent, int version) // johnfitz -- added argument
 
 	ent->baseline.alpha = (bits & B_ALPHA) ? MSG_ReadByte () : ENTALPHA_DEFAULT; // johnfitz -- PROTOCOL_FITZQUAKE
 
+	R_LightPointFromPosition (&ent->baselightpoint, ent->baseline.origin);
 	CL_ClearRocketTrail (ent);
 }
 
@@ -871,7 +872,6 @@ void CL_ParseStatic (int version) // johnfitz -- added a parameter
 	// copy it to the current state
 	ent->model = cl.model_precache[ent->baseline.modelindex];
 	ent->lerpflags |= LERP_RESETANIM; // johnfitz -- lerping
-	ent->lerpflags |= LERP_STATICENT; // mh - flag as a static ent for runtime fast-path checks
 	ent->frame = ent->baseline.frame;
 
 	ent->colormapped = false;

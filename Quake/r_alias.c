@@ -323,7 +323,7 @@ void GL_DrawAliasDynamicLights (entity_t *e, QMATRIX *localMatrix, aliashdr_t *h
 }
 
 
-void GL_DrawAliasShadow (entity_t *e, aliashdr_t *hdr, lerpdata_t *lerpdata)
+void GL_DrawAliasShadow (entity_t *e, aliashdr_t *hdr, lerpdata_t *lerpdata, lightpoint_t *lightpoint)
 {
 	// this depends on state from GL_DrawAliasFrame_ARB so don't call it from anywhere else!
 	//johnfitz -- values for shadow matrix
@@ -350,7 +350,7 @@ P.b * L.x      P.b * L.y + d  P.b * L.z      P.b * L.w
 P.c * L.x      P.c * L.y      P.c * L.z + d  P.c * L.w
 P.d * L.x      P.d * L.y      P.d * L.z      P.d * L.w + d
 	*/
-	float	lheight = lerpdata->origin[2] - lightspot[2];
+	float	lheight = lerpdata->origin[2] - lightpoint->lightspot[2];
 	QMATRIX	localMatrix;
 
 	// position the shadow
@@ -542,9 +542,21 @@ void R_MinimumLight (float *light, float minlight)
 }
 
 
-void R_SetupAliasLighting (entity_t *e, lerpdata_t *lerpdata)
+void R_SetupAliasLighting (entity_t *e, lerpdata_t *lerpdata, lightpoint_t *lightpoint)
 {
-	R_LightPoint (lerpdata->origin, shadelight);
+	// if the ent hasn't moved from it's baseline we can just copy over it's initial lighting data; otherwise we must compute a full lightpoint
+	// the view entity can be assumed to always be moving, and is only a single entity, so it's acceptable to trace every frame
+	// temp entities only last for 1 frame so they have no baseline state to compare with nor copy from
+	if (e == &cl.viewent || (e->lerpflags & LERP_TEMPENTITY) || !Vector3Compare (lerpdata->origin, e->baseline.origin))
+		R_LightPointFromPosition (lightpoint, lerpdata->origin);
+	else
+	{
+		lightpoint->lightmap = e->baselightpoint.lightmap;
+		lightpoint->lightsurf = e->baselightpoint.lightsurf;
+		Vector3Copy (lightpoint->lightspot, e->baselightpoint.lightspot);
+	}
+
+	R_LightFromLightPoint (lightpoint, shadelight);
 
 	// minimum light value on gun (24)
 	if (e == &cl.viewent)
@@ -682,6 +694,7 @@ void R_DrawAliasModel (entity_t *e)
 	QMATRIX localMatrix;
 	aliashdr_t *hdr = (aliashdr_t *) Mod_Extradata (e->model);
 	lerpdata_t	lerpdata;
+	lightpoint_t lightpoint;
 
 	// setup pose/lerp data -- do it first so we don't miss updates due to culling
 	R_SetupAliasFrame (e, hdr, e->frame, &lerpdata);
@@ -703,7 +716,7 @@ void R_DrawAliasModel (entity_t *e)
 	R_BeginTransparentDrawing (alpha);
 
 	// set up lighting
-	R_SetupAliasLighting (e, &lerpdata);
+	R_SetupAliasLighting (e, &lerpdata, &lightpoint);
 
 	// set up textures
 	aliasskin_t *skin = R_GetAliasSkin (e, hdr);
@@ -742,7 +755,7 @@ void R_DrawAliasModel (entity_t *e)
 		;		// shadows switched off
 	else if (e == &cl.viewent || e->model->flags & MOD_NOSHADOW)
 		;		// no shadows on these model types
-	else GL_DrawAliasShadow (e, hdr, &lerpdata);
+	else GL_DrawAliasShadow (e, hdr, &lerpdata, &lightpoint);
 
 	rs_aliaspolys += hdr->numtris;
 }
